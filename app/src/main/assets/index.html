@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#090b13"><meta name="description" content="Visualizador 3D de projetos Blockbench (.bbmodel), com camadas e animações.">
+<link rel="icon" href="icon.png">
+<title>PORT | Voxel Viewer</title>
+<style>:root{color-scheme:dark;--bg:#090b13;--panel:#111522;--panel2:#171c2b;--border:#292d3e;--text:#eff0f7;--muted:#8e92aa;--gold:#e8bb67;--red:#b34256;--purple:#8067e7;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Roboto,"Segoe UI",sans-serif}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--text);overflow:hidden}button,select,input{font:inherit}button{cursor:pointer;-webkit-tap-highlight-color:transparent}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}.hidden{display:none!important}
+#app{height:100dvh;display:flex;flex-direction:column;min-height:0;background:radial-gradient(ellipse at 30% -20%,#271b36 0,transparent 42%),#090b13}.topbar{height:72px;flex:none;border-bottom:1px solid #272a37;display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:rgba(11,13,21,.95);z-index:2}.brand{display:flex;gap:11px;align-items:center}.mark{display:grid;place-items:center;width:42px;height:42px;border:1px solid #9d6e4c;transform:rotate(0deg);background:linear-gradient(145deg,#372a30,#151725);border-radius:12px;box-shadow:inset 0 0 0 3px #11151f}.markglyph{font-size:31px;color:var(--gold);line-height:1}.brandtext{display:flex;flex-direction:column;gap:3px}.brandtop{font-size:17px;font-weight:850;letter-spacing:3.2px;line-height:1}.brandsep{color:var(--red);margin:0 1px}.brandbottom{font-size:9px;letter-spacing:2.6px;color:var(--muted);font-weight:650}.icon-btn{border:1px solid var(--border);border-radius:11px;background:#171926;color:#d8c5a7;width:38px;height:38px;font-weight:800}.main{min-height:0;flex:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(332px,360px)}
+.viewport{position:relative;overflow:hidden;background:radial-gradient(circle at 54% 40%,#262234 0,#141823 34%,#0a0e18 70%,#080a12 100%);touch-action:none;min-width:0;min-height:0}#scene{width:100%;height:100%;display:block;position:absolute;inset:0;touch-action:none}.stage-shine{position:absolute;pointer-events:none;inset:0;background:linear-gradient(90deg,rgba(114,56,75,.08),transparent 38%,rgba(83,67,126,.035));box-shadow:inset 0 0 90px rgba(0,0,0,.2)}.scene-top{position:absolute;left:22px;top:20px;right:22px;display:flex;align-items:center;gap:9px;pointer-events:none}.tag{border:1px solid #514150;background:rgba(29,23,37,.79);border-radius:6px;padding:8px 10px;color:#f2d4ab;font-size:10px;letter-spacing:1.4px;font-weight:750;display:flex;align-items:center;gap:8px}.live-dot{width:6px;height:6px;background:#d9a659;border-radius:50%;box-shadow:0 0 9px #e6ae5f}.tag-neutral{color:#aeb0c0;border-color:#353744;background:rgba(13,18,27,.8)}.scene-watermark{position:absolute;bottom:86px;left:24px;font-size:10px;font-weight:900;letter-spacing:4px;color:#6c667e;pointer-events:none}.scene-watermark span{color:#bd7b66;padding:0 5px}.scene-hint{position:absolute;bottom:61px;left:50%;transform:translateX(-50%);white-space:nowrap;color:#82869e;background:rgba(11,14,23,.56);font-size:11px;padding:7px 14px;border-radius:18px;pointer-events:none}.axis-indicator{position:absolute;right:22px;bottom:92px;width:55px;height:54px;pointer-events:none}.axis{position:absolute;font-size:11px;font-weight:900}.axis.y{color:#73d9a4;top:0;left:24px}.axis.x{color:#f17a79;top:32px;right:0}.axis.z{color:#79a4e9;top:33px;left:0}.axis-indicator:before{content:"";position:absolute;top:18px;left:29px;height:22px;width:1px;background:#73d9a4;transform:rotate(0deg)}.axis-indicator:after{content:"";position:absolute;top:36px;left:12px;width:34px;height:1px;background:linear-gradient(90deg,#79a4e9,#f17a79);transform:rotate(-21deg)}.view-actions{position:absolute;right:20px;top:74px;display:flex;flex-direction:column;gap:8px}.circle-btn{height:38px;width:38px;border-radius:11px;background:rgba(23,27,39,.83);color:#b7bed1;border:1px solid #3b3b50;font-size:22px}.circle-btn.active{background:#3a2d2e;border-color:#9e704d;color:#e8bd72}.bottom-view{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);display:flex;background:rgba(16,20,31,.92);border:1px solid #363447;border-radius:11px;padding:4px;gap:3px;white-space:nowrap}.view-btn{border:0;background:transparent;color:#a9abbe;border-radius:7px;padding:8px 13px;font-size:11px;font-weight:750}.view-btn.selected{background:linear-gradient(130deg,#8b474f,#4f314a);color:#fff}.drop-notice{position:absolute;inset:12px;border:2px dashed var(--gold);z-index:5;background:rgba(9,11,19,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--gold);font-size:20px}.drop-notice span{font-size:45px}
+.control-panel{display:flex;flex-direction:column;overflow:auto;min-height:0;border-left:1px solid #2e2d3c;background:linear-gradient(165deg,#171725,#0e121e 62%);scrollbar-color:#363c51 transparent}.file-panel{padding:26px 22px 20px;border-bottom:1px solid var(--border)}.section-kicker{color:var(--gold);font-size:10px;letter-spacing:2.3px;font-weight:850;margin-bottom:11px}.file-panel h1{font-size:27px;letter-spacing:-.8px;margin:0 0 4px;line-height:1.24;overflow-wrap:anywhere}.file-panel p{font-size:12px;color:var(--muted);margin:0 0 19px;line-height:1.6}.import-btn{width:100%;border:1px solid #cb9965;background:linear-gradient(115deg,#9f4a51 0%,#64374a 45%,#3e3346 100%);color:#fff4dd;border-radius:12px;padding:15px 13px;display:flex;align-items:center;justify-content:center;gap:11px;font-size:12px;font-weight:850;letter-spacing:.7px;box-shadow:0 4px 23px #803b462a}.import-btn>span:first-child{font-size:20px;font-weight:300}.import-arrow{margin-left:auto;font-size:17px}.file-meta{margin-top:18px;display:grid;grid-template-columns:repeat(3,1fr);border:1px solid #2a2d3e;border-radius:10px;padding:14px 0;background:#101522}.file-meta>div{display:flex;flex-direction:column;gap:5px;align-items:center;border-right:1px solid #2c2f40}.file-meta>div:last-child{border-right:none}.file-meta strong{font-size:19px;font-weight:800}.file-meta span{color:#7f849c;font-size:9px;font-weight:750;letter-spacing:1.2px}.tab-list{display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 12px;flex:none}.tab{flex:1;background:transparent;border:0;border-bottom:2px solid transparent;color:#9195aa;padding:16px 2px 14px;font-size:11px;font-weight:780}.tab.active{color:#f1c48a;border-bottom-color:#d09a66}.tab-content{padding:19px 22px 24px;border-bottom:1px solid var(--border);min-height:220px}.mini-heading{font-size:10px;letter-spacing:1.8px;color:#a7aabf;font-weight:850;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.mini-heading span{color:#8d7199}.helptext{color:#85899f;font-size:11px;line-height:1.6}.anim-row{margin-top:16px;display:flex;gap:10px;align-items:center}.anim-row label{font-size:10px;color:#a2a5b7;font-weight:750;letter-spacing:1px}.anim-row select{background:#1b2030;color:#eee9eb;border:1px solid #3d4154;border-radius:8px;flex:1;min-width:0;padding:10px;font-size:12px}.transport{margin:17px 0 14px;display:flex;align-items:center;gap:10px}.transport-small{background:transparent;border:1px solid #32384c;width:36px;height:36px;border-radius:9px;color:#c2bcd0;font-size:21px}.play-btn{background:linear-gradient(135deg,#f3cd80,#ba7774);color:#2c2432;border:0;width:40px;height:40px;border-radius:10px;font-size:17px;font-weight:900}.time-display{margin-left:auto;font:12px ui-monospace,SFMono-Regular,monospace;color:#b9b6c7;white-space:nowrap}.time-display span:nth-child(2){color:#5a5f72;margin:0 2px}.timeline{width:100%;margin:0 0 9px;accent-color:#c18d6f;height:6px}.speed-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#9ca0b3;font-size:11px}.speed-buttons{display:flex;gap:3px}.speed-buttons button{background:#1c2130;color:#8c91a7;border:1px solid #30364a;border-radius:6px;padding:5px 7px;font-size:10px}.speed-buttons button.active{background:#493448;border-color:#b67c77;color:#ffe3b8}.loop-label{margin-left:auto;display:flex;align-items:center;gap:4px;white-space:nowrap}.loop-label input{accent-color:#b88773}.warning{font-size:11px;color:#f3be92;line-height:1.5;background:#4c352950;border:1px solid #6c4a3b;padding:10px;border-radius:7px;margin-top:10px}.text-btn{background:transparent;border:0;color:#e6b57a;font-size:11px;letter-spacing:0}.list-help{font-size:11px;color:#7b8196;margin-bottom:13px;line-height:1.5}.parts-tree{max-height:340px;overflow:auto}.part-item{display:flex;gap:4px;align-items:center;border-bottom:1px solid #292d3b;min-height:36px}.part-item .part-name{color:#c4c6d3;text-align:left;background:none;border:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;padding:7px 0}.part-item .part-name:hover{color:#f0c58c}.part-item .part-name.isolated{color:#f2bc70}.eye-btn{width:29px;height:29px;border:0;background:none;color:#ddb889;opacity:.9}.eye-btn.hidden-part{color:#656c7d;opacity:.8}.kind{font-size:10px;color:#6e738d}.option-line{padding:12px 0;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#d0cfe0;border-bottom:1px solid #2c3040}.toggle{position:relative;width:36px;height:22px}.toggle input{position:absolute;opacity:0;width:100%;height:100%;margin:0}.toggle i{display:block;width:36px;height:22px;border-radius:18px;background:#303749;transition:.2s}.toggle i:after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#b7bcd0;transition:.2s}.toggle input:checked+i{background:#875763}.toggle input:checked+i:after{transform:translateX(14px);background:#f7c883}.secondary-btn{width:100%;margin-top:12px;background:#1d2231;color:#d5c4cb;border:1px solid #394051;padding:11px;border-radius:9px;text-align:center;font-size:12px}.examples-panel{padding:20px 22px 26px}.demo-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.demo-card{background:linear-gradient(145deg,#282334,#1b202f);color:#d3d2dc;border:1px solid #3d3949;padding:13px 5px;display:flex;flex-direction:column;gap:8px;align-items:center;border-radius:10px;font-size:11px}.demo-card span{font-size:23px;color:#d49d79}.demo-card.active{border-color:#ad7467;background:linear-gradient(145deg,#4c303d,#252032)}.footer{height:35px;flex:none;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #252a37;padding:0 27px;font-size:9px;color:#73788d;letter-spacing:1.3px}.footer b{color:#bca28a}.toast{position:fixed;z-index:10;bottom:55px;left:50%;transform:translateX(-50%);border:1px solid #82665c;border-radius:10px;background:#242332;color:#f2e0c7;padding:12px 20px;font-size:12px;box-shadow:0 8px 35px #0008;max-width:90vw;text-align:center}.modal-backdrop{position:fixed;inset:0;z-index:12;background:#04050bcf;display:grid;place-items:center;padding:20px}.modal{position:relative;background:linear-gradient(150deg,#252133,#131725);border:1px solid #665363;border-radius:16px;width:min(420px,100%);padding:28px;max-height:80vh;overflow:auto}.modal h2{margin:0 0 12px}.modal p{font-size:13px;color:#bac0cf;line-height:1.7}.modal-close{position:absolute;top:13px;right:15px;border:0;background:transparent;color:#eee;font-size:24px}
+@media(max-width:760px){html,body{overflow:hidden}.topbar{height:56px;padding:0 16px}.mark{width:35px;height:35px;border-radius:9px}.markglyph{font-size:27px}.brandtop{font-size:14px;letter-spacing:2px}.brandbottom{font-size:8px;letter-spacing:1.6px}.main{display:flex;flex-direction:column;overflow:auto;overscroll-behavior:contain}.viewport{flex:none;height:46dvh;min-height:270px;max-height:470px}.control-panel{overflow:visible;flex:none;border-left:0;border-top:1px solid #3b3240}.file-panel{padding:16px 18px 14px}.file-panel h1{font-size:22px}.file-panel p{margin-bottom:13px}.import-btn{padding:12px}.file-meta{margin-top:12px;padding:10px 0}.tab-content{padding:16px 18px 18px;min-height:185px}.tab{padding:14px 2px 12px}.examples-panel{padding:17px 18px 22px}.footer{height:28px;padding:0 12px;font-size:8px;letter-spacing:.4px}.scene-hint{bottom:61px;font-size:10px;max-width:95%;text-align:center}.scene-watermark{bottom:81px;left:13px}.scene-top{top:13px;left:12px}.view-actions{right:12px;top:53px}.bottom-view{bottom:13px}.axis-indicator{right:14px;bottom:74px}}
+@media(max-width:390px){.bottom-view .view-btn{padding:7px 10px}.scene-top .tag{font-size:9px;padding:7px}.file-panel h1{font-size:20px}}
+
+/* Port Voxel Viewer v1.2 mobile productivity */
+.version-pill{margin-left:auto;margin-right:14px;border:1px solid #5c4b48;border-radius:999px;background:#382b33;color:#ffcb85;font-size:11px;font-weight:800;padding:7px 11px;letter-spacing:.7px}
+.version-pill span{color:#df919a;font-weight:600;font-size:9px}
+.explosion-panel{margin-bottom:16px;padding:15px;border:1px solid #705444;background:linear-gradient(140deg,rgba(101,61,54,.32),rgba(46,38,60,.4));border-radius:12px}
+.explosion-head{display:flex;justify-content:space-between;align-items:center;color:#f2c890;font-size:10px;letter-spacing:1.3px;font-weight:850}
+.explosion-head strong{font-size:14px;letter-spacing:0;color:#fff1d9}
+.explosion-panel input{width:100%;margin:13px 0 5px;accent-color:#e4b067;cursor:pointer}
+.explosion-sub{font-size:11px;color:#a6a2b6;line-height:1.5}
+.explosion-panel .mini-reset{margin-top:10px;padding:8px 10px;font-size:11px}
+.part-search{width:100%;padding:12px;background:#151a28;border:1px solid #3c4053;border-radius:9px;color:#f3eee9;font-size:12px;margin-bottom:7px;outline-offset:1px}
+.part-search::placeholder{color:#89879f}
+.part-count{font-size:10px;color:#aa9aa9;margin-bottom:10px}
+.part-item.match .part-name{color:#f5ce91}
+.part-item .part-name:focus-visible{outline:2px solid #dba362}
+.info-box{padding:12px;margin-top:15px;border:1px solid #37394a;border-radius:9px;background:#131828;color:#b2b4c6;font-size:11px;line-height:1.75}
+.info-box b{color:#f3d1a0}
+.step-btn{font-size:14px}
+.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+#app.viewer-focus .control-panel{display:none}
+#app.viewer-focus .main{display:block}
+#app.viewer-focus .viewport{height:100%;max-height:none;width:100%}
+#app.viewer-focus .viewport .bottom-view{bottom:20px}
+#app.viewer-focus #focusBtn{border-color:#bb906f;background:#634052;color:#fff}
+#app.viewer-focus .scene-hint{display:none}
+button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:760px){.version-pill{padding:6px 8px;margin-right:8px;font-size:10px}.version-pill span{display:none}.view-actions{top:48px;gap:7px}.circle-btn{width:34px;height:34px;font-size:18px}.transport{gap:5px}.transport-small{width:31px;height:35px;font-size:18px}.step-btn{font-size:13px}.play-btn{width:37px;height:37px}.time-display{font-size:10px}.part-search{font-size:14px}#app.viewer-focus .main{overflow:hidden}#app.viewer-focus .viewport{height:calc(100dvh - 84px);min-height:0}}
+@media(max-width:360px){.version-pill{display:none}.transport{gap:4px}.transport-small{width:29px}.time-display{font-size:9px}}
+
+/* Port Voxel Viewer 1.3 · GIF export */
+.gif-viewport-shield{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:auto;z-index:4;background:#0b0d1770;color:#f3cf90;font-weight:800;letter-spacing:1.2px;font-size:13px}
+.gif-viewport-shield span{border:1px solid #956e56;border-radius:12px;background:#1f202ddb;padding:15px 20px;box-shadow:0 8px 35px #070710bb}
+
+.gif-panel{margin-top:19px;border:1px solid #705143;border-radius:12px;background:linear-gradient(145deg,rgba(106,57,57,.27),rgba(51,40,70,.32));padding:15px}
+.gif-panel .gif-title{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;font-weight:850;letter-spacing:1.1px;color:#ffd49b}
+.gif-panel .gif-title small{font-size:9px;letter-spacing:.4px;color:#cbb6b2;font-weight:700}
+.gif-help{font-size:11px;color:#aeb0c4;line-height:1.5;margin:9px 0 14px}
+.gif-choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gif-choices label{display:flex;flex-direction:column;gap:6px;font-size:10px;color:#bfc0d1;font-weight:750}
+.gif-choices select{width:100%;background:#161b2b;color:#f8e8d1;padding:11px 10px;border-radius:8px;border:1px solid #45435b}
+.gif-loop{display:flex;align-items:center;gap:7px;margin-top:12px;color:#bfc1d2;font-size:11px}
+.gif-loop input{accent-color:#d4a46c}
+.gif-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:11px;border:1px solid #dcaa6c;background:linear-gradient(120deg,#b05755,#80445a 55%,#503851);color:#fff7e5;border-radius:10px;padding:13px 10px;margin-top:13px;font-size:12px;font-weight:850}
+.gif-btn span{font-size:18px}
+.gif-progress-area{margin-top:13px}
+.gif-progress-line{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px;font-size:11px;color:#dfbc9e}
+.gif-progress{height:8px;width:100%;border:1px solid #624b58;border-radius:10px;overflow:hidden;background:#1b202c}
+.gif-progress>div{background:linear-gradient(90deg,#a34e65,#e9c278);height:100%;width:0;transition:width .13s}
+.gif-cancel{display:block;margin:10px 0 0 auto;color:#f1b2b2;border:1px solid #6b4e5d;border-radius:7px;padding:7px 14px;background:#332638;font-size:11px}
+.gif-preview-note{margin-top:10px;font-size:10px;color:#9595a8;line-height:1.45}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand"><span class="mark"><span class="markglyph">⬡</span></span><div class="brandtext"><span class="brandtop">PORT<span class="brandsep">/</span>VOXEL</span><span class="brandbottom">VISUALIZADOR BLOCKBENCH</span></div></div>
+    <span class="version-pill">v1.3 <span>GIF STUDIO</span></span><button class="icon-btn" id="helpBtn" title="Ajuda" aria-label="Ajuda">?</button>
+  </header>
+  <main class="main">
+    <section class="viewport" id="viewport">
+      <canvas id="scene" aria-label="Visualização do modelo 3D"></canvas>
+      <div class="stage-shine"></div>
+      <div class="scene-top"><div class="tag"><i class="live-dot"></i><span id="modelStatus">DEMONSTRAÇÃO</span></div><div class="tag tag-neutral" id="elementCount">0 PEÇAS</div></div>
+      <div class="scene-watermark" id="watermark">PORT<span>•</span>VOXEL</div>
+      <div class="scene-hint" id="sceneHint">☝ Arraste para girar · Pinça para aproximar</div>
+      <div id="gifViewportShield" class="gif-viewport-shield hidden"><span>◉ Gravando GIF…</span></div>
+       <div id="dropNotice" class="drop-notice hidden"><span>📦</span><b>Solte seu .bbmodel aqui</b></div>
+      <div class="axis-indicator"><span class="axis y">Y</span><span class="axis x">X</span><span class="axis z">Z</span></div>
+      <div class="view-actions">
+        <button id="fitBtn" class="circle-btn" title="Enquadrar modelo" aria-label="Enquadrar">⌗</button>
+        <button id="gridBtn" class="circle-btn active" title="Grade" aria-label="Alternar grade">▦</button>
+        <button id="wireBtn" class="circle-btn" title="Arestas" aria-label="Alternar arestas">◇</button><button id="captureBtn" class="circle-btn" title="Salvar imagem PNG" aria-label="Salvar imagem PNG">▣</button><button id="focusBtn" class="circle-btn" title="Ampliar visualização" aria-label="Ampliar visualização">⛶</button>
+      </div>
+      <div class="bottom-view"><button data-view="iso" class="view-btn selected">3D</button><button data-view="front" class="view-btn">Frente</button><button data-view="side" class="view-btn">Lado</button><button data-view="top" class="view-btn">Topo</button></div>
+    </section>
+    <aside class="control-panel">
+      <div class="file-panel">
+        <div class="section-kicker">SEU PROJETO</div>
+        <h1 id="modelTitle">Braço Arcano</h1>
+        <p id="modelSubtitle">Modelo de demonstração · controles disponíveis</p>
+        <button class="import-btn" id="importBtn"><span>＋</span> ABRIR ARQUIVO .BBMODEL <span class="import-arrow">↗</span></button>
+        <input type="file" id="fileInput" accept=".bbmodel,.json,application/json" hidden>
+        <div class="file-meta"><div><strong id="statParts">0</strong><span>PEÇAS</span></div><div><strong id="statGroups">0</strong><span>GRUPOS</span></div><div><strong id="statAnimations">0</strong><span>ANIMAÇÕES</span></div></div>
+      </div>
+      <div class="tab-list"><button data-tab="animations" class="tab active">◉ &nbsp;Animações</button><button data-tab="parts" class="tab">▤ &nbsp;Peças</button><button data-tab="settings" class="tab">⚙ &nbsp;Opções</button></div>
+      <div class="tab-content" id="animationsTab">
+        <div class="mini-heading">TIMELINE <span id="fpsTag">20 FPS</span></div>
+        <div id="animationInfo" class="helptext">Selecione uma animação para reproduzir.</div>
+        <div class="anim-row"><label for="animSelect">ANIMAÇÃO</label><select id="animSelect"></select></div>
+        <div class="transport"><button id="prevKeyBtn" class="transport-small step-btn" title="Keyframe anterior" aria-label="Keyframe anterior">⟨│</button><button id="backBtn" class="transport-small" aria-label="Reiniciar animação">↶</button><button id="playBtn" class="play-btn" aria-label="Reproduzir ou pausar">Ⅱ</button><button id="nextBtn" class="transport-small" aria-label="Próxima animação">↠</button><button id="nextKeyBtn" class="transport-small step-btn" title="Próximo keyframe" aria-label="Próximo keyframe">│⟩</button><div class="time-display"><span id="timeCurrent">0:00</span> <span>/</span> <span id="timeEnd">0:00</span></div></div>
+        <input id="timeline" class="timeline" type="range" min="0" max="1000" value="0" aria-label="Linha do tempo">
+        <div class="speed-row"><span>Velocidade</span><div class="speed-buttons"><button data-speed="0.5">0.5×</button><button data-speed="1" class="active">1×</button><button data-speed="2">2×</button></div><label class="loop-label"><input type="checkbox" id="loopCheck" checked> Loop</label></div>
+        <div id="animationWarning" class="warning hidden"></div>
+
+        <div class="gif-panel" id="gifPanel">
+          <div class="gif-title"><span>✦ EXPORTAR ANIMAÇÃO EM GIF</span><small>OFFLINE</small></div>
+          <p class="gif-help">Salve a animação selecionada em um GIF que se repete. O modelo original permanece intacto.</p>
+          <div class="gif-choices">
+            <label for="gifResolution">RESOLUÇÃO
+              <select id="gifResolution"><option value="256">256 × 256 · leve</option><option value="384" selected>384 × 384 · nítido</option><option value="512">512 × 512 · maior</option></select>
+            </label>
+            <label for="gifFps">VELOCIDADE DOS QUADROS
+              <select id="gifFps"><option value="8">8 FPS</option><option value="12" selected>12 FPS</option><option value="20">20 FPS</option></select>
+            </label>
+          </div>
+          <label class="gif-loop"><input id="gifLoop" type="checkbox" checked> Repetir GIF infinitamente</label>
+          <button id="exportGifBtn" class="gif-btn"><span>↓</span> BAIXAR GIF DA ANIMAÇÃO</button>
+          <div id="gifProgressArea" class="gif-progress-area hidden" aria-live="polite"><div class="gif-progress-line"><span id="gifProgressLabel">Preparando quadros…</span><strong id="gifProgressCount">0%</strong></div><div class="gif-progress"><div id="gifProgressBar"></div></div><button class="gif-cancel" id="cancelGifBtn">Cancelar</button></div>
+          <div class="gif-preview-note">A exportação usa a câmera e as peças visíveis. Recomenda-se 256 px em celulares com pouca memória.</div>
+        </div>
+
+      </div>
+      <div class="tab-content hidden" id="partsTab"><div class="mini-heading">ESTRUTURA DO MODELO <button class="text-btn" id="showAllBtn">Mostrar tudo</button></div><label for="partSearch" class="visually-hidden">Pesquisar peças</label><input type="search" class="part-search" id="partSearch" placeholder="⌕  Buscar peça, osso ou placa" autocomplete="off"><div class="part-count" id="partsFilterCount" aria-live="polite"></div><div class="list-help">Toque no nome para isolar. Use o olho para ocultar.</div><div id="partsTree" class="parts-tree"></div></div>
+      <div class="tab-content hidden" id="settingsTab"><div class="mini-heading">VISUALIZAÇÃO</div><div class="explosion-panel"><div class="explosion-head"><label for="explodeSlider">VISTA EXPLODIDA</label><strong id="explodeValue">0%</strong></div><input type="range" id="explodeSlider" min="0" max="100" value="0" aria-label="Separar as peças do modelo"><div class="explosion-sub">Separe grupos e placas sem alterar o arquivo original.</div><button class="secondary-btn mini-reset" id="resetExplodeBtn">Reunir as peças</button></div><div class="option-line"><span>Rotação automática</span><label class="toggle"><input type="checkbox" id="autoSpin"><i></i></label></div><div class="option-line"><span>Exibir grade</span><label class="toggle"><input type="checkbox" id="gridCheck" checked><i></i></label></div><div class="option-line"><span>Desenhar arestas</span><label class="toggle"><input type="checkbox" id="wireCheck"><i></i></label></div><button class="secondary-btn" id="texturesBtn">🖼 Adicionar texturas externas</button><input type="file" id="texturesInput" accept="image/png,image/jpeg,image/webp" multiple hidden><div class="info-box" id="projectInfo" aria-live="polite"></div><p class="helptext">Texturas embutidas são abertas automaticamente. Texturas externas podem ser vinculadas pelos nomes dos arquivos.</p><button class="secondary-btn" id="resetCamBtn">⌗ Reenquadrar câmera</button></div>
+      <div class="examples-panel"><div class="mini-heading">TESTAR NO APLICATIVO</div><div class="demo-row"><button class="demo-card active" id="demoArm"><span>✦</span><b>Braço Arcano</b></button><button class="demo-card" id="demoBook"><span>▣</span><b>Grimório</b></button></div></div>
+    </aside>
+  </main>
+  <footer class="footer"><span>PORT VOXEL VIEWER <b>v1.3</b></span><span>PRIVADO • FUNCIONA SEM INTERNET</span></footer>
+</div>
+<div id="toast" class="toast hidden" role="status"></div>
+<div id="helpModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="modal"><button id="closeHelp" class="modal-close" aria-label="Fechar">×</button><div class="section-kicker">MANUAL RÁPIDO</div><h2 id="helpTitle">Visualizador Blockbench</h2><p>Abra arquivos <strong>.bbmodel</strong> com geometria em cubos, grupos, texturas embutidas e animações de ossos.</p><p>Arraste com um dedo para girar. Use dois dedos para aproximar ou afastar. No computador, use a roda do mouse. Em <b>Peças</b>, busque, isole ou oculte placas e ossos. Em <b>Opções</b>, use Vista explodida para separar partes sem alterar o modelo. Use ▣ para salvar um PNG, ⛶ para ampliar a visualização e Animações → Baixar GIF para exportar um GIF em loop.</p><p>Animações com expressões MoLang, efeitos especiais ou interpolação complexa podem apresentar diferenças do Blockbench. Modelos externos com recursos ausentes podem exigir seus arquivos de textura.</p><button class="import-btn" id="helpOk">ENTENDI ✓</button></div></div>
+<script>/* PORT VOXEL VIEWER: local, dependency-free WebGL .bbmodel previewer */
+(()=>{'use strict';
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+const canvas=$('#scene'), viewport=$('#viewport');
+let gl=null,ctx2d=null,program,bufferLocation,normalLocation,uvLocation,uMVP,uModel,uColor,uUseTexture,uTex,uLight,whiteTexture;
+let project=null,drawables=[],nodes=[],nodeMap=new Map(),textureEntries=[],textureMap=new Map(),externalTextures=new Map(), anims=[],activeAnim=-1,play=true,animT=0,speed=1,loop=true,lastFrame=performance.now(),bounds={min:[-8,0,-8],max:[8,16,8]};
+let exportInProgress=false,gifCancelRequested=false;
+ let yaw=.7,pitch=.27,dist=48,target=[0,8,0],spin=false,grid=true,wire=false,isolated=null,isDragging=false,explode=0,partQuery="",currentFileName="modelo",explosionCache=new Map(),explosionCandidates=new Map();
+const toNum=(x,def=0)=>Number.isFinite(Number(x))?Number(x):def,vec=(a,d=[0,0,0])=>Array.isArray(a)?[toNum(a[0],d[0]),toNum(a[1],d[1]),toNum(a[2],d[2])]:d.slice();
+const vdeg=a=>a*Math.PI/180, clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const I=()=>new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
+function mul(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+r]*b[c*4+k];o[c*4+r]=s;}return o;}
+function trans(x,y,z){let m=I();m[12]=x;m[13]=y;m[14]=z;return m;}
+function scale(x,y,z){let m=I();m[0]=x;m[5]=y;m[10]=z;return m;}
+function rotX(a){let m=I(),c=Math.cos(a),s=Math.sin(a);m[5]=c;m[6]=s;m[9]=-s;m[10]=c;return m;}
+function rotY(a){let m=I(),c=Math.cos(a),s=Math.sin(a);m[0]=c;m[2]=-s;m[8]=s;m[10]=c;return m;}
+function rotZ(a){let m=I(),c=Math.cos(a),s=Math.sin(a);m[0]=c;m[1]=s;m[4]=-s;m[5]=c;return m;}
+function composePivot(origin,rot,offset=[0,0,0],sz=[1,1,1]){let m=trans(origin[0]+offset[0],origin[1]+offset[1],origin[2]+offset[2]);m=mul(m,rotZ(vdeg(rot[2])));m=mul(m,rotY(vdeg(rot[1])));m=mul(m,rotX(vdeg(rot[0])));m=mul(m,scale(...sz));return mul(m,trans(-origin[0],-origin[1],-origin[2]));}
+function perspective(fov,aspect,n,f){let v=1/Math.tan(fov/2),o=new Float32Array(16);o[0]=v/aspect;o[5]=v;o[10]=(f+n)/(n-f);o[11]=-1;o[14]=2*f*n/(n-f);return o;}
+function lookAt(eye,center){let z=norm(sub(eye,center)),x=norm(cross([0,1,0],z)),y=cross(z,x),o=I();o[0]=x[0];o[1]=y[0];o[2]=z[0];o[4]=x[1];o[5]=y[1];o[6]=z[1];o[8]=x[2];o[9]=y[2];o[10]=z[2];o[12]=-dot(x,eye);o[13]=-dot(y,eye);o[14]=-dot(z,eye);return o;}
+const sub=(a,b)=>a.map((v,i)=>v-b[i]),dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],norm=v=>{let l=Math.hypot(...v)||1;return v.map(x=>x/l);};
+function shader(type,source){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s;}
+function initGL(){gl=canvas.getContext('webgl',{antialias:true,alpha:true,powerPreference:'high-performance',preserveDrawingBuffer:true})||canvas.getContext('experimental-webgl');if(!gl){ctx2d=canvas.getContext('2d');if(ctx2d){toast('Modo de compatibilidade 3D ativado');return true;}toast('Renderização 3D indisponível neste navegador.');return false;}
+const vert=`attribute vec3 aPosition; attribute vec3 aNormal; attribute vec2 aUV; uniform mat4 uMVP; uniform mat4 uModel; varying vec3 vNormal; varying vec2 vUV; void main(){gl_Position=uMVP*vec4(aPosition,1.0);vNormal=mat3(uModel)*aNormal;vUV=aUV;}`;
+const frag=`precision mediump float; varying vec3 vNormal;varying vec2 vUV;uniform vec4 uColor;uniform sampler2D uTex;uniform float uUseTexture;void main(){vec4 texel=mix(vec4(1.0),texture2D(uTex,vUV),uUseTexture);if(texel.a*uColor.a<0.08)discard;vec3 n=normalize(vNormal);float lit=.68+.32*max(dot(n,normalize(vec3(-0.5,1.0,0.65))),0.0);gl_FragColor=vec4(texel.rgb*uColor.rgb*lit,texel.a*uColor.a);}`;
+program=gl.createProgram();gl.attachShader(program,shader(gl.VERTEX_SHADER,vert));gl.attachShader(program,shader(gl.FRAGMENT_SHADER,frag));gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(program));gl.useProgram(program);bufferLocation=gl.getAttribLocation(program,'aPosition');normalLocation=gl.getAttribLocation(program,'aNormal');uvLocation=gl.getAttribLocation(program,'aUV');uMVP=gl.getUniformLocation(program,'uMVP');uModel=gl.getUniformLocation(program,'uModel');uColor=gl.getUniformLocation(program,'uColor');uUseTexture=gl.getUniformLocation(program,'uUseTexture');uTex=gl.getUniformLocation(program,'uTex');gl.uniform1i(uTex,0);whiteTexture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,whiteTexture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([255,255,255,255]));gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.clearColor(0,0,0,0);return true;}
+function makeBuffer(data){if(!gl)return {buf:null,count:data.length/8,raw:data};const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);return {buf:b,count:data.length/8};}
+function bindBuffer(b){gl.bindBuffer(gl.ARRAY_BUFFER,b.buf);gl.enableVertexAttribArray(bufferLocation);gl.enableVertexAttribArray(normalLocation);gl.enableVertexAttribArray(uvLocation);gl.vertexAttribPointer(bufferLocation,3,gl.FLOAT,false,32,0);gl.vertexAttribPointer(normalLocation,3,gl.FLOAT,false,32,12);gl.vertexAttribPointer(uvLocation,2,gl.FLOAT,false,32,24);}
+function texImage(source,key){return new Promise(res=>{const im=new Image();im.onload=()=>{try{if(!gl){textureMap.set(key,{image:im,width:im.width,height:im.height});res(true);return;}const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,im);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);textureMap.set(key,{texture:t,width:im.width,height:im.height});res(true);}catch(e){res(false);}};im.onerror=()=>res(false);im.src=source;});}
+function textureRef(ref){if(ref===null||ref===false)return null;if(ref===undefined)ref=0;const t=textureEntries.find((t,i)=>String(t.uuid)===String(ref)||String(t.id)===String(ref)||String(t.name)===String(ref)||String(i)===String(ref));return t?t._key:null;}
+function registerTextures(j){textureEntries=j.textures||[];textureMap.clear();let promises=[];textureEntries.forEach((t,i)=>{t._key='tex_'+i;let source=t.source||t.data_url||t.layers?.find(l=>l.data_url)?.data_url||'';if(!/^data:image\//.test(source)){const key=(t.relative_path||t.path||t.name||'').split(/[\\/]/).pop().toLowerCase();source=externalTextures.get(key)||'';}if(source)promises.push(texImage(source,t._key));});Promise.all(promises).then(()=>{if(promises.length)toast(`${promises.length} textura(s) carregada(s)`);});}
+function geometryCube(e){const from=vec(e.from),to=vec(e.to),inflate=toNum(e.inflate),lo=from.map(v=>v-inflate),hi=to.map(v=>v+inflate);
+// Correct face winding, six faces; UV corners are top-left, top-right, bottom-right, bottom-left.
+const directions={north:{verts:[[0,1,0],[1,1,0],[1,0,0],[0,0,0]],norm:[0,0,-1]},south:{verts:[[1,1,1],[0,1,1],[0,0,1],[1,0,1]],norm:[0,0,1]},east:{verts:[[1,1,0],[1,1,1],[1,0,1],[1,0,0]],norm:[1,0,0]},west:{verts:[[0,1,1],[0,1,0],[0,0,0],[0,0,1]],norm:[-1,0,0]},up:{verts:[[0,1,1],[1,1,1],[1,1,0],[0,1,0]],norm:[0,1,0]},down:{verts:[[0,0,0],[1,0,0],[1,0,1],[0,0,1]],norm:[0,-1,0]}};
+const width=hi[0]-lo[0],height=hi[1]-lo[1],depth=hi[2]-lo[2],off=e.uv_offset||[0,0];
+const boxUV={north:[off[0]+depth,off[1]+depth,off[0]+depth+width,off[1]+depth+height],south:[off[0]+2*depth+width,off[1]+depth,off[0]+2*depth+2*width,off[1]+depth+height],east:[off[0],off[1]+depth,off[0]+depth,off[1]+depth+height],west:[off[0]+depth+width,off[1]+depth,off[0]+2*depth+width,off[1]+depth+height],up:[off[0]+depth,off[1],off[0]+depth+width,off[1]+depth],down:[off[0]+depth+width,off[1],off[0]+depth+2*width,off[1]+depth]};
+const batches=new Map(),edge=[];const axes=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];const corner=p=>p.map((v,i)=>v?hi[i]:lo[i]);const edgePairs=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+for(const pair of edgePairs)for(const n of pair){const p=corner(axes[n]);edge.push(...p,0,0,1,0,0);}
+for(const [side,def] of Object.entries(directions)){
+let face=e.faces?.[side];if(face&&face.enabled===false)continue;if(face?.texture===null)continue;if(e.faces&&!face&&!project.meta?.box_uv)continue;
+let key=textureRef(face?.texture),texEntry=textureEntries.find(t=>t._key===key),tw=toNum(texEntry?.uv_width||project.resolution?.width||16,16),th=toNum(texEntry?.uv_height||project.resolution?.height||16,16);
+let uv=face?.uv||boxUV[side];if(!Array.isArray(uv)||uv.length<4)uv=boxUV[side];let u1=uv[0]/tw,v1=1-uv[1]/th,u2=uv[2]/tw,v2=1-uv[3]/th;
+let uvCoords=[[u1,v1],[u2,v1],[u2,v2],[u1,v2]];let rot=((toNum(face?.rotation)/90)%4+4)%4;uvCoords=uvCoords.map((_,i)=>uvCoords[(i+rot)%4]);if(e.mirror_uv)uvCoords=[uvCoords[1],uvCoords[0],uvCoords[3],uvCoords[2]];
+const tri=[0,1,2,0,2,3],arr=batches.get(key)||[];for(let k of tri){let p=corner(def.verts[k]);arr.push(...p,...def.norm,...uvCoords[k]);}batches.set(key,arr);
+}
+return {batches,edge};}
+function geometryMesh(e){let batches=new Map(),edge=[];const verts=e.vertices||{};const org=vec(e.origin);for(const face of Object.values(e.faces||{})){
+ const ids=face.vertices||[];if(ids.length<3||face.texture===null)continue;let key=textureRef(face.texture),arr=batches.get(key)||[];const pos=id=>vec(verts[id]).map((v,i)=>v+org[i]);let a=pos(ids[0]),b=pos(ids[1]),c=pos(ids[2]),n=norm(cross(sub(b,a),sub(c,a)));let texEntry=textureEntries.find(t=>t._key===key),tw=toNum(texEntry?.uv_width||project.resolution?.width||16,16),th=toNum(texEntry?.uv_height||project.resolution?.height||16,16);
+ for(let i=1;i<ids.length-1;i++)for(let id of [ids[0],ids[i],ids[i+1]]){const p=pos(id),uv=face.uv?.[id]||[0,0];arr.push(...p,...n,toNum(uv[0])/tw,1-toNum(uv[1])/th);}batches.set(key,arr);
+ for(let i=0;i<ids.length;i++)for(let id of [ids[i],ids[(i+1)%ids.length]])edge.push(...pos(id),0,0,1,0,0);
+}return {batches,edge};}
+function makeDrawable(element){let g=element.type==='mesh'?geometryMesh(element):geometryCube(element);const batches=[];for(const [key,data]of g.batches){if(data.length)batches.push({key,buffer:makeBuffer(data)});}let edges=g.edge.length?makeBuffer(g.edge):null;
+let color=element.color;let rgb=Array.isArray(color)?color.map(c=>toNum(c)/255):typeof color==='string'&&color.startsWith('#')?hexRGB(color):[.89,.85,.84];if(rgb.length<3||rgb.some(c=>!Number.isFinite(c)))rgb=[.89,.85,.84];if(typeof color==='number'){const pal=['#d0cbc6','#ab777f','#7e94c7','#a7a8b4','#c49b67','#ac8ab8','#7ca39a','#db8d68'];rgb=hexRGB(pal[((color%pal.length)+pal.length)%pal.length]);}
+const d={uuid:element.uuid||'unknown_'+drawables.length,element,batches,edges,color:rgb,visibility:element.visibility!==false};drawables.push(d);return d;}
+function hexRGB(h){return [1,3,5].map(k=>parseInt(h.slice(k,k+2),16)/255);}
+function construct(j){const groupMap=new Map((j.groups||[]).map(g=>[g.uuid,g])),elementMap=new Map((j.elements||j.cubes||[]).map(e=>[e.uuid,e]));nodes=[];drawables=[];nodeMap.clear();let used=new Set();let uid=0;
+function create(item,parent=null,depth=0){if(depth>80)return null;let raw,g=null,e=null;const id=typeof item==='string'?item:(item?.uuid||'');if(!id)return null;const isGroup=typeof item==='object'&&Array.isArray(item.children);if(isGroup){g=Object.assign({},groupMap.get(id)||{},item);}
+else if(elementMap.has(id)){e=elementMap.get(id);if(used.has(id))return null;used.add(id);}
+else if(groupMap.has(id)){g=groupMap.get(id);}else return null;
+const node={id,type:g?'group':'element',data:g||e,parent,children:[],visible:(g||e).visibility!==false,depth,drawable:null};nodes.push(node);nodeMap.set(id,node);if(parent)parent.children.push(node);
+if(g){let children=(item?.children||g.children||[]);for(const child of children)create(child,node,depth+1);}else if(e.type==='cube'||e.type==='mesh'||!e.type)node.drawable=makeDrawable(e);
+return node;}
+for(const item of j.outliner||[])create(item);for(const e of elementMap.values())if(!used.has(e.uuid))create(e.uuid);return nodes.filter(n=>!n.parent);}
+function elementBounds(e){if(e.type==='mesh'){const p=Object.values(e.vertices||{}).map(v=>vec(v).map((x,i)=>x+vec(e.origin)[i]));if(!p.length)return null;return {min:[0,1,2].map(i=>Math.min(...p.map(v=>v[i]))),max:[0,1,2].map(i=>Math.max(...p.map(v=>v[i])))};}if(!e.from||!e.to)return null;return {min:vec(e.from),max:vec(e.to)};}
+function nodeBounds(n){let bb=n.drawable?elementBounds(n.drawable.element):null;for(const c of n.children){const next=nodeBounds(c);if(!next)continue;if(!bb)bb={min:next.min.slice(),max:next.max.slice()};else for(let i=0;i<3;i++){bb.min[i]=Math.min(bb.min[i],next.min[i]);bb.max[i]=Math.max(bb.max[i],next.max[i]);}}return bb;}
+function explosionTargets(){const roots=nodes.filter(n=>!n.parent);if(roots.length===1&&roots[0].children.length>1)return roots[0].children;return roots;}
+function rebuildExplosionCandidates(){explosionCandidates.clear();const targets=explosionTargets();targets.forEach((n,i)=>explosionCandidates.set(n,{idx:i,total:targets.length}));}
+function explosionShift(n){if(explosionCache.has(n))return explosionCache.get(n).map(v=>v*explode);const candidate=explosionCandidates.get(n),idx=candidate?.idx??-1;if(idx<0||explode===0){if(idx<0)explosionCache.set(n,[0,0,0]);return [0,0,0];}const bb=nodeBounds(n);if(!bb){explosionCache.set(n,[0,0,0]);return [0,0,0];}const center=bb.min.map((v,i)=>(v+bb.max[i])/2),mid=bounds.min.map((v,i)=>(v+bounds.max[i])/2),span=Math.max(4,Math.hypot(...sub(bounds.max,bounds.min)));
+let delta=sub(center,mid),r=Math.hypot(...delta);if(r<span*.035){const phi=2*Math.PI*(idx+.5)/Math.max(3,candidate.total);delta=[Math.cos(phi)*span*.25,span*.10*Math.sin(phi*1.7),Math.sin(phi)*span*.25];r=Math.hypot(...delta);}const factor=explode*(.55+Math.min(r/span,1));const full=delta.map(v=>v*(.55+Math.min(r/span,1))+v/r*span*.045);explosionCache.set(n,full);return full.map(v=>v*explode);}
+function modelBounds(j){let mi=[Infinity,Infinity,Infinity],ma=[-Infinity,-Infinity,-Infinity];for(const e of j.elements||[]){let pts=[];if(e.type==='mesh'){pts=Object.values(e.vertices||{}).map(v=>vec(v).map((x,i)=>x+vec(e.origin)[i]));}else if(e.from&&e.to)pts=[vec(e.from),vec(e.to)];for(const p of pts)for(let i=0;i<3;i++){mi[i]=Math.min(mi[i],p[i]);ma[i]=Math.max(ma[i],p[i]);}}
+if(!Number.isFinite(mi[0]))return {min:[-8,0,-8],max:[8,16,8]};return {min:mi,max:ma};}
+function fit(){target=bounds.min.map((x,i)=>(x+bounds.max[i])/2);let len=Math.hypot(...sub(bounds.max,bounds.min));dist=clamp(Math.max(20,len*1.5),12,6500);yaw=.7;pitch=.27;}
+function modelName(name){return (name||'Projeto sem título').replace(/\.(bbmodel|json)$/i,'');}
+function openModel(j,name='Modelo importado',demo=false){if(!j||typeof j!=='object'||!Array.isArray(j.elements)&&!Array.isArray(j.cubes))throw Error('Este arquivo não contém elementos de um projeto Blockbench.');
+ if((j.elements||j.cubes).length>30000)throw Error('Modelo muito grande (acima de 30.000 peças).');
+ // Releasing GPU buffers when changing model
+ for(const d of drawables){if(gl){for(const b of d.batches)gl.deleteBuffer(b.buffer.buf);if(d.edges)gl.deleteBuffer(d.edges.buf);}}project=j;isolated=null;explode=0;partQuery="";explosionCache.clear();$("#explodeSlider").value=0;$("#explodeValue").textContent="0%";$("#partSearch").value="";currentFileName=modelName(name).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9_-]+/gi,"_")||"modelo";registerTextures(j);construct(j);rebuildExplosionCandidates();anims=Array.isArray(j.animations)?j.animations:[];activeAnim=anims.length?0:-1;play=anims.length>0;animT=0;bounds=modelBounds(j);fit();
+ const title=modelName(demo?j.name:name);$('#modelTitle').textContent=title;$('#modelSubtitle').textContent=demo?'Modelo de demonstração · animação nativa':`${name} · arquivo local`;$('#statParts').textContent=drawables.length;$('#statGroups').textContent=nodes.filter(n=>n.type==='group').length;$('#statAnimations').textContent=anims.length;$('#projectInfo').innerHTML=`<b>Projeto</b>: ${drawables.length} peças • ${nodes.filter(n=>n.type==='group').length} grupos<br><b>Texturas</b>: ${textureEntries.length} • <b>Formato</b>: ${project.meta?.model_format||'livre'}<br><b>Dimensões</b>: ${sub(bounds.max,bounds.min).map(v=>Number(v.toFixed(1))).join(' × ')} unidades`;$('#elementCount').textContent=`${drawables.length} PEÇAS`;$('#modelStatus').textContent=demo?'DEMONSTRAÇÃO':'ARQUIVO CARREGADO';$('#sceneHint').textContent='☝ Arraste para girar · Pinça para aproximar';
+ let selector=$('#animSelect');selector.innerHTML='';if(!anims.length){let o=document.createElement('option');o.textContent='Nenhuma animação';selector.append(o);}else anims.forEach((a,i)=>{let o=document.createElement('option');o.value=i;o.textContent=a.name||`Animação ${i+1}`;selector.append(o);});selector.disabled=!anims.length;$('#playBtn').disabled=!anims.length;$('#playBtn').textContent=play?'Ⅱ':'▶';updateAnimationInfo();fillParts();$$('.demo-card').forEach(b=>b.classList.remove('active'));if(demo)$('#'+(name==='grimorio'?'demoBook':'demoArm')).classList.add('active');
+ if(!demo)toast(`Modelo aberto: ${title}`);}
+function formatTime(s){const hundredths=Math.round(Math.max(0,toNum(s))*100),minutes=Math.floor(hundredths/6000),seconds=Math.floor(hundredths/100)%60,dec=hundredths%100;return `${minutes}:${String(seconds).padStart(2,'0')}.${String(dec).padStart(2,'0')}`;}
+function updateAnimationInfo(){const anim=anims[activeAnim];$('#timeEnd').textContent=formatTime(toNum(anim?.length));$('#timeCurrent').textContent=formatTime(animT);$('#animationInfo').textContent=anim?`${anim.name||'Sem nome'} · ${Math.round(toNum(anim.length,0)*20)} quadros estimados`:'Este arquivo não contém animações.';$('#fpsTag').textContent=`${anim?.snapping||20} FPS`;let kfs=anim?Object.values(anim.animators||{}).flatMap(a=>a.keyframes||[]):[];
+let complex=kfs.some(k=>k.interpolation==='bezier'||k.interpolation==='catmullrom'||k.data_points?.some(p=>Object.values(p).some(v=>typeof v==='string'&&!/^-?\d+(\.\d+)?$/.test(v))));$('#animationWarning').classList.toggle('hidden',!complex);$('#animationWarning').textContent='Prévia aproximada: curvas complexas e expressões podem diferir do Blockbench.';}
+function sampleKeys(keys,t,channel){if(!keys.length)return channel==='scale'?[1,1,1]:[0,0,0];keys=keys.slice().sort((a,b)=>a.time-b.time);let a=keys[0],b=keys[keys.length-1];if(t<=toNum(a.time))return keyVal(a,channel);if(t>=toNum(b.time))return keyVal(b,channel);for(let i=0;i<keys.length-1;i++){if(t>=toNum(keys[i].time)&&t<=toNum(keys[i+1].time)){a=keys[i];b=keys[i+1];break;}}let v1=keyVal(a,channel,true),v2=keyVal(b,channel,false),s=clamp((t-toNum(a.time))/(toNum(b.time)-toNum(a.time)||1),0,1);if(a.interpolation==='step')s=0;else if(a.interpolation==='catmullrom')s=s*s*(3-2*s);return v1.map((v,i)=>v+(v2[i]-v)*s);}
+function keyVal(k,ch,isOut=false){const vals=k.data_points||[];const pt=isOut?vals[0]||{}:vals[vals.length-1]||{};let def=ch==='scale'?1:0;let result=['x','y','z'].map(k=>toNum(pt[k],def));const old=parseFloat(project?.meta?.format_version||'5')<5;if(old){if(ch==='position')result[0]*=-1;if(ch==='rotation'){result[0]*=-1;result[1]*=-1;}}return result;}
+function sampleAnim(node){let anim=anims[activeAnim];if(!anim||node.type!=='group')return null;let animator=anim.animators?.[node.id];if(!animator)return null;let channels={};for(const channel of ['rotation','position','scale']){const kfs=(animator.keyframes||[]).filter(k=>k.channel===channel);if(kfs.length)channels[channel]=sampleKeys(kfs,animT,channel);}return channels;}
+function visibleNode(n){if(!n.visible||!n.data||n.data.export===false)return false;let p=n.parent;while(p){if(!p.visible)return false;p=p.parent;}if(isolated&&!isChildOrSelf(n,isolated))return false;return true;}
+function isChildOrSelf(n,ancestor){while(n){if(n===ancestor)return true;n=n.parent;}return false;}
+function makeModelMatrices(){const result=[];function walk(n,parentM){if(!visibleNode(n))return;const data=n.data,origin=vec(data.origin);let anim=sampleAnim(n),angle=vec(data.rotation);if(anim?.rotation)angle=angle.map((v,i)=>v+anim.rotation[i]);const offset=anim?.position||[0,0,0],size=anim?.scale||[1,1,1];let m=mul(parentM,composePivot(origin,angle,offset,size));if(explode>0){const shift=explosionShift(n);if(shift.some(v=>v!==0))m=mul(trans(...shift),m);}if(n.drawable)result.push({drawable:n.drawable,model:m});for(const child of n.children)walk(child,m);}
+for(const node of nodes.filter(n=>!n.parent))walk(node,I());return result;}
+function gridBuffer(){let data=[],y=bounds.min[1]-0.06,span=Math.max(...sub(bounds.max,bounds.min),16),h=Math.ceil(span/16)*16,dx=Math.floor(target[0]/8)*8,dz=Math.floor(target[2]/8)*8;let step=h>100?Math.ceil(h/100)*8:4;for(let i=-h;i<=h;i+=step){for(const p of [[dx+i,y,dz-h],[dx+i,y,dz+h],[dx-h,y,dz+i],[dx+h,y,dz+i]])data.push(...p,0,1,0,0,0);}return makeBuffer(data);}
+let glGrid=null;function render(){if(ctx2d){renderCanvas();return;}if(!gl)return;const rect=canvas.getBoundingClientRect(),pixelRatio=Math.min(devicePixelRatio||1,2),w=Math.round(rect.width*pixelRatio),h=Math.round(rect.height*pixelRatio);if(w!==canvas.width||h!==canvas.height){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);}gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);if(!w||!h)return;
+const cameraDist=dist*(1+explode*.85),eye=[target[0]+cameraDist*Math.cos(pitch)*Math.sin(yaw),target[1]+cameraDist*Math.sin(pitch),target[2]+cameraDist*Math.cos(pitch)*Math.cos(yaw)];const vp=mul(perspective(Math.PI/4,w/h,.05,20000),lookAt(eye,target));gl.useProgram(program);const draws=makeModelMatrices();
+if(grid){if(!glGrid)glGrid=gridBuffer();gl.disable(gl.CULL_FACE);gl.uniformMatrix4fv(uMVP,false,vp);gl.uniformMatrix4fv(uModel,false,I());gl.uniform4f(uColor,.26,.26,.34,.39);gl.uniform1f(uUseTexture,0);gl.bindTexture(gl.TEXTURE_2D,whiteTexture);bindBuffer(glGrid);gl.drawArrays(gl.LINES,0,glGrid.count);}
+for(const entry of draws){const d=entry.drawable,model=entry.model;gl.uniformMatrix4fv(uModel,false,model);gl.uniformMatrix4fv(uMVP,false,mul(vp,model));gl.uniform4f(uColor,...d.color,1);for(const batch of d.batches){const tex=textureMap.get(batch.key);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex?.texture||whiteTexture);gl.uniform1f(uUseTexture,tex?1:0);bindBuffer(batch.buffer);gl.drawArrays(gl.TRIANGLES,0,batch.buffer.count);}if(wire&&d.edges){gl.uniform1f(uUseTexture,0);gl.uniform4f(uColor,.19,.12,.23,.68);bindBuffer(d.edges);gl.drawArrays(gl.LINES,0,d.edges.count);}}
+}
+function renderCanvas(){
+const rect=canvas.getBoundingClientRect(),ratio=Math.min(devicePixelRatio||1,2),w=Math.max(1,Math.round(rect.width*ratio)),h=Math.max(1,Math.round(rect.height*ratio));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}const ctx=ctx2d;ctx.clearRect(0,0,w,h);
+const cameraDist=dist*(1+explode*.85),eye=[target[0]+cameraDist*Math.cos(pitch)*Math.sin(yaw),target[1]+cameraDist*Math.sin(pitch),target[2]+cameraDist*Math.cos(pitch)*Math.cos(yaw)];const vp=mul(perspective(Math.PI/4,w/h,.05,20000),lookAt(eye,target));
+const projectPoint=(mat,x,y,z)=>{const cw=mat[3]*x+mat[7]*y+mat[11]*z+mat[15];if(cw<=.05)return null;return {x:(.5+(mat[0]*x+mat[4]*y+mat[8]*z+mat[12])/cw*.5)*w,y:(.5-(mat[1]*x+mat[5]*y+mat[9]*z+mat[13])/cw*.5)*h,z:(mat[2]*x+mat[6]*y+mat[10]*z+mat[14])/cw,w:cw};};
+if(grid){let extent=Math.max(...sub(bounds.max,bounds.min),16),g=Math.ceil(extent/16)*16,step=g>100?Math.ceil(g/100)*8:4,y=bounds.min[1]-.06,cx=Math.floor(target[0]/8)*8,cz=Math.floor(target[2]/8)*8;ctx.strokeStyle='rgba(98,93,121,.22)';ctx.lineWidth=ratio;ctx.beginPath();for(let i=-g;i<=g;i+=step){for(let [a,b] of [[[cx+i,y,cz-g],[cx+i,y,cz+g]],[[cx-g,y,cz+i],[cx+g,y,cz+i]]]){let p=projectPoint(vp,...a),q=projectPoint(vp,...b);if(p&&q){ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);}}}ctx.stroke();}
+let triangles=[],edges=[];for(const entry of makeModelMatrices()){
+ const d=entry.drawable,m=entry.model,mvp=mul(vp,m);for(const batch of d.batches){let arr=batch.buffer.raw,tex=textureMap.get(batch.key);for(let i=0;i<arr.length;i+=24){let v=[],normals=[];for(let k=0;k<3;k++){let offset=i+k*8,p=projectPoint(mvp,...arr.slice(offset,offset+3));if(!p)break;p.uv=[arr[offset+6],arr[offset+7]];v.push(p);normals.push(arr.slice(offset+3,offset+6));}if(v.length!==3)continue;
+ const a=v[0],b=v[1],c=v[2];let area=(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);if(Math.abs(area)<.01)continue;
+ let n=normals[0];const nx=m[0]*n[0]+m[4]*n[1]+m[8]*n[2],ny=m[1]*n[0]+m[5]*n[1]+m[9]*n[2],nz=m[2]*n[0]+m[6]*n[1]+m[10]*n[2];const shade=.64+.36*Math.max(0,dot(norm([nx,ny,nz]),norm([-.5,1,.65])));
+ triangles.push({v,depth:(a.w+b.w+c.w)/3,color:d.color,shade,tex});}}
+ if(wire&&d.edges){const raw=d.edges.raw;for(let i=0;i<raw.length;i+=16){const a=projectPoint(mvp,...raw.slice(i,i+3)),b=projectPoint(mvp,...raw.slice(i+8,i+11));if(a&&b)edges.push([a,b]);}}
+}
+triangles.sort((a,b)=>b.depth-a.depth);for(const t of triangles){const v=t.v;ctx.beginPath();ctx.moveTo(v[0].x,v[0].y);ctx.lineTo(v[1].x,v[1].y);ctx.lineTo(v[2].x,v[2].y);ctx.closePath();let color=t.color.map(c=>Math.round(clamp(c*t.shade,0,1)*255));ctx.fillStyle=`rgb(${color.join(',')})`;ctx.fill();
+if(t.tex?.image){const im=t.tex.image,uv=v.map(p=>[p.uv[0]*im.width,(1-p.uv[1])*im.height]);const den=uv[0][0]*(uv[1][1]-uv[2][1])+uv[1][0]*(uv[2][1]-uv[0][1])+uv[2][0]*(uv[0][1]-uv[1][1]);if(Math.abs(den)>0.001){const a=(v[0].x*(uv[1][1]-uv[2][1])+v[1].x*(uv[2][1]-uv[0][1])+v[2].x*(uv[0][1]-uv[1][1]))/den,b=(v[0].y*(uv[1][1]-uv[2][1])+v[1].y*(uv[2][1]-uv[0][1])+v[2].y*(uv[0][1]-uv[1][1]))/den,c=(v[0].x*(uv[2][0]-uv[1][0])+v[1].x*(uv[0][0]-uv[2][0])+v[2].x*(uv[1][0]-uv[0][0]))/den,d=(v[0].y*(uv[2][0]-uv[1][0])+v[1].y*(uv[0][0]-uv[2][0])+v[2].y*(uv[1][0]-uv[0][0]))/den,e=v[0].x-a*uv[0][0]-c*uv[0][1],f=v[0].y-b*uv[0][0]-d*uv[0][1];ctx.save();ctx.clip();ctx.transform(a,b,c,d,e,f);ctx.drawImage(im,0,0);ctx.restore();ctx.fillStyle=`rgba(0,0,0,${(1-t.shade)*.7})`;ctx.fill();}}}
+if(wire){ctx.strokeStyle='rgba(21,15,25,.65)';ctx.lineWidth=ratio*.75;ctx.beginPath();for(const [a,b] of edges){ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);}ctx.stroke();}
+}
+// GIF89a encoder offline (256-color RGB 3-3-2 palette, GIF-LZW compression).
+// Designed for low-memory incremental frame creation on Android.
+class PortGIFEncoder {
+  constructor(width,height,repeat=true) {
+    this.width=width; this.height=height;
+    this.parts=[];
+    const header=[...this._ascii('GIF89a'),...this._word(width),...this._word(height),0xf7,0,0];
+    // 256-color global color table: 3-bit red, 3-bit green, 2-bit blue.
+    for(let i=0;i<256;i++)header.push(Math.round(((i>>5)&7)*255/7),Math.round(((i>>2)&7)*255/7),Math.round((i&3)*255/3));
+    this.parts.push(Uint8Array.from(header));
+    if(repeat)this.parts.push(Uint8Array.from([0x21,0xff,11,...this._ascii('NETSCAPE2.0'),3,1,0,0,0]));
+  }
+  _ascii(s){return [...s].map(c=>c.charCodeAt(0));}
+  _word(n){return [n&255,(n>>8)&255];}
+  _lzw(pixels){
+    const CLEAR=256,END=257,MAX=4096;
+    let size=9,next=258,dict=new Map(),acc=0,used=0;
+    const compressed=[];
+    const emit=code=>{acc|=code<<used; used+=size;while(used>=8){compressed.push(acc&255);acc>>>=8;used-=8;}};
+    emit(CLEAR);
+    if(pixels.length){
+      let prefix=pixels[0];
+      for(let i=1;i<pixels.length;i++){
+        const value=pixels[i],key=(prefix<<8)|value,found=dict.get(key);
+        if(found!==undefined){prefix=found;continue;}
+        emit(prefix);
+        if(next<MAX){dict.set(key,next++);if(next>(1<<size)&&size<12)size++;}
+        else {emit(CLEAR);dict=new Map();next=258;size=9;}
+        prefix=value;
+      }
+      emit(prefix);
+    }
+    emit(END);
+    if(used)compressed.push(acc&255);
+    const blocks=[];
+    for(let offset=0;offset<compressed.length;offset+=255){const chunk=compressed.slice(offset,offset+255);blocks.push(chunk.length,...chunk);}
+    blocks.push(0);
+    return Uint8Array.from([8,...blocks]);
+  }
+  addFrame(rgba,delay){
+    const w=this.width,h=this.height;if(rgba.length!==w*h*4)throw Error('Frame incompatível');
+    const pixels=new Uint8Array(w*h);
+    for(let i=0,p=0;i<pixels.length;i++,p+=4){
+      pixels[i]=(rgba[p]&0xe0)|((rgba[p+1]&0xe0)>>3)|(rgba[p+2]>>6);
+    }
+    const ds=Math.max(2,Math.min(65535,Math.round(delay)));
+    this.parts.push(Uint8Array.from([0x21,0xf9,4,0x08,ds&255,ds>>8,0,0,0x2c,0,0,0,0,...this._word(w),...this._word(h),0]));
+    this.parts.push(this._lzw(pixels));
+  }
+  finish(){this.parts.push(Uint8Array.of(0x3b));return new Blob(this.parts,{type:'image/gif'});}
+}
+
+
+// Export deterministically: each GIF frame is sampled at a fixed animation time.
+function gifFileName(){const safe=s=>(s||'animacao').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,70)||'animacao';return `PortVoxel_${safe(currentFileName)}_${safe(anims[activeAnim]?.name)}.gif`;}
+function setGifProgress(value,label){$('#gifProgressArea').classList.remove('hidden');$('#gifProgressBar').style.width=Math.min(100,Math.max(0,Math.round(value)))+'%';$('#gifProgressCount').textContent=Math.round(value)+'%';$('#gifProgressLabel').textContent=label;}
+function nextUIFrame(){return new Promise(resolve=>requestAnimationFrame(()=>resolve()));}
+function framePixels(ctx,w,h){
+  // O canvas 3D tem alfa; compomos um fundo sólido para GIF (que não tem alfa parcial).
+  const gradient=ctx.createLinearGradient(0,0,w,h);
+  gradient.addColorStop(0,'#212033');gradient.addColorStop(1,'#090c17');
+  ctx.fillStyle=gradient;ctx.fillRect(0,0,w,h);
+  const sourceW=canvas.width,sourceH=canvas.height;
+  const ratio=Math.min(w/sourceW,h/sourceH),dw=sourceW*ratio,dh=sourceH*ratio;
+  ctx.drawImage(canvas,0,0,sourceW,sourceH,(w-dw)/2,(h-dh)/2,dw,dh);
+  return ctx.getImageData(0,0,w,h).data;
+}
+async function saveGIF(){
+  if(exportInProgress)return;
+  const a=anims[activeAnim],duration=toNum(a?.length),fps=toNum($('#gifFps').value),size=toNum($('#gifResolution').value);
+  if(!a||duration<=0){toast('Escolha uma animação válida antes de exportar o GIF.');return;}
+  if(![256,384,512].includes(size)||![8,12,20].includes(fps)){toast('Configuração de GIF inválida.');return;}
+  const frames=Math.max(1,Math.round(duration*fps));
+  if(frames>240){toast('Animação longa demais para GIF. Diminua o FPS (máximo de 240 quadros).');return;}
+  const previousT=animT,previousPlay=play,previousSpin=spin;
+  let exportSucceeded=false;
+  exportInProgress=true;gifCancelRequested=false;play=false;spin=false;
+  $('#gifViewportShield').classList.remove('hidden');
+  $('#cancelGifBtn').classList.remove('hidden');
+  $('#exportGifBtn').disabled=true;$('#gifResolution').disabled=true;$('#gifFps').disabled=true;
+  for(const id of ['animSelect','playBtn','prevKeyBtn','nextKeyBtn','backBtn','nextBtn','timeline','demoArm','demoBook','importBtn'])$('#'+id).disabled=true;
+  const out=document.createElement('canvas');out.width=size;out.height=size;
+  const context=out.getContext('2d',{willReadFrequently:true});
+  if(!context){exportInProgress=false;play=previousPlay;spin=previousSpin;toast('Não foi possível iniciar o exportador GIF.');return;}
+  const encoder=new PortGIFEncoder(size,size,$('#gifLoop').checked);
+  try{
+    setGifProgress(0,'Preparando GIF…');await nextUIFrame();
+    for(let i=0;i<frames;i++){
+      if(gifCancelRequested)throw Error('Exportação cancelada');
+      // Preserve endpoints for a seamless cycle: time in [0, duration).
+      animT=i/fps;
+      render();
+      const pixels=framePixels(context,size,size);
+      const delay=Math.round((i+1)*100/fps)-Math.round(i*100/fps);
+      encoder.addFrame(pixels,delay);
+      setGifProgress((i+1)/frames*94,`Criando quadro ${i+1} de ${frames}`);
+      if(i%2===0||i===frames-1)await nextUIFrame();
+    }
+    if(gifCancelRequested)throw Error('Exportação cancelada');
+    setGifProgress(97,'Finalizando GIF…');await nextUIFrame();
+    const blob=encoder.finish();
+    if(blob.size>28*1024*1024)throw Error('GIF muito grande. Use 256 px ou reduza o FPS.');
+    const name=gifFileName();
+    if(window.PortAndroid?.saveGIF){
+      // O WebView salva pelo seletor de documentos do Android.
+      const base64=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(Error('Falha ao ler GIF'));r.readAsDataURL(blob);});
+      window.PortAndroid.saveGIF(base64,name);
+      toast('Escolha a pasta para salvar o GIF.');
+    }else{
+      const url=URL.createObjectURL(blob),link=document.createElement('a');
+      link.href=url;link.download=name;document.body.append(link);link.click();link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),60000);
+      toast('GIF gerado. Verifique seus downloads.');
+    }
+    setGifProgress(100,`GIF pronto · ${(blob.size/1024/1024).toFixed(1)} MB`);exportSucceeded=true;
+    $('#cancelGifBtn').classList.add('hidden');
+  }catch(e){
+    console.error(e);toast(e.message==='Exportação cancelada'?'Exportação cancelada.':'Falha ao exportar GIF: '+e.message);
+    $('#gifProgressArea').classList.add('hidden');
+  }finally{
+    animT=previousT;play=previousPlay;spin=previousSpin;exportInProgress=false;
+    $('#exportGifBtn').disabled=false;$('#gifResolution').disabled=false;$('#gifFps').disabled=false;
+    $('#gifViewportShield').classList.add('hidden');
+    for(const id of ['animSelect','playBtn','prevKeyBtn','nextKeyBtn','backBtn','nextBtn','timeline','demoArm','demoBook','importBtn'])$('#'+id).disabled=false;
+    $('#cancelGifBtn').classList.toggle('hidden',exportSucceeded);
+    render();
+  }
+}
+$('#exportGifBtn').onclick=saveGIF;
+$('#cancelGifBtn').onclick=()=>{gifCancelRequested=true;$('#gifProgressLabel').textContent='Cancelando…';};
+
+function update(now){const dt=Math.min(.07,Math.max(0,(now-lastFrame)/1000));lastFrame=now;if(!exportInProgress&&spin&&!isDragging)yaw+=dt*.3;if(!exportInProgress&&play&&activeAnim!==-1){const a=anims[activeAnim],len=toNum(a.length);if(len>0){animT+=dt*speed;if(animT>len){if(loop||a.loop==='loop'){animT%=len;}else{animT=len;play=false;$('#playBtn').textContent='▶';}}}}const a=anims[activeAnim];$('#timeCurrent').textContent=formatTime(animT);$('#timeline').value=a&&a.length?Math.round(animT/a.length*1000):0;if(!exportInProgress)render();requestAnimationFrame(update);}
+function fillParts(){const tree=$('#partsTree');tree.replaceChildren();const roots=nodes.filter(n=>!n.parent);if(!nodes.length){tree.textContent='Nenhuma peça identificada.';return;}
+const q=partQuery.trim().toLocaleLowerCase('pt-BR');let shown=0;
+function matches(n){return !q||(n.data.name||n.id||'').toLocaleLowerCase('pt-BR').includes(q)||n.children.some(matches);}
+function make(n){if(!matches(n))return;shown++;const row=document.createElement('div');row.className='part-item'+(q&&(n.data.name||n.id).toLocaleLowerCase('pt-BR').includes(q)?' match':'');row.style.paddingLeft=`${Math.min(n.depth,8)*11}px`;
+const kind=document.createElement('span');kind.className='kind';kind.textContent=n.type==='group'?'▤':'▪';const name=document.createElement('button');name.className='part-name'+(isolated===n?' isolated':'');name.textContent=n.data.name||n.id.slice(0,13);name.title='Isolar esta peça ou grupo';name.onclick=()=>{isolated=isolated===n?null:n;fillParts();};const eye=document.createElement('button');eye.className='eye-btn'+(n.visible?'':' hidden-part');eye.textContent=n.visible?'◉':'○';eye.setAttribute('aria-label',`Alternar visibilidade de ${n.data.name||n.id}`);eye.onclick=()=>{n.visible=!n.visible;fillParts();};row.append(kind,name,eye);tree.append(row);for(const child of n.children)make(child);}for(const root of roots)make(root);
+$('#partsFilterCount').textContent=q?`${shown} resultado(s) na hierarquia`:`${nodes.length} peças e grupos · toque para isolar`;
+if(!shown){const empty=document.createElement('div');empty.className='list-help';empty.textContent='Nenhuma peça com esse nome.';tree.append(empty);}}
+async function fileLoad(file){if(!file)return;try{if(file.size>65*1024*1024)throw Error('Arquivo maior que 65 MB.');const text=await file.text(),j=JSON.parse(text.replace(/^\uFEFF/,''));openModel(j,file.name,false);}catch(e){toast(`Não foi possível abrir: ${e.message}`);console.error(e);}}
+function toast(message){const box=$('#toast');box.textContent=message;box.classList.remove('hidden');clearTimeout(toast._timer);toast._timer=setTimeout(()=>box.classList.add('hidden'),4000);}
+function selectTab(tab){$$('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));for(const name of ['animations','parts','settings'])$('#'+name+'Tab').classList.toggle('hidden',name!==tab);}
+function setView(name){yaw={iso:.7,front:0,side:Math.PI/2,top:0}[name];pitch=name==='top'?1.54:name==='iso'?.27:0;$$('.view-btn').forEach(b=>b.classList.toggle('selected',b.dataset.view===name));}
+// Pointer events support touch, two-finger pinch and desktop drag without libraries.
+let pointers=new Map(),startDistance=0;canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});isDragging=true;startDistance=0;});
+canvas.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;const prev=pointers.get(e.pointerId);if(pointers.size===1){yaw+=(e.clientX-prev.x)*.009;pitch=clamp(pitch+(e.clientY-prev.y)*.009,-1.54,1.54);}else{const arr=[...pointers.entries()],other=arr.find(([id])=>id!==e.pointerId)?.[1];if(other){const oldLen=Math.hypot(prev.x-other.x,prev.y-other.y),newLen=Math.hypot(e.clientX-other.x,e.clientY-other.y);if(oldLen>5&&newLen>5)dist=clamp(dist*oldLen/newLen,3,10000);}}pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});});
+function release(e){pointers.delete(e.pointerId);isDragging=pointers.size>0;}canvas.addEventListener('pointerup',release);canvas.addEventListener('pointercancel',release);canvas.addEventListener('wheel',e=>{e.preventDefault();dist=clamp(dist*Math.exp(e.deltaY*.0012),3,10000);},{passive:false});
+function imageFileName(){return `PortVoxel_${currentFileName}_${new Date().toISOString().slice(0,10)}.png`;}
+function saveScreenshot(){try{render();const exportCanvas=document.createElement('canvas'),w=canvas.width,h=canvas.height;exportCanvas.width=w;exportCanvas.height=h;const ctx=exportCanvas.getContext('2d');const bg=ctx.createLinearGradient(0,0,w,h);bg.addColorStop(0,'#191b2b');bg.addColorStop(1,'#080b15');ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);ctx.drawImage(canvas,0,0);ctx.fillStyle='rgba(12,14,23,.75)';ctx.fillRect(0,h-Math.min(70,h*.13),w,Math.min(70,h*.13));ctx.fillStyle='#f3cc8b';ctx.font=`bold ${Math.max(12,Math.round(w/50))}px sans-serif`;ctx.fillText('PORT / VOXEL',Math.max(12,w*.03),h-Math.max(12,w*.026));const data=exportCanvas.toDataURL('image/png');const name=imageFileName();if(window.PortAndroid?.savePNG){window.PortAndroid.savePNG(data,name);toast('Escolha onde salvar a imagem PNG.');}else{const a=document.createElement('a');a.download=name;a.href=data;document.body.append(a);a.click();a.remove();toast('Imagem PNG gerada.');}}
+catch(err){console.error(err);toast('Não foi possível salvar a imagem: '+err.message);}}
+$('#captureBtn').onclick=saveScreenshot;
+$('#focusBtn').onclick=()=>{const enabled=$('#app').classList.toggle('viewer-focus');$('#focusBtn').title=enabled?'Sair da visualização ampliada':'Ampliar visualização';};
+function jumpKeyframe(direction){const a=anims[activeAnim];if(!a)return;let times=[0,...Object.values(a.animators||{}).flatMap(v=>(v.keyframes||[]).map(k=>toNum(k.time))),toNum(a.length)];times=[...new Set(times)].sort((x,y)=>x-y);const v=direction<0?times.filter(x=>x<animT-.012).at(-1):times.find(x=>x>animT+.012);if(v!==undefined){animT=v;play=false;$('#playBtn').textContent='▶';}}
+$('#prevKeyBtn').onclick=()=>jumpKeyframe(-1);$('#nextKeyBtn').onclick=()=>jumpKeyframe(1);
+$('#importBtn').onclick=()=>$('#fileInput').click();$('#fileInput').onchange=e=>fileLoad(e.target.files?.[0]);
+const dragArea=viewport;dragArea.addEventListener('dragover',e=>{e.preventDefault();$('#dropNotice').classList.remove('hidden');});dragArea.addEventListener('dragleave',()=>$('#dropNotice').classList.add('hidden'));dragArea.addEventListener('drop',e=>{e.preventDefault();$('#dropNotice').classList.add('hidden');fileLoad(e.dataTransfer.files?.[0]);});
+$$('.tab').forEach(b=>b.onclick=()=>selectTab(b.dataset.tab));$$('.view-btn').forEach(b=>b.onclick=()=>setView(b.dataset.view));$('#fitBtn').onclick=$('#resetCamBtn').onclick=fit;
+function toggleGrid(v){grid=v;$('#gridBtn').classList.toggle('active',grid);$('#gridCheck').checked=grid;}function toggleWire(v){wire=v;$('#wireBtn').classList.toggle('active',wire);$('#wireCheck').checked=wire;}
+$('#gridBtn').onclick=()=>toggleGrid(!grid);$('#gridCheck').onchange=e=>toggleGrid(e.target.checked);$('#wireBtn').onclick=()=>toggleWire(!wire);$('#wireCheck').onchange=e=>toggleWire(e.target.checked);$('#autoSpin').onchange=e=>spin=e.target.checked;
+$('#animSelect').onchange=e=>{activeAnim=toNum(e.target.value,0);animT=0;play=true;$('#playBtn').textContent='Ⅱ';updateAnimationInfo();};$('#playBtn').onclick=()=>{if(activeAnim===-1)return;play=!play;$('#playBtn').textContent=play?'Ⅱ':'▶';};$('#backBtn').onclick=()=>{animT=0;};$('#nextBtn').onclick=()=>{if(!anims.length)return;activeAnim=(activeAnim+1)%anims.length;$('#animSelect').value=activeAnim;animT=0;play=true;$('#playBtn').textContent='Ⅱ';updateAnimationInfo();};$('#timeline').oninput=e=>{animT=toNum(e.target.value)/1000*toNum(anims[activeAnim]?.length);};$$('[data-speed]').forEach(b=>b.onclick=()=>{speed=toNum(b.dataset.speed,1);$$('[data-speed]').forEach(x=>x.classList.toggle('active',x===b));});$('#loopCheck').onchange=e=>loop=e.target.checked;$('#showAllBtn').onclick=()=>{nodes.forEach(n=>n.visible=true);isolated=null;fillParts();};$('#partSearch').oninput=e=>{partQuery=e.target.value;fillParts();};$('#explodeSlider').oninput=e=>{explode=toNum(e.target.value)/100;$('#explodeValue').textContent=Math.round(explode*100)+'%';};$('#resetExplodeBtn').onclick=()=>{explode=0;$('#explodeSlider').value=0;$('#explodeValue').textContent='0%';};
+$('#texturesBtn').onclick=()=>$('#texturesInput').click();$('#texturesInput').onchange=async e=>{const files=[...e.target.files||[]];for(const f of files){const url=await new Promise(resolve=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.readAsDataURL(f);});externalTextures.set(f.name.toLowerCase(),url);}if(project){registerTextures(project);toast(`${files.length} arquivo(s) de textura selecionado(s)`);}};
+$('#helpBtn').onclick=()=>$('#helpModal').classList.remove('hidden');$('#closeHelp').onclick=$('#helpOk').onclick=()=>$('#helpModal').classList.add('hidden');$('#helpModal').addEventListener('click',e=>{if(e.target===$('#helpModal'))$('#helpModal').classList.add('hidden');});
+// Two self-contained example projects intentionally use the same native .bbmodel schema as uploaded models.
+function demoCube(name,uuid,from,to,color,extra={}){return {name,uuid,type:'cube',from,to,origin:[0,0,0],rotation:[0,0,0],color,faces:Object.fromEntries(['north','south','east','west','up','down'].map(f=>[f,{uv:[0,0,4,4],texture:null===extra.hiddenTexture?null:undefined}])),...extra};}
+function demoAnim(name,len,entries,loop='loop'){let animators={};for(const [groupId,channel,positions]of entries){let a=animators[groupId]||{name:groupId,type:'bone',keyframes:[]};a.keyframes.push(...positions.map(([time,x,y,z])=>({channel,time,interpolation:'linear',data_points:[{x,y,z}]})));animators[groupId]=a;}return {name,length:len,loop,snapping:20,animators};}
+function demoArm(){const colors={dark:'#343947',mid:'#6d6576',gold:'#e2ae62',trim:'#b77365',ghost:'#91dec9',wrist:'#d1a77b'};let elems=[],groups=[];
+const add=(n,id,a,b,color,group)=>{elems.push(demoCube(n,id,a,b,color));group.children.push(id);};
+const core={uuid:'core',name:'Braço / Estrutura',origin:[0,0,0],rotation:[0,0,0],children:[]};groups.push(core);
+add('Estrutura interna','body',[-3,1,-3],[3,16,3],colors.dark,core);add('Núcleo arcano','soul',[-1.8,2,-1.8],[1.8,15,1.8],colors.ghost,core);add('Pulsos dourados','pulse1',[-2.2,9,-3.2],[2.2,10,-3],colors.gold,core);add('Pulsos dourados traseiros','pulse2',[-2.2,9,3],[2.2,10,3.2],colors.gold,core);
+const names=['Placa frontal','Placa traseira','Placa esquerda','Placa direita'];for(let i=0;i<4;i++){let g={uuid:'plate'+i,name:names[i],origin:[0,10,0],rotation:[0,0,0],children:[]};groups.push(g);let boxes=[[[-3,9,-3.7],[3,16,-2.8]],[[-3,9,2.8],[3,16,3.7]],[[-3.7,9,-2.7],[-2.7,16,2.7]],[[2.7,9,-2.7],[3.7,16,2.7]]];add(names[i],'p'+i,boxes[i][0],boxes[i][1],i===0?colors.gold:colors.mid,g);add('Selo '+i,'s'+i,[boxes[i][0][0]+.25,13,boxes[i][0][2]+.1],[boxes[i][1][0]-.25,14.1,boxes[i][1][2]-.1],colors.trim,g);}
+const hand={uuid:'hand',name:'Punho articulado',origin:[0,2,0],rotation:[0,0,0],children:[]};groups.push(hand);add('Munhequeira','wrist',[-3,0,-3],[3,3,3],colors.gold,hand);for(let i=0;i<4;i++){let x=-2.8+i*1.45;add('Dedo '+(i+1),'f'+i,[x,-4,-1.4],[x+1.2,0,1.2],colors.mid,hand);add('Falange dourada '+i,'fp'+i,[x,-4,-1.5],[x+1.2,-3.5,1.3],colors.gold,hand);}
+ const animations=[demoAnim('Desdobramento de Placas',2,[['plate0','position',[[0,0,0,0],[.75,0,1,-5],[1.25,0,1,-5],[2,0,0,0]]],['plate1','position',[[0,0,0,0],[.75,0,1,5],[1.25,0,1,5],[2,0,0,0]]],['plate2','position',[[0,0,0,0],[.75,-5,1,0],[1.25,-5,1,0],[2,0,0,0]]],['plate3','position',[[0,0,0,0],[.75,5,1,0],[1.25,5,1,0],[2,0,0,0]]]],'loop'),demoAnim('Conjuração Arcana',2,[['hand','rotation',[[0,0,0,0],[.55,0,0,0],[1,0,0,-38],[1.5,0,0,-38],[2,0,0,0]]],['hand','position',[[0,0,0,0],[1,0,2,0],[2,0,0,0]]]],'loop')];
+return {name:'Braço Arcano',meta:{format_version:'5.0',model_format:'free',box_uv:true},resolution:{width:16,height:16},elements:elems,groups,outliner:[{uuid:'core',children:core.children},...groups.slice(1).map(g=>({uuid:g.uuid,children:g.children}))],animations,textures:[]};}
+function demoGrimoire(){let elems=[],groups=[];const book={uuid:'book',name:'Encadernação',origin:[0,0,0],children:[]},left={uuid:'left',name:'Capa esquerda',origin:[0,0,0],children:[]},right={uuid:'right',name:'Capa direita',origin:[0,0,0],children:[]},pages=[];groups=[book,left,right];const add=(name,id,a,b,col,g)=>{elems.push(demoCube(name,id,a,b,col));g.children.push(id);};
+add('Lombo encantado','spine',[-1,-1,-7],[1,1,7],'#b88c59',book);add('Capa esquerda','leftcover',[-10,-.8,-7],[-1,.1,7],'#60354b',left);add('Filigrana esquerda','lfil',[-9,.1,-6],[-2,.3,6],'#d9aa64',left);add('Capa direita','rightcover',[1,-.8,-7],[10,.1,7],'#60354b',right);add('Filigrana direita','rfil',[2,.1,-6],[9,.3,6],'#d9aa64',right);
+for(let i=0;i<8;i++){const g={uuid:'page'+i,name:'Folha '+(i+1),origin:[0,0,0],children:[]};groups.push(g);pages.push(g);let h=.1+i*.115;add('Papel '+(i+1),'sheet'+i,[0,h,-6.6],[9.5,h+.09,6.6],i%2?'#e8d8aa':'#f1e7c9',g);add('Runas '+(i+1),'ink'+i,[3,h+.1,-.3],[8,h+.11,.3],i%2?'#af7d57':'#996b59',g);}
+const a=pages.map((g,i)=>[g.uuid,'rotation',[[0,0,0,0],[.25+i*.21,0,0,0],[.47+i*.21,0,0,-125],[2.8,0,0,-125],[3.3,0,0,0]]]);return {name:'Grimório Arcano',meta:{format_version:'5.0',model_format:'free',box_uv:true},resolution:{width:16,height:16},elements:elems,groups,outliner:[{uuid:'book',children:book.children},{uuid:'left',children:left.children},{uuid:'right',children:right.children},...pages.map(g=>({uuid:g.uuid,children:g.children}))],animations:[demoAnim('Virar Folhas',3.3,a,'loop')],textures:[]};}
+$('#demoArm').onclick=()=>openModel(demoArm(),'braço',true);$('#demoBook').onclick=()=>openModel(demoGrimoire(),'grimorio',true);
+// Public method also used by automated browser tests.
+window.PortVoxelViewer={openAndroidJson:(raw,name='arquivo.bbmodel')=>{try{const model=JSON.parse(raw.replace(/^\uFEFF/,''));openModel(model,name,false);}catch(error){console.error(error);toast('Não foi possível abrir: '+error.message);}},openModel,loadFile:fileLoad,stats:()=>({parts:drawables.length,groups:nodes.filter(n=>n.type==='group').length,animations:anims.length,drawables:drawables.length,active:activeAnim,renderer:gl?'webgl':ctx2d?'canvas2d':'none',explosion:explode,visible:makeModelMatrices().length,focus:$('#app').classList.contains('viewer-focus')}),getModel:()=>project,saveScreenshot,saveGIF,GIFEncoder:PortGIFEncoder};
+try{if(initGL()){openModel(demoArm(),'braço',true);requestAnimationFrame(update);}else toast('Seu navegador não suporta WebGL.');}catch(e){console.error(e);toast('Falha ao iniciar o renderizador 3D: '+e.message);}
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+})();
+</script>
+</body></html>
