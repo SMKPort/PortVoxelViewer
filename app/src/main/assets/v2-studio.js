@@ -6,6 +6,7 @@ const section=document.createElement('div');
 section.innerHTML=[
 '<details><summary>◉ Estúdio e câmeras</summary><div class="v2-body">',
 '<label>Iluminação <span id="v2LightText">100%</span><input id="v2Light" type="range" min="40" max="160" step="5" value="100"></label>',
+'<label>Qualidade gráfica <span id="v2QualityText">100%</span><input id="v2Quality" type="range" min="50" max="150" step="25" value="100"></label>',
 '<label>Fundo<select id="v2Background"><option value="night">Noite</option><option value="wine">Vinho</option><option value="stone">Cinza neutro</option><option value="black">Preto</option></select></label>',
 '<label>Nome da câmera<input id="v2CameraName" placeholder="Ex.: Detalhes das correntes" maxlength="60"></label>',
 '<button id="v2AddCamera">Salvar câmera atual</button><div id="v2Cameras"></div>',
@@ -23,6 +24,7 @@ el('v2Extra').append(section);
 const presets={night:'radial-gradient(circle at 54% 40%,#262234,#0a0e18 75%)',wine:'radial-gradient(circle at 55% 40%,#502632,#0c0812 75%)',stone:'radial-gradient(circle at 55% 40%,#62616a,#171a25 75%)',black:'#050505'};
 el('v2Background').onchange=e=>{el('viewport').style.background=presets[e.target.value]||presets.night;};
 el('v2Light').oninput=e=>{a.setLight(Number(e.target.value)/100);el('v2LightText').textContent=e.target.value+'%';};
+el('v2Quality').oninput=e=>{a.setQuality(Number(e.target.value)/100);el('v2QualityText').textContent=e.target.value+'%';};
 const cameraKey='port-voxel-v2-cameras',getCameras=()=>{try{return JSON.parse(localStorage.getItem(cameraKey)||'[]');}catch(e){return [];}};
 function paintCameras(){const root=el('v2Cameras');root.replaceChildren();for(const c of getCameras()){const row=document.createElement('div');row.className='v2-item';const span=document.createElement('b');span.textContent=c.name;const use=document.createElement('button');use.textContent='Ver';use.onclick=()=>{a.setCamera(c.camera);const intensity=Math.round(a.getCamera().light*100);el('v2Light').value=intensity;el('v2LightText').textContent=intensity+'%';};const del=document.createElement('button');del.textContent='×';del.onclick=()=>{localStorage.setItem(cameraKey,JSON.stringify(getCameras().filter(x=>x.id!==c.id)));paintCameras();};row.append(span,use,del);root.append(row);}if(!root.children.length)root.textContent='Nenhuma câmera salva.';}
 el('v2AddCamera').onclick=()=>{const list=getCameras();if(list.length>=24)return v.notify('Limite de 24 câmeras');const name=el('v2CameraName').value.trim()||'Câmera '+(list.length+1);list.push({id:Date.now()+'-'+Math.random(),name,camera:a.getCamera()});try{localStorage.setItem(cameraKey,JSON.stringify(list));paintCameras();el('v2CameraName').value='';v.notify('Câmera salva.');}catch(e){v.notify('Falha ao salvar câmera: '+e.message);}};
@@ -49,7 +51,7 @@ el('v2AnimWebP').onclick=async()=>{if(busy)return;const anim=a.getAnimation(),fp
 if(anim.index<0||anim.length<=0)return v.notify('Selecione uma animação.');
 const total=Math.ceil(anim.length*fps);if(total>240)return v.notify('Máximo de 240 quadros. Reduza o FPS.');
 busy=true;el('v2AnimWebP').disabled=true;try{a.setAnimation(anim.index,0,false);const src=a.getCanvas(),tmp=document.createElement('canvas');tmp.width=size;tmp.height=size;const ctx=tmp.getContext('2d');const frames=[];
-for(let i=0;i<total;i++){a.setAnimation(anim.index,i/fps,false);await new Promise(resolve=>requestAnimationFrame(resolve));const c=a.getCanvas();ctx.fillStyle='#141525';ctx.fillRect(0,0,size,size);const factor=Math.min(size/Math.max(c.width,1),size/Math.max(c.height,1)),w=c.width*factor,h=c.height*factor;ctx.drawImage(c,(size-w)/2,(size-h)/2,w,h);const url=tmp.toDataURL('image/webp',.83);if(!url.startsWith('data:image/webp'))throw Error('WebP não suportado');frames.push(parseFrame(url));if(i%3===0)status('WebP: '+(i+1)+' / '+total);}
+for(let i=0;i<total;i++){a.setAnimation(anim.index,i/fps,false);a.renderNow();const c=a.getCanvas();ctx.fillStyle='#141525';ctx.fillRect(0,0,size,size);const factor=Math.min(size/Math.max(c.width,1),size/Math.max(c.height,1)),w=c.width*factor,h=c.height*factor;ctx.drawImage(c,(size-w)/2,(size-h)/2,w,h);const url=tmp.toDataURL('image/webp',.83);if(!url.startsWith('data:image/webp'))throw Error('WebP não suportado');frames.push(parseFrame(url));if(i%3===0)status('WebP: '+(i+1)+' / '+total);}
 const blob=muxWebP(frames,size,size,fps,el('gifLoop').checked);if(blob.size>28*1024*1024)throw Error('WebP acima de 28 MB. Use 256 px.');await v.saveBlob(blob,'PortVoxel_'+v.safe(a.getModel()?.name)+'_animado.webp','image/webp');status('WebP animado pronto, '+(blob.size/1048576).toFixed(1)+' MB');}
 catch(e){status('Falha no WebP animado: '+e.message);console.error(e);}
 finally{a.setAnimation(anim.index,anim.time,anim.playing);el('v2AnimWebP').disabled=false;busy=false;}};
