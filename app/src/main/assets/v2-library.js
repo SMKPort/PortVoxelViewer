@@ -38,7 +38,18 @@ else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=ur
 window.PortV2=v2;
 let databasePromise;
 const database=()=>{if(databasePromise)return databasePromise;databasePromise=new Promise((resolve,reject)=>{const r=indexedDB.open('port-voxel-v2',1);r.onupgradeneeded=()=>r.result.createObjectStore('models',{keyPath:'id',autoIncrement:true});r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});return databasePromise;};
-async function op(method,value){const db=await database();return new Promise((res,rej)=>{const tr=db.transaction('models',method==='getAll'||method==='get'?'readonly':'readwrite'),store=tr.objectStore('models');const r=method==='put'?store.add(value):store[method](...(value===undefined?[]:[value]));r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function op(method,value){let db=null;
+try{db=await database();}catch(error){console.warn('IndexedDB indisponível, usando biblioteca básica local',error);}
+if(!db){
+  const key='port-voxel-v2-library-fallback';
+  let entries=[];try{entries=JSON.parse(localStorage.getItem(key)||'[]');}catch(error){}
+  if(method==='getAll')return entries;
+  if(method==='get')return entries.find(x=>x.id===value);
+  if(method==='delete'){entries=entries.filter(x=>x.id!==value);localStorage.setItem(key,JSON.stringify(entries));return;}
+  if(method==='put'){value.id=Date.now();entries.push(value);localStorage.setItem(key,JSON.stringify(entries));return value.id;}
+  throw Error('Ação inválida na biblioteca');
+}
+return new Promise((res,rej)=>{const tr=db.transaction('models',method==='getAll'||method==='get'?'readonly':'readwrite'),store=tr.objectStore('models');const r=method==='put'?store.add(value):store[method](...(value===undefined?[]:[value]));r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
 function thumbnail(){const src=api.getCanvas(),c=document.createElement('canvas');c.width=128;c.height=128;const x=c.getContext('2d'),r=Math.min(128/Math.max(src.width,1),128/Math.max(src.height,1));x.fillStyle='#181724';x.fillRect(0,0,128,128);x.drawImage(src,(128-src.width*r)/2,(128-src.height*r)/2,src.width*r,src.height*r);return c.toDataURL('image/jpeg',.6);}
 async function gallery(){const root=el('v2Gallery');root.replaceChildren();try{const rows=(await op('getAll')).sort((a,b)=>b.date-a.date);if(!rows.length){root.textContent='Biblioteca vazia.';return;}for(const entry of rows){const item=document.createElement('div');item.className='v2-item';const img=document.createElement('img');img.alt='Miniatura';img.src=entry.thumb;const title=document.createElement('b');title.textContent=entry.name;const open=document.createElement('button');open.textContent='Abrir';open.onclick=async()=>{try{const d=await op('get',entry.id);api.openModel(JSON.parse(d.json),d.name+'.bbmodel',false);notify('Modelo restaurado.');}catch(e){notify('Erro: '+e.message);}};const del=document.createElement('button');del.textContent='×';del.onclick=async()=>{if(confirm('Excluir modelo desta biblioteca?')){await op('delete',entry.id);gallery();}};item.append(img,title,open,del);root.append(item);}}catch(e){root.textContent='Biblioteca indisponível: '+e.message;}}
 el('v2Store').onclick=async()=>{try{const j=api.getModel();if(!j)throw Error('Abra um modelo');const json=JSON.stringify(j);if(json.length>16*1024*1024)throw Error('Projeto excede 16 MB');await op('put',{name:j.name||'Modelo',json,thumb:thumbnail(),date:Date.now()});await gallery();notify('Modelo guardado neste dispositivo.');}catch(e){notify(e.message);}};
