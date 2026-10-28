@@ -92,6 +92,12 @@ public final class MainActivity extends Activity {
     }
 
     private final class SaveBridge {
+        @JavascriptInterface public void saveFile(String dataURL, String name, String mime) {
+            if ("image/webp".equals(mime)) saveEncoded(dataURL, name, mime, null, ".webp");
+            else if ("video/mp4".equals(mime)) saveEncoded(dataURL, name, mime, null, ".mp4");
+            else if ("application/json".equals(mime)) saveEncoded(dataURL, name, mime, null, ".bbmodel");
+            else notifyUser("Tipo de exportação não autorizado");
+        }
         @JavascriptInterface public void saveGIF(String base64, String name) {
             saveEncoded(base64, name, "image/gif", "GIF89a", ".gif");
         }
