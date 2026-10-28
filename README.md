@@ -1,4 +1,27 @@
-# Port Voxel Viewer v1.3
+# Port Voxel Viewer v2.0 (beta 1)
+
+Aplicativo Android offline para visualizar e editar parcialmente arquivos Blockbench (.bbmodel). Mantém as funções v1.3: importação, visualização 3D, animações, GIF, PNG, vista explodida e isolamento de peças.
+
+## Novidades implementadas
+
+- Renderização: cores de texturas preservadas, brilho de 40% a 160% e qualidade gráfica de 50% a 150%.
+- Animações: interpolação Catmull-Rom com pontos vizinhos e suporte inicial a Bézier por alças numéricas, além de step e linear.
+- Editor: rotação de cubos e grupos, centro e dimensões de cubos, desfazer e exportar cópia .bbmodel.
+- Biblioteca local: IndexedDB com miniaturas e fallback de armazenamento básico.
+- Estúdio: fundos alternativos, iluminação ajustável e até 24 câmeras salvas localmente.
+- Exportações: GIF e PNG mantidos; imagem WebP, WebP animado com cancelamento e gravação MP4 condicionada ao suporte de MediaRecorder pelo WebView.
+- Android: salvar WebP, .bbmodel e MP4 compatível pelo seletor de arquivos.
+
+## Limitações da beta
+
+O editor não modifica UV, vértices de malhas ou keyframes. Expressões MoLang e animações avançadas podem permanecer aproximadas. MP4 nativo universal ainda não foi implementado e a opção é desativada quando não houver suporte. A biblioteca é local, sem sincronização. O desempenho com 5.000 cubos e o APK precisam ser validados em dispositivo real.
+
+## Gerar APK
+
+O GitHub Actions valida a sintaxe JavaScript, configura Java 17, Android SDK 35, Gradle 8.9 e Android Gradle Plugin 8.7.3.
+Abra https://github.com/SMKPort/PortVoxelViewer/actions , escolha a execução mais recente de Gerar APK Android, confirme o sucesso e baixe Port-Voxel-Viewer-Android-APK na seção Artifacts.
+
+---
 
 Aplicativo Android para abrir modelos do **Blockbench (.bbmodel)** no celular, visualizar peças e animações e exportar GIFs de forma offline.
 
