@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   compilar:
-    name: Compilar Port Voxel Viewer v1.3
+    name: Compilar Port Voxel Viewer v2.0 beta
     runs-on: ubuntu-24.04
     timeout-minutes: 25
 
@@ -69,6 +69,24 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+
+      - name: Validar scripts da interface v2.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check app/src/main/assets/v2-library.js
+          node --check app/src/main/assets/v2-studio.js
+          python3 - <<'PY'
+          import pathlib, re
+          source = pathlib.Path("app/src/main/assets/index.html").read_text(encoding="utf-8")
+          match = re.search(r"<script>(.*?)</script>", source, re.S)
+          assert match, "JavaScript principal nao encontrado no HTML"
+          pathlib.Path("/tmp/port-voxel-core.js").write_text(match.group(1), encoding="utf-8")
+          for filename in ["v2-library.js", "v2-studio.js"]:
+              assert f'src="./{filename}"' in source, f"Modulo nao carregado: {filename}"
+          print("Interface principal e modulos encontrados.")
+          PY
+          node --check /tmp/port-voxel-core.js
 
       - name: Compilar APK Android debug
         run: gradle :app:assembleDebug --no-daemon --stacktrace
