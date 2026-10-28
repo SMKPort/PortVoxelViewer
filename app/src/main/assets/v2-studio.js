@@ -15,6 +15,7 @@ section.innerHTML=[
 '<details><summary>▣ Exportar GIF, WebP e MP4</summary><div class="v2-body">',
 '<button id="v2StillWebP">↓ Salvar imagem WebP</button>',
 '<button id="v2AnimWebP">↓ Salvar WebP animado</button>',
+'<button id="v2CancelWebP" style="display:none">Cancelar exportação WebP</button>',
 '<button id="v2MP4">↓ Gravar MP4</button>',
 '<p id="v2Status" style="font-size:11px;color:#f1c889;margin:2px 0" aria-live="polite"></p>',
 '<small id="v2Note">GIF original permanece disponível na aba Animações. WebP animado usa a resolução e FPS escolhidos para GIF.</small>',
@@ -46,15 +47,16 @@ const chunks=[chunk('VP8X',head),chunk('ANIM',concat([u32(0,4),u32(repeat?0:1,2)
 for(const frame of frames){const fhead=concat([u32(0,3),u32(0,3),u32(w-1,3),u32(h-1,3),u32(Math.round(1000/fps),3),Uint8Array.of(0)]);chunks.push(chunk('ANMF',concat([fhead,...frame])));}
 const body=concat([encode('WEBP'),...chunks]);return new Blob([concat([encode('RIFF'),u32(body.length,4),body])],{type:'image/webp'});
 }
-let busy=false;
+let busy=false,cancelWebP=false;
+el('v2CancelWebP').onclick=()=>{cancelWebP=true;status('Cancelando exportação WebP…');};
 el('v2AnimWebP').onclick=async()=>{if(busy)return;const anim=a.getAnimation(),fps=Number(el('gifFps').value),size=Number(el('gifResolution').value);
 if(anim.index<0||anim.length<=0)return v.notify('Selecione uma animação.');
 const total=Math.ceil(anim.length*fps);if(total>240)return v.notify('Máximo de 240 quadros. Reduza o FPS.');
-busy=true;el('v2AnimWebP').disabled=true;try{a.setAnimation(anim.index,0,false);const src=a.getCanvas(),tmp=document.createElement('canvas');tmp.width=size;tmp.height=size;const ctx=tmp.getContext('2d');const frames=[];
-for(let i=0;i<total;i++){a.setAnimation(anim.index,i/fps,false);a.renderNow();const c=a.getCanvas();ctx.fillStyle='#141525';ctx.fillRect(0,0,size,size);const factor=Math.min(size/Math.max(c.width,1),size/Math.max(c.height,1)),w=c.width*factor,h=c.height*factor;ctx.drawImage(c,(size-w)/2,(size-h)/2,w,h);const url=tmp.toDataURL('image/webp',.83);if(!url.startsWith('data:image/webp'))throw Error('WebP não suportado');frames.push(parseFrame(url));if(i%3===0)status('WebP: '+(i+1)+' / '+total);}
+busy=true;cancelWebP=false;el('v2CancelWebP').style.display='block';el('v2AnimWebP').disabled=true;try{a.setAnimation(anim.index,0,false);const src=a.getCanvas(),tmp=document.createElement('canvas');tmp.width=size;tmp.height=size;const ctx=tmp.getContext('2d');const frames=[];
+for(let i=0;i<total;i++){if(cancelWebP)throw Error('Exportação cancelada');a.setAnimation(anim.index,i/fps,false);a.renderNow();const c=a.getCanvas();ctx.fillStyle='#141525';ctx.fillRect(0,0,size,size);const factor=Math.min(size/Math.max(c.width,1),size/Math.max(c.height,1)),w=c.width*factor,h=c.height*factor;ctx.drawImage(c,(size-w)/2,(size-h)/2,w,h);const url=tmp.toDataURL('image/webp',.83);if(!url.startsWith('data:image/webp'))throw Error('WebP não suportado');frames.push(parseFrame(url));if(i%3===0){status('WebP: '+(i+1)+' / '+total);await new Promise(resolve=>setTimeout(resolve,0));}}
 const blob=muxWebP(frames,size,size,fps,el('gifLoop').checked);if(blob.size>28*1024*1024)throw Error('WebP acima de 28 MB. Use 256 px.');await v.saveBlob(blob,'PortVoxel_'+v.safe(a.getModel()?.name)+'_animado.webp','image/webp');status('WebP animado pronto, '+(blob.size/1048576).toFixed(1)+' MB');}
 catch(e){status('Falha no WebP animado: '+e.message);console.error(e);}
-finally{a.setAnimation(anim.index,anim.time,anim.playing);el('v2AnimWebP').disabled=false;busy=false;}};
+finally{a.setAnimation(anim.index,anim.time,anim.playing);el('v2CancelWebP').style.display='none';el('v2AnimWebP').disabled=false;busy=false;}};
 const compatibleMP4=()=>{const canvas=a.getCanvas();if(typeof MediaRecorder==='undefined'||!canvas.captureStream)return '';return ['video/mp4;codecs="avc1.42E01E"','video/mp4;codecs="avc1"','video/mp4'].find(t=>MediaRecorder.isTypeSupported(t))||'';};
 if(!compatibleMP4()){el('v2MP4').disabled=true;el('v2Note').textContent='GIF e WebP animado disponíveis. A gravação MP4 só é habilitada em WebViews que aceitam MediaRecorder video/mp4. MP4 nativo universal ainda precisa ser implementado.';}
 el('v2MP4').onclick=async()=>{if(busy)return;const typ=compatibleMP4(),old=a.getAnimation();if(!typ)return v.notify('MP4 indisponível neste aparelho');if(old.index<0||old.length<=0)return v.notify('Selecione uma animação.');busy=true;let rec,stream;try{stream=a.getCanvas().captureStream(20);const parts=[];rec=new MediaRecorder(stream,{mimeType:typ,videoBitsPerSecond:2500000});const done=new Promise((resolve,reject)=>{rec.ondataavailable=e=>{if(e.data.size)parts.push(e.data);};rec.onstop=resolve;rec.onerror=e=>reject(e.error||Error('Gravação falhou'));});a.setAnimation(old.index,0,true);rec.start(200);status('Gravando MP4…');await new Promise(r=>setTimeout(r,Math.round(old.length*1000)));rec.stop();await done;const blob=new Blob(parts,{type:'video/mp4'});if(blob.size<100)throw Error('MP4 vazio');await v.saveBlob(blob,'PortVoxel_'+v.safe(a.getModel()?.name)+'_animado.mp4','video/mp4');status('MP4 gerado.');}catch(e){status('Falha ao gravar MP4: '+e.message);}finally{if(rec?.state==='recording')rec.stop();if(stream)stream.getTracks().forEach(t=>t.stop());a.setAnimation(old.index,old.time,old.playing);busy=false;}};
