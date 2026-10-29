@@ -31,19 +31,26 @@ function drawLine(image,x0,y0,x1,y1,color,size){
   const e2=2*err;if(e2>-dy){err-=dy;x0+=sx;}if(e2<dx){err+=dx;y0+=sy;}
  }return count;
 }
-function floodFill(image,x,y,color,limit=2000000){
+function floodFill(image,x,y,color,limit=2000000,area=null){
  const w=image.width,h=image.height,p=image.data;if(x<0||y<0||x>=w||y>=h)return 0;
+ const bounds=area?region([area.x,area.y,area.x+area.w,area.y+area.h],w,h):{x:0,y:0,w,h};
+ if(x<bounds.x||y<bounds.y||x>=bounds.x+bounds.w||y>=bounds.y+bounds.h)return 0;
  const offset=(y*w+x)*4,old=p.slice(offset,offset+4);
  if(old.every((n,i)=>n===color[i]))return 0;
- const stack=[y*w+x],visited=new Uint8Array(w*h);let count=0;
- while(stack.length&&count<limit){
-  const xy=stack.pop();if(visited[xy])continue;visited[xy]=1;
-  const i=xy*4;if(!equalPixel(p,i,old))continue;
-  p.set(color,i);count++;
-  const px=xy%w,py=(xy-px)/w;
-  if(px>0)stack.push(xy-1);if(px<w-1)stack.push(xy+1);
-  if(py>0)stack.push(xy-w);if(py<h-1)stack.push(xy+w);
- }return count;
+ const queue=new Int32Array(bounds.w*bounds.h),marked=new Uint8Array(bounds.w*bounds.h);
+ const local=(xx,yy)=>(yy-bounds.y)*bounds.w+(xx-bounds.x);
+ let read=0,write=1,count=0;queue[0]=y*w+x;marked[local(x,y)]=1;
+ while(read<write&&count<limit){
+  const xy=queue[read++],px=xy%w,py=(xy-px)/w;
+  const pos=xy*4;p.set(color,pos);count++;
+  const candidates=[[px-1,py],[px+1,py],[px,py-1],[px,py+1]];
+  for(const [nx,ny] of candidates){
+   if(nx<bounds.x||ny<bounds.y||nx>=bounds.x+bounds.w||ny>=bounds.y+bounds.h)continue;
+   const li=local(nx,ny);if(marked[li])continue;marked[li]=1;
+   if(!equalPixel(p,(ny*w+nx)*4,old))continue;queue[write++]=ny*w+nx;
+  }
+ }
+ return count;
 }
 function flipFace(image,rect,direction){
  const r=region(rect,image.width,image.height),arr=image.data,buf=new Uint8ClampedArray(r.w*r.h*4);
