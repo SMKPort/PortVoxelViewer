@@ -1,7 +1,24 @@
-# Port Voxel Viewer v2.1 (beta 1)
+# Port Voxel Viewer v2.2 (beta 1)
 
 Aplicativo Android offline para visualizar e editar parcialmente arquivos Blockbench (.bbmodel). Mantém as funções v1.3: importação, visualização 3D, animações, GIF, PNG, vista explodida e isolamento de peças.
 
+## Editor de skins 2D e 3D (v2.2 beta 1)
+
+Abra uma skin PNG em **Skin Studio** e expanda **EDITAR SKIN 2D + 3D**.
+
+- **Pintura UV:** toque no mapa da textura, faça zoom (até 12×), desenhe traços com pincéis de 1 a 8 pixels.
+- **Pintura no modelo 3D:** marque **Ativar pintura no modelo 3D**, escolha base ou segunda camada e toque/arraste sobre os cubos. Desative o modo para girar a câmera.
+- **Ferramentas:** pincel, borracha (transparência), conta-gotas e preenchimento limitado à face UV para não modificar outras regiões.
+- **Correção de partes invertidas:** escolha peça e face; espelhe horizontalmente, verticalmente ou gire os pixels 180°.
+- **Histórico:** desfazer/refazer (até 20 etapas em skins normais e 6 em HD), restaurar os pixels originais.
+- **Exportações:** PNG editado e cópia .bbmodel com a textura atualizada. O PNG original não é sobrescrito sem escolha explícita de destino.
+- **Performance:** os triângulos de seleção 3D são mantidos em memória somente para skins.
+
+**Limitações:** edição é pixel a pixel sobre skins Java padrão, sem geometria Bedrock personalizada. A precisão 3D depende da câmera e do UV do cubo. A edição no Android físico e a compilação do APK permanecem pendentes de validação.
+
+Testes: `tests/skin-paint.test.cjs` cobre pincel, linhas, preenchimento com limites UV, conversão de coordenadas, inversões e cópia de faces.
+
+---
 ## Skin Studio v2.1 beta 1
 
 Abrir skins de Minecraft em PNG diretamente pelo botão **ABRIR .BBMODEL OU SKIN PNG**, pela seção **Skin Studio** no painel ou pelo gerenciador de arquivos Android quando o compartilhamento fornece o arquivo.
