@@ -90,7 +90,7 @@ el('skinLayers').onchange=e=>{if(baseModel)api.setGroupVisible(baseModel.port_sk
 el('skinPose').onchange=e=>{const v=e.target.value,angles={front:0,back:Math.PI,side:Math.PI/2};if(angles[v]!==undefined)api.setCamera({yaw:angles[v],pitch:0,dist:72,target:[0,16,0]});};
 el('skinSavePng').onclick=()=>{if(!imageUrl)return toast('Abra uma skin primeiro.');if(window.PortAndroid?.savePNG){window.PortAndroid.savePNG(imageUrl,lastName+'.png');toast('Escolha a pasta para salvar a skin.');}else{const a=document.createElement('a');a.href=imageUrl;a.download=lastName+'.png';a.click();}};
 el('skinCapture').onclick=()=>api.saveScreenshot();
-window.PortVoxelSkin={openFile,openAndroidPng:(url,name)=>openImage(url,name).catch(e=>toast(e.message)),buildSkin};
+window.PortVoxelSkin={openFile,openAndroidPng:(url,name)=>openImage(url,name).catch(e=>toast(e.message)),buildSkin,updateEditedPng:async(url)=>{if(!baseModel||!/^data:image\/png;base64,/.test(url))throw Error('Skin não disponível');imageUrl=url;baseModel.textures[0].source=url;return api.updateSkinTexture(url);}};
 window.addEventListener('port-model-opened',()=>{
  const current=api.getModel();
  if(!current?.port_skin){baseModel=null;imageUrl='';el('skinStatus').textContent='Abra uma skin PNG para visualizar o personagem em 3D.';return;}
