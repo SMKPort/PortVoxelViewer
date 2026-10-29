@@ -70,7 +70,7 @@ function renderSkin(){
  el('skinStatus').textContent='Skin: '+lastName+'.png\n'+data.resolution.width+'×'+data.resolution.height+' px • '+(slim?'Slim (Alex)':'Clássico (Steve)')+' • '+(legacy?'Legado':'Moderno')+'\nUse Animações para caminhada, respiração e exportar GIF.';
 }
 async function openImage(dataUrl,name){
- if(!/^data:image\/png;base64,/i.test(dataUrl))throw Error('Selecione um arquivo PNG válido.');
+ const match=/^data:[^,]*;base64,(.+)$/is.exec(dataUrl);if(!match)throw Error('Selecione um PNG válido.');const prefix=atob(match[1].slice(0,16));if(prefix.charCodeAt(0)!==137||prefix.slice(1,4)!=='PNG')throw Error('Arquivo selecionado não é PNG.');dataUrl='data:image/png;base64,'+match[1];
  const img=new Image();await new Promise((ok,no)=>{img.onload=ok;img.onerror=()=>no(Error('PNG inválido ou ilegível'));img.src=dataUrl;});
  const w=img.naturalWidth,h=img.naturalHeight,k=w/64;
  if(!Number.isInteger(k)||k<1||k>16||!(h===w||h===w/2))throw Error('Dimensões '+w+'×'+h+' inválidas. Use 64×64, 64×32 ou HD proporcional até 1024 px.');
