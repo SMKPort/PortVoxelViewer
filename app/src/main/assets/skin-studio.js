@@ -88,7 +88,15 @@ el('skinFile').onchange=async e=>{try{await openFile(e.target.files?.[0]);}catch
 el('skinArms').onchange=()=>{try{renderSkin();}catch(e){toast(e.message);}};
 el('skinLayers').onchange=e=>{if(baseModel)api.setGroupVisible(baseModel.port_skin.layers,e.target.checked);};
 el('skinPose').onchange=e=>{const v=e.target.value,angles={front:0,back:Math.PI,side:Math.PI/2};if(angles[v]!==undefined)api.setCamera({yaw:angles[v],pitch:0,dist:72,target:[0,16,0]});};
-el('skinSavePng').onclick=()=>{if(!imageUrl)return toast('Abra uma skin primeiro.');const a=document.createElement('a');a.href=imageUrl;a.download=lastName+'.png';a.click();};
+el('skinSavePng').onclick=()=>{if(!imageUrl)return toast('Abra uma skin primeiro.');if(window.PortAndroid?.savePNG){window.PortAndroid.savePNG(imageUrl,lastName+'.png');toast('Escolha a pasta para salvar a skin.');}else{const a=document.createElement('a');a.href=imageUrl;a.download=lastName+'.png';a.click();}};
 el('skinCapture').onclick=()=>api.saveScreenshot();
 window.PortVoxelSkin={openFile,openAndroidPng:(url,name)=>openImage(url,name).catch(e=>toast(e.message)),buildSkin};
+window.addEventListener('port-model-opened',()=>{
+ const current=api.getModel();
+ if(!current?.port_skin){baseModel=null;imageUrl='';el('skinStatus').textContent='Abra uma skin PNG para visualizar o personagem em 3D.';return;}
+ baseModel=current;const png=current.textures?.[0]?.source;
+ if(typeof png==='string'&&png.startsWith('data:image/png;base64,'))imageUrl=png;
+ lastName=safe(current.name);legacy=current.port_skin.format==='legacy';ratio=current.resolution.width/64;
+ el('skinArms').disabled=legacy;el('skinArms').value=current.port_skin.model==='slim'?'slim':'classic';
+});
 })();
