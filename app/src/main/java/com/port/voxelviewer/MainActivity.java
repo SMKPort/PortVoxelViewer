@@ -173,9 +173,23 @@ public final class MainActivity extends Activity {
                         output.write(buffer, 0, n);
                     }
                 }
-                String text = new String(output.toByteArray(), StandardCharsets.UTF_8);
-                String js = "window.PortVoxelViewer && window.PortVoxelViewer.openAndroidJson("
-                    + JSONObject.quote(text) + "," + JSONObject.quote(name) + ");";
+                byte[] bytes = output.toByteArray();
+                boolean isPNG = bytes.length >= 8
+                    && (bytes[0] & 255) == 137 && bytes[1] == 80
+                    && bytes[2] == 78 && bytes[3] == 71
+                    && bytes[4] == 13 && bytes[5] == 10
+                    && bytes[6] == 26 && bytes[7] == 10;
+                String js;
+                if (isPNG) {
+                    String dataURL = "data:image/png;base64,"
+                        + Base64.encodeToString(bytes, Base64.NO_WRAP);
+                    js = "window.PortVoxelSkin && window.PortVoxelSkin.openAndroidPng("
+                        + JSONObject.quote(dataURL) + "," + JSONObject.quote(name) + ");";
+                } else {
+                    String text = new String(bytes, StandardCharsets.UTF_8);
+                    js = "window.PortVoxelViewer && window.PortVoxelViewer.openAndroidJson("
+                        + JSONObject.quote(text) + "," + JSONObject.quote(name) + ");";
+                }
                 runOnUiThread(() -> {
                     if (ready) browser.evaluateJavascript(js, null);
                     else pendingJavascript = js;
