@@ -1,7 +1,22 @@
-# Port Voxel Viewer v2.0 (beta 1)
+# Port Voxel Viewer v2.1 (beta 1)
 
 Aplicativo Android offline para visualizar e editar parcialmente arquivos Blockbench (.bbmodel). Mantém as funções v1.3: importação, visualização 3D, animações, GIF, PNG, vista explodida e isolamento de peças.
 
+## Skin Studio v2.1 beta 1
+
+Abrir skins de Minecraft em PNG diretamente pelo botão **ABRIR .BBMODEL OU SKIN PNG**, pela seção **Skin Studio** no painel ou pelo gerenciador de arquivos Android quando o compartilhamento fornece o arquivo.
+
+- Formatos: 64×64 moderno e 64×32 legado, além de resoluções proporcionais HD até 1024×1024 (ou 1024×512 para legado).
+- Braços: modelo **Clássico/Steve (4 px)** e **Slim/Alex (3 px)**, escolha manual para skins modernas.
+- Segundo plano: camada externa de cabeça, roupas, mangas e calças, com opção de ocultar ou mostrar.
+- Prévia 3D em 360°, vistas frente/costas/lateral, animações simuladas de respiração e caminhada, capturas PNG e exportação de GIF via aba Animações.
+- Baixar o PNG da skin original sem alterar seus pixels; o modelo 3D é gerado localmente e pode ser salvo como projeto .bbmodel na biblioteca.
+
+**Limites:** a skin PNG não traz dados de animação, então caminhada e respiração são animações de demonstração. O tipo de braço Slim/Classic não é recuperável com certeza de uma imagem PNG; escolha manual. Skins HD têm prévia proporcional, mas são aceitas por serviços Minecraft conforme suas regras. Skins Bedrock com geometria personalizada ou pacotes .mcpack não estão incluídos nesta etapa. O APK ainda precisa compilar no GitHub Actions e ser testado em aparelho.
+
+Testes automáticos em `tests/skin-format.test.cjs` validam atlas UV, número de cubos, camadas e ligação de grupos animados para clássico, slim, legado e HD.
+
+---
 ## Novidades implementadas
 
 - Renderização: cores de texturas preservadas, brilho de 40% a 160% e qualidade gráfica de 50% a 150%.
