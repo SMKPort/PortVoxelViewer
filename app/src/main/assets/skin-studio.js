@@ -13,7 +13,7 @@ section.innerHTML=[
 '<div class="skin-line"><label>Braços<select id="skinArms"><option value="classic">Clássico / Steve (4 px)</option><option value="slim">Slim / Alex (3 px)</option></select></label>',
 '<label>Vista<select id="skinPose"><option value="none">Livre</option><option value="front">Frente</option><option value="back">Costas</option><option value="side">Lateral</option></select></label></div>',
 '<label class="skin-check"><input type="checkbox" id="skinLayers" checked> Segunda camada (roupas, cabelo, mangas)</label>',
-'<div class="skin-line"><button id="skinSavePng">↓ PNG original</button><button id="skinCapture">▧ Imagem 3D</button></div>',
+'<div class="skin-line"><button id="skinSavePng">↓ PNG atual</button><button id="skinCapture">▧ Imagem 3D</button></div>',
 '<div id="skinStatus" class="skin-status">64×64, 64×32 e HD até 1024×1024. Para animações e GIF, use a aba Animações.</div>'
 ].join('');
 const css=document.createElement('style');
