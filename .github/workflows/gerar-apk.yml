@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   compilar:
-    name: Compilar Port Voxel Viewer v2.1 beta
+    name: Compilar Port Voxel Viewer v2.2 beta
     runs-on: ubuntu-24.04
     timeout-minutes: 25
 
@@ -77,6 +77,9 @@ jobs:
           node --check app/src/main/assets/v2-library.js
           node --check app/src/main/assets/v2-studio.js
           node --check app/src/main/assets/skin-studio.js
+          node --check app/src/main/assets/skin-paint-core.js
+          node --check app/src/main/assets/skin-paint.js
+          node tests/skin-paint.test.cjs
           node tests/skin-format.test.cjs
           python3 - <<'PY'
           import pathlib, re
@@ -84,7 +87,7 @@ jobs:
           match = re.search(r"<script>(.*?)</script>", source, re.S)
           assert match, "JavaScript principal nao encontrado no HTML"
           pathlib.Path("/tmp/port-voxel-core.js").write_text(match.group(1), encoding="utf-8")
-          for filename in ["v2-library.js", "v2-studio.js", "skin-studio.js"]:
+          for filename in ["v2-library.js", "v2-studio.js", "skin-studio.js", "skin-paint-core.js", "skin-paint.js"]:
               assert f'src="./{filename}"' in source, f"Modulo nao carregado: {filename}"
           print("Interface principal e modulos encontrados.")
           PY
