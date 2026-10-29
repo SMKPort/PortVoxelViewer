@@ -105,6 +105,7 @@ function highlight(){const r=ready&&face(),h=$('spHighlight');if(!r){h.hidden=tr
 function showParts(){const select=$('spPart'),old=select.value;select.replaceChildren();for(const e of api.getModel()?.elements||[]){if(!e.uuid?.startsWith('cube-'))continue;const opt=document.createElement('option');opt.value=e.uuid;opt.textContent=e.name;select.append(opt);}if([...select.options].some(o=>o.value===old))select.value=old;highlight();}
 function zoomAtlas(){zoom=Number($('spZoom').value);canvas.style.width=canvas.width*zoom+'px';canvas.style.height=canvas.height*zoom+'px';$('spZoomText').textContent=zoom+'×';highlight();}
 $('spPart').onchange=highlight;$('spFace').onchange=highlight;$('spZoom').oninput=zoomAtlas;
+$('spOuter').onchange=e=>{if(e.target.checked&&$('skinLayers')&&!$('skinLayers').checked){$('skinLayers').checked=true;$('skinLayers').dispatchEvent(new Event('change'));}};
 function invert(type){if(!ready)return notify('Abra uma skin primeiro.');try{const r=face();if(!r)throw Error('Selecione uma face');snapshot();const data=current();core.flipFace(data,[r.x,r.y,r.x+r.w,r.y+r.h],type);setImage(data);buttons();notify('Face corrigida. Salve o PNG editado.');}catch(e){notify(e.message);}}
 $('spFlipH').onclick=()=>invert('horizontal');$('spFlipV').onclick=()=>invert('vertical');$('spFlip180').onclick=()=>invert('rotate180');
 $('spSave').onclick=async()=>{if(!ready)return notify('Abra uma skin.');try{await updateTexture(true);const url=canvas.toDataURL('image/png'),name=fileName+'_editada.png';if(window.PortAndroid?.savePNG)window.PortAndroid.savePNG(url,name);else{const a=document.createElement('a');a.download=name;a.href=url;document.body.append(a);a.click();a.remove();}notify('Escolha onde salvar o PNG.');}catch(e){notify('PNG: '+e.message);}};
@@ -113,9 +114,9 @@ async function load(url,clearHistory=true){
  const id=++serial,img=new Image();await new Promise((ok,fail)=>{img.onload=ok;img.onerror=()=>fail(Error('Textura PNG não carregada'));img.src=url;});
  if(id!==serial)return;canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0);
  ready=true;if(clearHistory){original=url;history=[];future=[];fileName=String(api.getModel()?.name||'skin').replace(/[^A-Za-z0-9_-]+/g,'_').slice(0,65);}
- zoomAtlas();showParts();buttons();info('Mapa UV '+canvas.width+'×'+canvas.height+' · toque para pintar');await updateTexture(true);
+ if(clearHistory){$('spZoom').value=String(Math.max(1,Math.min(6,Math.floor(350/canvas.width))));}zoomAtlas();showParts();buttons();info('Mapa UV '+canvas.width+'×'+canvas.height+' · toque para pintar');await updateTexture(true);
 }
-async function onModel(){const model=api.getModel();if(!model?.port_skin){ready=false;history=[];future=[];buttons();$('spHighlight').hidden=true;info('Abra uma skin PNG para editar.');return;}
+async function onModel(){if(paintTimer){clearTimeout(paintTimer);paintTimer=null;}active=null;liveImage=null;const model=api.getModel();if(!model?.port_skin){ready=false;history=[];future=[];buttons();$('spHighlight').hidden=true;info('Abra uma skin PNG para editar.');return;}
  const url=model.textures?.[0]?.source;if(!url?.startsWith('data:image/png;base64,'))return;
  try{await load(url,true);}catch(e){notify('Mapa UV: '+e.message);}
 }
