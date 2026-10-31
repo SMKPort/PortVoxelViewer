@@ -41,13 +41,23 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Validar JavaScript incorporado
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          html = Path("app/src/main/assets/index.html").read_text(encoding="utf-8")
+          code = html.split("\n<script>\n",1)[1].rsplit("\n</script>",1)[0]
+          Path("/tmp/caldocontrol.js").write_text(code, encoding="utf-8")
+          PY
+          node --check /tmp/caldocontrol.js
+
       - name: Gerar APK
         run: gradle --no-daemon --stacktrace :app:assembleDebug
 
       - name: Disponibilizar APK
         uses: actions/upload-artifact@v4
         with:
-          name: CaldoControl-2.0-debug-APK
+          name: CaldoControl-2.1-debug-APK
           path: CaldoControl/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
