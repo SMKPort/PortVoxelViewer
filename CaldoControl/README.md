@@ -1,10 +1,16 @@
-# CaldoControl 2.2 para Android
+# CaldoControl 2.3 para Android
 
 Aplicativo de acompanhamento do **tratamento de caldo para açúcar e etanol**, com calagem, pH do caldo misto e caleado/dosado (mesma etapa), decantadores e lodo, aquecedores, relatórios por turno, histórico e conexão **somente de leitura** com gateway WebSocket autorizado.
 
+## Novo na versão 2.3: pH do xarope
+
+Adicionado o campo independente **pH do xarope** com validação de 0 a 14 e duas casas decimais. Ele aparece na ficha de registro, histórico, gráfico de tendência de pH, médias por turno (incluindo o número de amostras), relatórios, exportação CSV, backup JSON, restauração, leitura de fotografias por OCR e configuração/mapeamento das tags do gateway (campo `phXarope`, alias `ph_xarope`).
+
+Registros anteriores continuam válidos; medições antigas que não tinham pH de xarope ficam sem esse valor, sem afetar as demais médias. Não é definida uma faixa operacional automática: configure os limites segundo os procedimentos da usina.
+
 ## APK
 
-No GitHub, acesse **Actions > CaldoControl APK Android > execução mais recente > Artifacts > CaldoControl-2.2-debug-APK**. Baixe o ZIP e extraia o arquivo **app-debug.apk** para instalar no Android. Este é um APK debug para teste, não assinado para distribuição pela Play Store.
+No GitHub, acesse **Actions > CaldoControl APK Android > execução mais recente > Artifacts > CaldoControl-2.3-debug-APK**. Baixe o ZIP e extraia o arquivo **app-debug.apk** para instalar no Android. Este é um APK debug para teste, não assinado para distribuição pela Play Store.
 
 O workflow `.github/workflows/caldocontrol-apk.yml` compila o projeto com Java 17, Gradle 8.9 e Android SDK 35. Também pode ser executado manualmente via **Run workflow**.
 
