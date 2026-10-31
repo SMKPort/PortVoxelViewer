@@ -159,7 +159,6 @@ public class MainActivity extends Activity {
                     if (bytes.length > 12000000) throw new IllegalArgumentException("Arquivo grande demais.");
                     pendingBinary = bytes;
                     pendingText = null;
-                pendingBinary = null;
                     Intent save = new Intent(Intent.ACTION_CREATE_DOCUMENT);
                     save.addCategory(Intent.CATEGORY_OPENABLE);
                     save.setType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
@@ -252,6 +251,7 @@ public class MainActivity extends Activity {
                 showError("Erro ao salvar arquivo.");
             } finally {
                 pendingText = null;
+                pendingBinary = null;
             }
         }
     }
