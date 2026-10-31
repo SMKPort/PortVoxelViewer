@@ -32,6 +32,7 @@ public class MainActivity extends Activity {
     private WebView reportView;
     private ValueCallback<Uri[]> fileCallback;
     private String pendingText;
+    private byte[] pendingBinary;
     private WebViewAssetLoader loader;
 
     @Override public void onCreate(Bundle savedInstanceState) {
@@ -145,6 +146,28 @@ public class MainActivity extends Activity {
             }, "caldocontrol-gateway-read").start();
         }
 
+        @JavascriptInterface public void recognizeSheetPhoto(String imageDataUrl) {
+            new PhotoOcr(MainActivity.this, webView).recognizeSheet(imageDataUrl);
+        }
+        @JavascriptInterface public void saveBase64(String name, String mime, String data) {
+            runOnUiThread(() -> {
+                if (data == null || data.length() > 16000000 || name == null || !name.matches("[a-zA-Z0-9._-]{1,120}")) {
+                    showError("Arquivo inválido ou grande demais."); return;
+                }
+                try {
+                    byte[] bytes = android.util.Base64.decode(data, android.util.Base64.DEFAULT);
+                    if (bytes.length > 12000000) throw new IllegalArgumentException("Arquivo grande demais.");
+                    pendingBinary = bytes;
+                    pendingText = null;
+                pendingBinary = null;
+                    Intent save = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                    save.addCategory(Intent.CATEGORY_OPENABLE);
+                    save.setType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                    save.putExtra(Intent.EXTRA_TITLE, name);
+                    startActivityForResult(save, SAVE_DOCUMENT);
+                } catch (Exception e) { pendingBinary = null; showError("Não foi possível exportar o Excel."); }
+            });
+        }
         @JavascriptInterface public void recognizePhoto(String imageDataUrl) {
             new PhotoOcr(MainActivity.this, webView).recognize(imageDataUrl);
         }
@@ -158,6 +181,7 @@ public class MainActivity extends Activity {
                     : name.replaceAll("[^a-zA-Z0-9._-]", "_");
                 if (safeName.length() < 1 || safeName.length() > 120) safeName = "caldocontrol.json";
                 String kind = safeName.endsWith(".csv") ? "text/csv" : "application/json";
+                pendingBinary = null;
                 pendingText = data;
                 try {
                     Intent save = new Intent(Intent.ACTION_CREATE_DOCUMENT);
@@ -216,10 +240,11 @@ public class MainActivity extends Activity {
             }
         } else if (requestCode == SAVE_DOCUMENT) {
             try {
-                if (resultCode == RESULT_OK && data != null && data.getData() != null && pendingText != null) {
+                if (resultCode == RESULT_OK && data != null && data.getData() != null && (pendingText != null || pendingBinary != null)) {
                     try (OutputStream out = getContentResolver().openOutputStream(data.getData())) {
                         if (out == null) throw new IllegalStateException("Saída de arquivo indisponível");
-                        out.write(pendingText.getBytes(StandardCharsets.UTF_8));
+                        if (pendingBinary != null) out.write(pendingBinary);
+                        else out.write(pendingText.getBytes(StandardCharsets.UTF_8));
                     }
                     showError("Arquivo salvo.");
                 }
