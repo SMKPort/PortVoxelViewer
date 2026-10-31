@@ -765,7 +765,7 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
   if(!Array.isArray(liveHistory))liveHistory=[];
   const SHIFT_DEFAULT={A:{start:'06:00',end:'14:00'},B:{start:'14:00',end:'22:00'},C:{start:'22:00',end:'06:00'}};
   let shiftTimes=readStore(SHIFT_KEY,SHIFT_DEFAULT);
-  if(!shiftTimes||!['A','B','C'].every(k=>shiftTimes[k]&&/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftTimes[k].start)&&/^([01]\\d|2[0-3]):[0-5]\\d$/.test(shiftTimes[k].end)))shiftTimes=SHIFT_DEFAULT;
+  if(!shiftTimes||!['A','B','C'].every(k=>shiftTimes[k]&&/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftTimes[k].start)&&/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftTimes[k].end)))shiftTimes=SHIFT_DEFAULT;
   const cleanAuditRecord=r=>r?Object.fromEntries(['dateTime','line','shift','operator','source','phCalado','phDec','phTorre','phXarope','brixCalado','brixClarificado','brixXarope','limeFlow','limeUnit','juiceFlow','baume','decanterId','heaterId'].map(k=>[k,r[k]??null])):null;
   function appendAudit(action,id,actor,reason,before,after){
     const event={id:'evt_'+Date.now()+'_'+Math.random().toString(36).slice(2),at:new Date().toISOString(),
