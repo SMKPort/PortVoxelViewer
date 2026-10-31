@@ -51,6 +51,22 @@ jobs:
           PY
           node --check /tmp/caldocontrol.js
 
+      - name: Testar integridade de funcionalidades e Excel
+        run: |
+          node tests/smoke-2.4.js
+          python3 - <<'PY'
+          import zipfile, xml.etree.ElementTree as ET
+          with zipfile.ZipFile('/tmp/CaldoControl-2.4-smoke.xlsx') as f:
+              assert f.testzip() is None
+              required = {'[Content_Types].xml','xl/workbook.xml','xl/_rels/workbook.xml.rels','xl/worksheets/sheet1.xml'}
+              assert required.issubset(set(f.namelist()))
+              for name in required:
+                  if name.endswith('.xml'):
+                      ET.fromstring(f.read(name))
+              assert '6.7' in f.read('xl/worksheets/sheet1.xml').decode()
+          print('XLSX íntegro e XML válido.')
+          PY
+
       - name: Gerar APK
         run: gradle --no-daemon --stacktrace :app:assembleDebug
 
