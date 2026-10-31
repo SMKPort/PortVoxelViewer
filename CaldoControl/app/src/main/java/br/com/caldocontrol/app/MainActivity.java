@@ -74,7 +74,10 @@ public class MainActivity extends Activity {
                 try {
                     Intent pick = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                     pick.addCategory(Intent.CATEGORY_OPENABLE);
-                    pick.setType("application/json");
+                    String[] accepted = params.getAcceptTypes();
+                    boolean image = false;
+                    if (accepted != null) for (String t : accepted) if (t != null && (t.startsWith("image/") || t.contains("image"))) image = true;
+                    pick.setType(image ? "image/*" : "application/json");
                     startActivityForResult(pick, PICK_JSON);
                     return true;
                 } catch (Exception e) {
@@ -93,6 +96,9 @@ public class MainActivity extends Activity {
     }
 
     private final class AndroidBridge {
+        @JavascriptInterface public void recognizePhoto(String imageDataUrl) {
+            new PhotoOcr(MainActivity.this, webView).recognize(imageDataUrl);
+        }
         @JavascriptInterface public void saveFile(String name, String mime, String data) {
             runOnUiThread(() -> {
                 if (data == null || data.length() > 8000000) {
