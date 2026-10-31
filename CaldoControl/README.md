@@ -1,4 +1,4 @@
-# CaldoControl 2.3 para Android
+# CaldoControl 2.4 para Android
 
 Aplicativo de acompanhamento do **tratamento de caldo para açúcar e etanol**, com calagem, pH do caldo misto e caleado/dosado (mesma etapa), decantadores e lodo, aquecedores, relatórios por turno, histórico e conexão **somente de leitura** com gateway WebSocket autorizado.
 
@@ -8,9 +8,29 @@ Adicionado o campo independente **pH do xarope** com validação de 0 a 14 e dua
 
 Registros anteriores continuam válidos; medições antigas que não tinham pH de xarope ficam sem esse valor, sem afetar as demais médias. Não é definida uma faixa operacional automática: configure os limites segundo os procedimentos da usina.
 
+## Melhorias da versão 2.4
+
+**Ao vivo:** mostra amostras pontuais recebidas pela interface WSS/HTTPS do supervisório e um gráfico local (até 240 leituras). Mostra se os dados estão antigos ou o gateway não está conectado. Não trata amostras do gateway como análises salvas e nunca escreve em CLPs.
+
+**Fechamento de turnos:** horários A, B e C configuráveis. Enquanto o aplicativo estiver aberto, cria **rascunhos automáticos** para turnos com registros após o fim do turno + 15 minutos, com médias, quantidades de amostras e ocorrências fora dos limites. Um operador precisa revisar e marcar **Conferido**. Se os registros mudarem, o fechamento é marcado como desatualizado. O fechamento não é executado em segundo plano quando o aplicativo estiver fechado. Configure também o início do dia operacional, principalmente para o turno da madrugada.
+
+**OCR de folhas inteiras:** fotografe uma tabela de análises pelo APK Android. O reconhecimento offline ML Kit retorna as posições de linhas e células. Associe manualmente cada coluna, confira e corrija valores, horários e linhas selecionadas antes de salvar. Importe até 70 linhas por lote. A foto reduzida acompanha o primeiro registro do lote. Fotografias de tabelas difíceis podem exigir digitação e mapeamento manual. A leitura tabular automática **não funciona no HTML isolado**.
+
+**Calagem e diagnóstico:** cálculo de L/m³ de leite de cal/caldo, gráficos por análise, médias e correlação descritiva com o pH caleado. Alertas de últimas medições fora das faixas configuradas e mudanças monotônicas. Não inferir causa nem recomendar dosagem automaticamente.
+
+**Operadores:** identificação local de operador e turno habitual. Registro de autor, horário, justificativa e resumo antes/depois nas criações, edições e exclusões. A trilha é armazenada localmente, não há autenticação corporativa, assinatura digital ou proteção contra alteração intencional.
+
+**Relatórios:** aba Médias por turno com exportação XLSX contendo planilhas Analises, Medias por turno, Fechamentos e Auditoria, sem biblioteca externa ou internet. A exportação CSV e impressão ou **Salvar como PDF** na tela Relatórios permanecem disponíveis. Para preservar imagens, faça o backup JSON completo.
+
+**Backup e restauração:** backup JSON v4 inclui, além dos registros e fotos, auditoria, fechamentos e configuração de horários. Ao restaurar, o app pergunta antes de adicionar eventos de auditoria e fechamentos. Dados antigos são mantidos. Faça backup ANTES de trocar de APK ou desinstalar: APK debug pode ter assinatura diferente e exigir reinstalação.
+
+## Testes de build
+
+O GitHub Actions valida sintaxe JavaScript, campos críticos da interface, exportador XLSX com ZIP/OpenXML válido e compila Android. O fato de compilar não substitui testes no dispositivo, na sua folha de análises real e na rede industrial autorizada.
+
 ## APK
 
-No GitHub, acesse **Actions > CaldoControl APK Android > execução mais recente > Artifacts > CaldoControl-2.3-debug-APK**. Baixe o ZIP e extraia o arquivo **app-debug.apk** para instalar no Android. Este é um APK debug para teste, não assinado para distribuição pela Play Store.
+No GitHub, acesse **Actions > CaldoControl APK Android > execução mais recente > Artifacts > CaldoControl-2.4-debug-APK**. Baixe o ZIP e extraia o arquivo **app-debug.apk** para instalar no Android. Este é um APK debug para teste, não assinado para distribuição pela Play Store.
 
 O workflow `.github/workflows/caldocontrol-apk.yml` compila o projeto com Java 17, Gradle 8.9 e Android SDK 35. Também pode ser executado manualmente via **Run workflow**.
 
