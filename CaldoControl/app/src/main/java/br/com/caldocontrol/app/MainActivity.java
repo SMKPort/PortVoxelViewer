@@ -1,7 +1,7 @@
 package br.com.caldocontrol.app;
 
 import android.app.Activity;
-import android.app.PrintManager;
+import android.print.PrintManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -32,7 +32,6 @@ public class MainActivity extends Activity {
     private WebView reportView;
     private ValueCallback<Uri[]> fileCallback;
     private String pendingText;
-    private final WebViewAssetLoader assetLoader = null; // created after Activity context exists
     private WebViewAssetLoader loader;
 
     @Override public void onCreate(Bundle savedInstanceState) {
