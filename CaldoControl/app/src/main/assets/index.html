@@ -375,7 +375,17 @@
         if(valid&&writeStore(SETTINGS_KEY,safe)){settings=safe;restoredSettings=true;setupRanges();}
       }
       if(typeof parsed.dayStart==='string'&&/^([01]\d|2[0-3]):[0-5]\d$/.test(parsed.dayStart)&&window.confirm('O backup usa início do dia operacional às '+parsed.dayStart+'. Restaurar esse horário?')){if(writeStore(DAY_KEY,parsed.dayStart)){dayStart=parsed.dayStart;$('dayStart').value=dayStart;}}
-      renderDashboard();renderHistory();renderDecanters();renderHeaters();renderReport();window.alert(count+' registros restaurados. Registros repetidos foram ignorados.'+(restoredSettings?' Limites restaurados.':''));}catch(err){window.alert('Erro ao restaurar: '+err.message);}finally{e.target.value='';}});
+      if(Array.isArray(parsed.auditTrail)&&parsed.auditTrail.length&&window.confirm('O backup inclui auditoria local. Importar eventos não duplicados?')){
+         const ids=new Set(auditTrail.map(e=>e.id));
+         auditTrail=[...auditTrail,...parsed.auditTrail.filter(e=>e&&typeof e.id==='string'&&typeof e.at==='string'&&typeof e.action==='string'&&e.id.length<100&&!ids.has(e.id)).slice(-1200)].slice(-1200);
+         writeStore(AUDIT_KEY,auditTrail);
+       }
+       if(Array.isArray(parsed.closures)&&parsed.closures.length&&window.confirm('O backup inclui fechamentos de turno. Importar fechamentos não existentes?')){
+         const keys=new Set(closures.map(c=>c.key));
+         closures=[...closures,...parsed.closures.filter(c=>c&&typeof c.key==='string'&&typeof c.date==='string'&&typeof c.shift==='string'&&!keys.has(c.key)).slice(-500)].slice(-500);
+         writeStore(CLOSURE_KEY,closures);
+       }
+       renderAudit();renderClosures();renderDashboard();renderHistory();renderDecanters();renderHeaters();renderReport();window.alert(count+' registros restaurados. Registros repetidos foram ignorados.'+(restoredSettings?' Limites restaurados.':''));}catch(err){window.alert('Erro ao restaurar: '+err.message);}finally{e.target.value='';}});
   function validBackupRecord(r){return ['phCalado','phDec','phTorre','phXarope'].every(k=>r[k]===null||(r[k]>=0&&r[k]<=14))&&['juiceFlow','limeFlow','polymerFlow','temperature','tempInput','steamPressure','baume','brix','brixCalado','brixClarificado','brixXarope','sludgeLevelPct','sludgeFlow','turbidity','residenceTime'].every(k=>r[k]===null||(r[k]>=0&&(k==='sludgeLevelPct'?r[k]<=100:true)))&&['L/h','m³/h'].includes(r.limeUnit)&&['acucar','etanol','ambos','nao-informado'].includes(r.process)&&['manual','gateway','csv','foto','demo'].includes(r.source);}
   $('deleteAll').addEventListener('click',()=>{if(!records.length)return window.alert('Não há registros para apagar.');if(!window.confirm('Apagar PERMANENTEMENTE todos os '+records.length+' registros deste aparelho? Exporte um backup antes, se necessário.'))return; if(!window.confirm('Confirma novamente a exclusão de todo o histórico?'))return;if(writeStore(DATA_KEY,[])){appendAudit('apagar-tudo','todos',activeOperator.name||'Não identificado',records.length+' registros removidos',null,null);records=[];afterRecordsChanged();renderDashboard();renderHistory();renderDecanters();renderHeaters();renderReport();window.alert('Histórico apagado deste navegador.');}});
   const processLabel=p=>({acucar:'Açúcar',etanol:'Etanol',ambos:'Açúcar + etanol','nao-informado':'Não informado'}[p]||'Não informado');
@@ -755,7 +765,7 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
   if(!Array.isArray(liveHistory))liveHistory=[];
   const SHIFT_DEFAULT={A:{start:'06:00',end:'14:00'},B:{start:'14:00',end:'22:00'},C:{start:'22:00',end:'06:00'}};
   let shiftTimes=readStore(SHIFT_KEY,SHIFT_DEFAULT);
-  if(!shiftTimes||!['A','B','C'].every(k=>shiftTimes[k]&&/^([01]\\d|2[0-3]):[0-5]\\d$/.test(shiftTimes[k].start)&&/^([01]\\d|2[0-3]):[0-5]\\d$/.test(shiftTimes[k].end)))shiftTimes=SHIFT_DEFAULT;
+  if(!shiftTimes||!['A','B','C'].every(k=>shiftTimes[k]&&/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftTimes[k].start)&&/^([01]\\d|2[0-3]):[0-5]\\d$/.test(shiftTimes[k].end)))shiftTimes=SHIFT_DEFAULT;
   const cleanAuditRecord=r=>r?Object.fromEntries(['dateTime','line','shift','operator','source','phCalado','phDec','phTorre','phXarope','brixCalado','brixClarificado','brixXarope','limeFlow','limeUnit','juiceFlow','baume','decanterId','heaterId'].map(k=>[k,r[k]??null])):null;
   function appendAudit(action,id,actor,reason,before,after){
     const event={id:'evt_'+Date.now()+'_'+Math.random().toString(36).slice(2),at:new Date().toISOString(),
@@ -782,7 +792,7 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
   $('exportAudit').addEventListener('click',()=>{
     const keys=['at','actor','action','recordId','reason','before','after'];
     const rows=[keys.map(csvCell).join(';'),...auditTrail.map(e=>keys.map(k=>csvCell(k==='before'||k==='after'?JSON.stringify(e[k]??{}):e[k])).join(';'))];
-    download('caldocontrol_auditoria_'+isoDate()+'.csv','text/csv;charset=utf-8','\\ufeff'+rows.join('\\r\\n'));
+    download('caldocontrol_auditoria_'+isoDate()+'.csv','text/csv;charset=utf-8','\ufeff'+rows.join('\r\n'));
   });
   function recordLiveReading(fields,at,origin){
     if(origin==='demo')return;
@@ -791,7 +801,7 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
     const item={at:at.toISOString(),receivedAt:new Date().toISOString(),origin,fields:data};
     if(liveHistory.length&&liveHistory[liveHistory.length-1].at===item.at&&JSON.stringify(liveHistory[liveHistory.length-1].fields)===JSON.stringify(item.fields))return;
     liveHistory=[...liveHistory,item].slice(-240);
-    if(liveHistory.length%5===0)writeStore(LIVE_KEY,liveHistory);
+    writeStore(LIVE_KEY,liveHistory);
     if($('aovivo').classList.contains('active'))renderLive();
   }
   function renderLive(){
@@ -799,7 +809,7 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
     const keys=['phCalado','phDec','phXarope','phTorre','brixCalado','brixClarificado','brixXarope','temperature','tempInput','juiceFlow','limeFlow','baume','sludgeLevelPct','turbidity'];
     const current=sensorSource==='gateway'&&sensorData?{at:sensorAt.toISOString(),fields:sensorData}:last;
     const age=current?Date.now()-new Date(current.at).getTime():Infinity;
-    const good=current&&Math.abs(age)<=120000&&sensorSource==='gateway';
+    const connected=httpConnected||(socket&&socket.readyState===WebSocket.OPEN);const good=current&&Math.abs(age)<=120000&&sensorSource==='gateway'&&connected;
     $('liveBadge').textContent=!current?'Sem leituras':good?'Leitura recente':'Sem sinal atual';
     $('liveTimestamp').textContent=current?('Última leitura: '+showDate(current.at)+(good?' · Atual':' · Antiga ou desconectada')):'Sem dados do supervisório';
     $('liveTiles').innerHTML=current?keys.filter(k=>Number.isFinite(current.fields[k])).map(k=>'<div class="mini-card"><p>'+html(SENSOR_LABELS[k]||k)+'</p><div class="mini-value">'+fmt(current.fields[k],k.startsWith('ph')?2:1)+'</div><small>'+html(statusText(k,current.fields[k]))+'</small></div>').join(''):'<div class="empty">Sem amostras ainda.</div>';
@@ -966,7 +976,7 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
     $('batchSave').disabled=true;batchScan=null;batchImage='';
     try{
       if(!photo.type.startsWith('image/')||photo.size>12*1024*1024)throw Error('Selecione foto com até 12 MB.');
-      batchImage=await batchImageData(photo,600,.5);
+      batchImage=await batchImageData(photo,430,.4);if(batchImage.length>150000)batchImage=await batchImageData(photo,280,.3);if(batchImage.length>150000)throw Error('Foto grande demais para anexar, faça um recorte.');
       $('batchPreview').src=batchImage;$('batchPreview').style.display='block';
       $('batchMapping').innerHTML='';$('batchTable').innerHTML='';
       if(!window.CaldoAndroid||typeof window.CaldoAndroid.recognizeSheetPhoto!=='function')
@@ -1090,7 +1100,7 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
     if(!prepared.length){window.alert('Nenhuma linha válida selecionada.');return;}
     if(prepared.length>70){window.alert('Importe no máximo 70 linhas por vez.');return;}
     if(!window.confirm('Gravar '+prepared.length+' novas análises revisadas, com operador '+operator+'?'))return;
-    prepared[0].photoData=batchImage.slice(0,150000);
+    prepared[0].photoData=batchImage;
     prepared[0].photoOcrText=String(batchScan?.text||'').slice(0,3900);
     const next=[...records,...prepared];
     if(!writeStore(DATA_KEY,next))return;
@@ -1173,7 +1183,13 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
       const keys=['dateTime','line','process','shift','operator','source','phCalado','phDec','phXarope','phTorre','brixCalado','brixClarificado','brixXarope','baume','juiceFlow','limeFlow','limeUnit','temperature','tempInput','steamPressure','decanterId','sludgeLevelPct','turbidity','notes','photoOcrText'];
       const rows=[keys,...records.map(r=>keys.map(k=>r[k]??null))];
       const avKeys=['day','shift','process','line','records',...AVG_MEASURES.flatMap(([key])=>[key,key+'N'])];
-      const averages=[avKeys,...avgExportRows.map(r=>avKeys.map(k=>r[k]??null))];
+      const allGroups=shiftGroupRecords(),allAverages=[];
+      for(const [name,rows] of allGroups){const [day,shift,process,line]=JSON.parse(name);
+        const item={day,shift,process,line,records:rows.length};
+        for(const [key] of AVG_MEASURES){const stats=statsOf(rows,key);item[key]=stats.average;item[key+'N']=stats.n;}
+        allAverages.push(item);
+      }
+      const averages=[avKeys,...allAverages.map(r=>avKeys.map(k=>r[k]??null))];
       const clKeys=['date','shift','process','line','sampleCount','status','actor','reviewedAt','outside','rateLPerM3',...AVG_MEASURES.map(([key])=>key)];
       const closed=[clKeys,...closures.map(r=>clKeys.map(k=>k==='rateLPerM3'?r.rate?.average??null:r.metrics?.[k]?.average??r[k]??null))];
       const audKeys=['at','actor','action','recordId','reason','before','after'];
