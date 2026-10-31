@@ -96,6 +96,55 @@ public class MainActivity extends Activity {
     }
 
     private final class AndroidBridge {
+        // HTTPS de leitura: TLS do Android, sem credenciais persistidas, sem redirecionamento, GET somente.
+        @JavascriptInterface public void readGatewayJson(String endpoint, String requestId) {
+            if (requestId == null || !requestId.matches("[A-Za-z0-9_-]{1,40}")) return;
+            new Thread(() -> {
+                String content = null;
+                String failure = null;
+                java.net.HttpURLConnection conn = null;
+                try {
+                    java.net.URI uri = new java.net.URI(endpoint);
+                    if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null
+                        || uri.getRawUserInfo() != null || uri.getRawFragment() != null)
+                        throw new IllegalArgumentException("Exige endereço HTTPS sem usuário ou senha.");
+                    java.net.URL url = uri.toURL();
+                    conn = (java.net.HttpURLConnection)url.openConnection();
+                    conn.setConnectTimeout(5000);
+                    conn.setReadTimeout(5000);
+                    conn.setInstanceFollowRedirects(false);
+                    conn.setRequestMethod("GET");
+                    conn.setRequestProperty("Accept", "application/json");
+                    int status = conn.getResponseCode();
+                    if (status < 200 || status >= 300) throw new java.io.IOException("HTTP " + status);
+                    int size = conn.getContentLength();
+                    if (size > 65536) throw new java.io.IOException("Resposta muito grande.");
+                    java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+                    try (java.io.InputStream in = conn.getInputStream()) {
+                        byte[] chunk = new byte[4096]; int count;
+                        while ((count = in.read(chunk)) != -1) {
+                            if (buffer.size() + count > 65536) throw new java.io.IOException("Limite de 64 KB.");
+                            buffer.write(chunk, 0, count);
+                        }
+                    }
+                    content = buffer.toString("UTF-8");
+                } catch (Exception e) {
+                    failure = e instanceof javax.net.ssl.SSLException ?
+                        "Falha TLS/certificado. Consulte a TI/automação." : e.getMessage();
+                } finally { if (conn != null) conn.disconnect(); }
+                final String output = content, error = failure;
+                runOnUiThread(() -> {
+                    if (webView == null) return;
+                    String cb = error == null ? "receive" : "error";
+                    String val = error == null ? output : error;
+                    webView.evaluateJavascript(
+                        "window.CaldoGatewayNative && window.CaldoGatewayNative."+cb+"("+
+                        org.json.JSONObject.quote(requestId)+","+
+                        org.json.JSONObject.quote(val == null ? "Falha desconhecida" : val)+")", null);
+                });
+            }, "caldocontrol-gateway-read").start();
+        }
+
         @JavascriptInterface public void recognizePhoto(String imageDataUrl) {
             new PhotoOcr(MainActivity.this, webView).recognize(imageDataUrl);
         }
