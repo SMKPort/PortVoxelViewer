@@ -941,6 +941,249 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
   // Enquanto o app está aberto, preparar os rascunhos de turnos já encerrados.
   setInterval(()=>{createShiftDrafts();if($('fechamentos').classList.contains('active'))renderClosures();if($('aovivo').classList.contains('active'))renderLive();},60000);
 
+
+  // OCR de tabelas: extrair linhas na posição da foto, mapear colunas e CONFERIR antes de salvar.
+  const BATCH_FIELDS=[['time','Hora'],['phCalado','pH caleado'],['phDec','pH clarificado'],['phXarope','pH xarope'],
+    ['phTorre','pH torre'],['brixCalado','Brix caleado'],['brixClarificado','Brix clarificado'],['brixXarope','Brix xarope'],['baume','Baumé']];
+  let batchScan=null,batchOriginalRows=[],batchColumnXs=[],batchMapped=[],batchImage='';
+  $('batchDate').value=dateLocal(new Date().toISOString());
+  function batchImageData(photo,limit=1600,quality=.78){
+    return new Promise((resolve,reject)=>{
+      const im=new Image(),url=URL.createObjectURL(photo);
+      im.onload=()=>{
+        URL.revokeObjectURL(url);
+        const c=document.createElement('canvas'),scale=Math.min(1,limit/Math.max(im.width,im.height));
+        c.width=Math.max(1,Math.round(im.width*scale));c.height=Math.max(1,Math.round(im.height*scale));
+        c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+        resolve(c.toDataURL('image/jpeg',quality));
+      };
+      im.onerror=()=>{URL.revokeObjectURL(url);reject(Error('Foto ilegível'));};
+      im.src=url;
+    });
+  }
+  $('batchPhoto').addEventListener('change',async e=>{
+    const photo=e.target.files?.[0];if(!photo)return;
+    $('batchSave').disabled=true;batchScan=null;batchImage='';
+    try{
+      if(!photo.type.startsWith('image/')||photo.size>12*1024*1024)throw Error('Selecione foto com até 12 MB.');
+      batchImage=await batchImageData(photo,600,.5);
+      $('batchPreview').src=batchImage;$('batchPreview').style.display='block';
+      $('batchMapping').innerHTML='';$('batchTable').innerHTML='';
+      if(!window.CaldoAndroid||typeof window.CaldoAndroid.recognizeSheetPhoto!=='function')
+        throw Error('O reconhecimento tabular de fotos está disponível apenas no APK Android 2.4.');
+      $('batchStatus').textContent='Reconhecendo posições e linhas. Confira todos os números no resultado.';
+      const big=await batchImageData(photo,1800,.75);
+      if(big.length>3500000)throw Error('Imagem muito grande para OCR, faça uma foto com menor resolução.');
+      window.CaldoAndroid.recognizeSheetPhoto(big);
+    }catch(err){$('batchStatus').textContent=err.message;}
+  });
+  window.CaldoControlTableOCR={
+    receive(json){
+      try{
+        const result=JSON.parse(json);
+        batchScan=result;
+        const lines=Array.isArray(result.lines)?result.lines.filter(l=>typeof l.text==='string'&&Number.isFinite(l.x)&&Number.isFinite(l.y)).slice(0,400):[];
+        if(!lines.length)throw Error('Nenhuma linha de texto encontrada na fotografia.');
+        lines.sort((a,b)=>a.y-b.y||a.x-b.x);
+        const medianHeight=[...lines].map(x=>x.height||20).sort((a,b)=>a-b)[Math.floor(lines.length/2)]||20;
+        const threshold=Math.max(9,medianHeight*.55);
+        const rows=[];
+        for(const line of lines){
+          const mid=line.y+(line.height||20)/2;
+          let row=rows.find(r=>Math.abs(r.y-mid)<=threshold);
+          if(!row){row={y:mid,items:[]};rows.push(row);}
+          row.items.push({text:line.text.trim(),x:line.x,y:mid});
+        }
+        batchOriginalRows=rows.sort((a,b)=>a.y-b.y).map(r=>({...r,items:r.items.sort((a,b)=>a.x-b.x)})).filter(r=>r.items.length);
+        const headline=batchOriginalRows.find(r=>r.items.length>=3)||batchOriginalRows[0];
+        batchColumnXs=headline.items.slice(0,14).map(item=>item.x);
+        if(batchColumnXs.length<2)throw Error('Não identifiquei múltiplas colunas. Use foto frontal da tabela.');
+        $('batchStatus').textContent=lines.length+' trechos lidos em '+batchOriginalRows.length+' possíveis linhas. Defina as colunas para evitar atribuições incorretas.';
+        renderBatchMapping(headline.items);
+      }catch(err){$('batchStatus').textContent='OCR não conseguiu organizar a tabela: '+err.message;}
+    },
+    error(msg){$('batchStatus').textContent='OCR indisponível: '+msg;}
+  };
+  function renderBatchMapping(headerItems){
+    const options='<option value="">Ignorar coluna</option>'+BATCH_FIELDS.map(([k,n])=>'<option value="'+k+'">'+html(n)+'</option>').join('');
+    $('batchMapping').innerHTML='<h3>Associar colunas identificadas</h3><p class="fineprint">A associação inicial usa apenas cabeçalhos reconhecidos. Ajuste manualmente se houver erro; células sem mapeamento não são importadas.</p>'+
+      '<div class="gateway-map">'+batchColumnXs.map((x,i)=>{
+        const title=headerItems[i]?.text||'Coluna '+(i+1);
+        const possible=ocrTarget(title)||(/hora|horário|horario|^hr$/i.test(title)?'time':'');
+        return '<div class="field"><label>'+html(title)+' (coluna '+(i+1)+')</label><select class="batch-map" data-col="'+i+'">'+options+'</select></div>';
+      }).join('')+'</div>';
+    document.querySelectorAll('.batch-map').forEach(sel=>{
+      const i=Number(sel.dataset.col),title=headerItems[i]?.text||'';
+      const possible=ocrTarget(title)||(/hora|hor[aá]rio|^hr$/i.test(title)?'time':'');
+      sel.value=possible;
+    });
+    buildBatchTable();
+  }
+  function buildBatchTable(){
+    if(!batchOriginalRows.length)return;
+    const cols=batchColumnXs.map((x,i)=>({x,target:document.querySelector('.batch-map[data-col="'+i+'"]')?.value||''}));
+    const targets=cols.map(x=>x.target).filter(Boolean);
+    if(new Set(targets).size!==targets.length){$('batchStatus').textContent='Não repita o mesmo parâmetro em duas colunas.';$('batchSave').disabled=true;return;}
+    const filtered=[];
+    for(const row of batchOriginalRows){
+      const values={};
+      for(const item of row.items){
+        let best=-1,distance=Infinity;
+        cols.forEach((c,i)=>{const d=Math.abs(item.x-c.x);if(d<distance){best=i;distance=d;}});
+        if(best<0||!cols[best].target)continue;
+        const field=cols[best].target;
+        if(values[field])continue;
+        if(field==='time'){
+          const match=item.text.match(/\b(?:[01]?\d|2[0-3]):[0-5]\d\b/);
+          if(match)values.time=match[0].padStart(5,'0');
+        }else{
+          const one=item.text.trim().match(/^([+-]?\d{1,3}(?:[.,]\d{1,3})?)$/);
+          if(one)values[field]=one[1].replace(',','.');
+        }
+      }
+      if(!Object.keys(values).length)continue;
+      filtered.push(values);
+      if(filtered.length>=70)break;
+    }
+    batchMapped=filtered;
+    $('batchSave').disabled=!filtered.length;
+    if(!filtered.length){$('batchTable').innerHTML='<div class="empty">Sem valores por coluna. Ajuste o mapeamento ou faça uma foto mais frontal.</div>';return;}
+    $('batchTable').innerHTML='<p class="fineprint">Prévia editável de '+filtered.length+' linhas. Cada linha precisa ter horário e pelo menos uma medição válida.</p>'+
+      '<table class="cc-table"><thead><tr><th>Incluir</th>'+BATCH_FIELDS.map(x=>'<th>'+html(x[1])+'</th>').join('')+'</tr></thead><tbody>'+
+      filtered.map((r,i)=>'<tr data-row="'+i+'"><td><input type="checkbox" class="batch-include" checked aria-label="Incluir linha '+(i+1)+'"></td>'+
+        BATCH_FIELDS.map(([key])=>'<td><input class="batch-value" data-key="'+key+'" type="'+(key==='time'?'time':'number')+'" '+(key==='time'?'':'step="any"')+' value="'+html(r[key]||'')+'"></td>').join('')+'</tr>').join('')+'</tbody></table>';
+    $('batchStatus').textContent=filtered.length+' linhas candidatas. Confira horários, valores e campos antes de gravar.';
+  }
+  document.querySelector('#batchMapping').addEventListener('change',e=>{
+    if(e.target.matches('.batch-map'))buildBatchTable();
+  });
+  $('batchRebuild').addEventListener('click',buildBatchTable);
+  $('batchSave').addEventListener('click',()=>{
+    const operator=activeOperator.name||$('operator').value.trim();
+    if(!operator){window.alert('Identifique um operador na aba Operadores.');return;}
+    const day=$('batchDate').value,shift=$('batchShift').value,process=$('batchProcess').value,line=$('batchLine').value.trim();
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||!['A','B','C','Outro'].includes(shift)){window.alert('Confira a data e o turno.');return;}
+    const prepared=[],usedTimes=new Set();
+    for(const tr of document.querySelectorAll('#batchTable tr[data-row]')){
+      if(!tr.querySelector('.batch-include').checked)continue;
+      const obj={};
+      for(const input of tr.querySelectorAll('.batch-value'))obj[input.dataset.key]=input.value.trim();
+      if(!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(obj.time)){window.alert('Informe um horário válido para cada linha incluída.');return;}
+      const timestamp=new Date(day+'T'+obj.time+':00');
+      if(Number.isNaN(+timestamp)){window.alert('Data/hora inválida.');return;}
+      const rec=Object.fromEntries(FIELDS.map(k=>[k,NUMS.includes(k)?null:'']));
+      Object.assign(rec,{id:'ocr_'+Date.now()+'_'+Math.random().toString(36).slice(2,10),dateTime:timestamp.toISOString(),
+        updatedAt:new Date().toISOString(),line,shift,operator,process,source:'foto',limeUnit:'L/h',
+        notes:'Linha da folha OCR revisada pelo operador.',photoData:'',photoOcrText:''});
+      for(const [key] of BATCH_FIELDS){
+        if(key==='time'||!obj[key])continue;
+        const n=Number(obj[key].replace(',','.'));
+        rec[key]=n;
+      }
+      const err=validForm({...rec,dateTime:day+'T'+obj.time});
+      if(err){window.alert('Leitura '+obj.time+': '+err);return;}
+      const sig=day+obj.time+line;
+      if(usedTimes.has(sig)){window.alert('Horário repetido no lote: '+obj.time);return;}
+      usedTimes.add(sig);
+      prepared.push(rec);
+    }
+    if(!prepared.length){window.alert('Nenhuma linha válida selecionada.');return;}
+    if(prepared.length>70){window.alert('Importe no máximo 70 linhas por vez.');return;}
+    if(!window.confirm('Gravar '+prepared.length+' novas análises revisadas, com operador '+operator+'?'))return;
+    prepared[0].photoData=batchImage.slice(0,150000);
+    prepared[0].photoOcrText=String(batchScan?.text||'').slice(0,3900);
+    const next=[...records,...prepared];
+    if(!writeStore(DATA_KEY,next))return;
+    records=next;
+    appendAudit('importar-foto','lote',operator,prepared.length+' linhas OCR revisadas',null,{count:prepared.length});
+    afterRecordsChanged();renderDashboard();renderHistory();renderAverages();renderReport();
+    $('batchStatus').textContent=prepared.length+' análises importadas com sucesso. A foto foi anexada à primeira linha.';
+    $('batchSave').disabled=true;
+  });
+
+  // Escrita XLSX (Open XML ZIP sem compressão), sem CDN e utilizável offline.
+  const utf8=new TextEncoder();
+  const xmlText=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+  const crcTable=(()=>{
+    const t=new Uint32Array(256);
+    for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?0xedb88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;
+  })();
+  function crc32(bytes){let c=0xffffffff;for(const b of bytes)c=crcTable[(c^b)&255]^(c>>>8);return (c^0xffffffff)>>>0;}
+  function zipStored(files){
+    const localParts=[],centralParts=[];let offset=0;
+    function header(length){return new DataView(new ArrayBuffer(length));}
+    function bytes(view){return new Uint8Array(view.buffer);}
+    for(const [name,source] of files){
+      const nameBytes=utf8.encode(name),data=utf8.encode(source),crc=crc32(data);
+      const local=header(30);local.setUint32(0,0x04034b50,true);local.setUint16(4,20,true);
+      local.setUint32(14,crc,true);local.setUint32(18,data.length,true);local.setUint32(22,data.length,true);
+      local.setUint16(26,nameBytes.length,true);
+      localParts.push(bytes(local),nameBytes,data);
+      const central=header(46);central.setUint32(0,0x02014b50,true);central.setUint16(4,20,true);central.setUint16(6,20,true);
+      central.setUint32(16,crc,true);central.setUint32(20,data.length,true);central.setUint32(24,data.length,true);
+      central.setUint16(28,nameBytes.length,true);central.setUint32(42,offset,true);
+      centralParts.push(bytes(central),nameBytes);
+      offset+=30+nameBytes.length+data.length;
+    }
+    const centralSize=centralParts.reduce((n,p)=>n+p.length,0),eocd=header(22);
+    eocd.setUint32(0,0x06054b50,true);eocd.setUint16(8,files.length,true);
+    eocd.setUint16(10,files.length,true);eocd.setUint32(12,centralSize,true);eocd.setUint32(16,offset,true);
+    const parts=[...localParts,...centralParts,bytes(eocd)],length=parts.reduce((n,b)=>n+b.length,0),out=new Uint8Array(length);
+    let pos=0;for(const part of parts){out.set(part,pos);pos+=part.length;}return out;
+  }
+  function xlsxCol(n){let s='';for(let x=n+1;x;x=Math.floor((x-1)/26))s=String.fromCharCode(65+(x-1)%26)+s;return s;}
+  function xlsxSheet(rows){
+    let body='';for(let i=0;i<rows.length;i++){
+      const cells=rows[i].map((value,j)=>{
+        if(value===null||value===undefined||value==='')return '';
+        const cell=xlsxCol(j)+(i+1);
+        if(typeof value==='number'&&Number.isFinite(value))return '<c r="'+cell+'"><v>'+value+'</v></c>';
+        const text=xmlText(String(value).slice(0,32000));
+        return '<c r="'+cell+'" t="inlineStr"><is><t xml:space="preserve">'+text+'</t></is></c>';
+      }).join('');
+      body+='<row r="'+(i+1)+'">'+cells+'</row>';
+    }
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'+body+'</sheetData></worksheet>';
+  }
+  function xlsxWorkbook(sheets){
+    const ns='http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+    const entries=[
+      ['[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+sheets.map((_,i)=>'<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('')+'</Types>'],
+      ['_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+      ['xl/workbook.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="'+ns+'" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+sheets.map((s,i)=>'<sheet name="'+xmlText(s.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join('')+'</sheets></workbook>'],
+      ['xl/_rels/workbook.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+sheets.map((_,i)=>'<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join('')+'</Relationships>']
+    ];
+    for(let i=0;i<sheets.length;i++)entries.push(['xl/worksheets/sheet'+(i+1)+'.xml',xlsxSheet(sheets[i].rows)]);
+    return zipStored(entries);
+  }
+  function downloadXlsx(bytes,name){
+    const mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    if(window.CaldoAndroid&&typeof window.CaldoAndroid.saveBase64==='function'){
+      let str='';for(let p=0;p<bytes.length;p+=8192)str+=String.fromCharCode(...bytes.subarray(p,p+8192));
+      window.CaldoAndroid.saveBase64(name,mime,btoa(str));
+      return;
+    }
+    const url=URL.createObjectURL(new Blob([bytes],{type:mime})),a=document.createElement('a');
+    a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),10000);
+  }
+  $('exportExcel').addEventListener('click',()=>{
+    try{
+      renderAverages();
+      const keys=['dateTime','line','process','shift','operator','source','phCalado','phDec','phXarope','phTorre','brixCalado','brixClarificado','brixXarope','baume','juiceFlow','limeFlow','limeUnit','temperature','tempInput','steamPressure','decanterId','sludgeLevelPct','turbidity','notes','photoOcrText'];
+      const rows=[keys,...records.map(r=>keys.map(k=>r[k]??null))];
+      const avKeys=['day','shift','process','line','records',...AVG_MEASURES.flatMap(([key])=>[key,key+'N'])];
+      const averages=[avKeys,...avgExportRows.map(r=>avKeys.map(k=>r[k]??null))];
+      const clKeys=['date','shift','process','line','sampleCount','status','actor','reviewedAt','outside','rateLPerM3',...AVG_MEASURES.map(([key])=>key)];
+      const closed=[clKeys,...closures.map(r=>clKeys.map(k=>k==='rateLPerM3'?r.rate?.average??null:r.metrics?.[k]?.average??r[k]??null))];
+      const audKeys=['at','actor','action','recordId','reason','before','after'];
+      const audit=[audKeys,...auditTrail.map(e=>audKeys.map(k=>k==='before'||k==='after'?JSON.stringify(e[k]??{}):e[k]??null))];
+      const bytes=xlsxWorkbook([{name:'Analises',rows},{name:'Medias por turno',rows:averages},{name:'Fechamentos',rows:closed},{name:'Auditoria',rows:audit}]);
+      if(bytes.length>11500000)throw Error('Relatório muito grande. Exporte CSV ou reduza o período.');
+      downloadXlsx(bytes,'caldocontrol_relatorio_completo_'+isoDate()+'.xlsx');
+    }catch(err){window.alert('Não foi possível gerar Excel: '+err.message);}
+  });
+
   setInterval(()=>{if(sensorData&&document.getElementById('sensores').classList.contains('active'))renderSensors();},30000);
 
   $('todayStamp').textContent=new Intl.DateTimeFormat('pt-BR' ,{weekday:'long',day:'2-digit',month:'long',year:'numeric'}).format(new Date());
