@@ -742,6 +742,205 @@ $('applyOcr').addEventListener('click',()=>{
 });
 $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoData').value='';$('photoOcrText').value='';$('photoPreview').src='';$('photoPreview').style.display='none';$('ocrTextPreview').textContent='Nenhum texto.';ocrMatches=[];$('ocrCandidates').innerHTML='';$('applyOcr').disabled=true;$('photoStatus').textContent='Foto removida.';});
 
+
+  // NOVO 2.4: telemetria local e rastreabilidade de operadores.
+  const OP_KEY='caldocontrol_operator_v24',AUDIT_KEY='caldocontrol_audit_v24',
+    SHIFT_KEY='caldocontrol_shift_hours_v24',CLOSURE_KEY='caldocontrol_closures_v24',
+    LIVE_KEY='caldocontrol_live_samples_v24';
+  let activeOperator=readStore(OP_KEY,{name:'',shift:''});
+  if(!activeOperator||typeof activeOperator.name!=='string')activeOperator={name:'',shift:''};
+  let auditTrail=readStore(AUDIT_KEY,[]),closures=readStore(CLOSURE_KEY,[]),liveHistory=readStore(LIVE_KEY,[]);
+  if(!Array.isArray(auditTrail))auditTrail=[];
+  if(!Array.isArray(closures))closures=[];
+  if(!Array.isArray(liveHistory))liveHistory=[];
+  const SHIFT_DEFAULT={A:{start:'06:00',end:'14:00'},B:{start:'14:00',end:'22:00'},C:{start:'22:00',end:'06:00'}};
+  let shiftTimes=readStore(SHIFT_KEY,SHIFT_DEFAULT);
+  if(!shiftTimes||!['A','B','C'].every(k=>shiftTimes[k]&&/^([01]\\d|2[0-3]):[0-5]\\d$/.test(shiftTimes[k].start)&&/^([01]\\d|2[0-3]):[0-5]\\d$/.test(shiftTimes[k].end)))shiftTimes=SHIFT_DEFAULT;
+  const cleanAuditRecord=r=>r?Object.fromEntries(['dateTime','line','shift','operator','source','phCalado','phDec','phTorre','phXarope','brixCalado','brixClarificado','brixXarope','limeFlow','limeUnit','juiceFlow','baume','decanterId','heaterId'].map(k=>[k,r[k]??null])):null;
+  function appendAudit(action,id,actor,reason,before,after){
+    const event={id:'evt_'+Date.now()+'_'+Math.random().toString(36).slice(2),at:new Date().toISOString(),
+      action:String(action).slice(0,30),recordId:String(id).slice(0,120),
+      actor:String(actor||'Não identificado').slice(0,80),reason:String(reason||'').slice(0,240),
+      before:cleanAuditRecord(before),after:cleanAuditRecord(after)};
+    auditTrail=[...auditTrail,event].slice(-1200);
+    if(!writeStore(AUDIT_KEY,auditTrail))$('activeOperatorStatus').textContent='Aviso: auditoria não pôde ser persistida.';
+    renderAudit();
+  }
+  function renderAudit(){
+    $('activeOperator').value=activeOperator.name||'';
+    $('activeOperatorShift').value=activeOperator.shift||'';
+    $('activeOperatorStatus').textContent=activeOperator.name?'Operador ativo: '+activeOperator.name+'. Identificação local sem login corporativo.':'Informe o operador para registrar alterações.';
+    const list=[...auditTrail].reverse().slice(0,120);
+    $('auditLog').innerHTML=list.length?'<table><thead><tr><th>Quando</th><th>Operador</th><th>Ação</th><th>Registro</th><th>Motivo</th></tr></thead><tbody>'+list.map(e=>'<tr><td>'+html(showDate(e.at))+'</td><td>'+html(e.actor)+'</td><td>'+html(e.action)+'</td><td>'+html(e.recordId)+'</td><td>'+html(e.reason)+'</td></tr>').join('')+'</tbody></table>':'<div class="empty">Nenhuma alteração auditada nesta versão.</div>';
+  }
+  $('saveOperator').addEventListener('click',()=>{
+    const name=$('activeOperator').value.trim();
+    if(name.length<2){$('activeOperatorStatus').textContent='Informe nome ou matrícula com pelo menos 2 caracteres.';return;}
+    activeOperator={name:name.slice(0,80),shift:$('activeOperatorShift').value};
+    if(writeStore(OP_KEY,activeOperator)){$('operator').value=activeOperator.name;if(activeOperator.shift)$('shift').value=activeOperator.shift;appendAudit('operador','identidade',name,'Identificação local',null,null);renderAudit();}
+  });
+  $('exportAudit').addEventListener('click',()=>{
+    const keys=['at','actor','action','recordId','reason','before','after'];
+    const rows=[keys.map(csvCell).join(';'),...auditTrail.map(e=>keys.map(k=>csvCell(k==='before'||k==='after'?JSON.stringify(e[k]??{}):e[k])).join(';'))];
+    download('caldocontrol_auditoria_'+isoDate()+'.csv','text/csv;charset=utf-8','\\ufeff'+rows.join('\\r\\n'));
+  });
+  function recordLiveReading(fields,at,origin){
+    if(origin==='demo')return;
+    const data=Object.fromEntries(Object.entries(fields).filter(([k,v])=>SENSOR_FIELDS.includes(k)&&Number.isFinite(v)));
+    if(!Object.keys(data).length)return;
+    const item={at:at.toISOString(),receivedAt:new Date().toISOString(),origin,fields:data};
+    if(liveHistory.length&&liveHistory[liveHistory.length-1].at===item.at&&JSON.stringify(liveHistory[liveHistory.length-1].fields)===JSON.stringify(item.fields))return;
+    liveHistory=[...liveHistory,item].slice(-240);
+    if(liveHistory.length%5===0)writeStore(LIVE_KEY,liveHistory);
+    if($('aovivo').classList.contains('active'))renderLive();
+  }
+  function renderLive(){
+    const last=liveHistory[liveHistory.length-1];
+    const keys=['phCalado','phDec','phXarope','phTorre','brixCalado','brixClarificado','brixXarope','temperature','tempInput','juiceFlow','limeFlow','baume','sludgeLevelPct','turbidity'];
+    const current=sensorSource==='gateway'&&sensorData?{at:sensorAt.toISOString(),fields:sensorData}:last;
+    const age=current?Date.now()-new Date(current.at).getTime():Infinity;
+    const good=current&&Math.abs(age)<=120000&&sensorSource==='gateway';
+    $('liveBadge').textContent=!current?'Sem leituras':good?'Leitura recente':'Sem sinal atual';
+    $('liveTimestamp').textContent=current?('Última leitura: '+showDate(current.at)+(good?' · Atual':' · Antiga ou desconectada')):'Sem dados do supervisório';
+    $('liveTiles').innerHTML=current?keys.filter(k=>Number.isFinite(current.fields[k])).map(k=>'<div class="mini-card"><p>'+html(SENSOR_LABELS[k]||k)+'</p><div class="mini-value">'+fmt(current.fields[k],k.startsWith('ph')?2:1)+'</div><small>'+html(statusText(k,current.fields[k]))+'</small></div>').join(''):'<div class="empty">Sem amostras ainda.</div>';
+    const select=$('liveMetric'),old=select.value;
+    select.innerHTML=keys.map(k=>'<option value="'+k+'">'+html(SENSOR_LABELS[k]||k)+'</option>').join('');
+    if(keys.includes(old))select.value=old;else select.value='phCalado';
+    const key=select.value,observations=liveHistory.filter(r=>Number.isFinite(r.fields?.[key])).slice(-80);
+    if(observations.length<2){$('liveTrend').innerHTML='<div class="empty">O gráfico aparecerá após pelo menos duas leituras deste parâmetro.</div>';return;}
+    const width=700,height=225,left=46,top=18,bottom=30,right=16;
+    const nums=observations.map(r=>r.fields[key]),lo=Math.min(...nums),hi=Math.max(...nums),pad=Math.max(key.startsWith('ph')?.15:.5,(hi-lo)*.22);
+    const min=lo-pad,max=hi+pad,x=i=>left+i*(width-left-right)/(observations.length-1),y=v=>top+(max-v)*(height-top-bottom)/(max-min);
+    const points=nums.map((v,i)=>x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ');
+    $('liveTrend').innerHTML='<svg viewBox="0 0 '+width+' '+height+'" role="img" aria-label="Tendência de '+html(key)+'"><line x1="'+left+'" y1="'+top+'" x2="'+left+'" y2="'+(height-bottom)+'" stroke="#8499a7"/><line x1="'+left+'" y1="'+(height-bottom)+'" x2="'+(width-right)+'" y2="'+(height-bottom)+'" stroke="#8499a7"/><polyline points="'+points+'" stroke="#b9ee63" fill="none" stroke-width="2.5"/><text x="8" y="24" fill="#a8bbca" font-size="12">'+html(fmt(max,2))+'</text><text x="8" y="'+(height-bottom)+'" fill="#a8bbca" font-size="12">'+html(fmt(min,2))+'</text></svg>';
+  }
+  $('liveRefresh').addEventListener('click',renderLive);
+  $('liveMetric').addEventListener('change',renderLive);
+
+  // Turnos: encerramento temporizado gera RASCUNHO, nunca aprovação automática.
+  function shiftGroupRecords(){
+    const groups=new Map();
+    for(const r of operationalRecords()){
+      if(!['A','B','C'].includes(r.shift))continue;
+      const date=dateOperational(r.dateTime);
+      if(!date)continue;
+      const key=JSON.stringify([date,r.shift,r.process||'nao-informado',r.line||'Sem linha']);
+      if(!groups.has(key))groups.set(key,[]);
+      groups.get(key).push(r);
+    }
+    return groups;
+  }
+  function shiftEnd(date,shift){
+    const cfg=shiftTimes[shift];if(!cfg)return NaN;
+    const start=new Date(date+'T'+cfg.start+':00'),end=new Date(date+'T'+cfg.end+':00');
+    if(+end<=+start)end.setDate(end.getDate()+1);
+    return +end;
+  }
+  function statsOf(rows,key){
+    const values=rows.map(r=>r[key]).filter(Number.isFinite);
+    return {n:values.length,average:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,
+      min:values.length?Math.min(...values):null,max:values.length?Math.max(...values):null};
+  }
+  function shiftSignature(rows){return rows.map(r=>r.id+'_'+r.updatedAt).sort().join('|');}
+  function createShiftDrafts(){
+    let created=0;const groups=shiftGroupRecords();
+    const existing=new Set(closures.map(c=>c.key));
+    for(const [key,group] of groups){
+      if(existing.has(key))continue;
+      const [date,shift,process,line]=JSON.parse(key),end=shiftEnd(date,shift);
+      if(!Number.isFinite(end)||Date.now()<end+15*60000)continue;
+      const metrics={};for(const [k] of METRICS)metrics[k]=statsOf(group,k);
+      const rate=statsOf(group.map(r=>({rate:calc(r).rate})),'rate');
+      const closure={key,date,shift,process,line,at:new Date().toISOString(),status:'rascunho',
+        actor:'',reviewedAt:null,signature:shiftSignature(group),sampleCount:group.length,metrics,rate,
+        outside:group.reduce((n,r)=>n+METRICS.filter(([k])=>alertFlag(k,r[k])==='outside').length,0)};
+      closures.push(closure);existing.add(key);created++;
+    }
+    if(created){closures=closures.slice(-500);writeStore(CLOSURE_KEY,closures);}
+    return created;
+  }
+  function renderClosures(){
+    for(const sh of ['A','B','C'])for(const key of ['Start','End'])$('shift'+sh+key).value=shiftTimes[sh][key.toLowerCase()];
+    const created=createShiftDrafts(),groups=shiftGroupRecords();
+    $('closureStatus').textContent=(created?created+' novos rascunhos criados. ':'')+closures.length+' fechamentos locais. O app cria rascunhos ao abrir e enquanto está ativo.';
+    const displayed=[...closures].sort((a,b)=>b.date.localeCompare(a.date)||b.shift.localeCompare(a.shift)).slice(0,70);
+    $('closureCards').innerHTML=displayed.length?displayed.map(c=>{
+      const rows=groups.get(c.key)||[],changed=shiftSignature(rows)!==c.signature;
+      const status=changed?'Desatualizado':c.status==='conferido'?'Conferido':'Rascunho';
+      const cells=['phCalado','phDec','phXarope','phTorre','brixCalado','brixClarificado','brixXarope'];
+      const detail=cells.map(k=>'<span class="tag">'+html(SENSOR_LABELS[k]||k)+': '+fmt(c.metrics?.[k]?.average,2)+' (n='+Number(c.metrics?.[k]?.n||0)+')</span>').join(' ');
+      return '<div class="cc-closure"><h3>'+html(c.date)+' · Turno '+html(c.shift)+' · '+html(processLabel(c.process))+'</h3>'+
+        '<p>'+html(c.line)+' · '+c.sampleCount+' análises · '+html(status)+(c.actor?' · '+html(c.actor):'')+'</p><div class="cc-chips">'+detail+'</div>'+
+        '<p class="fineprint">Leite de cal: '+fmt(c.rate?.average,2)+' L/m³ · '+c.outside+' leituras fora dos limites configurados</p>'+
+        '<button type="button" class="button small primary" data-closekey="'+html(c.key)+'">'+(changed?'Recalcular e conferir':'Conferir e assinar localmente')+'</button></div>';
+    }).join(''):'<div class="empty">Sem turnos concluídos com análises identificadas. Defina horários e registre os turnos para gerar rascunhos.</div>';
+  }
+  $('saveShiftTimes').addEventListener('click',()=>{
+    const value={};for(const sh of ['A','B','C']){const start=$('shift'+sh+'Start').value,end=$('shift'+sh+'End').value;if(!start||!end||start===end){$('closureStatus').textContent='Confira início e fim do turno '+sh;return;}value[sh]={start,end};}
+    if(!window.confirm('Alterar horários pode modificar os fechamentos futuros. Confirmar horários oficiais?'))return;
+    if(writeStore(SHIFT_KEY,value)){shiftTimes=value;appendAudit('configurar-turnos','horarios',activeOperator.name||'Não identificado','Horários atualizados',null,null);renderClosures();}
+  });
+  $('reviewClosures').addEventListener('click',renderClosures);
+  $('closureCards').addEventListener('click',e=>{
+    const b=e.target.closest('[data-closekey]');if(!b)return;
+    const item=closures.find(x=>x.key===b.dataset.closekey);if(!item)return;
+    const actor=activeOperator.name||window.prompt('Nome ou matrícula do responsável pela conferência:');
+    if(!String(actor||'').trim()){window.alert('Identifique o responsável.');return;}
+    const reason=window.prompt('Observação ou justificativa da conferência (obrigatória):','Médias e contagem revisadas');
+    if(!String(reason||'').trim())return;
+    const rows=shiftGroupRecords().get(item.key)||[];
+    if(!rows.length){window.alert('Sem amostras válidas para este turno.');return;}
+    const metrics={};for(const [k] of METRICS)metrics[k]=statsOf(rows,k);
+    const before={...item};
+    Object.assign(item,{sampleCount:rows.length,metrics,rate:statsOf(rows.map(r=>({rate:calc(r).rate})),'rate'),
+      outside:rows.reduce((n,r)=>n+METRICS.filter(([k])=>alertFlag(k,r[k])==='outside').length,0),
+      signature:shiftSignature(rows),status:'conferido',actor:String(actor).slice(0,80),reviewedAt:new Date().toISOString()});
+    if(writeStore(CLOSURE_KEY,closures)){appendAudit('fechar-turno',item.key,actor,reason,before,item);renderClosures();}
+  });
+  function afterRecordsChanged(){
+    if($('fechamentos').classList.contains('active'))renderClosures();
+    if($('diagnostico').classList.contains('active'))renderTrends();
+  }
+  function renderTrends(){
+    const line=$('trendLine').value.trim().toLocaleLowerCase('pt-BR'),proc=$('trendProcess').value;
+    const list=operationalRecords().filter(r=>(!proc||r.process===proc)&&(!line||String(r.line||'').toLocaleLowerCase('pt-BR').includes(line)))
+      .sort((a,b)=>new Date(a.dateTime)-new Date(b.dateTime));
+    const points=list.map(r=>({at:r.dateTime,rate:calc(r).rate,ph:r.phCalado,baume:r.baume})).filter(x=>Number.isFinite(x.rate)&&Number.isFinite(x.ph)).slice(-100);
+    const rate=statsOf(points,'rate'),ph=statsOf(points,'ph');
+    let correlation=null;
+    if(points.length>=4){
+      const mx=rate.average,my=ph.average,num=points.reduce((s,p)=>s+(p.rate-mx)*(p.ph-my),0);
+      const sx=Math.sqrt(points.reduce((s,p)=>s+(p.rate-mx)**2,0)),sy=Math.sqrt(points.reduce((s,p)=>s+(p.ph-my)**2,0));
+      if(sx>0&&sy>0)correlation=num/(sx*sy);
+    }
+    $('limeAnalytics').innerHTML='<div class="mini-card"><p>Leite de cal por caldo</p><div class="mini-value">'+fmt(rate.average,2)+'</div><small>L/m³, '+rate.n+' pares</small></div>'+
+      '<div class="mini-card"><p>pH caleado nos mesmos pares</p><div class="mini-value">'+fmt(ph.average,2)+'</div><small>pH, '+ph.n+' pares</small></div>'+
+      '<div class="mini-card"><p>Correlação descritiva (Pearson)</p><div class="mini-value">'+fmt(correlation,2)+'</div><small>'+(correlation===null?'Dados insuficientes ou sem variação':'Não implica causa e efeito')+'</small></div>';
+    if(points.length<2)$('limeTrend').innerHTML='<div class="empty">Registre vazão do caldo, vazão do leite de cal e pH caleado em pelo menos duas análises.</div>';
+    else{
+      const w=700,h=200,l=42,r=18,t=16,b=30,vals=points.map(p=>p.rate),min=Math.min(...vals),max=Math.max(...vals),span=Math.max(.01,max-min),x=i=>l+i*(w-l-r)/(points.length-1),y=v=>t+(max-v+span*.12)*(h-t-b)/(span*1.24);
+      $('limeTrend').innerHTML='<p class="fineprint">Série temporal da relação volumétrica L/m³ nas análises registradas (sem indicação de setpoint).</p><svg viewBox="0 0 700 200" role="img" aria-label="Consumo de leite de cal L por m3 ao longo das análises"><polyline points="'+vals.map((v,i)=>x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ')+'" fill="none" stroke="#b9ee63" stroke-width="2.8"/><text x="4" y="20" fill="#9ab1bc" font-size="12">'+html(fmt(max,2))+'</text><text x="4" y="175" fill="#9ab1bc" font-size="12">'+html(fmt(min,2))+'</text></svg>';
+    }
+    const warnings=[];
+    for(const [key,label] of METRICS){
+      const last=list.filter(r=>Number.isFinite(r[key])).slice(-5);
+      if(!last.length)continue;
+      const outside=last.filter(r=>alertFlag(key,r[key])==='outside').length;
+      if(outside)warnings.push({label,text:outside+' das últimas '+last.length+' medições fora dos limites configurados.'});
+      if(last.length>=4){
+        const a=last.slice(-4).map(r=>r[key]),deltas=a.slice(1).map((v,i)=>v-a[i]);
+        if(deltas.every(x=>x>0)||deltas.every(x=>x<0))
+          warnings.push({label,text:'Quatro medições consecutivas em '+(deltas[0]>0?'elevação':'queda')+'. Verifique condições de coleta e equipamento.'});
+      }
+    }
+    $('trendAlerts').innerHTML=warnings.length?warnings.slice(0,30).map(w=>'<div class="mini-card"><h3>'+html(w.label)+'</h3><p>'+html(w.text)+'</p></div>').join(''):'<div class="empty">Nenhum padrão de alerta encontrado nos registros filtrados (ou dados insuficientes).</div>';
+  }
+  $('recalcTrends').addEventListener('click',renderTrends);
+  $('trendProcess').addEventListener('change',renderTrends);
+  $('trendLine').addEventListener('change',renderTrends);
+  // Enquanto o app está aberto, preparar os rascunhos de turnos já encerrados.
+  setInterval(()=>{createShiftDrafts();if($('fechamentos').classList.contains('active'))renderClosures();if($('aovivo').classList.contains('active'))renderLive();},60000);
+
   setInterval(()=>{if(sensorData&&document.getElementById('sensores').classList.contains('active'))renderSensors();},30000);
 
   $('todayStamp').textContent=new Intl.DateTimeFormat('pt-BR' ,{weekday:'long',day:'2-digit',month:'long',year:'numeric'}).format(new Date());
