@@ -44,6 +44,8 @@ import java.util.UUID;
 public class MainActivity extends Activity {
   private static final int BG=0xFF0B0809, CARD=0xFF1A1113, RED=0xFFC42235, GOLD=0xFFE0AD4C, TEXT=0xFFFFF4E6, SUB=0xFFC6B6AC;
   private static final UUID FFE1=UUID.fromString("0000ffe1-0000-1000-8000-00805f9b34fb");
+  private static final UUID QHM_SERVICE=UUID.fromString("0000ffd5-0000-1000-8000-00805f9b34fb");
+  private static final UUID QHM_WRITE=UUID.fromString("0000ffd9-0000-1000-8000-00805f9b34fb");
   private final Handler handler=new Handler(Looper.getMainLooper());
   private final ArrayList<BluetoothDevice> devices=new ArrayList<>();
   private final ArrayList<String> names=new ArrayList<>();
@@ -54,6 +56,7 @@ public class MainActivity extends Activity {
   private BluetoothGatt gatt;
   private BluetoothGattCharacteristic writeChar;
   private int selectedColor=RED;
+  private boolean qhmProtocol=false;
   private ScanCallback scanCallback;
   private final ScrollView[] pageViews=new ScrollView[5];
   private final Button[] navButtons=new Button[5];
@@ -145,7 +148,7 @@ public class MainActivity extends Activity {
     gap(devicesPage,14);
     LinearLayout stripCard=card(devicesPage);
     stripCard.addView(text("🌈  Fita LED",19,TEXT,true));
-    stripCard.addView(text("HappyLighting • conexão Bluetooth",12,SUB,false));
+    stripCard.addView(text("HappyLighting • QHM-0CFE / Bluetooth",12,SUB,false));
     bleStatus=text("Bluetooth ainda não conectado",12,SUB,false);
     stripCard.addView(bleStatus);
     gap(stripCard,12);
@@ -235,12 +238,12 @@ public class MainActivity extends Activity {
     save.setOnClickListener(v->{getPreferences(MODE_PRIVATE).edit().putString("url",haUrl.getText().toString().trim()).putString("entity",entity.getText().toString().trim()).apply();toast("Endereço e entidade salvos. O token não é armazenado.");});
     gap(settingsPage,14);
     LinearLayout bleSettings=card(settingsPage);
-    bleSettings.addView(text("Fita HappyLighting",18,TEXT,true));
-    bleSettings.addView(text("Busque seu controlador Bluetooth próximo.",12,SUB,false));
+    bleSettings.addView(text("Fita HappyLighting QHM-0CFE",18,TEXT,true));
+    bleSettings.addView(text("Feche o HappyLighting antes de procurar QHM-0CFE.",12,SUB,false));
     Button scan=button("⌁  Procurar fita Bluetooth",RED,TEXT);
     bleSettings.addView(scan);
     scan.setOnClickListener(v->ensureScanPermission());
-    bleSettings.addView(text("Compatível com controladores LEDBLE / LEDCAR e característica FFE1. Outros modelos podem exigir integração adicional.",12,SUB,false));
+    bleSettings.addView(text("Suporte experimental a QHM (FFD5/FFD9) e LEDBLE/LEDCAR (FFE1).",12,SUB,false));
 
     status=text("Pronto para configurar. Nenhum dispositivo foi acionado.",12,GOLD,false);
     status.setMaxLines(2);
@@ -320,11 +323,24 @@ public class MainActivity extends Activity {
   }
   @SuppressWarnings("deprecation")
   private void powerBle(boolean on,boolean withColor){
-    if(gatt==null||writeChar==null){inform("Conecte a fita Bluetooth em Ajustes.");return;}
+    if(gatt==null||writeChar==null){inform("Conecte a fita em Ajustes.");return;}
+    if(qhmProtocol){
+      sendBle(new byte[]{(byte)0xCC,(byte)(on?0x23:0x24),0x33});
+      if(on&&withColor){
+        final int c=selectedColor, br=Math.max(1,brightness.getProgress());
+        handler.postDelayed(()->{
+          int r=Math.round(((c>>16)&255)*br/100f);
+          int gr=Math.round(((c>>8)&255)*br/100f);
+          int bl=Math.round((c&255)*br/100f);
+          sendBle(new byte[]{0x56,(byte)r,(byte)gr,(byte)bl,0x00,(byte)0xF0,(byte)0xAA});
+        },220);
+      }
+      return;
+    }
     sendBle(new byte[]{0x7E,0x04,0x04,(byte)(on?1:0),(byte)0xFF,(byte)0xFF,(byte)0xFF,0x00,(byte)0xEF});
-    if(on&&withColor){final int c=selectedColor; final int b=Math.max(1,brightness.getProgress());
-      handler.postDelayed(()->sendBle(new byte[]{0x7E,0x07,0x05,0x03,(byte)(c>>16),(byte)(c>>8),(byte)c,0x00,(byte)0xEF}),160);
-      handler.postDelayed(()->sendBle(new byte[]{0x7E,0x04,0x01,(byte)b,(byte)0xFF,(byte)0xFF,(byte)0xFF,0x00,(byte)0xEF}),330);
+    if(on&&withColor){final int c=selectedColor;final int br=Math.max(1,brightness.getProgress());
+      handler.postDelayed(()->sendBle(new byte[]{0x7E,0x07,0x05,0x03,(byte)(c>>16),(byte)(c>>8),(byte)c,0x00,(byte)0xEF}),180);
+      handler.postDelayed(()->sendBle(new byte[]{0x7E,0x04,0x01,(byte)br,(byte)0xFF,(byte)0xFF,(byte)0xFF,0x00,(byte)0xEF}),360);
     }
   }
   @SuppressWarnings("deprecation")
@@ -361,22 +377,24 @@ public class MainActivity extends Activity {
       @Override public void onScanResult(int callbackType,ScanResult r){
         BluetoothDevice d=r.getDevice();
         String name=r.getScanRecord()==null?null:r.getScanRecord().getDeviceName();
+        if(name==null||name.isEmpty()){try{name=d.getName();}catch(SecurityException ignored){}}
         if(name==null)return;
         String test=name.toLowerCase(java.util.Locale.ROOT);
-        if(!test.startsWith("ledble")&&!test.startsWith("ledcar-00"))return;
+        if(!test.startsWith("ledble")&&!test.startsWith("ledcar-00")&&!test.startsWith("qhm-")&&!test.startsWith("triones"))return;
         if(!devices.contains(d)){devices.add(d);names.add(name+"  ("+d.getAddress()+")");}
       }
       @Override public void onScanFailed(int code){inform("Falha no scan Bluetooth: "+code);}
     };
-    try{scanner.startScan(scanCallback);inform("Buscando fitas LEDBLE/LEDCAR...");
+    try{scanner.startScan(scanCallback);inform("Buscando QHM-0CFE e outras fitas Bluetooth...");
       handler.postDelayed(()->{try{scanner.stopScan(scanCallback);}catch(Exception ignored){}
         if(devices.isEmpty()){inform("Nenhuma fita compatível detectada");return;}
-        new AlertDialog.Builder(this).setTitle("Escolha a fita").setItems(names.toArray(new String[0]),(dialog,index)->connect(devices.get(index))).setNegativeButton("Cancelar",null).show();
+        new AlertDialog.Builder(this).setTitle("Escolha a fita").setItems(names.toArray(new String[0]),(dialog,index)->connect(devices.get(index),names.get(index))).setNegativeButton("Cancelar",null).show();
       },8000);
     }catch(Exception ex){inform("Falha ao iniciar Bluetooth: "+ex.getMessage());}
   }
   @android.annotation.SuppressLint("MissingPermission")
-  private void connect(BluetoothDevice device){
+  private void connect(BluetoothDevice device,String advertisedName){
+    qhmProtocol=advertisedName.toLowerCase(java.util.Locale.ROOT).startsWith("qhm-")||advertisedName.toLowerCase(java.util.Locale.ROOT).startsWith("triones");
     if(gatt!=null){gatt.close();gatt=null;writeChar=null;}
     inform("Conectando à fita...");
     gatt=device.connectGatt(this,false,new BluetoothGattCallback(){
@@ -387,12 +405,13 @@ public class MainActivity extends Activity {
       @Override public void onServicesDiscovered(BluetoothGatt g,int code){
         if(code!=BluetoothGatt.GATT_SUCCESS){inform("Falha nos serviços BLE");return;}
         for(BluetoothGattService service:g.getServices()){
-          BluetoothGattCharacteristic c=service.getCharacteristic(FFE1);
+          if(qhmProtocol&&!QHM_SERVICE.equals(service.getUuid()))continue;
+          BluetoothGattCharacteristic c=service.getCharacteristic(qhmProtocol?QHM_WRITE:FFE1);
           if(c!=null&&((c.getProperties()&(BluetoothGattCharacteristic.PROPERTY_WRITE|BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE))!=0)){
             writeChar=c;inform("Fita conectada via Bluetooth");runOnUiThread(()->bleStatus.setText("● Fita LED conectada"));return;
           }
         }
-        inform("Controlador não possui FFE1. Necessária outra integração.");
+        inform("Controlador sem característica BLE esperada. Verifique FFD5/FFD9 ou FFE1.");
       }
     },BluetoothDevice.TRANSPORT_LE);
   }
