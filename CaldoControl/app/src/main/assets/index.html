@@ -138,19 +138,19 @@
       </div>
     </section>
     <section class="panel" id="relatorios">
-      <div class="card"><div class="card-heading"><div><h2>Relatório por turno</h2><small>Filtre período, processo e turno. Médias por registro, sem ponderação pela vazão ou duração.</small></div><span class="tag">Arquivo local</span></div>
+      <div class="card"><div class="card-heading"><div><h2>Relatório por turno</h2><small>Filtre período, processo e turno. Médias aritméticas por medição disponível.</small></div><span class="tag">Arquivo local</span></div>
         <div class="form-grid">
           <div class="field"><label for="reportStart">Dia operacional inicial</label><input type="date" id="reportStart"></div>
           <div class="field"><label for="reportEnd">Dia operacional final</label><input type="date" id="reportEnd"></div>
           <div class="field"><label for="reportProcess">Processo</label><select id="reportProcess"><option value="">Todos</option><option value="acucar">Açúcar</option><option value="etanol">Etanol</option><option value="ambos">Açúcar e etanol</option><option value="nao-informado">Não informado</option></select></div>
           <div class="field"><label for="reportShift">Turno</label><select id="reportShift"><option value="">Todos</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="Outro">Outro</option></select></div>
           <div class="field"><label for="reportLine">Linha / unidade</label><input id="reportLine" placeholder="Filtrar por linha"></div>
-          <div class="field"><label for="reportDecanter">Decantador</label><input id="reportDecanter" placeholder="Filtrar por decantador"></div>
+          
           <div class="field"><label for="reportDemo">Incluir dados fictícios?</label><label class="badge-inline" style="min-height:46px"><input type="checkbox" id="reportDemo"> Incluir simulações no relatório</label></div>
         </div>
         <div class="button-row" style="margin-top:18px"><button type="button" class="button primary" id="generateReport">Gerar relatório</button><button type="button" class="button" id="exportReportCsv">↓ CSV do relatório</button><button type="button" class="button" id="printReport">Imprimir / PDF</button></div>
         <div id="reportInfo" class="status-line" role="status"></div><div id="reportSummary" class="report-summary"></div><div id="reportResults"></div>
-        <p class="fineprint">Os filtros usam o dia operacional configurado em Ajustes. O turno é informado manualmente. Médias aritméticas por amostra, sem ponderação por tempo ou vazão. Dados fictícios são excluídos por padrão.</p>
+        <p class="fineprint">Os filtros usam o dia operacional configurado em Ajustes. O turno é informado manualmente. Médias aritméticas por amostra, sem ponderação pela duração do turno. Dados fictícios são excluídos por padrão.</p>
       </div>
     </section>
 
@@ -163,7 +163,7 @@
           <div class="field"><label for="gatewayType">Interface disponível</label><select id="gatewayType"><option value="wss">WebSocket JSON (WSS)</option><option value="https">API HTTPS (JSON/GET)</option><option value="opcua">OPC UA (requer adaptador)</option><option value="modbus">Modbus TCP (requer adaptador)</option><option value="mqtt">MQTT (requer adaptador)</option></select></div>
           <div class="field span2"><label for="gatewayEndpoint">Endereço do gateway autorizado</label><input id="gatewayEndpoint" type="url" autocomplete="off" placeholder="wss://gateway.usina.local/leituras"></div>
           <div class="field"><label for="gatewayInterval">Intervalo de leitura HTTPS (s)</label><select id="gatewayInterval"><option value="15">15 segundos</option><option value="30">30 segundos</option><option value="60">60 segundos</option></select></div>
-          <div class="field"><label for="gatewayLimeUnit">Unidade da vazão de cal</label><select id="gatewayLimeUnit"><option value="">Não mapear sem unidade</option><option value="L/h">L/h</option><option value="m³/h">m³/h</option></select></div>
+          
         </div>
         <p id="gatewayProtocolHint" class="fineprint">WSS exige URL e certificado TLS válidos. A conexão recebe mensagens JSON que o gateway publica.</p>
         <div class="button-row" style="margin-top:13px"><button type="button" id="gatewayTest" class="button">1. Testar / descobrir tags</button><button type="button" id="gatewaySave" class="button">2. Salvar configuração</button><button type="button" id="gatewayConnect" class="button primary">3. Conectar</button><button type="button" id="gatewayDisconnect" class="button">Desconectar</button></div>
@@ -176,18 +176,18 @@
         <div class="subtle-line"></div><div class="card-heading"><h3>Última leitura recebida</h3><small id="sensorTime">Sem leitura</small></div><div id="sensorReadings" class="section-grid"><div class="empty">Nenhuma leitura recebida.</div></div>
         <div class="button-row" style="margin-top:18px"><button type="button" id="applyReading" class="button primary" disabled>Copiar leitura para análise</button></div>
         <p class="fineprint">A leitura copiada poderá ser conferida e salva manualmente em “Registrar”. Dados do gateway não são gravados automaticamente.</p>
-      </div><div class="card"><h2>Como integrar</h2><p class="muted">O assistente aceita WSS JSON ou uma API HTTPS JSON/GET, sem autenticação no aplicativo. O gateway deve disponibilizar uma interface de consulta separada, autorizada pela equipe de automação e TI. OPC UA, Modbus TCP e MQTT exigem um serviço de adaptação de leitura. Se enviar limeFlow, informe a unidade.</p>
+      </div><div class="card"><h2>Como integrar</h2><p class="muted">O assistente aceita WSS JSON ou uma API HTTPS JSON/GET, sem autenticação no aplicativo. O gateway deve disponibilizar uma interface de consulta separada, autorizada pela equipe de automação e TI. OPC UA, Modbus TCP e MQTT exigem um serviço de adaptação de leitura. O aplicativo utiliza apenas tags de pH e Brix.</p>
         <h3>Formato aceito</h3><pre class="codebox">{
-  "timestamp": "2026-10-31T12:00:00Z",
+  "timestamp": "2026-11-01T12:00:00Z",
   "source": "gateway",
   "tags": {
     "phCalado": 7.1,
     "phDec": 6.9,
-    "temperature": 104,
-    "juiceFlow": 400,
-    "limeFlow": 1400,
-    "limeUnit": "L/h",
-    "sludgeLevelPct": 35
+    "phXarope": 6.0,
+    "phTorre": 7.4,
+    "brixCalado": 15.0,
+    "brixClarificado": 15.2,
+    "brixXarope": 61.0
   }
 }</pre>
         <h3>Importar leitura CSV</h3><div class="field"><label for="sensorCsv">Arquivo com cabeçalhos iguais às tags acima e uma linha de valores</label><input id="sensorCsv" type="file" accept=".csv,text/csv"></div>
@@ -352,7 +352,7 @@
   const download=(name,mime,data)=>{if(window.CaldoAndroid&&typeof window.CaldoAndroid.saveFile==='function'){window.CaldoAndroid.saveFile(name,mime,data);return;}const blob=new Blob([data],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);};
   const isoDate=()=>new Date().toISOString().slice(0,10);
   const csvCell=(v)=>{let txt=v===null||v===undefined?'':String(v);if(/^[=+@\-\t\r]/.test(txt)&&!/^-[0-9.]+$/.test(txt))txt="'"+txt;return '"'+txt.replace(/"/g,'""')+'"';};
-  $('exportCsv').addEventListener('click',()=>{if(!records.length){window.alert('Ainda não há registros para exportar.');return;}const cols=['dateTime','line','process','shift','operator','source','phCalado','phDec','phTorre','phXarope','brixCalado','brixClarificado','brixXarope','brix','tempInput','temperature','steamPressure','heaterId','baume','juiceFlow','limeFlow','limeUnit','polymerFlow','decanterId','decanterStatus','sludgeLevelPct','sludgeFlow','turbidity','residenceTime','limeRateLPerM3','notes','photoOcrText'];const lines=[cols.map(csvCell).join(';')];for(const rec of [...records].sort((a,b)=>new Date(a.dateTime)-new Date(b.dateTime))){const data={...rec,dateTime:showDate(rec.dateTime),limeRateLPerM3:calc(rec).rate};lines.push(cols.map(k=>csvCell(data[k])).join(';'));}download('caldocontrol_'+isoDate()+'.csv','text/csv;charset=utf-8','\ufeff'+lines.join('\r\n'));});
+  $('exportCsv').addEventListener('click',()=>{if(!records.length){window.alert('Ainda não há registros para exportar.');return;}const cols=['dateTime','line','process','shift','operator','source','phCalado','phDec','phXarope','phTorre','brixCalado','brixClarificado','brixXarope','notes','photoOcrText'];const lines=[cols.map(csvCell).join(';')];for(const rec of [...records].sort((a,b)=>new Date(a.dateTime)-new Date(b.dateTime))){const data={...rec,dateTime:showDate(rec.dateTime)};lines.push(cols.map(k=>csvCell(data[k])).join(';'));}download('caldocontrol_'+isoDate()+'.csv','text/csv;charset=utf-8','\ufeff'+lines.join('\r\n'));});
   $('exportJson').addEventListener('click',()=>download('caldocontrol_backup_'+isoDate()+'.json','application/json;charset=utf-8',JSON.stringify({app:'CaldoControl',version:4,createdAt:new Date().toISOString(),records,settings,dayStart,auditTrail,closures,shiftTimes,activeOperator},null,2)));
   $('importBtn').addEventListener('click',()=>$('importFile').click());
   $('importFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>30*1024*1024)throw Error('Arquivo muito grande (máximo de 30 MB).');const parsed=JSON.parse(await file.text());if(parsed.app!=='CaldoControl'||!Array.isArray(parsed.records))throw Error('O arquivo não parece ser um backup compatível.');if(parsed.records.length>100000)throw Error('Backup excede o limite de registros.');let count=0;const seen=new Set(records.map(r=>r.id)),next=[...records];for(const r of parsed.records){if(!r||typeof r.id!=='string'||r.id.length>100||seen.has(r.id)||Number.isNaN(Date.parse(r.dateTime)))continue;const record={id:r.id,dateTime:new Date(r.dateTime).toISOString()};for(const k of FIELDS){if(k==='dateTime')continue;if(NUMS.includes(k))record[k]=numOrNull(r[k]);else record[k]=String(r[k]??(k==='process'?'nao-informado':k==='source'?'manual':'')).slice(0,k==='photoData'?150000:k==='photoOcrText'?4000:k==='notes'?2000:100);}if(record.photoData&&!/^data:image\/(jpeg|png|webp);base64,[a-zA-Z0-9+\/=]+$/.test(record.photoData))record.photoData='';if(validBackupRecord(record)){next.push(record);seen.add(r.id);count++;}}if(!writeStore(DATA_KEY,next))return;records=next;appendAudit('importar','backup',activeOperator.name||'Não identificado',count+' registros restaurados',null,{count});afterRecordsChanged();
@@ -374,7 +374,12 @@
          writeStore(CLOSURE_KEY,closures);
        }
        renderAudit();renderClosures();renderDashboard();renderHistory();renderReport();window.alert(count+' registros restaurados. Registros repetidos foram ignorados.'+(restoredSettings?' Limites restaurados.':''));}catch(err){window.alert('Erro ao restaurar: '+err.message);}finally{e.target.value='';}});
-  function validBackupRecord(r){return ['phCalado','phDec','phTorre','phXarope'].every(k=>r[k]===null||(r[k]>=0&&r[k]<=14))&&['juiceFlow','limeFlow','polymerFlow','temperature','tempInput','steamPressure','baume','brix','brixCalado','brixClarificado','brixXarope','sludgeLevelPct','sludgeFlow','turbidity','residenceTime'].every(k=>r[k]===null||(r[k]>=0&&(k==='sludgeLevelPct'?r[k]<=100:true)))&&['L/h','m³/h'].includes(r.limeUnit)&&['acucar','etanol','ambos','nao-informado'].includes(r.process)&&['manual','gateway','csv','foto','demo'].includes(r.source);}
+  function validBackupRecord(r){
+    return ['phCalado','phDec','phTorre','phXarope'].every(k=>r[k]==null||Number.isFinite(r[k])&&r[k]>=0&&r[k]<=14)
+      &&['brixCalado','brixClarificado','brixXarope'].every(k=>r[k]==null||Number.isFinite(r[k])&&r[k]>=0&&r[k]<=100)
+      &&['acucar','etanol','ambos','nao-informado'].includes(r.process)
+      &&['manual','gateway','csv','foto','demo'].includes(r.source);
+  }
   $('deleteAll').addEventListener('click',()=>{if(!records.length)return window.alert('Não há registros para apagar.');if(!window.confirm('Apagar PERMANENTEMENTE todos os '+records.length+' registros deste aparelho? Exporte um backup antes, se necessário.'))return; if(!window.confirm('Confirma novamente a exclusão de todo o histórico?'))return;if(writeStore(DATA_KEY,[])){appendAudit('apagar-tudo','todos',activeOperator.name||'Não identificado',records.length+' registros removidos',null,null);records=[];afterRecordsChanged();renderDashboard();renderHistory();renderReport();window.alert('Histórico apagado deste navegador.');}});
   const processLabel=p=>({acucar:'Açúcar',etanol:'Etanol',ambos:'Açúcar + etanol','nao-informado':'Não informado'}[p]||'Não informado');
   const dateLocal=iso=>{const d=new Date(iso);if(Number.isNaN(+d))return '';const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+day;};
@@ -384,23 +389,37 @@
   const avg=(values,key)=>{const nums=values.map(r=>r[key]).filter(Number.isFinite);return nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:null;};
   const timeSort=(a,b)=>new Date(b.dateTime)-new Date(a.dateTime);
   let currentReport=[];
-  function filteredReport(){const start=$('reportStart').value,end=$('reportEnd').value,p=$('reportProcess').value,shift=$('reportShift').value,line=$('reportLine').value.toLocaleLowerCase('pt-BR').trim(),decanter=$('reportDecanter').value.toLocaleLowerCase('pt-BR').trim();
+  function filteredReport(){
+    const start=$('reportStart').value,end=$('reportEnd').value,p=$('reportProcess').value,shift=$('reportShift').value,line=$('reportLine').value.toLocaleLowerCase('pt-BR').trim();
     if(start&&end&&start>end){$('reportInfo').textContent='A data inicial não pode exceder a final.';return null;}
-    return [...records].filter(r=>{const date=dateOperational(r.dateTime);return ($('reportDemo').checked||r.source!=='demo')&&(!start||date>=start)&&(!end||date<=end)&&(!p||(r.process||'nao-informado')===p)&&(!shift||r.shift===shift)&&(!line||String(r.line||'').toLocaleLowerCase('pt-BR').includes(line))&&(!decanter||String(r.decanterId||'').toLocaleLowerCase('pt-BR').includes(decanter));}).sort((a,b)=>new Date(a.dateTime)-new Date(b.dateTime));
+    return [...records].filter(r=>{
+      const day=dateOperational(r.dateTime);
+      return ($('reportDemo').checked||r.source!=='demo')&&(!start||day>=start)&&(!end||day<=end)&&(!p||(r.process||'nao-informado')===p)
+        &&(!shift||r.shift===shift)&&(!line||String(r.line||'').toLocaleLowerCase('pt-BR').includes(line));
+    }).sort((a,b)=>new Date(a.dateTime)-new Date(b.dateTime));
   }
-  function renderReport(){const list=filteredReport();if(!list){currentReport=[];$('reportSummary').innerHTML='';$('reportResults').innerHTML='';return;}currentReport=list;
-    const stat=(key,label,digits=2,unit='')=>'<div class="summary-tile"><small>'+html(label)+'</small><strong>'+fmt(avg(list,key),digits)+unit+'</strong></div>';
-    $('reportSummary').innerHTML='<div class="summary-tile"><small>Análises no filtro</small><strong>'+list.length+'</strong></div>'+stat('phCalado','pH caleado/dosado',2)+stat('phDec','pH clarificado',2)+stat('phXarope','pH do xarope',2)+stat('temperature','Temperatura saída',1,' °C');
-    $('reportInfo').textContent=list.length+' análises encontradas. Dia operacional começa às '+dayStart+'. Agrupamento: dia operacional, turno e processo.';
-    if(!list.length){$('reportResults').innerHTML='<div class="empty">Nenhum registro corresponde aos filtros.</div>';return;}
-    const groups=new Map();for(const r of list){const key=[dateOperational(r.dateTime),r.shift||'Não informado',r.process||'nao-informado'].join('|');if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r);}
-    const head='<div class="tablewrap"><table><thead><tr><th>Dia operacional</th><th>Turno</th><th>Processo</th><th>Análises</th><th>pH caleado/dosado</th><th>pH dec.</th><th>pH xarope</th><th>Cal L/m³</th><th>Saída °C</th><th>Lodo %</th><th>Fora da faixa*</th></tr></thead><tbody>';
-    let body='';for(const [key,group] of [...groups.entries()].sort((a,b)=>b[0].localeCompare(a[0]))){const [date,shift,process]=key.split('|');const ratio=avg(group.map(r=>({rate:calc(r).rate})),'rate');const anomalies=group.reduce((count,r)=>count+METRICS.filter(([k])=>alertFlag(k,r[k])==='outside').length,0);body+='<tr><td>'+html(date.split('-').reverse().join('/'))+'</td><td>'+html(shift)+'</td><td>'+html(processLabel(process))+'</td><td>'+group.length+'</td><td>'+fmt(avg(group,'phCalado'),2)+'</td><td>'+fmt(avg(group,'phDec'),2)+'</td><td>'+fmt(avg(group,'phXarope'),2)+'</td><td>'+fmt(ratio,2)+'</td><td>'+fmt(avg(group,'temperature'),1)+'</td><td>'+fmt(avg(group,'sludgeLevelPct'),1)+'</td><td>'+anomalies+'</td></tr>';}
-    $('reportResults').innerHTML=head+body+'</tbody></table></div><p class="fineprint">* Número de leituras fora das faixas que você configurou, não quantidade de eventos nem tempo de exposição.</p>';
+  function renderReport(){
+    const list=filteredReport();
+    if(!list){currentReport=[];$('reportSummary').innerHTML='';$('reportResults').innerHTML='';return;}
+    currentReport=list;
+    $('reportSummary').innerHTML='<div class="summary-tile"><small>Análises no filtro</small><strong>'+list.length+'</strong></div>'+
+      METRICS.map(([k,label])=>'<div class="summary-tile"><small>'+html(label)+'</small><strong>'+fmt(avg(list,k),2)+'</strong></div>').join('');
+    $('reportInfo').textContent=list.length+' análises encontradas. Início do dia operacional: '+dayStart+'.';
+    if(!list.length){$('reportResults').innerHTML='<div class="empty">Nenhuma análise neste filtro.</div>';return;}
+    const groups=new Map();
+    for(const r of list){const key=[dateOperational(r.dateTime),r.shift||'Não informado',r.process||'nao-informado'].join('|');if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r);}
+    const header='<div class="tablewrap"><table><thead><tr><th>Dia operacional</th><th>Turno</th><th>Processo</th><th>Análises</th>'+
+      METRICS.map(([k,label])=>'<th>'+html(label)+'</th>').join('')+'<th>Fora da faixa</th></tr></thead><tbody>';
+    const body=[...groups.entries()].sort((a,b)=>b[0].localeCompare(a[0])).map(([key,rows])=>{
+      const [day,shift,proc]=key.split('|'),out=rows.reduce((n,r)=>n+METRICS.filter(([k])=>alertFlag(k,r[k])==='outside').length,0);
+      return '<tr><td>'+html(day.split('-').reverse().join('/'))+'</td><td>'+html(shift)+'</td><td>'+html(processLabel(proc))+'</td><td>'+rows.length+'</td>'+
+        METRICS.map(([k])=>'<td>'+fmt(avg(rows,k),2)+'</td>').join('')+'<td>'+out+'</td></tr>';
+    }).join('');
+    $('reportResults').innerHTML=header+body+'</tbody></table></div><p class="fineprint">Médias por amostra. Apenas medições disponíveis entram no cálculo.</p>';
   }
   $('generateReport').addEventListener('click',renderReport);
-  for(const k of ['reportStart','reportEnd','reportProcess','reportShift','reportLine','reportDecanter','reportDemo'])$(k).addEventListener('change',renderReport);
-  $('exportReportCsv').addEventListener('click',()=>{renderReport();if(!currentReport.length)return window.alert('Não há dados para o relatório selecionado.');const cols=['dataOperacional','dateTime','shift','process','line','operator','source','phCalado','phDec','phTorre','brixCalado','brixClarificado','brixXarope','brix','baume','juiceFlow','limeFlow','limeUnit','limeRateLPerM3','polymerFlow','heaterId','tempInput','temperature','steamPressure','decanterId','decanterStatus','sludgeLevelPct','sludgeFlow','turbidity','residenceTime','notes','photoOcrText'];const rows=[cols.map(csvCell).join(';')];for(const r of currentReport){const row={...r,dataOperacional:dateOperational(r.dateTime),dateTime:showDate(r.dateTime),limeRateLPerM3:calc(r).rate};rows.push(cols.map(k=>csvCell(row[k])).join(';'));}download('caldocontrol_relatorio_turno_'+isoDate()+'.csv','text/csv;charset=utf-8','\ufeff'+rows.join('\r\n'));});
+  for(const k of ['reportStart','reportEnd','reportProcess','reportShift','reportLine','reportDemo'])$(k).addEventListener('change',renderReport);
+  $('exportReportCsv').addEventListener('click',()=>{renderReport();if(!currentReport.length)return window.alert('Não há dados para o relatório selecionado.');const cols=['dataOperacional','dateTime','line','process','shift','operator','source','phCalado','phDec','phXarope','phTorre','brixCalado','brixClarificado','brixXarope','notes','photoOcrText'];const rows=[cols.map(csvCell).join(';')];for(const r of currentReport){const row={...r,dataOperacional:dateOperational(r.dateTime),dateTime:showDate(r.dateTime)};rows.push(cols.map(k=>csvCell(row[k])).join(';'));}download('caldocontrol_relatorio_turno_'+isoDate()+'.csv','text/csv;charset=utf-8','\ufeff'+rows.join('\r\n'));});
   $('printReport').addEventListener('click',()=>{renderReport();if(!currentReport.length)return window.alert('Selecione um período com registros.');const body=$('reportResults').innerHTML;const summary=$('reportSummary').innerHTML;const w=(window.CaldoAndroid&&typeof window.CaldoAndroid.printReport==='function')?{document:{open(){},write(markup){window.CaldoAndroid.printReport(markup)},close(){}}}:window.open('','_blank');if(!w)return window.alert('Permita janelas pop-up para imprimir.');w.document.open();w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório CaldoControl</title><style>body{font:14px Arial;padding:25px;color:#17232a}table{width:100%;border-collapse:collapse;font-size:11px}th,td{padding:8px;border:1px solid #bbb;text-align:left}.report-summary{display:flex;gap:16px;margin:15px 0}.summary-tile{padding:10px;border:1px solid #bbb}.summary-tile small{display:block}.summary-tile strong{font-size:20px}.fineprint{font-size:11px}</style></head><body><h1>CaldoControl v2.5 | Relatório por turno</h1><p>Gerado em '+html(showDate(new Date().toISOString()))+'. Total: '+currentReport.length+' análises. Virada do dia: '+html(dayStart)+'.</p><div class="report-summary">'+summary+'</div>'+body+'<script>window.onload=()=>window.print()<\/script></body></html>');w.document.close();});
 
   // Conexão SOMENTE de leitura por WebSocket com gateway autorizado.
