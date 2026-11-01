@@ -19,7 +19,7 @@ assert(fields&&nums&&metricLine&&sensors,'Esquemas de pH/Brix ausentes');
 const forbidden=/temperature|tempInput|heaterId|steamPressure|baume|decanterId|decanterStatus|sludge|turbidity|residenceTime|juiceFlow|limeFlow|limeUnit|polymerFlow/;
 for(const [name,match] of [['FIELDS',fields],['NUMS',nums],['METRICS',metricLine],['SENSOR_FIELDS',sensors]])
  assert(!forbidden.test(match[1]),'Parâmetro removido em '+name);
-assert(src.includes("version:5,createdAt:"),'Backup versão 5 ausente');
+assert(src.includes("version:6,createdAt:"),'Backup versão 5 ausente');
 assert(src.includes('legacyNumeric')&&src.includes('legacyText'),'Migração de dados legados ausente');
 // Todos os IDs estáticos usados pela UI devem existir e ser únicos.
 const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);
