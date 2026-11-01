@@ -425,17 +425,31 @@
   // Conexão SOMENTE de leitura por WebSocket com gateway autorizado.
   const WS_KEY='caldocontrol_gateway_url_v2';let socket=null,sensorData=null,sensorSource='',sensorAt=null,lastSensorError='',httpConnected=false;
   $('wsUrl').value=String(readStore(WS_KEY,'')||'');
-  const SENSOR_FIELDS=['phCalado','phDec','phTorre','brixCalado','brixClarificado','brixXarope','temperature','tempInput','steamPressure','baume','brix','juiceFlow','limeFlow','polymerFlow','sludgeLevelPct','sludgeFlow','turbidity','residenceTime'];
-  const SENSOR_LABELS={phXarope:'pH xarope',phTorre:'pH torre',brixCalado:'Brix caleado',brixClarificado:'Brix clarificado',brixXarope:'Brix xarope',phCalado:'pH caleado / dosado',phDec:'pH clarificado',temperature:'Saída aquecimento',tempInput:'Entrada aquecimento',steamPressure:'Vapor',baume:'Baumé',juiceFlow:'Caldo (m³/h)',limeFlow:'Cal (L/h ou m³/h)',polymerFlow:'Polímero (L/h)',sludgeLevelPct:'Lodo (%)',sludgeFlow:'Retirada de lodo (m³/h)',turbidity:'Turbidez (NTU)',residenceTime:'Residência (min)'};
-  const SENSOR_ALIASES={ph_dosado:'phCalado',ph_caleado:'phCalado',ph_calado:'phCalado',ph_decantado:'phDec',ph_torre:'phTorre',ph_xarope:'phXarope',brix_caleado:'brixCalado',brix_clarificado:'brixClarificado',brix_xarope:'brixXarope',temp_saida:'temperature',temp_entrada:'tempInput',vazao_caldo:'juiceFlow',vazao_cal:'limeFlow',nivel_lodo:'sludgeLevelPct'};
-  function parseSnapshot(data,origin){if(!data||typeof data!=='object'||Array.isArray(data))throw Error('Formato JSON inválido.');const tags=data.tags&&typeof data.tags==='object'&&!Array.isArray(data.tags)?data.tags:data;const fields={};for(const [rawKey,v] of Object.entries(tags)){const k=SENSOR_ALIASES[rawKey]||rawKey;if(SENSOR_FIELDS.includes(k)&&v!==null&&v!==undefined&&v!==''){const val=Number(v);if(Number.isFinite(val)&&val>=0&&(!k.startsWith('ph')||val<=14)&&(k!=='sludgeLevelPct'||val<=100)){if(k==='phCalado'&&fields.phCalado!==undefined&&Math.abs(fields.phCalado-val)>0.001)throw Error('Tags caleado e dosado divergentes: uma mesma etapa deve ter uma única medição.');fields[k]=val;}}else if(k==='limeUnit'&&['L/h','m³/h'].includes(v))fields[k]=v;else if(['heaterId','decanterId','line'].includes(k)&&typeof v==='string')fields[k]=v.slice(0,50);}
-    if(fields.limeFlow!==undefined&&fields.limeUnit===undefined){delete fields.limeFlow;}if(!Object.keys(fields).length)throw Error('Nenhuma tag compatível no pacote. Para vazão de cal, envie também limeUnit.');if(origin==='gateway'&&!data.timestamp)throw Error('Gateway sem timestamp: leitura recusada.');let dt=new Date(data.timestamp||Date.now());if(Number.isNaN(+dt))throw Error('Timestamp inválido na telemetria.');return {fields,at:dt,origin};}
+  const SENSOR_FIELDS=['phCalado','phDec','phTorre','phXarope','brixCalado','brixClarificado','brixXarope'];
+  const SENSOR_LABELS={phCalado:'pH caleado/dosado',phDec:'pH clarificado',phTorre:'pH torre',phXarope:'pH xarope',brixCalado:'Brix caleado',brixClarificado:'Brix clarificado',brixXarope:'Brix xarope'};
+  const SENSOR_ALIASES={ph_dosado:'phCalado',ph_caleado:'phCalado',ph_calado:'phCalado',ph_decantado:'phDec',ph_clarificado:'phDec',ph_torre:'phTorre',ph_xarope:'phXarope',brix_caleado:'brixCalado',brix_clarificado:'brixClarificado',brix_xarope:'brixXarope'};
+  function parseSnapshot(data,origin){
+    if(!data||typeof data!=='object'||Array.isArray(data))throw Error('Pacote JSON inválido.');
+    const tags=data.tags&&typeof data.tags==='object'&&!Array.isArray(data.tags)?data.tags:data,fields={};
+    for(const [raw,v] of Object.entries(tags)){
+      const k=SENSOR_ALIASES[raw]||raw;
+      if(!SENSOR_FIELDS.includes(k)||v==null||v==='')continue;
+      const n=Number(typeof v==='string'?v.replace(',','.'):v);
+      if(!Number.isFinite(n)||n<0||n>(k.startsWith('ph')?14:100))continue;
+      if(fields[k]!==undefined&&Math.abs(fields[k]-n)>.001)throw Error('Tags conflitantes para '+k);
+      fields[k]=n;
+    }
+    if(!Object.keys(fields).length)throw Error('Nenhuma tag de pH ou Brix compatível.');
+    if(origin==='gateway'&&!data.timestamp)throw Error('Gateway sem timestamp.');
+    const at=new Date(data.timestamp||Date.now());if(Number.isNaN(+at))throw Error('Timestamp inválido.');
+    return {fields,at,origin};
+  }
   function sensorState(){const badge=$('connectionBadge');const active=httpConnected||(socket&&socket.readyState===WebSocket.OPEN);badge.innerHTML='<span class="status-dot '+(active?'online':lastSensorError?'fail':'')+'"></span>'+(active?'Conectado':lastSensorError?'Falha / desconectado':'Desconectado');}
   function acceptSnapshot(payload,origin){const parsed=parseSnapshot(payload,origin);sensorData=parsed.fields;sensorAt=parsed.at;sensorSource=origin;lastSensorError='';renderSensors();recordLiveReading(parsed.fields,parsed.at,origin);}
   function renderSensors(){sensorState();if(!sensorData){$('sensorReadings').innerHTML='<div class="empty">Nenhuma leitura recebida.</div>';$('sensorTime').textContent='Sem leitura';$('applyReading').disabled=true;return;}const age=Date.now()-sensorAt.getTime();const stale=age>120000||age< -120000;const label= sensorSource==='demo'?'SIMULAÇÃO':sensorSource==='csv'?'CSV':'GATEWAY';$('sensorTime').textContent=label+' · '+showDate(sensorAt.toISOString())+(stale?' · DATA/HORA FORA DE 2 MIN':'');$('sensorReadings').innerHTML=Object.entries(sensorData).filter(([k,v])=>SENSOR_FIELDS.includes(k)&&Number.isFinite(v)).map(([k,v])=>'<div class="mini-card"><p>'+html(SENSOR_LABELS[k]||k)+'</p><div class="mini-value">'+fmt(v,k.startsWith('ph')?2:1)+'</div></div>').join('');$('applyReading').disabled=stale;if(stale)$('sensorStatus').textContent='Leitura antiga ou com relógio divergente. Receba uma leitura recente antes de copiar.';}
   $('connectWs').addEventListener('click',()=>{const url=$('wsUrl').value.trim();if(!/^wss?:\/\/[^\s]+$/i.test(url)){lastSensorError='Endereço inválido';$('sensorStatus').textContent='Use um endereço ws:// ou wss://.';sensorState();return;}if(location.protocol==='https:'&&!url.startsWith('wss://')){$('sensorStatus').textContent='Esta página HTTPS exige um gateway wss:// com certificado confiável.';return;}if(socket){socket.onclose=null;socket.close();socket=null;}lastSensorError='';if(!writeStore(WS_KEY,url))return;try{const ws=new WebSocket(url);socket=ws;$('sensorStatus').textContent='Conectando ao gateway...';ws.addEventListener('open',()=>{if(socket!==ws)return;$('sensorStatus').textContent='Conectado. Aguardando mensagens JSON de leitura.';sensorState();});ws.addEventListener('message',e=>{if(socket!==ws)return;try{if(typeof e.data!=='string'||e.data.length>30000)throw Error('Pacote inválido ou muito grande.');const payload=JSON.parse(e.data);gatewayReceive(payload,(payload.source==='demo'||payload.simulated===true)?'demo':'gateway');$('sensorStatus').textContent=sensorSource==='demo'?'Leitura SIMULADA recebida do gateway de teste. Nenhuma ação foi enviada ao CLP.':'Leitura recebida. Nenhuma ação foi enviada ao CLP.';}catch(err){$('sensorStatus').textContent='Leitura ignorada: '+err.message;}});ws.addEventListener('error',()=>{if(socket!==ws)return;lastSensorError='Erro de conexão';$('sensorStatus').textContent='Erro de conexão com o gateway. Verifique rede, endereço e certificado.';sensorState();});ws.addEventListener('close',()=>{if(socket!==ws)return;socket=null;$('sensorStatus').textContent='Conexão encerrada.';sensorState();});}catch(err){lastSensorError=err.message;$('sensorStatus').textContent='Não foi possível conectar: '+err.message;sensorState();}});
   $('disconnectWs').addEventListener('click',()=>{if(socket){const ws=socket;socket=null;ws.close();}httpConnected=false;lastSensorError='';sensorState();$('sensorStatus').textContent='Desconectado pelo operador.';});
-  $('demoSensor').addEventListener('click',()=>{acceptSnapshot({timestamp:new Date().toISOString(),tags:{phCalado:7.1,phDec:6.9,phTorre:7.6,phXarope:6.0,brixCalado:14.7,brixClarificado:14.8,brixXarope:62.1,temperature:104,tempInput:75,juiceFlow:400,limeFlow:1400,limeUnit:'L/h',sludgeLevelPct:34,turbidity:9}},'demo');$('sensorStatus').textContent='DADOS FICTÍCIOS DE TESTE. Não representam valores reais da usina.';});
+  $('demoSensor').addEventListener('click',()=>{acceptSnapshot({timestamp:new Date().toISOString(),tags:{phCalado:7.1,phDec:6.9,phTorre:7.6,phXarope:6.0,brixCalado:14.7,brixClarificado:14.8,brixXarope:62.1}},'demo');$('sensorStatus').textContent='DADOS FICTÍCIOS DE TESTE. Não representam valores reais da usina.';});
   $('applyReading').addEventListener('click',()=>{if(!sensorData||!sensorAt||Math.abs(Date.now()-sensorAt.getTime())>120000){renderSensors();return;}resetForm();for(const [k,v] of Object.entries(sensorData))if($(k))$(k).value=v;$('dateTime').value=timeInput(sensorAt);$('source').value=sensorSource==='demo'?'demo':sensorSource==='csv'?'csv':'gateway';$('notes').value='Leitura '+(sensorSource==='demo'?'simulada':sensorSource==='csv'?'importada de CSV':'recebida do gateway')+'. Conferir os dados antes de salvar.';renderCalc();goTab('registro');$('formStatus').textContent='Leitura copiada para conferência. Salve para registrar.';});
   function parseCSV(csv){const text=csv.replace(/^\ufeff/,'').trim();if(!text)throw Error('CSV vazio.');const lines=text.split(/\r?\n/).filter(Boolean);if(lines.length<2)throw Error('CSV precisa de cabeçalho e uma linha de dados.');const sep=lines[0].includes(';')?';':',';const decode=line=>{let result=[],buffer='',quoted=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(quoted&&line[i+1]==='"'){buffer+='"';i++;}else quoted=!quoted;}else if(ch===sep&&!quoted){result.push(buffer.trim());buffer='';}else buffer+=ch;}result.push(buffer.trim());return result;};const heads=decode(lines[0]),vals=decode(lines[lines.length-1]);const tags={};heads.forEach((h,i)=>{const v=vals[i];if(v!==undefined)tags[h]=v.replace(/^(\d+),(\d+)$/,'$1.$2');});return {tags,timestamp:new Date().toISOString()};}
   $('sensorCsv').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>1024*1024)throw Error('CSV deve ter no máximo 1 MB.');acceptSnapshot(parseCSV(await file.text()),'csv');$('sensorStatus').textContent='CSV carregado. Confira as unidades e valide as leituras antes de registrar.';}catch(err){$('sensorStatus').textContent='Falha no CSV: '+err.message;}finally{e.target.value='';}});
@@ -443,7 +457,7 @@
 
   // Configuração local de gateway existente, sem segredos ou comandos de escrita.
   const GW_KEY='caldocontrol_gateway_profile_v1';
-  const GW_LABELS=SENSOR_FIELDS.filter(x=>x!=='brix');
+  const GW_LABELS=[...SENSOR_FIELDS];
   let gatewayProfile=readStore(GW_KEY,null), discoveredTags=[], latestGatewayPacket=null, gatewayPoll=null, gatewayBusy=false;
   let gatewaySequence=0;
   const gatewayRequests=new Map();
@@ -463,7 +477,7 @@
     const type=$('gatewayType').value;
     const profile={name:$('gatewayName').value.trim().slice(0,60),type,
       endpoint:$('gatewayEndpoint').value.trim(),poll:Number($('gatewayInterval').value)||15,
-      limeUnit:$('gatewayLimeUnit').value,mapping:{}};
+      mapping:{}};
     for(const input of document.querySelectorAll('.gateway-tag-select'))if(input.value)profile.mapping[input.dataset.target]=input.value;
     if(!['wss','https','opcua','modbus','mqtt'].includes(profile.type))throw Error('Tipo de conexão inválido.');
     if(profile.endpoint) {
@@ -483,7 +497,6 @@
     for(const [k,v] of Object.entries(data.mapping||{}))if(GW_LABELS.includes(k)&&typeof v==='string'&&v.length<160)mapping[k]=v;
     return {name:String(data.name||'Gateway da usina').slice(0,60),type,endpoint,
       poll:[15,30,60].includes(Number(data.poll))?Number(data.poll):15,
-      limeUnit:['L/h','m³/h'].includes(data.limeUnit)?data.limeUnit:'',
       mapping};
   }
   function showGatewayProfile(p){
@@ -493,7 +506,6 @@
     $('gatewayType').value=p.type;
     $('gatewayEndpoint').value=p.endpoint;
     $('gatewayInterval').value=String(p.poll);
-    $('gatewayLimeUnit').value=p.limeUnit;
     renderGatewayMapping(p.mapping);
     gatewayProtocolHint();
   }
@@ -553,11 +565,6 @@
       if(!GW_LABELS.includes(key)||!Object.prototype.hasOwnProperty.call(raw,rawName))continue;
       const n=gatewayReading(raw[rawName]);
       if(n!==null)tags[key]=n;
-    }
-    if(tags.limeFlow!==undefined) {
-      const u=packet.limeUnit??(packet.tags&&packet.tags.limeUnit);
-      if(['L/h','m³/h'].includes(u))tags.limeUnit=u;
-      else if(p.limeUnit)tags.limeUnit=p.limeUnit;
     }
     const timestamp=packet.timestamp??packet.ts??packet.time??packet.dateTime;
     return {timestamp,source:'gateway',tags};
@@ -656,8 +663,8 @@
       showGatewayProfile(validGatewayProfile(data.profile));$('gatewayTestStatus').textContent='Configuração carregada. Teste a conexão e salve neste aparelho.';
     }catch(err){$('gatewayTestStatus').textContent='Importação falhou: '+err.message;}finally{e.target.value='';}
   });
-  try{showGatewayProfile(gatewayProfile||{name:'Supervisório da usina',type:'wss',endpoint:readStore(WS_KEY,'')||'',poll:15,limeUnit:'',mapping:{}});}
-  catch{showGatewayProfile({name:'Supervisório da usina',type:'wss',endpoint:'',poll:15,limeUnit:'',mapping:{}});}
+  try{showGatewayProfile(gatewayProfile||{name:'Supervisório da usina',type:'wss',endpoint:readStore(WS_KEY,'')||'',poll:15,mapping:{}});}
+  catch{showGatewayProfile({name:'Supervisório da usina',type:'wss',endpoint:'',poll:15,mapping:{}});}
 
 // Médias agrupadas: somente registros reais, sem imputação de ausentes.
 const AVG_MEASURES=[['phCalado','pH caleado/dosado',2],['phDec','pH clarificado',2],['phTorre','pH torre',2],['phXarope','pH xarope',2],['brixCalado','°Brix caleado',2],['brixClarificado','°Brix clarificado',2],['brixXarope','°Brix xarope',2]];
@@ -761,7 +768,7 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
   const SHIFT_DEFAULT={A:{start:'06:00',end:'14:00'},B:{start:'14:00',end:'22:00'},C:{start:'22:00',end:'06:00'}};
   let shiftTimes=readStore(SHIFT_KEY,SHIFT_DEFAULT);
   if(!shiftTimes||!['A','B','C'].every(k=>shiftTimes[k]&&/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftTimes[k].start)&&/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftTimes[k].end)))shiftTimes=SHIFT_DEFAULT;
-  const cleanAuditRecord=r=>r?Object.fromEntries(['dateTime','line','shift','operator','source','phCalado','phDec','phTorre','phXarope','brixCalado','brixClarificado','brixXarope','limeFlow','limeUnit','juiceFlow','baume','decanterId','heaterId'].map(k=>[k,r[k]??null])):null;
+  const cleanAuditRecord=r=>r?Object.fromEntries(['dateTime','line','shift','operator','source','phCalado','phDec','phTorre','phXarope','brixCalado','brixClarificado','brixXarope'].map(k=>[k,r[k]??null])):null;
   function appendAudit(action,id,actor,reason,before,after){
     const event={id:'evt_'+Date.now()+'_'+Math.random().toString(36).slice(2),at:new Date().toISOString(),
       action:String(action).slice(0,30),recordId:String(id).slice(0,120),
@@ -801,7 +808,7 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
   }
   function renderLive(){
     const last=liveHistory[liveHistory.length-1];
-    const keys=['phCalado','phDec','phXarope','phTorre','brixCalado','brixClarificado','brixXarope','temperature','tempInput','juiceFlow','limeFlow','baume','sludgeLevelPct','turbidity'];
+    const keys=['phCalado','phDec','phXarope','phTorre','brixCalado','brixClarificado','brixXarope'];
     const current=sensorSource==='gateway'&&sensorData?{at:sensorAt.toISOString(),fields:sensorData}:last;
     const age=current?Date.now()-new Date(current.at).getTime():Infinity;
     const connected=httpConnected||(socket&&socket.readyState===WebSocket.OPEN);const good=current&&Math.abs(age)<=120000&&sensorSource==='gateway'&&connected;
@@ -949,7 +956,7 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
 
   // OCR de tabelas: extrair linhas na posição da foto, mapear colunas e CONFERIR antes de salvar.
   const BATCH_FIELDS=[['time','Hora'],['phCalado','pH caleado'],['phDec','pH clarificado'],['phXarope','pH xarope'],
-    ['phTorre','pH torre'],['brixCalado','Brix caleado'],['brixClarificado','Brix clarificado'],['brixXarope','Brix xarope'],['baume','Baumé']];
+    ['phTorre','pH torre'],['brixCalado','Brix caleado'],['brixClarificado','Brix clarificado'],['brixXarope','Brix xarope']];
   let batchScan=null,batchOriginalRows=[],batchColumnXs=[],batchMapped=[],batchImage='';
   $('batchDate').value=dateLocal(new Date().toISOString());
   function batchImageData(photo,limit=1600,quality=.78){
@@ -1078,7 +1085,7 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
       if(Number.isNaN(+timestamp)){window.alert('Data/hora inválida.');return;}
       const rec=Object.fromEntries(FIELDS.map(k=>[k,NUMS.includes(k)?null:'']));
       Object.assign(rec,{id:'ocr_'+Date.now()+'_'+Math.random().toString(36).slice(2,10),dateTime:timestamp.toISOString(),
-        updatedAt:new Date().toISOString(),line,shift,operator,process,source:'foto',limeUnit:'L/h',
+        updatedAt:new Date().toISOString(),line,shift,operator,process,source:'foto',
         notes:'Linha da folha OCR revisada pelo operador.',photoData:'',photoOcrText:''});
       for(const [key] of BATCH_FIELDS){
         if(key==='time'||!obj[key])continue;
@@ -1175,7 +1182,7 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
   $('exportExcel').addEventListener('click',()=>{
     try{
       renderAverages();
-      const keys=['dateTime','line','process','shift','operator','source','phCalado','phDec','phXarope','phTorre','brixCalado','brixClarificado','brixXarope','baume','juiceFlow','limeFlow','limeUnit','temperature','tempInput','steamPressure','decanterId','sludgeLevelPct','turbidity','notes','photoOcrText'];
+      const keys=['dateTime','line','process','shift','operator','source','phCalado','phDec','phXarope','phTorre','brixCalado','brixClarificado','brixXarope','notes','photoOcrText'];
       const rows=[keys,...records.map(r=>keys.map(k=>r[k]??null))];
       const avKeys=['day','shift','process','line','records',...AVG_MEASURES.flatMap(([key])=>[key,key+'N'])];
       const allGroups=shiftGroupRecords(),allAverages=[];
