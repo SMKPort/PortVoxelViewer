@@ -55,64 +55,242 @@ public class MainActivity extends Activity {
   private BluetoothGattCharacteristic writeChar;
   private int selectedColor=RED;
   private ScanCallback scanCallback;
+  private final ScrollView[] pageViews=new ScrollView[5];
+  private final Button[] navButtons=new Button[5];
+  private TextView pageSubtitle;
+
 
   @Override public void onCreate(Bundle state) {
     super.onCreate(state);
-    ScrollView sc=new ScrollView(this); sc.setBackgroundColor(BG);
-    LinearLayout root=new LinearLayout(this); root.setOrientation(1); root.setPadding(dp(20),dp(25),dp(20),dp(28)); sc.addView(root);
-    root.addView(text("PORT  /  SMART HOME",12,GOLD,true));
-    root.addView(text("LumiPort ✦",36,GOLD,true));
-    root.addView(text("Sua luz. Seu domínio.",15,SUB,false)); gap(root,18);
-    LinearLayout devicesCard=card(root);
-    devicesCard.addView(text("SEUS DISPOSITIVOS",12,GOLD,true));
-    devicesCard.addView(text("💡 Lâmpada Wi-Fi  •  Smart Life / Tuya",16,TEXT,true));
-    devicesCard.addView(text("Controle via Home Assistant",12,SUB,false)); gap(devicesCard,8);
-    devicesCard.addView(text("🌈 Fita LED  •  HappyLighting",16,TEXT,true));
-    bleStatus=text("Bluetooth ainda não conectado",12,SUB,false); devicesCard.addView(bleStatus); gap(root,14);
-    root.addView(text("CONTROLE GERAL",13,GOLD,true));
-    LinearLayout row=new LinearLayout(this); root.addView(row);
-    Button on=button("LIGAR AS DUAS",GOLD,Color.BLACK); Button off=button("DESLIGAR",RED,TEXT);
-    row.addView(on,new LinearLayout.LayoutParams(0,dp(52),1)); row.addView(off,new LinearLayout.LayoutParams(0,dp(52),1));
-    on.setOnClickListener(v->dispatch(true,false)); off.setOnClickListener(v->dispatch(false,false)); gap(root,18);
-    LinearLayout colors=card(root); colors.addView(text("CORES E BRILHO",16,GOLD,true));
-    preview=text("RGB  #C42235",15,TEXT,true); colors.addView(preview);
-    String[] labels={"Rubro","Dourado","Branco","Azul","Roxo","Verde","Rosa","Ciano"};
+    LinearLayout shell=new LinearLayout(this);
+    shell.setOrientation(LinearLayout.VERTICAL);
+    shell.setBackgroundColor(BG);
+
+    LinearLayout header=new LinearLayout(this);
+    header.setOrientation(LinearLayout.VERTICAL);
+    header.setPadding(dp(18),dp(20),dp(18),dp(11));
+    header.addView(text("PORT  /  SMART HOME",11,GOLD,true));
+    header.addView(text("LumiPort ✦",30,GOLD,true));
+    pageSubtitle=text("Tudo em um toque",13,SUB,false);
+    header.addView(pageSubtitle);
+    shell.addView(header);
+
+    android.widget.FrameLayout contentFrame=new android.widget.FrameLayout(this);
+    shell.addView(contentFrame,new LinearLayout.LayoutParams(-1,0,1));
+    String[] titles={"Início","Dispositivos","Cores","Cenas","Ajustes"};
+    String[] symbols={"⌂","◈","◉","✦","⚙"};
+    LinearLayout[] pageRoots=new LinearLayout[5];
+    for(int i=0;i<5;i++){
+      ScrollView scroll=new ScrollView(this);
+      scroll.setFillViewport(true);
+      scroll.setVerticalScrollBarEnabled(false);
+      LinearLayout page=new LinearLayout(this);
+      page.setOrientation(LinearLayout.VERTICAL);
+      page.setPadding(dp(18),dp(12),dp(18),dp(23));
+      scroll.addView(page);
+      contentFrame.addView(scroll,new android.widget.FrameLayout.LayoutParams(-1,-1));
+      pageViews[i]=scroll;
+      pageRoots[i]=page;
+      scroll.setVisibility(View.GONE);
+    }
+
+    // INÍCIO: somente os comandos essenciais.
+    LinearLayout home=pageRoots[0];
+    home.addView(text("CONTROLE CENTRAL",12,GOLD,true));
+    LinearLayout master=card(home);
+    master.addView(text("Iluminação conjunta",20,TEXT,true));
+    master.addView(text("Controle a lâmpada e a fita com um toque.",13,SUB,false));
+    gap(master,13);
+    LinearLayout masterRow=new LinearLayout(this);
+    Button allOn=button("●  Ligar tudo",GOLD,Color.BLACK);
+    Button allOff=button("○  Desligar tudo",RED,TEXT);
+    masterRow.addView(allOn,new LinearLayout.LayoutParams(0,dp(52),1));
+    masterRow.addView(allOff,new LinearLayout.LayoutParams(0,dp(52),1));
+    master.addView(masterRow);
+    allOn.setOnClickListener(v->dispatch(true,false));
+    allOff.setOnClickListener(v->dispatch(false,false));
+    gap(home,16);
+    LinearLayout summary=card(home);
+    summary.addView(text("SEUS DISPOSITIVOS",12,GOLD,true));
+    summary.addView(text("💡  Lâmpada Wi-Fi",16,TEXT,true));
+    summary.addView(text("Smart Life / Tuya • Home Assistant",12,SUB,false));
+    gap(summary,10);
+    summary.addView(text("🌈  Fita LED",16,TEXT,true));
+    summary.addView(text("HappyLighting • Bluetooth",12,SUB,false));
+    gap(home,15);
+    Button goColors=button("◉  Cores e brilho",CARD,GOLD);
+    home.addView(goColors);
+    goColors.setOnClickListener(v->showTab(2));
+    Button goScenes=button("✦  Cenas prontas",CARD,GOLD);
+    home.addView(goScenes);
+    goScenes.setOnClickListener(v->showTab(3));
+    gap(home,12);
+    home.addView(text("As duas luzes recebem os comandos do app. Mudanças feitas em outros aplicativos não são sincronizadas automaticamente.",12,SUB,false));
+
+    // DISPOSITIVOS: comandos independentes.
+    LinearLayout devicesPage=pageRoots[1];
+    devicesPage.addView(text("CONTROLE INDIVIDUAL",12,GOLD,true));
+    LinearLayout bulbCard=card(devicesPage);
+    bulbCard.addView(text("💡  Lâmpada Wi-Fi",19,TEXT,true));
+    bulbCard.addView(text("Smart Life / Tuya via Home Assistant",12,SUB,false));
+    gap(bulbCard,12);
+    LinearLayout bulbRow=new LinearLayout(this);
+    Button bulbOn=button("Ligar lâmpada",GOLD,Color.BLACK);
+    Button bulbOff=button("Desligar",RED,TEXT);
+    bulbRow.addView(bulbOn,new LinearLayout.LayoutParams(0,dp(52),1));
+    bulbRow.addView(bulbOff,new LinearLayout.LayoutParams(0,dp(52),1));
+    bulbCard.addView(bulbRow);
+    bulbOn.setOnClickListener(v->powerHa(true,false));
+    bulbOff.setOnClickListener(v->powerHa(false,false));
+    gap(devicesPage,14);
+    LinearLayout stripCard=card(devicesPage);
+    stripCard.addView(text("🌈  Fita LED",19,TEXT,true));
+    stripCard.addView(text("HappyLighting • conexão Bluetooth",12,SUB,false));
+    bleStatus=text("Bluetooth ainda não conectado",12,SUB,false);
+    stripCard.addView(bleStatus);
+    gap(stripCard,12);
+    LinearLayout stripRow=new LinearLayout(this);
+    Button stripOn=button("Ligar fita",GOLD,Color.BLACK);
+    Button stripOff=button("Desligar",RED,TEXT);
+    stripRow.addView(stripOn,new LinearLayout.LayoutParams(0,dp(52),1));
+    stripRow.addView(stripOff,new LinearLayout.LayoutParams(0,dp(52),1));
+    stripCard.addView(stripRow);
+    stripOn.setOnClickListener(v->powerBle(true,false));
+    stripOff.setOnClickListener(v->powerBle(false,false));
+    gap(devicesPage,14);
+    Button deviceSetup=button("⚙  Configurar as conexões",CARD,GOLD);
+    devicesPage.addView(deviceSetup);
+    deviceSetup.setOnClickListener(v->showTab(4));
+
+    // CORES: escolha RGB e brilho sem misturar ajustes técnicos.
+    LinearLayout colorsPage=pageRoots[2];
+    colorsPage.addView(text("CORES E BRILHO",12,GOLD,true));
+    LinearLayout colorCard=card(colorsPage);
+    colorCard.addView(text("Aplicar nas duas luzes",18,TEXT,true));
+    colorCard.addView(text("Toque na cor desejada para aplicar.",12,SUB,false));
+    gap(colorCard,10);
+    preview=text("RGB  #C42235",16,TEXT,true);
+    colorCard.addView(preview);
+    gap(colorCard,10);
+    String[] colorLabels={"Rubro","Dourado","Branco","Azul","Roxo","Verde","Rosa","Ciano"};
     int[] palette={RED,GOLD,0xFFFFFFFF,0xFF2353FF,0xFF8735EF,0xFF28A75C,0xFFFE65BC,0xFF00D4E4};
     for(int i=0;i<2;i++){
-      LinearLayout line=new LinearLayout(this); colors.addView(line);
-      for(int j=0;j<4;j++){final int c=palette[4*i+j];Button b=button(labels[4*i+j],c,contrast(c)); b.setTextSize(11);
-        line.addView(b,new LinearLayout.LayoutParams(0,dp(50),1)); b.setOnClickListener(v->{selectedColor=c;updatePreview();dispatch(true,true);});}
+      LinearLayout paletteRow=new LinearLayout(this);
+      colorCard.addView(paletteRow);
+      for(int j=0;j<4;j++){
+        int at=i*4+j;
+        final int color=palette[at];
+        Button swatch=button(colorLabels[at],color,contrast(color));
+        swatch.setTextSize(11);
+        paletteRow.addView(swatch,new LinearLayout.LayoutParams(0,dp(52),1));
+        swatch.setOnClickListener(v->{selectedColor=color;updatePreview();dispatch(true,true);});
+      }
     }
-    colors.addView(text("BRILHO",12,SUB,true));
-    brightness=new SeekBar(this); brightness.setMax(100);brightness.setProgress(80);colors.addView(brightness);
-    Button apply=button("APLICAR COR E BRILHO",RED,TEXT);colors.addView(apply);
-    apply.setOnClickListener(v->dispatch(true,true)); gap(root,15);
-    root.addView(text("CENAS",13,GOLD,true));
-    LinearLayout scenes=new LinearLayout(this);root.addView(scenes);
-    Button gaming=button("🎮 Gaming",CARD,TEXT); Button relax=button("🌙 Relaxar",CARD,TEXT);
-    scenes.addView(gaming,new LinearLayout.LayoutParams(0,dp(55),1));
-    scenes.addView(relax,new LinearLayout.LayoutParams(0,dp(55),1));
-    gaming.setOnClickListener(v->{selectedColor=RED;brightness.setProgress(90);updatePreview();dispatch(true,true);});
-    relax.setOnClickListener(v->{selectedColor=GOLD;brightness.setProgress(30);updatePreview();dispatch(true,true);});
-    gap(root,15);
-    LinearLayout settings=card(root);
-    settings.addView(text("CONEXÕES",16,GOLD,true));
-    settings.addView(text("Home Assistant com integração Tuya",12,SUB,false));
-    haUrl=input(settings,"URL Home Assistant (http://192.168.1.10:8123)",false);
+    gap(colorCard,16);
+    colorCard.addView(text("BRILHO GERAL",12,GOLD,true));
+    brightness=new SeekBar(this);
+    brightness.setMax(100);
+    brightness.setProgress(80);
+    colorCard.addView(brightness);
+    Button applyColor=button("Aplicar cor e brilho",RED,TEXT);
+    colorCard.addView(applyColor);
+    applyColor.setOnClickListener(v->dispatch(true,true));
+    gap(colorsPage,10);
+    colorsPage.addView(text("A cor selecionada será enviada à lâmpada e à fita quando você aplicar.",12,SUB,false));
+
+    // CENAS: presets acessíveis com um toque.
+    LinearLayout scenesPage=pageRoots[3];
+    scenesPage.addView(text("AMBIENTES PRONTOS",12,GOLD,true));
+    scenesPage.addView(text("Cada cena ajusta cor e brilho das duas luzes.",13,SUB,false));
+    gap(scenesPage,12);
+    String[] sceneNames={"🎮  Gaming","🌙  Relaxar","🔥  Rubro","☀  Branco"};
+    String[] descriptions={"Vermelho • 90%","Dourado suave • 30%","Vermelho intenso • 95%","Branco • 100%"};
+    int[] sceneColors={RED,GOLD,0xFFFF163B,Color.WHITE};
+    int[] sceneLevels={90,30,95,100};
+    for(int i=0;i<sceneNames.length;i++){
+      final int color=sceneColors[i], level=sceneLevels[i];
+      LinearLayout sceneCard=card(scenesPage);
+      sceneCard.addView(text(sceneNames[i],19,TEXT,true));
+      sceneCard.addView(text(descriptions[i],13,SUB,false));
+      gap(sceneCard,9);
+      Button run=button("Aplicar cena",CARD,GOLD);
+      sceneCard.addView(run);
+      run.setOnClickListener(v->{selectedColor=color;brightness.setProgress(level);updatePreview();dispatch(true,true);});
+      gap(scenesPage,10);
+    }
+
+    // AJUSTES: credenciais, configurações e busca Bluetooth.
+    LinearLayout settingsPage=pageRoots[4];
+    settingsPage.addView(text("CONEXÕES",12,GOLD,true));
+    LinearLayout settings=card(settingsPage);
+    settings.addView(text("Home Assistant / Tuya",18,TEXT,true));
+    settings.addView(text("Configure sua lâmpada Smart Life.",12,SUB,false));
+    haUrl=input(settings,"URL do Home Assistant (http://192.168.1.10:8123)",false);
     haToken=input(settings,"Token de acesso (não é salvo)",true);
     entity=input(settings,"Entidade da lâmpada: light.quarto",false);
     haUrl.setText(getPreferences(MODE_PRIVATE).getString("url",""));
     entity.setText(getPreferences(MODE_PRIVATE).getString("entity",""));
-    Button save=button("SALVAR ENDEREÇO",GOLD,Color.BLACK);settings.addView(save);
+    Button save=button("Salvar endereço e entidade",GOLD,Color.BLACK);
+    settings.addView(save);
     save.setOnClickListener(v->{getPreferences(MODE_PRIVATE).edit().putString("url",haUrl.getText().toString().trim()).putString("entity",entity.getText().toString().trim()).apply();toast("Endereço e entidade salvos. O token não é armazenado.");});
-    Button scan=button("⌁  CONECTAR FITA BLUETOOTH",RED,TEXT);settings.addView(scan);scan.setOnClickListener(v->ensureScanPermission());
-    settings.addView(text("Compatível no modo direto apenas com LEDBLE / LEDCAR e característica FFE1. Conexão Bluetooth precisa de proximidade.",12,SUB,false));
-    gap(root,14);status=text("Aguardando configuração",13,GOLD,false);root.addView(status);
-    setContentView(sc);updatePreview();
+    gap(settingsPage,14);
+    LinearLayout bleSettings=card(settingsPage);
+    bleSettings.addView(text("Fita HappyLighting",18,TEXT,true));
+    bleSettings.addView(text("Busque seu controlador Bluetooth próximo.",12,SUB,false));
+    Button scan=button("⌁  Procurar fita Bluetooth",RED,TEXT);
+    bleSettings.addView(scan);
+    scan.setOnClickListener(v->ensureScanPermission());
+    bleSettings.addView(text("Compatível com controladores LEDBLE / LEDCAR e característica FFE1. Outros modelos podem exigir integração adicional.",12,SUB,false));
+
+    status=text("Pronto para configurar. Nenhum dispositivo foi acionado.",12,GOLD,false);
+    status.setMaxLines(2);
+    status.setPadding(dp(15),dp(9),dp(15),dp(9));
+    status.setBackgroundColor(0xFF1A1113);
+    shell.addView(status);
+    LinearLayout nav=new LinearLayout(this);
+    nav.setOrientation(LinearLayout.HORIZONTAL);
+    nav.setPadding(dp(3),dp(5),dp(3),dp(6));
+    nav.setBackgroundColor(CARD);
+    for(int i=0;i<5;i++){
+      final int index=i;
+      Button button=new Button(this);
+      button.setText(symbols[i]+"\n"+titles[i]);
+      button.setAllCaps(false);
+      button.setTextSize(10);
+      button.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
+      button.setTextColor(SUB);
+      button.setMinHeight(dp(58));
+      button.setPadding(0,0,0,0);
+      button.setBackground(shape(CARD,12));
+      button.setContentDescription("Aba "+titles[i]);
+      nav.addView(button,new LinearLayout.LayoutParams(0,dp(62),1));
+      navButtons[i]=button;
+      button.setOnClickListener(v->showTab(index));
+    }
+    shell.addView(nav);
+    setContentView(shell);
+    updatePreview();
+    showTab(getPreferences(MODE_PRIVATE).getInt("selected_tab",0));
+  }
+
+  private void showTab(int tab){
+    if(tab<0||tab>=pageViews.length)tab=0;
+    final String[] captions={"Tudo em um toque","Controle cada luz separadamente","Escolha a cor e o brilho","Cenas para cada momento","Conexões e preferências"};
+    for(int i=0;i<pageViews.length;i++){
+      boolean chosen=(i==tab);
+      pageViews[i].setVisibility(chosen?View.VISIBLE:View.GONE);
+      navButtons[i].setTextColor(chosen?GOLD:SUB);
+      navButtons[i].setBackground(shape(chosen?0xFF452129:CARD,12));
+    }
+    pageSubtitle.setText(captions[tab]);
+    getPreferences(MODE_PRIVATE).edit().putInt("selected_tab",tab).apply();
   }
   private void updatePreview(){if(preview!=null){preview.setText(String.format(java.util.Locale.ROOT,"RGB  #%06X",selectedColor&0xFFFFFF));preview.setTextColor(selectedColor==0xFFFFFFFF?TEXT:selectedColor);}}
   private void dispatch(boolean on,boolean withColor){
     powerBle(on,withColor);
+    powerHa(on,withColor);
+  }
+  private void powerHa(boolean on,boolean withColor){
     String url=haUrl.getText().toString().trim(),token=haToken.getText().toString().trim(),id=entity.getText().toString().trim();
     if(!id.matches("light\\.[a-z0-9_]+")||url.isEmpty()||token.isEmpty()){
       inform("Informe URL, token e entidade do Home Assistant para controlar a lâmpada");return;
@@ -142,7 +320,7 @@ public class MainActivity extends Activity {
   }
   @SuppressWarnings("deprecation")
   private void powerBle(boolean on,boolean withColor){
-    if(gatt==null||writeChar==null)return;
+    if(gatt==null||writeChar==null){inform("Conecte a fita Bluetooth em Ajustes.");return;}
     sendBle(new byte[]{0x7E,0x04,0x04,(byte)(on?1:0),(byte)0xFF,(byte)0xFF,(byte)0xFF,0x00,(byte)0xEF});
     if(on&&withColor){final int c=selectedColor; final int b=Math.max(1,brightness.getProgress());
       handler.postDelayed(()->sendBle(new byte[]{0x7E,0x07,0x05,0x03,(byte)(c>>16),(byte)(c>>8),(byte)c,0x00,(byte)0xEF}),160);

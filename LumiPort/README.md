@@ -1,3 +1,19 @@
+# LumiPort v0.3.0: interface com abas 🔴🟡⚫
+
+O aplicativo agora separa funções em **Início**, **Dispositivos**, **Cores**, **Cenas** e **Ajustes**, com navegação fixa inferior. Continua com a paleta preta, vermelho-rubi e dourada.
+
+- Início: ligar/desligar as duas luzes e atalhos.
+- Dispositivos: ligar/desligar a lâmpada e a fita individualmente.
+- Cores: paleta RGB e brilho.
+- Cenas: Gaming, Relaxar, Rubro e Branco.
+- Ajustes: configurar Home Assistant e conectar HappyLighting.
+
+A última aba é lembrada pelo aplicativo. Nenhuma credencial foi incluída neste repositório. A sincronização de cor é feita por comandos do LumiPort e não reproduz automaticamente alterações realizadas fora dele.
+
+**Compatibilidade:** a fita Bluetooth continua limitada aos controladores LEDBLE/LEDCAR/FFE1 compatíveis. A lâmpada continua dependendo do Home Assistant. O token não é salvo no armazenamento nesta branch. 
+
+## Histórico v0.2
+
 # LumiPort 0.2.0 (branch de desenvolvimento) 🔴🟡⚫
 
 Aplicativo Android em Java com tema preto, vermelho-rubi e dourado.

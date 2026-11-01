@@ -1,7 +1,7 @@
 name: Compilar LumiPort Android
 on:
   push:
-    branches: [lumiport-android-v0.2]
+    branches: [lumiport-android-v0.3]
     paths:
       - 'LumiPort/**'
       - '.github/workflows/lumiport-build-apk.yml'
