@@ -214,7 +214,7 @@
 <section class="panel" id="diagnostico"><div class="card">
 <h2>Tendências de pH e Brix</h2>
 <div class="form-grid"><div class="field"><label for="trendLine">Linha/unidade</label><input id="trendLine" placeholder="Todas"></div><div class="field"><label for="trendProcess">Processo</label><select id="trendProcess"><option value="">Todos</option><option value="acucar">Açúcar</option><option value="etanol">Etanol</option><option value="ambos">Açúcar + etanol</option></select></div></div>
-<div class="button-row"><button type="button" class="button primary" id="recalcTrends">Analisar registros</button></div><div id="limeAnalytics" class="section-grid"></div><div id="limeTrend" class="chart-space"></div><h3>Tendências que merecem conferência</h3><div id="trendAlerts" class="section-grid"></div>
+<div class="button-row"><button type="button" class="button primary" id="recalcTrends">Analisar registros</button></div><div id="trendAnalytics" class="section-grid"></div><div id="trendChart" class="chart-space"></div><h3>Tendências que merecem conferência</h3><div id="trendAlerts" class="section-grid"></div>
 <p class="fineprint">Tendências baseadas nas análises de pH e Brix. Alertas só são emitidos conforme limites definidos pela operação, sem ajustes automáticos de processo.</p></div></section>
 <section class="panel" id="importacao"><div class="card">
 <h2>Importação de folha inteira por OCR</h2><p class="muted">No APK Android, o reconhecimento local usa a posição das linhas para organizar a tabela. Revise o mapeamento e as células antes de salvar.</p>
@@ -248,7 +248,7 @@
       </div><div class="card"><h2>Dados e segurança</h2><p class="muted">Os registros ficam armazenados localmente neste navegador. Eles não são enviados a um servidor. Para não perder os dados, faça backups periódicos.</p>
         <div class="button-row"><button class="button" id="importBtn" type="button">↑ Restaurar backup</button><input class="hide" id="importFile" type="file" accept=".json,application/json"><button class="button danger" id="deleteAll" type="button">Apagar todos os registros</button></div>
         <p class="fineprint">A restauração adiciona registros sem duplicar identificadores. Se houver limites e horário operacional no backup, você poderá optar por restaurá-los. Faça cópia antes de apagar dados.</p>
-        <div class="callout">⚠️ Ferramenta de acompanhamento, não de automação industrial. Qualquer alteração de cal, polímero, temperatura ou setpoint deve seguir o procedimento operacional validado.</div>
+        <div class="callout">⚠️ Ferramenta de acompanhamento, não de automação industrial. Decisões sobre o processo devem seguir os procedimentos aprovados da usina.</div>
         <h3 style="margin-top:22px">Sobre as medições</h3><p class="fineprint">Os parâmetros disponíveis são pH e Brix. O backup JSON preserva registros de versões anteriores, inclusive medições antigas de categorias removidas.</p>
       </div></div>
     </section>
@@ -862,9 +862,9 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
       const [date,shift,process,line]=JSON.parse(key),end=shiftEnd(date,shift);
       if(!Number.isFinite(end)||Date.now()<end+15*60000)continue;
       const metrics={};for(const [k] of METRICS)metrics[k]=statsOf(group,k);
-      const rate=statsOf(group.map(r=>({rate:calc(r).rate})),'rate');
+      
       const closure={key,date,shift,process,line,at:new Date().toISOString(),status:'rascunho',
-        actor:'',reviewedAt:null,signature:shiftSignature(group),sampleCount:group.length,metrics,rate,
+        actor:'',reviewedAt:null,signature:shiftSignature(group),sampleCount:group.length,metrics,
         outside:group.reduce((n,r)=>n+METRICS.filter(([k])=>alertFlag(k,r[k])==='outside').length,0)};
       closures.push(closure);existing.add(key);created++;
     }
@@ -883,7 +883,7 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
       const detail=cells.map(k=>'<span class="tag">'+html(SENSOR_LABELS[k]||k)+': '+fmt(c.metrics?.[k]?.average,2)+' (n='+Number(c.metrics?.[k]?.n||0)+')</span>').join(' ');
       return '<div class="cc-closure"><h3>'+html(c.date)+' · Turno '+html(c.shift)+' · '+html(processLabel(c.process))+'</h3>'+
         '<p>'+html(c.line)+' · '+c.sampleCount+' análises · '+html(status)+(c.actor?' · '+html(c.actor):'')+'</p><div class="cc-chips">'+detail+'</div>'+
-        '<p class="fineprint">Leite de cal: '+fmt(c.rate?.average,2)+' L/m³ · '+c.outside+' leituras fora dos limites configurados</p>'+
+        '<p class="fineprint">'+c.outside+' leituras fora dos limites de pH e Brix configurados</p>'+
         '<button type="button" class="button small primary" data-closekey="'+html(c.key)+'">'+(changed?'Recalcular e conferir':'Conferir e assinar localmente')+'</button></div>';
     }).join(''):'<div class="empty">Sem turnos concluídos com análises identificadas. Defina horários e registre os turnos para gerar rascunhos.</div>';
   }
@@ -904,7 +904,7 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
     if(!rows.length){window.alert('Sem amostras válidas para este turno.');return;}
     const metrics={};for(const [k] of METRICS)metrics[k]=statsOf(rows,k);
     const before={...item};
-    Object.assign(item,{sampleCount:rows.length,metrics,rate:statsOf(rows.map(r=>({rate:calc(r).rate})),'rate'),
+    Object.assign(item,{sampleCount:rows.length,metrics,
       outside:rows.reduce((n,r)=>n+METRICS.filter(([k])=>alertFlag(k,r[k])==='outside').length,0),
       signature:shiftSignature(rows),status:'conferido',actor:String(actor).slice(0,80),reviewedAt:new Date().toISOString()});
     if(writeStore(CLOSURE_KEY,closures)){appendAudit('fechar-turno',item.key,actor,reason,before,item);renderClosures();}
@@ -917,21 +917,20 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
     const line=$('trendLine').value.trim().toLocaleLowerCase('pt-BR'),proc=$('trendProcess').value;
     const list=operationalRecords().filter(r=>(!proc||r.process===proc)&&(!line||String(r.line||'').toLocaleLowerCase('pt-BR').includes(line)))
       .sort((a,b)=>new Date(a.dateTime)-new Date(b.dateTime));
-    const points=list.map(r=>({at:r.dateTime,rate:calc(r).rate,ph:r.phCalado,baume:r.baume})).filter(x=>Number.isFinite(x.rate)&&Number.isFinite(x.ph)).slice(-100);
-    const rate=statsOf(points,'rate'),ph=statsOf(points,'ph');
-    let correlation=null;
-    if(points.length>=4){
-      const mx=rate.average,my=ph.average,num=points.reduce((s,p)=>s+(p.rate-mx)*(p.ph-my),0);
-      const sx=Math.sqrt(points.reduce((s,p)=>s+(p.rate-mx)**2,0)),sy=Math.sqrt(points.reduce((s,p)=>s+(p.ph-my)**2,0));
-      if(sx>0&&sy>0)correlation=num/(sx*sy);
-    }
-    $('limeAnalytics').innerHTML='<div class="mini-card"><p>Leite de cal por caldo</p><div class="mini-value">'+fmt(rate.average,2)+'</div><small>L/m³, '+rate.n+' pares</small></div>'+
-      '<div class="mini-card"><p>pH caleado nos mesmos pares</p><div class="mini-value">'+fmt(ph.average,2)+'</div><small>pH, '+ph.n+' pares</small></div>'+
-      '<div class="mini-card"><p>Correlação descritiva (Pearson)</p><div class="mini-value">'+fmt(correlation,2)+'</div><small>'+(correlation===null?'Dados insuficientes ou sem variação':'Não implica causa e efeito')+'</small></div>';
-    if(points.length<2)$('limeTrend').innerHTML='<div class="empty">Registre vazão do caldo, vazão do leite de cal e pH caleado em pelo menos duas análises.</div>';
-    else{
-      const w=700,h=200,l=42,r=18,t=16,b=30,vals=points.map(p=>p.rate),min=Math.min(...vals),max=Math.max(...vals),span=Math.max(.01,max-min),x=i=>l+i*(w-l-r)/(points.length-1),y=v=>t+(max-v+span*.12)*(h-t-b)/(span*1.24);
-      $('limeTrend').innerHTML='<p class="fineprint">Série temporal da relação volumétrica L/m³ nas análises registradas (sem indicação de setpoint).</p><svg viewBox="0 0 700 200" role="img" aria-label="Consumo de leite de cal L por m3 ao longo das análises"><polyline points="'+vals.map((v,i)=>x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ')+'" fill="none" stroke="#b9ee63" stroke-width="2.8"/><text x="4" y="20" fill="#9ab1bc" font-size="12">'+html(fmt(max,2))+'</text><text x="4" y="175" fill="#9ab1bc" font-size="12">'+html(fmt(min,2))+'</text></svg>';
+    const metric='phCalado',values=list.filter(r=>Number.isFinite(r[metric])).slice(-80);
+    $('trendAnalytics').innerHTML=METRICS.map(([k,label])=>{
+      const numbers=list.map(r=>r[k]).filter(Number.isFinite);
+      return '<div class="mini-card"><p>'+html(label)+'</p><div class="mini-value">'+fmt(numbers.length?numbers.reduce((a,b)=>a+b,0)/numbers.length:null,2)+'</div><small>'+numbers.length+' amostras</small></div>';
+    }).join('');
+    if(values.length<2){
+      $('trendChart').innerHTML='<div class="empty">Registre pelo menos duas análises de pH caleado para visualizar a tendência.</div>';
+    }else{
+      const w=700,h=200,l=42,r=18,t=16,b=30,nums=values.map(v=>v[metric]),min=Math.min(...nums),max=Math.max(...nums),span=Math.max(.08,max-min),
+        x=i=>l+i*(w-l-r)/(values.length-1),y=v=>t+(max-v+span*.12)*(h-t-b)/(span*1.24);
+      $('trendChart').innerHTML='<p class="fineprint">Evolução do pH caleado/dosado nas últimas análises registradas.</p>'+
+        '<svg viewBox="0 0 700 200" role="img" aria-label="Tendência de pH caleado/dosado"><polyline points="'+nums.map((v,i)=>x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ')+
+        '" fill="none" stroke="#b9ee63" stroke-width="2.8"/><text x="4" y="20" fill="#9ab1bc" font-size="12">'+html(fmt(max,2))+
+        '</text><text x="4" y="175" fill="#9ab1bc" font-size="12">'+html(fmt(min,2))+'</text></svg>';
     }
     const warnings=[];
     for(const [key,label] of METRICS){
@@ -940,12 +939,13 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
       const outside=last.filter(r=>alertFlag(key,r[key])==='outside').length;
       if(outside)warnings.push({label,text:outside+' das últimas '+last.length+' medições fora dos limites configurados.'});
       if(last.length>=4){
-        const a=last.slice(-4).map(r=>r[key]),deltas=a.slice(1).map((v,i)=>v-a[i]);
-        if(deltas.every(x=>x>0)||deltas.every(x=>x<0))
-          warnings.push({label,text:'Quatro medições consecutivas em '+(deltas[0]>0?'elevação':'queda')+'. Verifique condições de coleta e equipamento.'});
+        const nums=last.slice(-4).map(r=>r[key]),diffs=nums.slice(1).map((v,i)=>v-nums[i]);
+        if(diffs.every(x=>x>0)||diffs.every(x=>x<0))
+          warnings.push({label,text:'Quatro medições consecutivas em '+(diffs[0]>0?'elevação':'queda')+'. Confira coleta e equipamento de medição.'});
       }
     }
-    $('trendAlerts').innerHTML=warnings.length?warnings.slice(0,30).map(w=>'<div class="mini-card"><h3>'+html(w.label)+'</h3><p>'+html(w.text)+'</p></div>').join(''):'<div class="empty">Nenhum padrão de alerta encontrado nos registros filtrados (ou dados insuficientes).</div>';
+    $('trendAlerts').innerHTML=warnings.length?warnings.slice(0,25).map(w=>'<div class="mini-card"><h3>'+html(w.label)+'</h3><p>'+html(w.text)+'</p></div>').join(''):
+      '<div class="empty">Nenhuma tendência de alerta identificada ou amostras insuficientes.</div>';
   }
   $('recalcTrends').addEventListener('click',renderTrends);
   $('trendProcess').addEventListener('change',renderTrends);
@@ -1192,8 +1192,8 @@ $('clearPhoto').addEventListener('click',()=>{$('photoFile').value='';$('photoDa
         allAverages.push(item);
       }
       const averages=[avKeys,...allAverages.map(r=>avKeys.map(k=>r[k]??null))];
-      const clKeys=['date','shift','process','line','sampleCount','status','actor','reviewedAt','outside','rateLPerM3',...AVG_MEASURES.map(([key])=>key)];
-      const closed=[clKeys,...closures.map(r=>clKeys.map(k=>k==='rateLPerM3'?r.rate?.average??null:r.metrics?.[k]?.average??r[k]??null))];
+      const clKeys=['date','shift','process','line','sampleCount','status','actor','reviewedAt','outside',...AVG_MEASURES.map(([key])=>key)];
+      const closed=[clKeys,...closures.map(r=>clKeys.map(k=>r.metrics?.[k]?.average??r[k]??null))];
       const audKeys=['at','actor','action','recordId','reason','before','after'];
       const audit=[audKeys,...auditTrail.map(e=>audKeys.map(k=>k==='before'||k==='after'?JSON.stringify(e[k]??{}):e[k]??null))];
       const bytes=xlsxWorkbook([{name:'Analises',rows},{name:'Medias por turno',rows:averages},{name:'Fechamentos',rows:closed},{name:'Auditoria',rows:audit}]);
