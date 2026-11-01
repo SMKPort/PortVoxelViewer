@@ -1,4 +1,21 @@
-# CaldoControl 2.4 para Android
+# CaldoControl 2.5 para Android
+
+A partir da **versão 2.5**, o CaldoControl concentra-se exclusivamente nos seguintes parâmetros:
+- pH caleado/dosado (mesma etapa), clarificado, xarope e torre de resfriamento.
+- °Brix caleado/dosado, clarificado e xarope.
+
+**Foram removidos da interface, cálculos, relatórios, Excel, OCR, histórico visível e mapeamento de gateway:** temperaturas, aquecimento, Baumé, decantadores, lodo, turbidez e todas as vazões (caldo, leite de cal, polímero e retirada de lodo). O diagnóstico calcula apenas tendências de pH e Brix. Fechamentos de turno calculam somente médias, mínimos, máximos e ocorrências de pH/Brix.
+
+**Preservação dos dados anteriores:** a chave de armazenamento local continua a mesma. Medições antigas retiradas do escopo seguem preservadas internamente em registros já existentes e no **backup JSON**, inclusive quando se edita uma análise antiga ou restaura uma cópia de versões anteriores. Elas não entram nas médias ou exportações CSV/Excel da versão 2.5. Faça backup ANTES de atualizar.
+
+Permanece: médias e fechamento de turnos com conferência, gráficos, OCR de fotos com revisão, importação tabular em lote, relatórios PDF/Excel/CSV, operadores com trilha local, gateway seguro de leitura WSS/HTTPS, e backup/restore JSON. Nenhuma escrita ou comando ao CLP.
+
+## Instalar o APK
+
+Acesse **Actions > CaldoControl APK Android > execução mais recente > Artifacts > CaldoControl-2.5-debug-APK**. Extraia `app-debug.apk` do ZIP gerado. O APK debug requer backup anterior dos dados se for necessário reinstalar o app por diferença de assinatura.
+
+## Versões anteriores e limitações
+
 
 Aplicativo de acompanhamento do **tratamento de caldo para açúcar e etanol**, com calagem, pH do caldo misto e caleado/dosado (mesma etapa), decantadores e lodo, aquecedores, relatórios por turno, histórico e conexão **somente de leitura** com gateway WebSocket autorizado.
 
@@ -30,7 +47,7 @@ O GitHub Actions valida sintaxe JavaScript, campos críticos da interface, expor
 
 ## APK
 
-No GitHub, acesse **Actions > CaldoControl APK Android > execução mais recente > Artifacts > CaldoControl-2.4-debug-APK**. Baixe o ZIP e extraia o arquivo **app-debug.apk** para instalar no Android. Este é um APK debug para teste, não assinado para distribuição pela Play Store.
+No GitHub, acesse **Actions > CaldoControl APK Android > execução mais recente > Artifacts > CaldoControl-2.5-debug-APK**. Baixe o ZIP e extraia o arquivo **app-debug.apk** para instalar no Android. Este é um APK debug para teste, não assinado para distribuição pela Play Store.
 
 O workflow `.github/workflows/caldocontrol-apk.yml` compila o projeto com Java 17, Gradle 8.9 e Android SDK 35. Também pode ser executado manualmente via **Run workflow**.
 
