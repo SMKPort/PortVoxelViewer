@@ -53,10 +53,10 @@ jobs:
 
       - name: Testar integridade de funcionalidades e Excel
         run: |
-          node tests/smoke-2.4.js
+          node tests/smoke-2.5.js
           python3 - <<'PY'
           import zipfile, xml.etree.ElementTree as ET
-          with zipfile.ZipFile('/tmp/CaldoControl-2.4-smoke.xlsx') as f:
+          with zipfile.ZipFile('/tmp/CaldoControl-2.5-smoke.xlsx') as f:
               assert f.testzip() is None
               required = {'[Content_Types].xml','xl/workbook.xml','xl/_rels/workbook.xml.rels','xl/worksheets/sheet1.xml'}
               assert required.issubset(set(f.namelist()))
