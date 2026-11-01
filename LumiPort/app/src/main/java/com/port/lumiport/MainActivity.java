@@ -348,8 +348,10 @@ public class MainActivity extends Activity {
   private void sendBle(byte[] bytes){
     if(gatt==null||writeChar==null)return;
     try{
-      if(Build.VERSION.SDK_INT>=33)gatt.writeCharacteristic(writeChar,bytes,BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-      else{writeChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);writeChar.setValue(bytes);gatt.writeCharacteristic(writeChar);}
+      int type=(writeChar.getProperties()&BluetoothGattCharacteristic.PROPERTY_WRITE)!=0
+          ?BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT:BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE;
+      if(Build.VERSION.SDK_INT>=33)gatt.writeCharacteristic(writeChar,bytes,type);
+      else{writeChar.setWriteType(type);writeChar.setValue(bytes);gatt.writeCharacteristic(writeChar);}
     }catch(Exception ex){inform("Bluetooth: "+ex.getMessage());}
   }
   private void ensureScanPermission(){
