@@ -1,4 +1,21 @@
-# CaldoControl 2.5 para Android
+# CaldoControl 2.6 para Android
+
+## Novo na versão 2.6: hidratação de cal e polímero (manual)
+
+A aba **Registrar** agora contém dois campos independentes, opcionais, de texto livre, com até **1.200 caracteres**:
+
+- **Hidratação de cal**, para informações inseridas manualmente.
+- **Hidratação de polímero**, para informações inseridas manualmente.
+
+O usuário deve informar as respectivas unidades e contexto no próprio texto, conforme seu procedimento. É possível salvar um registro contendo **apenas hidratação**, sem pH ou Brix, desde que o operador esteja identificado. Os dados ficam vinculados à data, linha, processo e turno do registro.
+
+Os campos estão disponíveis ao criar, editar, pesquisar e consultar o **histórico**; são incluídos no **relatório PDF/impressão**, no **CSV**, no **Excel XLSX** (aba `Analises`) e no **backup/restauração JSON v6**, mantendo compatibilidade com backups antigos. A auditoria de inclusões e alterações preserva os campos.
+
+**Hidratação é somente manual:** não entra nas médias de pH/Brix, não faz cálculos de dosagem nem recebe automaticamente dados do gateway ou de fotos OCR. Não houve reintrodução de medidores de temperatura, Baumé, decantadores ou vazões na interface.
+
+**Importante:** exporte backup JSON da versão anterior antes de atualizar. Um APK de testes pode exigir reinstalação se a assinatura for diferente.
+
+## Histórico e recursos anteriores
 
 A partir da **versão 2.5**, o CaldoControl concentra-se exclusivamente nos seguintes parâmetros:
 - pH caleado/dosado (mesma etapa), clarificado, xarope e torre de resfriamento.
@@ -12,7 +29,7 @@ Permanece: médias e fechamento de turnos com conferência, gráficos, OCR de fo
 
 ## Instalar o APK
 
-Acesse **Actions > CaldoControl APK Android > execução mais recente > Artifacts > CaldoControl-2.5-debug-APK**. Extraia `app-debug.apk` do ZIP gerado. O APK debug requer backup anterior dos dados se for necessário reinstalar o app por diferença de assinatura.
+Acesse **Actions > CaldoControl APK Android > execução mais recente > Artifacts > CaldoControl-2.6-debug-APK**. Extraia `app-debug.apk` do ZIP gerado. O APK debug requer backup anterior dos dados se for necessário reinstalar o app por diferença de assinatura.
 
 ## Versões anteriores e limitações
 
@@ -47,7 +64,7 @@ O GitHub Actions valida sintaxe JavaScript, campos críticos da interface, expor
 
 ## APK
 
-No GitHub, acesse **Actions > CaldoControl APK Android > execução mais recente > Artifacts > CaldoControl-2.5-debug-APK**. Baixe o ZIP e extraia o arquivo **app-debug.apk** para instalar no Android. Este é um APK debug para teste, não assinado para distribuição pela Play Store.
+No GitHub, acesse **Actions > CaldoControl APK Android > execução mais recente > Artifacts > CaldoControl-2.6-debug-APK**. Baixe o ZIP e extraia o arquivo **app-debug.apk** para instalar no Android. Este é um APK debug para teste, não assinado para distribuição pela Play Store.
 
 O workflow `.github/workflows/caldocontrol-apk.yml` compila o projeto com Java 17, Gradle 8.9 e Android SDK 35. Também pode ser executado manualmente via **Run workflow**.
 
