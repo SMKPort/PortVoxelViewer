@@ -1,0 +1,15 @@
+node_modules/
+.expo/
+dist/
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
+*.log
+*.keystore
+*.jks
+*.p8
+*.pem
+.DS_Store

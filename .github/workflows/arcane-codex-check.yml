@@ -1,0 +1,26 @@
+name: Verificar Arcane Codex
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'PortArcaneCodex/**'
+  pull_request:
+    paths:
+      - 'PortArcaneCodex/**'
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar aplicativo
+        working-directory: PortArcaneCodex
+        run: npm install
+      - name: Verificar tipagem
+        working-directory: PortArcaneCodex
+        run: npm run check
+      - name: Validar servidor
+        working-directory: PortArcaneCodex
+        run: npm run test:server

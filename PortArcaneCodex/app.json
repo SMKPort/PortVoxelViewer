@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "Port Arcane Codex",
+    "slug": "port-arcane-codex",
+    "scheme": "arcane-codex",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0E0C11",
+    "newArchEnabled": true,
+    "android": {
+      "package": "com.smkport.arcanecodex",
+      "versionCode": 1,
+      "permissions": [],
+      "adaptiveIcon": { "backgroundColor": "#0E0C11" }
+    },
+    "plugins": ["expo-secure-store", "expo-sqlite"],
+    "extra": { "eas": { "projectId": "" } }
+  }
+}
