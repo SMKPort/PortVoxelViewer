@@ -1,11 +1,6 @@
 name: Publicar ChuvaPort no GitHub Pages
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'ChuvaPort/**'
-      - '.github/workflows/chuvaport-pages.yml'
   workflow_dispatch:
 
 permissions:

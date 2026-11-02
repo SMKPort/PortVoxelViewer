@@ -1,0 +1,94 @@
+name: ChuvaPort APK Android
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ChuvaPort/**'
+      - '.github/workflows/chuvaport-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gerar-apk:
+    name: Compilar ChuvaPort 1.1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: ChuvaPort/android
+
+    steps:
+      - name: Baixar codigo do repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Preparar Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          test -d "$SDK_ROOT"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [[ ! -x "$SDKMANAGER" ]]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager -print -quit 2>/dev/null || true)"
+          fi
+          test -x "$SDKMANAGER"
+          if [[ ! -d "$SDK_ROOT/platforms/android-35" || ! -d "$SDK_ROOT/build-tools/35.0.0" ]]; then
+            (yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses > /dev/null) || true
+            "$SDKMANAGER" --sdk_root="$SDK_ROOT" "platforms;android-35" "build-tools;35.0.0"
+          fi
+
+      - name: Preparar Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Testar JavaScript e recursos
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root = Path('..')
+          html = (root / 'index.html').read_text(encoding='utf-8')
+          assert 'api.open-meteo.com' in html
+          assert 'geocoding-api.open-meteo.com' in html
+          scripts = re.findall(r'<script\b[^>]*>(.*?)</script>', html, re.S | re.I)
+          assert scripts, 'JavaScript nao encontrado'
+          Path('/tmp/chuvaport-core.js').write_text('\n'.join(scripts), encoding='utf-8')
+          for required in ['manifest.webmanifest', 'sw.js', 'assets/icon.svg']:
+              assert (root / required).is_file(), f'Arquivo ausente: {required}'
+          print('Interface web e recursos conferidos.')
+          PY
+          node --check /tmp/chuvaport-core.js
+
+      - name: Compilar APK Android
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Verificar pacote APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          unzip -l "$APK" | grep -F 'assets/index.html'
+          unzip -l "$APK" | grep -F 'classes.dex'
+
+      - name: Disponibilizar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChuvaPort-Android-APK
+          path: ChuvaPort/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
