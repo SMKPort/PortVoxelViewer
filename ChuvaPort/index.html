@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#100d13" />
+    <meta name="description" content="Previsão de chuva por hora e por dia, volume estimado em milímetros, chance de chuva e alertas personalizados." />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#f7f2ee;background:#0b0a0e;font-synthesis:none;--bg:#0b0a0e;--surface:#151217;--surface2:#1a151b;--line:rgba(238,190,150,.12);--text:#f7f2ee;--muted:#a89ca4;--red:#e65361;--red-strong:#c52c41;--gold:#f2c16a;--gold-muted:#b28b55}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-width:320px;min-height:100vh;line-height:1.45}button,input{font:inherit}button{cursor:pointer}button:disabled{opacity:.44;cursor:not-allowed}button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:3px}a{color:var(--gold)}.hidden{display:none!important}
+.ambient{position:fixed;z-index:-1;pointer-events:none;filter:blur(90px);opacity:.55}.ambient-one{width:420px;height:420px;background:radial-gradient(circle,#59182a,transparent 68%);top:-100px;right:-110px}.ambient-two{width:300px;height:300px;background:radial-gradient(circle,#54361c,transparent 65%);bottom:0;left:-120px}
+.app-shell{max-width:1130px;margin:0 auto;padding:30px 30px 25px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:28px}.brand{display:flex;align-items:center;gap:12px}.brand-mark{width:51px;height:51px;display:grid;place-items:center;border:1px solid #8b3b47;border-radius:16px;color:var(--gold);background:linear-gradient(140deg,#361920,#1c1117);box-shadow:0 6px 22px rgba(171,48,69,.12)}.brand-mark svg{width:31px}.brand-name{font-weight:850;font-size:24px;letter-spacing:-1.1px;line-height:1}.brand-name span{color:var(--gold)}.brand-subtitle{color:#aa9ca3;font-size:11px;margin-top:7px;letter-spacing:.1px}.header-actions{display:flex;gap:9px}.icon-button{width:44px;height:44px;display:grid;place-items:center;border-radius:13px;border:1px solid var(--line);color:var(--gold);background:#1c161b}.icon-button svg{width:20px}.icon-button:hover{background:#33202a;border-color:#8c4d53}.location-card{position:relative;z-index:2;background:linear-gradient(150deg,rgba(35,25,31,.94),rgba(19,17,22,.94));border:1px solid var(--line);border-radius:20px;padding:21px 22px 16px;box-shadow:0 12px 35px #0003}.section-kicker{font-size:10px;font-weight:850;color:var(--gold-muted);letter-spacing:2.1px}.kicker-line{display:inline-block;width:16px;height:2px;background:var(--gold);vertical-align:middle;margin-right:6px}.location-form{display:flex;gap:10px;margin-top:12px}.search-wrapper{position:relative;flex:1;min-width:0}.search-wrapper>svg{width:18px;position:absolute;left:16px;top:50%;transform:translateY(-50%);color:#a99ca4;pointer-events:none}.search-wrapper input{width:100%;border:1px solid #49353e;background:#100e13;color:#fff;border-radius:12px;height:48px;padding:0 12px 0 44px;outline:none;font-size:14px}.search-wrapper input::placeholder{color:#8f818c}.search-wrapper input:focus{border-color:#d19c62;box-shadow:0 0 0 3px #d19c6218}.primary-button,.secondary-button{border-radius:12px;padding:0 22px;height:48px;font-size:13px;font-weight:800;white-space:nowrap}.primary-button{border:1px solid #e7b776;background:linear-gradient(130deg,#f5cf81,#e4a852);color:#302012;box-shadow:0 5px 16px #edb86921}.primary-button:hover{filter:brightness(1.09)}.secondary-button{display:flex;align-items:center;justify-content:center;gap:9px;background:#2b2027;border:1px solid #58404b;color:#e8d9da}.secondary-button:hover{background:#3a2930}.secondary-button svg{width:18px;color:var(--red)}.location-bottom{margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;color:#b3a4a9;font-size:12px;flex-wrap:wrap}.selected-city{display:flex;align-items:center;gap:8px}.city-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 0 4px #e6536124}.last-update{color:#837780}.suggestions{position:absolute;z-index:9;left:0;right:0;top:calc(100% + 6px);background:#261b22;border:1px solid #76535b;border-radius:13px;padding:5px;box-shadow:0 14px 30px #000a;max-height:280px;overflow:auto}.suggestion{display:block;width:100%;text-align:left;color:#fcf1ec;border:0;border-radius:9px;padding:10px 12px;background:transparent}.suggestion:hover,.suggestion:focus-visible{background:#4a2934}.suggestion small{display:block;color:#b8a3ab;margin-top:2px;font-size:11px}.status{padding:11px 16px;border-radius:11px;margin-top:14px;background:#33242d;color:#f1b5bc;border:1px solid #6e3645;font-size:13px}.status.info{background:#2d2425;border-color:#614c35;color:#efc58a}.status.success{background:#1b2b26;border-color:#385e47;color:#b8dac6}
+.empty-state{text-align:center;padding:65px 20px 85px;max-width:610px;margin:auto}.empty-art{margin:0 auto 10px;width:220px;height:170px}.empty-art svg{width:100%;height:100%}.pill{display:inline-flex;align-items:center;gap:9px;border-radius:50px;border:1px solid #553b42;padding:8px 12px;background:#261a20}.eyebrow{font-size:10px;letter-spacing:1.7px;font-weight:850;color:#efc476}.pulse-dot{width:7px;height:7px;background:#e95865;border-radius:50%;box-shadow:0 0 0 4px #e9586529;display:inline-block;margin-right:6px}.empty-state h1,.page-heading h1{font-size:clamp(30px,5vw,46px);line-height:1.12;letter-spacing:-1.8px;margin:19px 0 12px;font-weight:850}.empty-state h1 em,.page-heading h1 em{font-style:normal;color:var(--gold)}.empty-state p,.page-heading p{color:#ab9ca5;font-size:15px;line-height:1.7}.empty-state p{max-width:530px;margin:0 auto 24px}.big-cta{padding:0 27px}
+.tabs{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:15px;padding:5px;background:#171217;margin:22px 0 22px;position:sticky;top:8px;z-index:3;backdrop-filter:blur(18px);box-shadow:0 10px 26px #0b0a0eb0}.tab{flex:1;border:0;border-radius:11px;padding:13px 10px;font-size:13px;color:#ae9ca7;font-weight:750;background:transparent}.tab:hover{color:white;background:#2d2029}.tab.active{background:linear-gradient(115deg,#642631,#3c2027);border:1px solid #9e4853;color:#ffdcbb;box-shadow:inset 0 1px #ffffff10}.hero-card{position:relative;overflow:hidden;border:1px solid #86434d;border-radius:24px;padding:29px 35px 22px;background:linear-gradient(115deg,#582532 0%,#361b27 48%,#20171e 100%);box-shadow:0 18px 60px #0004}.hero-shine{position:absolute;right:-75px;top:-80px;height:340px;width:380px;border:1px solid #d69a6d35;transform:rotate(-30deg);border-radius:50%;box-shadow:0 0 0 45px #ba62440b,0 0 0 95px #ba624408;pointer-events:none}.hero-top{display:flex;align-items:center;justify-content:space-between;gap:12px;position:relative}.hero-tag{font-size:10px;color:#ffcd8e;border:1px solid #e6a2765c;border-radius:7px;padding:6px 9px;letter-spacing:1.3px;font-weight:800}.main-rain{position:relative;display:flex;align-items:baseline;gap:12px;margin:14px 0 0}.main-rain strong{font-size:clamp(72px,11vw,112px);font-weight:850;line-height:1;letter-spacing:-6px;font-variant-numeric:tabular-nums}.main-rain>span{font-size:31px;font-weight:800;color:#f0c071}.hero-card h1{font-size:20px;letter-spacing:-.6px;margin:13px 0 2px;position:relative}.hero-card p{margin:0;color:#d0b9c0;max-width:530px;font-size:13px;position:relative}.hero-divider{height:1px;background:linear-gradient(90deg,#b472744d,transparent);margin:24px 0 16px}.hero-footer{display:flex;justify-content:space-between;align-items:center;position:relative;font-size:12px;color:#ceb0b7}.hero-footer span:last-child{font-weight:850;color:#f6c77e;font-size:16px}.metric-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:14px 0}.metric-card{padding:22px 23px 19px;background:linear-gradient(145deg,#1c161d,#151217);border:1px solid var(--line);border-radius:17px;min-width:0}.metric-top{display:flex;justify-content:space-between;align-items:center;gap:8px;letter-spacing:1.3px;font-size:10px;color:#ad9da3;font-weight:850}.metric-icon{color:#cb7377;font-weight:850;font-size:17px}.metric-val{margin:14px 0 3px;display:flex;gap:7px;align-items:baseline}.metric-val strong{font-size:35px;letter-spacing:-1.7px;line-height:1;font-variant-numeric:tabular-nums}.metric-val span{font-size:14px;font-weight:800;color:var(--gold)}.metric-help{color:#90818c;font-size:11px;margin-top:7px}.rain-alert{padding:15px 18px;border-radius:14px;display:flex;align-items:center;gap:13px;font-size:13px;margin-bottom:14px;line-height:1.55;border:1px solid #594c39;background:#28221d;color:#eac991}.rain-alert.critical{background:#451d27;border-color:#a94758;color:#ffbec7}.rain-alert.calm{background:#1e2725;border-color:#36564a;color:#b0d8c5}.rain-alert .alert-glyph{font-size:22px}.rain-alert strong{color:#f7f1eb}.surface{background:linear-gradient(135deg,#1b161b,#141217);border:1px solid var(--line);padding:24px 24px 20px;border-radius:18px;margin-bottom:14px}.surface-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:17px}.surface h2{margin:4px 0 0;letter-spacing:-.5px;font-size:19px}.small-caption{font-size:11px;color:#978891;white-space:nowrap}.graph-host{overflow-x:auto;overflow-y:hidden;scrollbar-color:#77505a #1c151d;scrollbar-width:thin;min-height:180px;padding-bottom:7px}.bar-chart{display:flex;align-items:flex-end;gap:8px;min-width:max-content;height:180px;padding:18px 2px 0}.bar-column{width:33px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px}.bar-value{font-size:9px;font-variant-numeric:tabular-nums;color:#f0c47c;min-height:13px;white-space:nowrap}.bar-track{width:100%;height:122px;display:flex;align-items:end;background:linear-gradient(to top,#32222b52,transparent);border-radius:5px 5px 0 0;border-bottom:1px solid #57414a}.bar-fill{width:100%;min-height:2px;border-radius:5px 5px 0 0;background:linear-gradient(to top,#ac3147,#eb6a69 70%,#f1bf7d);box-shadow:0 0 13px #e54b4830;transition:height .2s}.bar-fill.zero{min-height:1px;background:#624b52;box-shadow:none}.bar-hour{font-size:10px;color:#9f8d97;min-height:16px;white-space:nowrap}.bar-column.emphasis .bar-hour{color:#f2c779}.chart-legend{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-top:12px;color:#a999a1;font-size:11px;border-top:1px solid #352a30}.legend-color{display:inline-block;width:9px;height:9px;background:#d24e59;border-radius:3px;margin-right:4px}.text-button{background:none;border:0;color:#efc477;font-weight:800;font-size:12px}.text-button:hover{text-decoration:underline}.quick-days{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.quick-day{background:#251c23;border:1px solid #3e3038;padding:13px 8px;text-align:center;border-radius:13px}.quick-day .day-name{font-size:11px;color:#c8b0b7;font-weight:750}.quick-day .day-icon{font-size:24px;display:block;margin:8px}.quick-day strong{display:block;font-size:19px;font-variant-numeric:tabular-nums}.quick-day .day-unit{color:var(--gold);font-size:10px;font-weight:800}.quick-day small{display:block;margin-top:3px;color:#9b8c92;font-size:10px}.page-heading{padding:13px 0 17px}.page-heading h1{margin:8px 0 10px}.page-heading p{margin:0;font-size:13px}.range-control{display:flex;border-radius:13px;background:#1a151b;border:1px solid var(--line);gap:6px;padding:5px;margin:0 0 16px;width:max-content}.range-button{background:transparent;color:#a999a5;border:0;border-radius:10px;padding:10px 18px;font-size:12px;font-weight:800}.range-button.active{background:#5d2634;color:#f9d3bb}.detail-note{font-size:11px;color:#978992;line-height:1.5;margin:12px 0 0}.hourly-list{display:grid;gap:2px;max-height:560px;overflow:auto;scrollbar-color:#76505a #201920}.hour-row{display:grid;grid-template-columns:120px 76px minmax(80px,1fr) 65px;gap:16px;align-items:center;border-bottom:1px solid #382c34;padding:12px 4px;font-size:12px}.hour-row:last-child{border:0}.hour-time{font-weight:750;color:#eedadd}.hour-time small{display:block;color:#93838b;font-size:10px;font-weight:500;margin-top:2px}.hour-volume{font-weight:850;font-variant-numeric:tabular-nums;font-size:15px}.hour-volume span{font-size:10px;color:var(--gold)}.chance-track{height:6px;background:#3b3035;border-radius:5px;overflow:hidden}.chance-fill{height:100%;background:linear-gradient(to right,#a44251,#edb66b);border-radius:5px}.chance-val{text-align:right;color:#cdb3ba;font-variant-numeric:tabular-nums}.daily-summary{display:flex;gap:10px;align-items:center;margin:0 0 15px;color:#c5afb7;font-size:13px}.daily-summary strong{font-size:23px;color:var(--gold)}.daily-list{display:grid;gap:10px}.daily-card{display:grid;grid-template-columns:84px 50px 90px minmax(120px,1fr) 75px;gap:15px;align-items:center;border:1px solid var(--line);background:linear-gradient(120deg,#211820,#161319);border-radius:15px;padding:17px 19px}.daily-card:hover{border-color:#81545b}.daily-date{font-weight:800;font-size:13px}.daily-date small{display:block;font-size:11px;color:#9b8a92;font-weight:500}.daily-weather{font-size:27px;text-align:center}.daily-mm{font-size:23px;font-weight:850;font-variant-numeric:tabular-nums}.daily-mm span{font-size:11px;color:var(--gold)}.daily-bar{height:8px;border-radius:10px;background:#392c35;overflow:hidden}.daily-bar div{height:100%;background:linear-gradient(90deg,#a83b50,#eec177);border-radius:10px}.daily-chance{text-align:right;color:#c4a5ad;font-size:12px}.settings-card{margin-bottom:14px}.settings-card p{color:#af9da6;font-size:13px;line-height:1.65}.settings-card .surface-heading{margin-bottom:7px}.gold-text{color:var(--gold);font-size:20px}.settings-card input[type=range]{width:100%;accent-color:#e1ae64;margin:13px 0}.range-markers{display:flex;justify-content:space-between;color:#a4939d;font-size:11px}.info-row{display:grid;grid-template-columns:135px 1fr;gap:18px;padding:17px 0;border-bottom:1px solid #372c33;font-size:12px}.info-row:last-child{border:0;padding-bottom:0}.info-row strong{color:#f1d0b1}.info-row span{color:#ab9da3;line-height:1.55}.footer{border-top:1px solid #31242d;margin-top:36px;padding:23px 0 15px;display:flex;justify-content:space-between;align-items:center;gap:15px;color:#92808a;font-size:10px;letter-spacing:.7px}.footer>span:first-child{font-weight:900;letter-spacing:1.3px;color:#cfad83}.footer-version{font-size:9px;color:#776871}.footer a{color:#d5aa75;text-decoration:none}.footer a:hover{text-decoration:underline}
+@media(max-width:780px){.app-shell{padding:18px 16px}.location-form{flex-wrap:wrap}.search-wrapper{flex-basis:100%}.geo-button{flex:1}.search-submit{flex:1}.metric-card{padding:16px}.metric-val strong{font-size:30px}.metric-top{font-size:9px}.quick-days{grid-template-columns:repeat(5,minmax(0,1fr))}.quick-day{padding:11px 4px}.hero-card{padding:24px 24px 21px}.daily-card{grid-template-columns:70px 38px 72px minmax(60px,1fr) 52px;gap:8px;padding:14px 12px}.daily-mm{font-size:19px}.daily-chance{font-size:11px}}
+@media(max-width:520px){.topbar{margin-bottom:21px}.brand-name{font-size:21px}.brand-mark{width:45px;height:45px}.brand-subtitle{font-size:10px}.location-card{padding:17px 13px}.location-bottom{font-size:11px}.tabs{gap:2px;margin-top:17px}.tab{padding:12px 3px;font-size:11px}.hero-card{padding:21px 19px}.hero-tag{font-size:8px;letter-spacing:.5px}.eyebrow{font-size:9px;letter-spacing:1px}.main-rain strong{font-size:74px;letter-spacing:-4px}.main-rain>span{font-size:24px}.hero-card h1{font-size:18px}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.metric-grid .metric-card:last-child{grid-column:span 2}.metric-card{padding:17px}.metric-val{margin-top:9px}.metric-val strong{font-size:31px}.surface{padding:19px 14px}.quick-days{gap:5px}.quick-day .day-icon{font-size:21px}.quick-day strong{font-size:16px}.quick-day .day-unit{font-size:9px}.hour-row{grid-template-columns:75px 65px minmax(35px,1fr) 48px;gap:10px}.hour-volume{font-size:13px}.daily-card{grid-template-columns:67px 30px 70px minmax(36px,1fr) 43px;gap:6px;padding:12px 9px}.daily-weather{font-size:21px}.daily-mm{font-size:17px}.daily-mm span{font-size:9px}.daily-chance{font-size:10px}.daily-date{font-size:12px}.daily-date small{font-size:10px}.info-row{grid-template-columns:1fr;gap:4px}.footer{align-items:flex-start;flex-direction:column}.small-caption{font-size:10px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
+
+</style>
+    <title>ChuvaPort | Previsão de chuva em mm</title>
+  </head>
+  <body>
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none"><path d="M24 5C18 15 11 21 11 30a13 13 0 0 0 26 0C37 21 30 15 24 5Z" stroke="currentColor" stroke-width="2.6"/><path d="M18 31c0 3 2.3 5.3 5.5 5.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+          </div>
+          <div><div class="brand-name">Chuva<span>Port</span></div><div class="brand-subtitle">Previsão de chuva, sem complicação.</div></div>
+        </div>
+        <div class="header-actions">
+          <button type="button" id="installBtn" class="icon-button install-button hidden" title="Instalar aplicativo" aria-label="Instalar aplicativo">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button type="button" id="refreshBtn" class="icon-button" title="Atualizar previsão" aria-label="Atualizar previsão" disabled>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20.3 10A8.5 8.5 0 0 0 5.5 5.5L3 8m0-5v5h5M3.7 14a8.5 8.5 0 0 0 14.8 4.5L21 16m0 5v-5h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <section class="location-card" aria-label="Escolha a cidade">
+        <div class="section-kicker"><span class="kicker-line"></span> LOCALIZAÇÃO DA PREVISÃO</div>
+        <form id="searchForm" class="location-form" autocomplete="off">
+          <div class="search-wrapper">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <input id="cityInput" name="city" type="search" placeholder="Digite uma cidade (ex.: Campinas)" aria-label="Buscar cidade" aria-controls="suggestions" aria-expanded="false" spellcheck="false" />
+            <div id="suggestions" class="suggestions hidden" role="listbox" aria-label="Cidades encontradas"></div>
+          </div>
+          <button type="submit" class="primary-button search-submit">Buscar</button>
+          <button type="button" id="geoBtn" class="secondary-button geo-button" title="Usar minha localização" aria-label="Usar minha localização">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v4M12 18v4M2 12h4m12 0h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Minha localização</span>
+          </button>
+        </form>
+        <div class="location-bottom">
+          <div id="selectedCity" class="selected-city"><span class="city-dot"></span> Escolha uma cidade para começar</div>
+          <div id="lastUpdate" class="last-update">Dados meteorológicos atualizados ao consultar</div>
+        </div>
+      </section>
+
+      <div id="status" class="status hidden" role="status" aria-live="polite"></div>
+
+      <section id="emptyState" class="empty-state" aria-labelledby="emptyTitle">
+        <div class="empty-art" aria-hidden="true">
+          <svg viewBox="0 0 220 170" fill="none">
+            <path d="M55 113a28 28 0 0 1-5-55 48 48 0 0 1 90-11 34 34 0 0 1 21 66H55Z" fill="#38232b" stroke="#e7a657" stroke-width="2"/>
+            <path d="m66 129-8 19m46-19-8 19m46-19-8 19" stroke="#e35a66" stroke-width="6" stroke-linecap="round"/>
+            <circle cx="160" cy="38" r="18" fill="#e8ae65" opacity=".14"/>
+            <path d="M148 38h24M160 26v24" stroke="#d6a45b" opacity=".6" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="pill eyebrow"><span class="pulse-dot"></span> DADOS METEOROLÓGICOS REAIS</div>
+        <h1 id="emptyTitle">Saiba <em>quanto</em> vai chover.</h1>
+        <p>Busque uma cidade ou use sua localização para ver o volume de chuva previsto em mm, hora por hora, com até 16 dias de antecedência.</p>
+        <button type="button" id="emptyLocationBtn" class="primary-button big-cta">Usar minha localização</button>
+      </section>
+
+      <div id="forecastContent" class="hidden">
+        <nav class="tabs" aria-label="Seções da previsão">
+          <button class="tab active" type="button" data-tab="overview" aria-selected="true">Visão geral</button>
+          <button class="tab" type="button" data-tab="hourly" aria-selected="false">Por hora</button>
+          <button class="tab" type="button" data-tab="daily" aria-selected="false">16 dias</button>
+          <button class="tab" type="button" data-tab="settings" aria-selected="false">Ajustes</button>
+        </nav>
+
+        <main>
+          <section id="overview" class="tab-panel" aria-label="Visão geral">
+            <div class="hero-card">
+              <div class="hero-shine" aria-hidden="true"></div>
+              <div class="hero-top"><div class="eyebrow"><span class="pulse-dot"></span> PREVISÃO PARA AS PRÓXIMAS 24H</div><span class="hero-tag">CHUVA ACUMULADA</span></div>
+              <div class="main-rain"><strong id="total24">--</strong><span>mm</span></div>
+              <h1 id="rainSummary">Consultando previsão...</h1>
+              <p id="rainExplanation">Estimativa da chuva acumulada para as próximas 24 horas.</p>
+              <div class="hero-divider"></div>
+              <div class="hero-footer"><span id="currentConditions">Condições atuais</span><span id="currentTemp">-- °C</span></div>
+            </div>
+            <div class="metric-grid">
+              <article class="metric-card"><div class="metric-top">PRÓXIMAS 48H <span class="metric-icon">↗</span></div><div class="metric-val"><strong id="total48">--</strong><span>mm</span></div><div class="metric-help">Chuva total estimada</div></article>
+              <article class="metric-card"><div class="metric-top">CHANCE MÁXIMA <span class="metric-icon">%</span></div><div class="metric-val"><strong id="maxChance">--</strong><span>%</span></div><div class="metric-help">Em alguma hora das próximas 24h</div></article>
+              <article class="metric-card"><div class="metric-top">PICO DE CHUVA <span class="metric-icon">◉</span></div><div class="metric-val"><strong id="peakRain">--</strong><span>mm/h</span></div><div id="peakTime" class="metric-help">Maior volume em uma hora</div></article>
+            </div>
+            <div id="rainAlert" class="rain-alert" role="status"></div>
+            <section class="surface chart-surface">
+              <div class="surface-heading"><div><div class="section-kicker">DISTRIBUIÇÃO HORÁRIA</div><h2>Quando vai chover?</h2></div><span class="small-caption">próximas 24h</span></div>
+              <div id="overviewChart" class="graph-host"></div>
+              <div class="chart-legend"><span><i class="legend-color"></i> Chuva prevista (mm/h)</span><span id="nextRainLabel">Analisando horários...</span></div>
+            </section>
+            <section class="surface week-surface">
+              <div class="surface-heading"><div><div class="section-kicker">PERSPECTIVA</div><h2>Próximos dias</h2></div><button id="seeAllDays" class="text-button" type="button">Ver 16 dias <span aria-hidden="true">→</span></button></div>
+              <div id="quickDays" class="quick-days"></div>
+            </section>
+          </section>
+
+          <section id="hourly" class="tab-panel hidden" aria-label="Previsão por hora">
+            <div class="page-heading"><div class="section-kicker">HORA A HORA</div><h1>Chuva com <em>precisão horária.</em></h1><p>Quantidade prevista e probabilidade de chuva para cada hora.</p></div>
+            <div class="range-control" role="group" aria-label="Período exibido">
+              <button class="range-button active" type="button" data-hours="24" aria-pressed="true">24 horas</button>
+              <button class="range-button" type="button" data-hours="48" aria-pressed="false">48 horas</button>
+              <button class="range-button" type="button" data-hours="72" aria-pressed="false">72 horas</button>
+            </div>
+            <section class="surface"><div class="surface-heading"><h2>Volume por hora</h2><span class="small-caption">arraste para ver mais →</span></div><div id="hourlyChart" class="graph-host"></div><p class="detail-note">Cada barra mostra milímetros de chuva previstos durante aquela hora.</p></section>
+            <section class="surface"><div class="surface-heading"><h2>Detalhamento</h2><span class="small-caption">mm/h e probabilidade</span></div><div id="hourlyList" class="hourly-list"></div></section>
+          </section>
+
+          <section id="daily" class="tab-panel hidden" aria-label="Previsão de 16 dias">
+            <div class="page-heading"><div class="section-kicker">PREVISÃO ESTENDIDA</div><h1>Um panorama de <em>16 dias.</em></h1><p>Chuva acumulada prevista para cada dia. Previsões distantes são mais incertas.</p></div>
+            <div id="dailySummary" class="daily-summary"></div>
+            <div id="dailyList" class="daily-list"></div>
+          </section>
+
+          <section id="settings" class="tab-panel hidden" aria-label="Ajustes">
+            <div class="page-heading"><div class="section-kicker">PREFERÊNCIAS</div><h1>Do seu <em>jeito.</em></h1><p>Personalize o aviso de volume elevado de chuva.</p></div>
+            <section class="surface settings-card"><div class="surface-heading"><h2>Limite para aviso</h2><strong id="thresholdValue" class="gold-text">20 mm</strong></div><p>Mostra um alerta na tela quando o acumulado previsto para as próximas 24h atingir o valor escolhido.</p><input id="thresholdSlider" type="range" min="5" max="100" step="5" value="20" aria-label="Limite de aviso de chuva em milímetros" /><div class="range-markers"><span>5 mm</span><span>100 mm</span></div><p class="detail-note">Esse aviso aparece ao consultar o app. Não é uma notificação enviada com o aplicativo fechado.</p></section>
+            <section class="surface settings-card"><h2>Como interpretar</h2><div class="info-row"><strong>Milímetros (mm)</strong><span>Volume estimado de chuva acumulado sobre uma superfície. 1 mm equivale a 1 litro por m².</span></div><div class="info-row"><strong>Probabilidade (%)</strong><span>Chance de precipitação durante o período. Não representa a intensidade da chuva.</span></div><div class="info-row"><strong>Precisão</strong><span>São projeções de modelos meteorológicos, não medições. Os valores podem mudar entre atualizações.</span></div></section>
+            <section class="surface settings-card"><h2>Instalação</h2><p>Ao hospedar o projeto em HTTPS, você pode instalá-lo pela opção de adicionar à tela inicial do navegador. Assim ele funciona como um aplicativo independente.</p><p class="detail-note">A previsão precisa de internet para atualizar. A última consulta pode aparecer em modo offline, identificada como dados salvos.</p></section>
+          </section>
+        </main>
+      </div>
+      <footer class="footer"><span>CHUVAPORT <span class="footer-version">V1.1</span></span><span>Dados de previsão por <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> (CC BY 4.0)</span></footer>
+    </div>
+    <script>
+/** ChuvaPort: funções puras de transformação da previsão. */
+const isFiniteNumber = (value) => typeof value === "number" && Number.isFinite(value);
+const numeric = (value) => isFiniteNumber(value) ? value : null;
+const rounded = (value, decimals = 1) => Math.round((value + Number.EPSILON) * 10 ** decimals) / 10 ** decimals;
+
+/** A Open-Meteo discrimina rain + showers; excluímos neve do indicador de chuva. */
+function rainMillimeters(rain, showers, precipitation) {
+  if (isFiniteNumber(rain) || isFiniteNumber(showers)) {
+    return Math.max(0, numeric(rain) ?? 0) + Math.max(0, numeric(showers) ?? 0);
+  }
+  return Math.max(0, numeric(precipitation) ?? 0);
+}
+
+function normalizeForecast(data) {
+  if (!data || !data.hourly || !Array.isArray(data.hourly.time) || !data.daily || !Array.isArray(data.daily.time)) {
+    throw new Error("Resposta meteorológica incompleta.");
+  }
+  const hourly = data.hourly.time.map((time, i) => ({
+    time,
+    rain: rainMillimeters(data.hourly.rain?.[i], data.hourly.showers?.[i], data.hourly.precipitation?.[i]),
+    chance: numeric(data.hourly.precipitation_probability?.[i]),
+    code: numeric(data.hourly.weather_code?.[i]),
+  }));
+  const daily = data.daily.time.map((date, i) => ({
+    date,
+    rain: rainMillimeters(data.daily.rain_sum?.[i], data.daily.showers_sum?.[i], data.daily.precipitation_sum?.[i]),
+    chance: numeric(data.daily.precipitation_probability_max?.[i]),
+    code: numeric(data.daily.weather_code?.[i]),
+  }));
+  return {
+    hourly, daily,
+    current: {
+      time: data.current?.time || null,
+      temperature: numeric(data.current?.temperature_2m),
+      code: numeric(data.current?.weather_code),
+    },
+    timezone: data.timezone || "auto",
+  };
+}
+
+/** Retorna a hora atual inclusa, no fuso que a API utilizou. */
+function futureHours(forecast, quantity = 24) {
+  const currentHour = forecast.current.time?.slice(0, 13);
+  const start = currentHour
+    ? Math.max(0, forecast.hourly.findIndex((item) => item.time.slice(0, 13) >= currentHour))
+    : 0;
+  return forecast.hourly.slice(start, start + quantity);
+}
+
+function summarizeHours(hours) {
+  const rainTotal = hours.reduce((total, hour) => total + hour.rain, 0);
+  const peak = hours.reduce((result, hour) => hour.rain > (result?.rain ?? -1) ? hour : result, null);
+  const possibleChances = hours.map((hour) => hour.chance).filter(isFiniteNumber);
+  return {
+    total: rounded(rainTotal),
+    peak,
+    maxChance: possibleChances.length ? Math.max(...possibleChances) : null,
+    firstRain: hours.find((hour) => hour.rain >= 0.2) || null,
+  };
+}
+
+function localDate(dateStr, options = { weekday: "short", day: "2-digit" }) {
+  const [year, month, day] = dateStr.slice(0, 10).split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day, 12));
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC", ...options }).format(date).replaceAll(".", "");
+}
+
+function formatMm(value) {
+  return value == null ? "--" : new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function weatherIcon(code) {
+  if (code == null) return "☁️";
+  if ([0, 1].includes(code)) return "☀️";
+  if ([2, 3].includes(code)) return "☁️";
+  if ([45, 48].includes(code)) return "🌫️";
+  if ([51, 53, 55, 56, 57].includes(code)) return "🌦️";
+  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "🌧️";
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return "🌨️";
+  if ([95, 96, 99].includes(code)) return "⛈️";
+  return "☁️";
+}
+
+function weatherLabel(code) {
+  if (code == null) return "Condições indisponíveis";
+  if (code === 0) return "Céu limpo";
+  if ([1, 2].includes(code)) return "Céu parcialmente nublado";
+  if (code === 3) return "Nublado";
+  if ([45, 48].includes(code)) return "Névoa";
+  if ([51, 53, 55, 56, 57].includes(code)) return "Garoa";
+  if ([61, 63, 65, 66, 67].includes(code)) return "Chuva";
+  if ([80, 81, 82].includes(code)) return "Pancadas de chuva";
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return "Neve";
+  if ([95, 96, 99].includes(code)) return "Trovoadas";
+  return "Condições variáveis";
+}
+
+function makeForecastUrl(lat, lon) {
+  const url = new URL("https://api.open-meteo.com/v1/forecast");
+  url.searchParams.set("latitude", String(lat));
+  url.searchParams.set("longitude", String(lon));
+  url.searchParams.set("timezone", "auto");
+  url.searchParams.set("forecast_days", "16");
+  url.searchParams.set("precipitation_unit", "mm");
+  url.searchParams.set("current", "temperature_2m,weather_code");
+  url.searchParams.set("hourly", "rain,showers,precipitation,precipitation_probability,weather_code");
+  url.searchParams.set("daily", "rain_sum,showers_sum,precipitation_sum,precipitation_probability_max,weather_code");
+  return url.toString();
+}
+
+const $ = (id) => document.getElementById(id);
+const STORAGE_LOCATION = 'chuvaport:location:v1';
+const STORAGE_FORECAST = 'chuvaport:forecast:v1';
+const STORAGE_THRESHOLD = 'chuvaport:alert-threshold:v1';
+const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
+
+const state = {
+  location: null, forecast: null, cached: false, updatedAt: 0,
+  threshold: 20, hours: 24, tab: 'overview',
+  suggestions: [], searchAbort: null, weatherAbort: null, fetchSerial: 0,
+  loading: false, installPrompt: null,
+};
+
+function readStore(key) {
+  try { const value = localStorage.getItem(key); return value ? JSON.parse(value) : null; }
+  catch { return null; }
+}
+function writeStore(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* sem armazenamento local */ }
+}
+function setStatus(message, kind = 'info') {
+  const status = $('status');
+  status.textContent = message;
+  status.className = `status ${kind}`;
+  if (!message) status.classList.add('hidden');
+}
+function setLoading(loading) {
+  state.loading = loading;
+  $('refreshBtn').disabled = loading || !state.location;
+  $('geoBtn').disabled = loading;
+  $('emptyLocationBtn').disabled = loading;
+  $('searchForm').querySelector('[type="submit"]').disabled = loading;
+}
+function cityTitle(location) {
+  return [location.name, location.admin1, location.country].filter(Boolean).join(', ');
+}
+function labelTime(iso) { return typeof iso === 'string' ? iso.slice(11, 16) : '--:--'; }
+function displayDate(iso) { return localDate(iso.slice(0, 10), { weekday: 'short', day: '2-digit', month: 'short' }); }
+
+function setLocation(location) {
+  if (!location || !Number.isFinite(location.latitude) || !Number.isFinite(location.longitude)) return;
+  clearTimeout(searchTimer);
+  if (state.searchAbort) state.searchAbort.abort();
+  state.location = location;
+  writeStore(STORAGE_LOCATION, location);
+  $('selectedCity').innerHTML = '<span class="city-dot"></span>';
+  $('selectedCity').append(document.createTextNode(cityTitle(location)));
+  $('refreshBtn').disabled = false;
+  $('cityInput').value = '';
+  clearSuggestions();
+}
+
+async function requestJson(url, options = {}) {
+  const response = await fetch(url, options);
+  if (!response.ok) throw new Error(`Erro HTTP ${response.status}`);
+  const body = await response.json();
+  if (body.error) throw new Error(body.reason || 'A API não conseguiu responder.');
+  return body;
+}
+
+function connectionHint(error) {
+  if (!navigator.onLine) return 'Seu dispositivo está sem internet. Confira o Wi-Fi ou os dados móveis.';
+  if (location.protocol === 'file:') return 'Abra o ChuvaPort por um endereço HTTPS. Arquivos locais podem bloquear módulos e consultas.';
+  if (/HTTP 429/.test(error.message || '')) return 'Limite temporário de consultas à API. Tente novamente mais tarde.';
+  if (/HTTP 4\d\d/.test(error.message || '')) return `A API recusou a consulta (${error.message}).`;
+  if (/HTTP 5\d\d/.test(error.message || '')) return 'O serviço meteorológico está temporariamente indisponível.';
+  return 'Não foi possível acessar a Open-Meteo. Confira a conexão e teste sem VPN, bloqueador ou DNS privado.';
+}
+
+function fromCacheFor(location) {
+  const cache = readStore(STORAGE_FORECAST);
+  if (!cache || !cache.location || !cache.data) return null;
+  const sameCoordinates = Math.abs(cache.location.latitude - location.latitude) < 0.00001 &&
+    Math.abs(cache.location.longitude - location.longitude) < 0.00001;
+  return sameCoordinates ? cache : null;
+}
+
+async function loadForecast(location, { silent = false } = {}) {
+  if (state.weatherAbort) state.weatherAbort.abort();
+  const controller = new AbortController();
+  state.weatherAbort = controller;
+  const serial = ++state.fetchSerial;
+  setLocation(location);
+  setLoading(true);
+  if (!silent) setStatus('Consultando os modelos de previsão meteorológica...', 'info');
+  try {
+    const raw = await requestJson(makeForecastUrl(location.latitude, location.longitude), { signal: controller.signal });
+    const normalized = normalizeForecast(raw);
+    if (serial !== state.fetchSerial) return;
+    state.forecast = normalized;
+    state.updatedAt = Date.now();
+    state.cached = false;
+    writeStore(STORAGE_FORECAST, { location, data: raw, savedAt: state.updatedAt });
+    render();
+    setStatus('Previsão atualizada com sucesso.', 'success');
+  } catch (err) {
+    if (err.name === 'AbortError' || serial !== state.fetchSerial) return;
+    const cache = fromCacheFor(location);
+    if (cache) {
+      try {
+        state.forecast = normalizeForecast(cache.data);
+        state.updatedAt = cache.savedAt || 0;
+        state.cached = true;
+        render();
+        setStatus('Sem conexão com a previsão. Exibindo a última consulta salva, que pode estar desatualizada.', 'info');
+        return;
+      } catch { /* cache inválido */ }
+    }
+    state.forecast = null;
+    $('forecastContent').classList.add('hidden');
+    $('emptyState').classList.remove('hidden');
+    $('lastUpdate').textContent = 'Previsão indisponível';
+    setStatus(connectionHint(err), 'error');
+  } finally {
+    if (serial === state.fetchSerial) setLoading(false);
+  }
+}
+
+let searchTimer = null;
+async function fetchSuggestions(term) {
+  if (state.searchAbort) state.searchAbort.abort();
+  if (term.trim().length < 3) { clearSuggestions(); return; }
+  const controller = new AbortController();
+  state.searchAbort = controller;
+  try {
+    const url = new URL('https://geocoding-api.open-meteo.com/v1/search');
+    url.searchParams.set('name', term.trim());
+    url.searchParams.set('count', '6');
+    url.searchParams.set('language', 'pt');
+    url.searchParams.set('format', 'json');
+    const response = await requestJson(url.toString(), { signal: controller.signal });
+    state.suggestions = (response.results || []).map((r) => ({
+      latitude: r.latitude, longitude: r.longitude,
+      name: r.name, admin1: r.admin1 || '', country: r.country || '',
+    })).filter((r) => Number.isFinite(r.latitude) && Number.isFinite(r.longitude));
+    renderSuggestions();
+  } catch (err) {
+    if (err.name !== 'AbortError') clearSuggestions();
+  }
+}
+function clearSuggestions() {
+  if (state.searchAbort) state.searchAbort.abort();
+  state.suggestions = [];
+  $('suggestions').replaceChildren();
+  $('suggestions').classList.add('hidden');
+  $('cityInput').setAttribute('aria-expanded', 'false');
+}
+function renderSuggestions() {
+  const host = $('suggestions');
+  host.replaceChildren();
+  if (!state.suggestions.length) { clearSuggestions(); return; }
+  state.suggestions.forEach((city) => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'suggestion';
+    item.setAttribute('role', 'option');
+    const title = document.createElement('strong');
+    title.textContent = city.name;
+    const description = document.createElement('small');
+    description.textContent = [city.admin1, city.country].filter(Boolean).join(' · ');
+    item.append(title, description);
+    item.addEventListener('click', () => loadForecast(city));
+    host.append(item);
+  });
+  host.classList.remove('hidden');
+  $('cityInput').setAttribute('aria-expanded', 'true');
+}
+async function submitCitySearch(event) {
+  event.preventDefault();
+  clearTimeout(searchTimer);
+  if (state.searchAbort) state.searchAbort.abort();
+  const term = $('cityInput').value.trim();
+  if (term.length < 3) { setStatus('Digite pelo menos 3 letras para buscar uma cidade.', 'info'); return; }
+  if (state.suggestions.length > 0) { loadForecast(state.suggestions[0]); return; }
+  try {
+    if (state.searchAbort) state.searchAbort.abort();
+    const url = new URL('https://geocoding-api.open-meteo.com/v1/search');
+    url.searchParams.set('name', term);
+    url.searchParams.set('count', '1');
+    url.searchParams.set('language', 'pt');
+    url.searchParams.set('format', 'json');
+    const response = await requestJson(url.toString());
+    const match = response.results?.[0];
+    if (!match) { setStatus('Cidade não encontrada. Tente incluir estado ou país.', 'info'); return; }
+    loadForecast({ name: match.name, admin1: match.admin1 || '', country: match.country || '', latitude: match.latitude, longitude: match.longitude });
+  } catch (err) { setStatus(connectionHint(err), 'error'); }
+}
+function locateMe() {
+  if (!navigator.geolocation) {
+    setStatus('Geolocalização não disponível. Digite o nome da cidade.', 'error');
+    return;
+  }
+  setStatus('Solicitando a localização ao seu dispositivo...', 'info');
+  navigator.geolocation.getCurrentPosition(
+    ({ coords }) => {
+      loadForecast({ name: 'Minha localização', admin1: '', country: '', latitude: coords.latitude, longitude: coords.longitude });
+    },
+    (error) => {
+      const help = error.code === 1 ? 'A permissão de localização foi negada.' : 'Não foi possível identificar sua localização.';
+      setStatus(`${help} Você também pode buscar a cidade manualmente.`, 'error');
+    },
+    { enableHighAccuracy: false, timeout: 12000, maximumAge: 10 * 60 * 1000 },
+  );
+}
+
+function showTab(tab) {
+  state.tab = tab;
+  document.querySelectorAll('.tab').forEach((element) => {
+    const active = element.dataset.tab === tab;
+    element.classList.toggle('active', active);
+    element.setAttribute('aria-selected', String(active));
+  });
+  document.querySelectorAll('.tab-panel').forEach((element) => element.classList.toggle('hidden', element.id !== tab));
+}
+
+function makeChart(host, hours, interval = 3) {
+  host.replaceChildren();
+  if (!hours.length) { host.textContent = 'Dados horários indisponíveis.'; return; }
+  const max = Math.max(1, ...hours.map((h) => h.rain));
+  const chart = document.createElement('div');
+  chart.className = 'bar-chart';
+  hours.forEach((hour, i) => {
+    const column = document.createElement('div');
+    column.className = 'bar-column' + (i === 0 ? ' emphasis' : '');
+    column.title = `${displayDate(hour.time)} às ${labelTime(hour.time)}: ${formatMm(hour.rain)} mm de chuva; chance ${hour.chance ?? 'indisponível'}%.`;
+    const value = document.createElement('span');
+    value.className = 'bar-value';
+    value.textContent = hour.rain >= 0.1 ? formatMm(hour.rain) : '';
+    const track = document.createElement('div');
+    track.className = 'bar-track';
+    const bar = document.createElement('div');
+    bar.className = 'bar-fill' + (hour.rain <= 0 ? ' zero' : '');
+    bar.style.height = `${hour.rain > 0 ? Math.max(3, hour.rain / max * 120) : 1}px`;
+    track.append(bar);
+    const hourText = document.createElement('div');
+    hourText.className = 'bar-hour';
+    hourText.textContent = i % interval === 0 ? labelTime(hour.time) : '';
+    column.append(value, track, hourText);
+    chart.append(column);
+  });
+  host.append(chart);
+}
+
+function renderAlert(summary) {
+  const host = $('rainAlert');
+  const isHigh = summary.total >= state.threshold;
+  const isDry = summary.total < 0.2;
+  host.className = 'rain-alert ' + (isHigh ? 'critical' : isDry ? 'calm' : '');
+  host.replaceChildren();
+  const glyph = document.createElement('span');
+  glyph.className = 'alert-glyph';
+  glyph.textContent = isHigh ? '⚠️' : isDry ? '✓' : '☂️';
+  const text = document.createElement('div');
+  const bold = document.createElement('strong');
+  bold.textContent = isHigh ? 'Aviso de volume elevado.' : isDry ? 'Baixa quantidade prevista.' : 'Chuva prevista na região.';
+  const detail = document.createTextNode(isHigh
+    ? ` O acumulado previsto de ${formatMm(summary.total)} mm em 24h alcança seu limite de ${state.threshold} mm.`
+    : isDry ? ' Não há volume significativo de chuva nas próximas 24h.'
+      : ` São estimados ${formatMm(summary.total)} mm de chuva nas próximas 24h.`);
+  text.append(bold, detail);
+  host.append(glyph, text);
+}
+function renderOverview() {
+  const next24 = futureHours(state.forecast, 24);
+  const next48 = futureHours(state.forecast, 48);
+  const sum24 = summarizeHours(next24);
+  $('total24').textContent = formatMm(sum24.total);
+  $('total48').textContent = formatMm(summarizeHours(next48).total);
+  $('maxChance').textContent = sum24.maxChance == null ? '--' : String(Math.round(sum24.maxChance));
+  $('peakRain').textContent = formatMm(sum24.peak?.rain ?? 0);
+  $('peakTime').textContent = sum24.peak?.rain > 0 ? `Pico previsto às ${labelTime(sum24.peak.time)}` : 'Nenhum pico de chuva relevante';
+  const grade = sum24.total >= 50 ? ['Chuva volumosa prevista', 'O volume acumulado pode ser elevado. Acompanhe os alertas oficiais.']
+    : sum24.total >= 20 ? ['Chuva significativa prevista', 'Há previsão de um acumulado considerável no período.']
+    : sum24.total >= 5 ? ['Chuva moderada prevista', 'Acompanhe os horários de maior intensidade abaixo.']
+    : sum24.total >= 0.2 ? ['Chuva leve ou isolada prevista', 'O acumulado estimado é baixo, mas pode haver pancadas.']
+    : ['Pouca chuva prevista', 'Os modelos indicam acumulado próximo de zero nas próximas 24h.'];
+  $('rainSummary').textContent = grade[0];
+  $('rainExplanation').textContent = grade[1];
+  $('currentConditions').textContent = weatherLabel(state.forecast.current.code);
+  $('currentTemp').textContent = state.forecast.current.temperature == null ? '-- °C' : `${Math.round(state.forecast.current.temperature)} °C`;
+  renderAlert(sum24);
+  makeChart($('overviewChart'), next24, 3);
+  $('nextRainLabel').textContent = sum24.firstRain ? `Primeira chuva: ${displayDate(sum24.firstRain.time)} às ${labelTime(sum24.firstRain.time)}` : 'Sem chuva significativa nas próximas 24h';
+  const quickDays = $('quickDays');
+  quickDays.replaceChildren();
+  state.forecast.daily.slice(0, 5).forEach((day, index) => {
+    const node = document.createElement('div');
+    node.className = 'quick-day';
+    const date = document.createElement('div'); date.className = 'day-name'; date.textContent = index === 0 ? 'Hoje' : localDate(day.date, { weekday: 'short' });
+    const icon = document.createElement('span'); icon.className = 'day-icon'; icon.textContent = weatherIcon(day.code);
+    const volume = document.createElement('strong'); volume.textContent = formatMm(day.rain);
+    const unit = document.createElement('span'); unit.className = 'day-unit'; unit.textContent = ' mm';
+    const chance = document.createElement('small'); chance.textContent = day.chance == null ? 'Chance: --' : `Chance: ${day.chance}%`;
+    node.append(date, icon, volume, unit, chance); quickDays.append(node);
+  });
+}
+function renderHourly() {
+  const hours = futureHours(state.forecast, state.hours);
+  makeChart($('hourlyChart'), hours, state.hours === 24 ? 3 : 6);
+  const list = $('hourlyList');
+  list.replaceChildren();
+  hours.forEach((hour) => {
+    const row = document.createElement('div'); row.className = 'hour-row';
+    const when = document.createElement('div'); when.className = 'hour-time';
+    when.textContent = labelTime(hour.time);
+    const date = document.createElement('small'); date.textContent = displayDate(hour.time); when.append(date);
+    const volume = document.createElement('div'); volume.className = 'hour-volume';
+    volume.textContent = formatMm(hour.rain); const unit = document.createElement('span'); unit.textContent = ' mm'; volume.append(unit);
+    const chanceTrack = document.createElement('div'); chanceTrack.className = 'chance-track';
+    const chanceFill = document.createElement('div'); chanceFill.className = 'chance-fill';
+    chanceFill.style.width = `${Math.max(0, Math.min(100, hour.chance ?? 0))}%`; chanceTrack.append(chanceFill);
+    const chance = document.createElement('div'); chance.className = 'chance-val'; chance.textContent = hour.chance == null ? '--' : `${hour.chance}%`;
+    row.append(when, volume, chanceTrack, chance); list.append(row);
+  });
+}
+function renderDaily() {
+  const daily = state.forecast.daily;
+  const summary = $('dailySummary');
+  summary.replaceChildren();
+  const strong = document.createElement('strong');
+  strong.textContent = `${formatMm(daily.reduce((acc, day) => acc + day.rain, 0))} mm`;
+  summary.append(strong, document.createTextNode('acumulados previstos ao longo dos próximos 16 dias'));
+  const host = $('dailyList');
+  host.replaceChildren();
+  const max = Math.max(1, ...daily.map(day => day.rain));
+  daily.forEach((day, index) => {
+    const row = document.createElement('div'); row.className = 'daily-card';
+    const date = document.createElement('div'); date.className = 'daily-date';
+    date.textContent = index === 0 ? 'Hoje' : localDate(day.date, { weekday: 'short' });
+    const small = document.createElement('small'); small.textContent = localDate(day.date, { day: '2-digit', month: 'short' }); date.append(small);
+    const icon = document.createElement('div'); icon.className = 'daily-weather'; icon.textContent = weatherIcon(day.code); icon.title = weatherLabel(day.code);
+    const volume = document.createElement('div'); volume.className = 'daily-mm'; volume.textContent = formatMm(day.rain);
+    const unit = document.createElement('span'); unit.textContent = ' mm'; volume.append(unit);
+    const track = document.createElement('div'); track.className = 'daily-bar';
+    const fill = document.createElement('div'); fill.style.width = `${Math.max(0, day.rain / max * 100)}%`; track.append(fill);
+    const chance = document.createElement('div'); chance.className = 'daily-chance'; chance.textContent = day.chance == null ? '--' : `${day.chance}%`;
+    chance.title = 'Maior chance de precipitação ao longo do dia';
+    row.append(date, icon, volume, track, chance); host.append(row);
+  });
+}
+function render() {
+  if (!state.forecast) return;
+  $('emptyState').classList.add('hidden');
+  $('forecastContent').classList.remove('hidden');
+  $('selectedCity').innerHTML = '<span class="city-dot"></span>';
+  $('selectedCity').append(document.createTextNode(cityTitle(state.location)));
+  const stamp = state.updatedAt ? new Date(state.updatedAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : 'indisponível';
+  $('lastUpdate').textContent = `${state.cached ? 'Dados salvos em' : 'Consultado em'} ${stamp}`;
+  renderOverview();
+  renderHourly();
+  renderDaily();
+  showTab(state.tab);
+}
+
+function initialize() {
+  const storedThreshold = readStore(STORAGE_THRESHOLD);
+  state.threshold = typeof storedThreshold === 'number' && storedThreshold >= 5 && storedThreshold <= 100 ? storedThreshold : 20;
+  $('thresholdSlider').value = String(state.threshold);
+  $('thresholdValue').textContent = `${state.threshold} mm`;
+  $('thresholdSlider').addEventListener('input', (event) => {
+    state.threshold = Number(event.target.value);
+    $('thresholdValue').textContent = `${state.threshold} mm`;
+    writeStore(STORAGE_THRESHOLD, state.threshold);
+    if (state.forecast) renderAlert(summarizeHours(futureHours(state.forecast, 24)));
+  });
+  $('searchForm').addEventListener('submit', submitCitySearch);
+  $('cityInput').addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    if (state.searchAbort) state.searchAbort.abort();
+    clearSuggestions();
+    const query = $('cityInput').value.trim();
+    if (query.length < 3) return;
+    searchTimer = setTimeout(() => fetchSuggestions(query), 320);
+  });
+  document.addEventListener('pointerdown', (event) => {
+    if (!event.target.closest('.search-wrapper')) clearSuggestions();
+  });
+  $('geoBtn').addEventListener('click', locateMe);
+  $('emptyLocationBtn').addEventListener('click', locateMe);
+  $('refreshBtn').addEventListener('click', () => { if (state.location) loadForecast(state.location); });
+  document.querySelectorAll('.tab').forEach((element) => element.addEventListener('click', () => showTab(element.dataset.tab)));
+  document.querySelectorAll('.range-button').forEach((element) => element.addEventListener('click', () => {
+    state.hours = Number(element.dataset.hours);
+    document.querySelectorAll('.range-button').forEach((button) => {
+      const selected = button === element;
+      button.classList.toggle('active', selected);
+      button.setAttribute('aria-pressed', String(selected));
+    });
+    if (state.forecast) renderHourly();
+  }));
+  $('seeAllDays').addEventListener('click', () => showTab('daily'));
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault(); state.installPrompt = event; $('installBtn').classList.remove('hidden');
+  });
+  $('installBtn').addEventListener('click', async () => {
+    if (!state.installPrompt) return;
+    const prompt = state.installPrompt;
+    state.installPrompt = null;
+    $('installBtn').classList.add('hidden');
+    await prompt.prompt();
+  });
+  window.addEventListener('appinstalled', () => $('installBtn').classList.add('hidden'));
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+  }
+  if (location.protocol === 'file:') setStatus('Abra o ChuvaPort em HTTPS para usar todos os recursos. O arquivo HTML local pode apresentar erro de conexão.', 'info');
+  const saved = readStore(STORAGE_LOCATION);
+  if (saved && Number.isFinite(saved.latitude) && Number.isFinite(saved.longitude)) loadForecast(saved);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && state.location && !state.loading && Date.now() - state.updatedAt >= REFRESH_INTERVAL_MS) loadForecast(state.location, { silent: true });
+  });
+  setInterval(() => {
+    if (!document.hidden && state.location && !state.loading && Date.now() - state.updatedAt >= REFRESH_INTERVAL_MS) loadForecast(state.location, { silent: true });
+  }, 60_000);
+}
+initialize();
+
+</script>
+  </body>
+</html>
