@@ -19,6 +19,10 @@ Grimório particular Android de Port Morningstar, com seis abas: **Assistente, O
 
 > O projeto inclui `eas.json`, mas **nenhum APK foi compilado nesta entrega**. O EAS Build depende de autenticação Expo e do serviço de compilação.
 
+## Hospedagem na Render
+
+O repositório inclui um Blueprint pronto em [`/render.yaml`](../render.yaml) e o [guia para ativar o servidor e o token](SERVIDOR_RENDER.md). As chaves `OPENAI_API_KEY` e `APP_ACCESS_TOKEN` devem ficar apenas nas variáveis secretas do Render, nunca no GitHub.
+
 ## Ativar IA (servidor próprio)
 
 1. `cd server && npm install`.
