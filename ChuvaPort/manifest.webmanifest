@@ -1,0 +1,19 @@
+{
+  "name": "ChuvaPort | Previsão de chuva",
+  "short_name": "ChuvaPort",
+  "description": "Previsão de chuva em milímetros, hora a hora, com até 16 dias.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "theme_color": "#100d13",
+  "background_color": "#0b0a0e",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
