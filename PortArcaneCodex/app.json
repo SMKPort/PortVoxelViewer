@@ -12,9 +12,13 @@
       "package": "com.smkport.arcanecodex",
       "versionCode": 1,
       "permissions": [],
-      "adaptiveIcon": { "backgroundColor": "#0E0C11" }
+      "adaptiveIcon": {
+        "backgroundColor": "#0E0C11"
+      }
     },
-    "plugins": ["expo-secure-store", "expo-sqlite"],
-    "extra": { "eas": { "projectId": "" } }
+    "plugins": [
+      "expo-secure-store",
+      "expo-sqlite"
+    ]
   }
 }
