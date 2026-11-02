@@ -11,13 +11,13 @@ export async function saveConfig(url:string,token:string) {
 export async function askAI(question:string,canon:Entry[],history:ChatMessage[]) {
   const {url,token}=await getConfig();
   if(!url||!token) throw new Error('Configure a URL e o token do servidor na aba Assistente.');
-  const controller=new AbortController(); const timeout=setTimeout(()=>controller.abort(),30000);
+  const controller=new AbortController(); const timeout=setTimeout(()=>controller.abort(),90000);
   try {
     const r=await fetch(`${url}/api/chat`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({message:question,canon:canon.filter(e=>e.status==='canon').slice(0,60).map(e=>({kind:e.kind,title:e.title,content:e.content.slice(0,1800)})),history:history.slice(-8).map(x=>({role:x.role,content:x.content.slice(0,1500)}))}),signal:controller.signal});
     const data=await r.json().catch(()=>({}));
     if(!r.ok) throw new Error(data.error || `Erro HTTP ${r.status}`);
     if(typeof data.text!=='string'||!data.text.trim()) throw new Error('Resposta vazia do servidor.');
     return data.text as string;
-  } catch(e:any) { if(e?.name==='AbortError') throw new Error('A resposta excedeu 30 segundos.'); throw e; }
+  } catch(e:any) { if(e?.name==='AbortError') throw new Error('O servidor não respondeu em 90 segundos. Em planos gratuitos, pode estar acordando após inatividade.'); throw e; }
   finally {clearTimeout(timeout);}
 }
