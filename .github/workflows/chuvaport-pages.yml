@@ -1,0 +1,47 @@
+name: Publicar ChuvaPort no GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ChuvaPort/**'
+      - '.github/workflows/chuvaport-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-chuvaport
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validar arquivos do ChuvaPort
+        run: |
+          test -f ChuvaPort/index.html
+          test -f ChuvaPort/manifest.webmanifest
+          test -f ChuvaPort/sw.js
+          test -f ChuvaPort/assets/icon.svg
+      - name: Preparar conteúdo do site
+        shell: bash
+        run: |
+          mkdir -p _site/ChuvaPort
+          cp -R ChuvaPort/. _site/ChuvaPort/
+          printf '<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./ChuvaPort/"><title>ChuvaPort</title><a href="./ChuvaPort/">Abrir ChuvaPort</a></html>' > _site/index.html
+          touch _site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Publicar ChuvaPort
+        id: deployment
+        uses: actions/deploy-pages@v4
