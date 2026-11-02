@@ -13,6 +13,8 @@ if (!OPENAI_API_KEY || !APP_ACCESS_TOKEN || Buffer.byteLength(APP_ACCESS_TOKEN)<
 const openai=new OpenAI({apiKey:OPENAI_API_KEY});
 const app=express();
 app.disable('x-powered-by');
+// Render forwards client requests through its edge proxy.
+app.set('trust proxy', 1);
 app.use(express.json({limit:'180kb'}));
 app.use('/api',rateLimit({windowMs:15*60*1000,limit:40,standardHeaders:'draft-7',legacyHeaders:false}));
 app.get('/health',(_req,res)=>res.json({ok:true,name:'arcane-codex-api'}));
