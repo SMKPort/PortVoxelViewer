@@ -1,0 +1,60 @@
+name: Compilar APK Port Arcane Codex
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'PortArcaneCodex/**'
+      - '.github/workflows/arcane-codex-apk.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: port-arcane-codex-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      CI: '1'
+    steps:
+      - name: Obter fontes
+        uses: actions/checkout@v4
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Preparar Java para Gradle
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Preparar SDK Android
+        uses: android-actions/setup-android@v3
+      - name: Instalar dependências JavaScript
+        working-directory: PortArcaneCodex
+        run: npm install --no-audit --no-fund
+      - name: Verificar o código
+        working-directory: PortArcaneCodex
+        run: |
+          npm run check
+          npm run test:server
+      - name: Gerar projeto Android com Expo
+        working-directory: PortArcaneCodex
+        run: npx expo prebuild --platform android --clean --no-install
+      - name: Compilar APK Android
+        working-directory: PortArcaneCodex/android
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease --no-daemon --stacktrace
+      - name: Publicar APK para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: Port-Arcane-Codex-1.0-APK
+          path: PortArcaneCodex/android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 30
