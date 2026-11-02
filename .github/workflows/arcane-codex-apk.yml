@@ -46,6 +46,12 @@ jobs:
         run: |
           npm run check
           npm run test:server
+      - name: Diagnosticar módulos Android Expo
+        working-directory: PortArcaneCodex
+        run: |
+          node -e "console.log('Autolinking',require('expo-modules-autolinking/package.json').version)"
+          npx expo-modules-autolinking resolve --platform android --json > /tmp/codex-modules.json
+          node -e 'const fs=require("fs");const o=JSON.parse(fs.readFileSync("/tmp/codex-modules.json","utf8"));(o.modules||[]).forEach((m,i)=>{let p=m.projects||[];console.log(i,m.packageName||m.name,m.version||"(sem versão)",p.map(x=>x.publication));});'
       - name: Gerar projeto Android com Expo
         working-directory: PortArcaneCodex
         run: npx expo prebuild --platform android --clean --no-install
