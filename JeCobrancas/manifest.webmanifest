@@ -1,0 +1,18 @@
+{
+  "name": "Jé Cobranças | Adega da Jé",
+  "short_name": "Jé Cobranças",
+  "description": "Clientes, fiados e cobranças com cálculo automático.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0e0e0e",
+  "theme_color": "#10100f",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+<resources><style name="Theme.JeCobrancas" parent="android:style/Theme.Material.Light.NoActionBar"><item name="android:colorAccent">#E7BF66</item><item name="android:windowLightStatusBar">false</item><item name="android:statusBarColor">#0E0E0E</item><item name="android:navigationBarColor">#0E0E0E</item></style></resources>
