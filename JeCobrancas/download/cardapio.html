@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0b0b"><meta name="description" content="Adega da Jé: seu cardápio de bebidas e conveniência. Escolha seus produtos e peça pelo WhatsApp.">
+  <title>Adega da Jé | Cardápio Online</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+:root{--bg:#0b0b0a;--surface:#151513;--surface2:#1f1e1a;--gold:#cba75d;--gold-light:#f0dba5;--text:#f6f1e7;--muted:#a39c90;--line:#302d26;--danger:#ffb8a5}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 'DM Sans',Arial,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:inherit;text-decoration:none}.shell{width:min(1200px,calc(100% - 64px));margin:auto}.hidden{display:none!important}.announcement{height:32px;display:flex;align-items:center;justify-content:center;gap:14px;background:#c9a25e;color:#20180d;letter-spacing:.19em;font-size:9px;font-weight:700}.announcement-dot{width:4px;height:4px;background:#3b2c14;border-radius:50%}.topbar{height:96px;display:flex;align-items:center;justify-content:space-between}.brand{display:flex;align-items:center;gap:15px}.monogram{font:italic 32px/.95 Georgia,serif;color:var(--gold-light);border:1px solid #80643b;width:54px;height:54px;display:grid;place-items:center;position:relative;letter-spacing:-.15em;padding-right:6px}.monogram span{font-size:19px}.monogram i{position:absolute;top:-8px;right:-6px;font-size:12px;font-style:normal;letter-spacing:0;background:var(--bg);padding:0 3px}.brand-words strong{display:block;letter-spacing:.19em;font-size:16px;font-weight:700}.brand-words small{display:block;margin-top:3px;color:#aa9162;font-size:9px;letter-spacing:.22em}nav{display:flex;align-items:center;gap:38px}nav a{font-size:12px;color:#d0c8bb}nav a:hover,.footer button:hover{color:var(--gold-light)}.header-cart{display:flex;align-items:center;gap:12px;background:#1a1917;border:1px solid #393124;color:#f1e8d7;padding:11px 15px;font-size:12px;border-radius:5px}.header-cart b{display:grid;place-items:center;border-radius:50%;background:#cba75d;color:#1b160e;width:22px;height:22px;font-size:11px}.hero{padding-top:8px}.hero-surface{min-height:460px;background:radial-gradient(ellipse at 85% 45%,#58402350,transparent 43%),linear-gradient(125deg,#1a1814,#121211 65%);border:1px solid #343028;position:relative;display:grid;grid-template-columns:54% 46%;overflow:hidden}.hero-surface:before{content:'';position:absolute;inset:11px;border:1px solid #6f59342b;pointer-events:none}.hero-copy{padding:62px 30px 53px 68px;position:relative;z-index:2}.hero-tag,.overline{color:var(--gold);font-size:10px;font-weight:700;letter-spacing:.28em}.hero-tag{display:flex;align-items:center;gap:12px}.line{height:1px;width:24px;background:var(--gold)}h1,h2,h3,p{margin-top:0}.hero h1{font:500 clamp(50px,5.7vw,78px)/1.08 'Playfair Display',Georgia,serif;letter-spacing:-.045em;max-width:560px;margin:27px 0 20px}.hero h1 em,.section-heading h2 em,.drawer h2 em,.settings-modal h2 em{color:var(--gold);font-style:italic;font-weight:500}.hero-copy>p{font-size:14px;color:#b7b0a4;line-height:1.9;max-width:365px;margin-bottom:26px}.gold-button,.checkout-btn{background:linear-gradient(125deg,#e6c784,#bc944a);color:#18130d;border:0;padding:15px 22px;font-weight:700;letter-spacing:.075em;font-size:11px;display:inline-flex;align-items:center;justify-content:space-between;gap:36px;transition:filter .2s}.gold-button:hover,.checkout-btn:hover{filter:brightness(1.13)}.gold-button span{font-size:19px;line-height:.7}.hero-foot{color:#867962;font-size:10px;margin-top:44px;display:flex;align-items:center;gap:20px;white-space:nowrap}.foot-line{height:1px;width:90px;background:linear-gradient(90deg,#6b5637,transparent)}.hero-visual{position:relative;min-height:440px;overflow:hidden;background:radial-gradient(ellipse at 54% 72%,#a87a3644 0,transparent 50%)}.halo{position:absolute;border:1px solid #a9854651;border-radius:50%;left:50%;top:47%;transform:translate(-50%,-50%)}.halo-one{width:330px;height:330px}.halo-two{width:440px;height:440px;border-color:#a9854620}.bottle{position:absolute;bottom:56px;width:127px;height:250px;border-radius:34px 34px 18px 18px;background:linear-gradient(90deg,#131f1a 5%,#2d4530 15%,#1c3124 40%,#0a110e 80%,#33412e 96%);border:1px solid #5d6541;box-shadow:inset 10px 0 20px #ffffff12,inset -12px 0 30px #0009,18px 25px 38px #000a}.bottle .neck{position:absolute;width:50px;height:98px;top:-92px;left:39px;background:linear-gradient(90deg,#172519,#334432,#0b130e);border:1px solid #4c553c;border-radius:7px 7px 0 0}.bottle .neck:before{content:'';position:absolute;height:14px;left:-2px;right:-2px;top:0;background:linear-gradient(90deg,#755522,#d4ac5f,#7b602e);border-radius:3px}.bottle-label{background:#e2d3ad;position:absolute;top:68px;left:8px;right:8px;height:110px;border:4px double #bfa264;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#362717}.bottle-label span{font:italic 55px/.9 Georgia,serif}.bottle-label small{font-size:9px;letter-spacing:.2em;margin-top:12px}.bottle-back{left:22%;transform:rotate(-13deg) scale(.8);transform-origin:bottom;bottom:63px;filter:brightness(.55)}.bottle-front{left:44%;transform:rotate(7deg);bottom:56px}.glass{position:absolute;left:69%;bottom:53px;width:100px;height:132px;border:2px solid #ecd3a177;border-top:5px solid #f0dbb1b3;transform:rotate(-8deg);border-radius:5px 5px 19px 19px;clip-path:polygon(2% 0,98% 0,87% 100%,13% 100%);background:linear-gradient(90deg,#f5ddb00c,#f5ddb026,#ffffff05);box-shadow:inset -10px 0 10px #fff1}.drink{position:absolute;bottom:0;height:55%;width:100%;background:linear-gradient(90deg,#62310a,#bc7624 55%,#733c11);opacity:.75}.visual-spark{position:absolute;color:#d0aa67;font-size:31px}.s1{right:16%;top:18%}.s2{left:24%;top:17%}.hero-corner{position:absolute;right:31px;bottom:24px;font-size:9px;color:#b7a47e;letter-spacing:.25em}.benefits{display:grid;grid-template-columns:repeat(3,1fr);padding:29px 0 40px;border-bottom:1px solid #29251e;margin-bottom:69px}.benefits>div{display:flex;align-items:center;gap:18px;padding:0 25px;border-right:1px solid var(--line)}.benefits>div:first-child{padding-left:8px}.benefits>div:last-child{border-right:0}.benefit-icon{font:italic 30px Georgia,serif;color:var(--gold)}.benefits p{margin:0;display:grid;gap:1px}.benefits strong{font-size:12px;font-weight:600}.benefits small{font-size:11px;color:var(--muted)}.menu-section{padding-bottom:105px}.section-heading{display:flex;align-items:end;justify-content:space-between;gap:22px}.section-heading h2,.drawer h2,.settings-modal h2{font:500 49px/1.2 'Playfair Display',Georgia,serif;letter-spacing:-.035em;margin:11px 0 25px}.section-heading>p{color:var(--muted);font-size:13px;margin-bottom:31px}.menu-controls{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:4px 0 20px}.search{display:flex;align-items:center;gap:12px;background:#181715;border:1px solid #38332b;max-width:440px;width:100%;padding:0 17px;height:49px;color:var(--gold)}.search input{background:none;outline:none;border:0;color:var(--text);width:100%;min-width:0;font-size:13px}.search input::placeholder{color:#958b7d}.product-count{color:#8c8477;font-size:11px}.categories{display:flex;gap:10px;overflow-x:auto;scrollbar-width:thin;padding-bottom:18px;margin-bottom:16px}.chip{flex:none;border:1px solid #38342c;background:#171615;color:#d0c7b8;padding:10px 18px;font-size:11px;letter-spacing:.03em;transition:all .15s}.chip:hover{border-color:var(--gold)}.chip.active{background:var(--gold);border-color:var(--gold);color:#1d160b;font-weight:700}.demo-note{font-size:12px;color:#d6bb83;background:#2d2417;border:1px solid #665331;padding:11px 15px;margin-bottom:22px}.products{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}.product{background:#151513;border:1px solid #343027;overflow:hidden;transition:transform .2s,border-color .2s}.product:hover{transform:translateY(-3px);border-color:#80663a}.product-visual{height:225px;position:relative;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 45% 45%,#584830 0,#30281c 28%,#191816 75%);overflow:hidden}.product-visual::before{content:'';position:absolute;width:150px;height:150px;border-radius:50%;border:1px solid #e6c88f2f;box-shadow:0 0 0 25px #d2b26b0b}.product-visual:after{content:'ADEGA DA JÉ  ✦  SELEÇÃO';position:absolute;bottom:13px;left:15px;font-size:8px;letter-spacing:.2em;color:#bea6797c}.product-glyph{font:italic 76px Georgia,serif;letter-spacing:-.07em;color:#e4c489;text-shadow:2px 5px 15px #000d;position:relative;z-index:1}.product-visual[data-type="Cervejas"]{background:radial-gradient(ellipse,#65502a,#241d13 64%,#181613)}.product-visual[data-type="Refrigerantes"]{background:radial-gradient(ellipse,#513b30,#241b19 64%,#181514)}.product-visual[data-type="Energéticos"]{background:radial-gradient(ellipse,#55482e,#222018 64%,#161613)}.product-image{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:11px 16px 19px;z-index:2}.image-caption{position:absolute;bottom:8px;right:10px;z-index:3;color:#d6c5a8;font-size:8px;font-weight:700;letter-spacing:.12em;background:#17130dd4;padding:4px 7px;border:1px solid #78613a66}.add-btn:disabled{opacity:.35;cursor:not-allowed}.price.pending{font-size:13px;color:#e7bc78}.product-body{padding:19px 20px 20px}.product-category{font-size:9px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase}.product h3{font-size:17px;margin:8px 0 7px;font-weight:600;line-height:1.35}.product-desc{font-size:12px;color:var(--muted);min-height:39px;margin:0 0 15px}.product-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:13px;border-top:1px solid #332f27}.price{font-size:19px;color:var(--gold-light)}.add-btn{background:var(--gold);color:#1c150b;border:0;min-width:42px;height:40px;font-size:22px;font-weight:500}.add-btn:hover{background:var(--gold-light)}.empty{padding:60px;text-align:center;color:var(--muted)}.footer{background:#131210;border-top:1px solid var(--line)}.footer-main{padding:40px 0;display:flex;justify-content:space-between;gap:20px}.footer-logo{font:italic 27px 'Playfair Display',Georgia,serif;color:#dfc184}.footer-logo span{font:13px sans-serif;margin-left:8px}.footer-main p,.footer-right{color:var(--muted);font-size:12px}.footer-main p{margin:5px 0 0}.footer-right{display:flex;flex-direction:column;align-items:flex-end;gap:10px}.footer-right button{background:none;border:0;color:var(--gold);font-size:12px}.footer-bottom{border-top:1px solid #2d2920;color:#6d675d;font-size:10px;letter-spacing:.05em;padding:16px 0 24px}.floating-cart{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:10;display:flex;align-items:center;gap:14px;width:min(460px,calc(100% - 32px));border:1px solid #dfc17c;background:#c7a45e;color:#17120a;padding:13px 17px;box-shadow:0 14px 50px #000d;text-align:left}.float-icon{font-size:24px}.floating-cart strong,.floating-cart small{display:block}.floating-cart strong{font-size:12px}.floating-cart small{font-size:11px}.float-action{margin-left:auto;font-size:11px;font-weight:700;letter-spacing:.05em;white-space:nowrap}.overlay{position:fixed;inset:0;background:#000b;z-index:20}.drawer{position:fixed;z-index:21;right:0;top:0;bottom:0;background:#151411;border-left:1px solid #54452e;width:min(480px,100%);padding:26px;display:flex;flex-direction:column;box-shadow:-10px 0 60px #000b}.drawer-head,.settings-head{display:flex;align-items:start;justify-content:space-between}.drawer h2,.settings-modal h2{font-size:36px;margin:8px 0 10px}.close{border:1px solid #54472e;color:var(--gold-light);background:#211e18;width:37px;height:37px;font-size:26px;line-height:1}.cart-items{flex:1;overflow:auto;padding:15px 0}.cart-line{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--line);gap:8px}.cart-line strong{display:block;font-size:13px}.cart-line small{color:var(--muted)}.qty{display:flex;gap:10px;align-items:center}.qty button{background:var(--surface2);border:1px solid #49402f;color:var(--gold-light);width:28px;height:28px}.checkout{border-top:1px solid var(--line);padding-top:15px;display:grid;gap:10px}.checkout label,.settings-modal label{display:grid;gap:6px;font-size:10px;letter-spacing:.08em;color:#d8ccb6;font-weight:700}.checkout input,.checkout textarea,.checkout select,.settings-modal input,.settings-modal textarea{width:100%;min-width:0;color:var(--text);background:#222019;border:1px solid #484032;padding:11px 12px;font-size:13px;border-radius:0}.checkout input:focus,.checkout textarea:focus,.checkout select:focus,.settings-modal input:focus,.settings-modal textarea:focus{outline:2px solid var(--gold)}.total{display:flex;justify-content:space-between;align-items:center;padding-top:10px}.total strong{font-size:19px;color:var(--gold-light)}.subtle{font-size:12px;color:var(--muted);line-height:1.65}.tiny{font-size:10px;margin:0}.checkout-btn{width:100%;justify-content:center;margin:5px 0 0;cursor:pointer}.error{font-size:12px;color:var(--danger);margin:0}.settings-modal{position:fixed;z-index:22;left:50%;top:50%;transform:translate(-50%,-50%);width:min(660px,calc(100vw - 25px));max-height:calc(100vh - 30px);overflow:auto;border:1px solid #54452e;background:#151411;padding:24px;display:grid;gap:15px;box-shadow:0 20px 80px #000d}.settings-modal textarea{font:12px/1.5 ui-monospace,Consolas,monospace}.settings-actions{display:flex;gap:12px}.settings-actions .checkout-btn{width:auto;margin:0}.secondary-btn{padding:10px 17px;border:1px solid #54452e;background:none;color:#e6d5b6;font-size:12px}@media(max-width:850px){.shell{width:min(100% - 34px,1200px)}.topbar{height:78px}.brand-words strong{font-size:13px}.brand-words small{font-size:7px}nav{gap:12px}nav>a{display:none}.hero-surface{grid-template-columns:1fr;min-height:auto}.hero-copy{padding:42px 30px 30px}.hero h1{font-size:clamp(48px,9vw,67px);max-width:550px}.hero-visual{min-height:290px}.bottle{bottom:35px;transform:scale(.75);transform-origin:bottom}.bottle-back{left:30%;bottom:36px;transform:rotate(-13deg) scale(.65)}.bottle-front{left:47%;bottom:35px;transform:rotate(7deg) scale(.8)}.glass{left:69%;bottom:33px;transform:rotate(-8deg) scale(.8)}.halo-one{width:270px;height:270px}.halo-two{width:350px;height:350px}.benefits{margin-bottom:42px}.benefits>div{padding:0 9px;gap:10px}.benefits strong{font-size:11px}.benefits small{font-size:10px}.products{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.announcement{font-size:8px;letter-spacing:.12em}.shell{width:calc(100% - 28px)}.topbar{height:72px}.monogram{width:43px;height:43px;font-size:27px}.brand{gap:9px}.brand-words strong{font-size:11px}.brand-words small{font-size:7px;letter-spacing:.09em}.header-cart{padding:9px;gap:7px}.header-cart span{display:none}.hero-copy{padding:36px 23px 16px}.hero-tag{font-size:9px}.hero h1{font-size:50px;margin:19px 0}.hero-copy>p{font-size:12px;margin-bottom:20px}.hero-foot{margin-top:26px}.hero-visual{min-height:245px}.hero-corner{font-size:7px}.benefits{display:flex;gap:0;padding:25px 0 25px;overflow-x:auto}.benefits>div{flex:0 0 33.33%;flex-direction:column;align-items:center;text-align:center;padding:0 5px;gap:3px}.benefits>div:first-child{padding:0 5px}.benefit-icon{font-size:25px}.benefits strong{font-size:10px;line-height:1.3}.benefits small{font-size:9px}.section-heading h2{font-size:36px}.section-heading>p{display:none}.menu-controls{align-items:center}.product-count{white-space:nowrap;font-size:10px}.products{gap:11px}.product-visual{height:155px}.product-glyph{font-size:53px}.product-body{padding:12px}.product h3{font-size:13px;min-height:36px}.product-desc{font-size:10px;min-height:45px}.product-bottom{padding-top:10px}.price{font-size:15px}.add-btn{width:33px;height:33px;min-width:33px}.footer-main{flex-direction:column}.footer-right{align-items:start}.drawer{padding:17px}.settings-actions{flex-direction:column}.settings-actions .checkout-btn{width:100%}}@media(max-width:350px){.products{grid-template-columns:1fr}.product h3,.product-desc{min-height:0}.product-visual{height:190px}}
+
+.product-glyph{font-family:system-ui,Segoe UI Emoji,sans-serif;font-style:normal;font-size:70px;letter-spacing:0;filter:drop-shadow(0 10px 18px #0009)}
+
+</style>
+</head>
+<body>
+  <div class="announcement"><span class="announcement-dot"></span> PEÇA ONLINE · FINALIZE PELO WHATSAPP <span class="announcement-dot"></span></div>
+  <header class="topbar shell" id="inicio">
+    <a href="#inicio" class="brand" aria-label="Adega da Jé, início"><span class="monogram">J<span>é</span><i>✦</i></span><span class="brand-words"><strong>ADEGA DA JÉ</strong><small>BEBIDAS & CONVENIÊNCIA</small></span></a>
+    <nav aria-label="Navegação principal"><a href="#cardapio">Cardápio</a><a href="#como-pedir">Como pedir</a><button type="button" class="header-cart" id="openCart" aria-label="Abrir carrinho"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="19" height="19"><path d="M3 4h2l2.2 11h11.5l2-8H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg><span>Carrinho</span><b id="cartCount">0</b></button></nav>
+  </header>
+  <main>
+    <section class="hero shell" aria-label="Boas-vindas">
+      <div class="hero-surface">
+        <div class="hero-copy"><div class="hero-tag"><span class="line"></span> A SUA ADEGA FAVORITA</div><h1>O brinde começa <em>aqui.</em></h1><p>Escolha suas bebidas favoritas e aquele acompanhamento perfeito. Seu pedido a poucos cliques de distância.</p><a href="#cardapio" class="gold-button">EXPLORAR CARDÁPIO <span aria-hidden="true">↗</span></a><div class="hero-foot"><span>✦ &nbsp; Praticidade para o seu momento</span><span class="foot-line"></span></div></div>
+        <div class="hero-visual" aria-hidden="true"><div class="halo halo-one"></div><div class="halo halo-two"></div><div class="bottle bottle-back"><div class="neck"></div><div class="bottle-label"><span>JÉ</span><small>SELEÇÃO</small></div></div><div class="bottle bottle-front"><div class="neck"></div><div class="bottle-label"><span>JÉ</span><small>RESERVA</small></div></div><div class="glass"><div class="drink"></div></div><span class="visual-spark s1">✦</span><span class="visual-spark s2">✧</span><div class="hero-corner">ADEGA DA JÉ · ESTILO & SABOR</div></div>
+      </div>
+    </section>
+    <section class="benefits shell" id="como-pedir" aria-label="Como funciona"><div><span class="benefit-icon">01</span><p><strong>Escolha seus produtos</strong><small>Navegue pelo cardápio</small></p></div><div><span class="benefit-icon">02</span><p><strong>Monte seu carrinho</strong><small>Confira o valor total</small></p></div><div><span class="benefit-icon">03</span><p><strong>Finalize no WhatsApp</strong><small>A loja confirma seu pedido</small></p></div></section>
+    <section class="menu-section shell" id="cardapio">
+      <div class="section-heading"><div><span class="overline">ESCOLHAS ESPECIAIS</span><h2>Nosso <em>cardápio</em></h2></div><p>Encontre tudo para aproveitar cada momento.</p></div>
+      <div class="menu-controls"><div class="search"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg><input id="search" type="search" autocomplete="off" placeholder="O que você está procurando?" aria-label="Buscar produto"></div><span class="product-count" id="productCount">0 produtos</span></div>
+      <div id="categories" class="categories" aria-label="Filtrar categorias"></div>
+      <div id="demoNote" class="demo-note"><strong>Fotos ilustrativas.</strong> Os modelos de bebidas não representam embalagens ou marcas específicas. Cinco preços ainda precisam de confirmação. Venda proibida para menores de 18 anos.</div>
+      <div class="products" id="products"></div><p id="emptyState" class="empty hidden">Nenhum produto encontrado. Tente outra busca.</p>
+    </section>
+  </main>
+  <footer class="footer"><div class="shell footer-main"><div><span class="footer-logo">Adega da Jé<span>✦</span></span><p>Seu momento merece uma boa escolha.</p></div><div class="footer-right"><span>Pedido sujeito à confirmação da loja.</span><button type="button" id="openSettings">⚙ Configurar cardápio</button></div></div><div class="footer-bottom shell">© <span id="year">2026</span> Adega da Jé · Feito para brindar bons momentos</div></footer>
+  <button id="floatingCart" class="floating-cart hidden" type="button"><span class="float-icon">▣</span><span><strong><span id="floatCount">0</span> itens no carrinho</strong><small id="floatTotal">R$ 0,00</small></span><span class="float-action">VER PEDIDO ↗</span></button>
+  <div class="overlay hidden" id="overlay"></div>
+  <aside id="cartDrawer" class="drawer hidden" role="dialog" aria-modal="true" aria-labelledby="cartTitle"><div class="drawer-head"><div><span class="overline">QUASE LÁ!</span><h2 id="cartTitle">Seu <em>pedido</em></h2></div><button type="button" id="closeCart" class="close" aria-label="Fechar carrinho">×</button></div><div id="cartItems" class="cart-items"></div><div class="checkout"><label>SEU NOME<input id="customerName" maxlength="100" placeholder="Como podemos chamar você?"></label><label>COMO VAI RECEBER?<select id="delivery"><option value="retirada">Retirar na loja</option><option value="entrega">Entrega (a confirmar)</option></select></label><label>ENDEREÇO / OBSERVAÇÕES<textarea id="notes" rows="2" maxlength="500" placeholder="Endereço para entrega ou observações"></textarea></label><div class="total"><span>Total dos produtos</span><strong id="cartTotal">R$ 0,00</strong></div><p class="subtle tiny">Taxas, disponibilidade e pagamento serão confirmados pela loja. Venda proibida para menores de 18 anos.</p><button id="sendOrder" type="button" class="checkout-btn">FINALIZAR NO WHATSAPP ↗</button><p id="checkoutError" role="alert" class="error hidden"></p></div></aside>
+  <section id="settingsModal" class="settings-modal hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle"><div class="settings-head"><div><span class="overline">GERENCIAMENTO LOCAL</span><h2 id="settingsTitle">Configurar <em>loja</em></h2></div><button id="closeSettings" class="close" type="button" aria-label="Fechar configurações">×</button></div><p class="subtle">As alterações ficam apenas neste navegador. Esta versão não tem login administrativo nem sincronização entre aparelhos. Antes de publicar, configure os dados diretamente no projeto ou implemente um painel seguro.</p><label>WHATSAPP DA LOJA (55 + DDD + NÚMERO)<input id="whatsappNumber" inputmode="numeric" placeholder="Ex.: 5511999999999"></label><label>CATÁLOGO EM JSON<textarea id="catalogJson" spellcheck="false" rows="12" aria-label="Produtos em JSON"></textarea></label><p class="subtle tiny">Cada item precisa de id, nome e categoria. Preço pode ser numérico ou null se status_preco for A confirmar. A imagem aceita caminho local imagens/arquivo.webp ou URL HTTPS. Ex.: {"id":"agua","nome":"Água","categoria":"Sem álcool","preco":3.5}</p><p id="settingsError" class="error hidden" role="alert"></p><div class="settings-actions"><button type="button" id="resetDemo" class="secondary-btn">Restaurar catálogo completo (33 itens)</button><button id="saveSettings" type="button" class="checkout-btn">SALVAR ALTERAÇÕES</button></div></section>
+  <script>
+'use strict';
+// Catálogo DEMONSTRATIVO. Substitua pelos produtos e preços reais da loja.
+const DEMO = [
+  {
+    "id": "1001",
+    "nome": "Jack Daniel's (Maçã + Mel + Canela + Red Bull)",
+    "categoria": "Copão 700 ml - Especiais Premium",
+    "descricao": "Jack Daniel's, maçã, mel, canela e Red Bull.",
+    "preco": 40.0,
+    "volume": "700 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍹",
+    "imagem": "imagens/copao_700ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "1002",
+    "nome": "Old Parr + Red Bull",
+    "categoria": "Copão 700 ml - Especiais Premium",
+    "descricao": "Old Parr com Red Bull.",
+    "preco": 50.0,
+    "volume": "700 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍹",
+    "imagem": "imagens/copao_700ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "1003",
+    "nome": "Tanqueray + Red Bull",
+    "categoria": "Copão 700 ml - Especiais Premium",
+    "descricao": "Gin Tanqueray com Red Bull.",
+    "preco": 40.0,
+    "volume": "700 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍹",
+    "imagem": "imagens/copao_700ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "1004",
+    "nome": "Gin Bulldog + Red Bull",
+    "categoria": "Copão 700 ml - Especiais Premium",
+    "descricao": "Gin Bulldog com Red Bull.",
+    "preco": 40.0,
+    "volume": "700 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍹",
+    "imagem": "imagens/copao_700ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "1005",
+    "nome": "Red Label + Red Bull",
+    "categoria": "Copão 700 ml - Clássicos",
+    "descricao": "Red Label com Red Bull.",
+    "preco": 35.0,
+    "volume": "700 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍹",
+    "imagem": "imagens/copao_700ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "1006",
+    "nome": "Cavalo Branco + Red Bull",
+    "categoria": "Copão 700 ml - Clássicos",
+    "descricao": "Cavalo Branco com Red Bull.",
+    "preco": 30.0,
+    "volume": "700 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍹",
+    "imagem": "imagens/copao_700ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "1007",
+    "nome": "Passaport + Bally",
+    "categoria": "Copão 700 ml - Econômicos",
+    "descricao": "Passaport com Bally.",
+    "preco": 20.0,
+    "volume": "700 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍹",
+    "imagem": "imagens/copao_700ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "1008",
+    "nome": "Red Gold + Fúria",
+    "categoria": "Copão 700 ml - Econômicos",
+    "descricao": "Red Gold com Fúria.",
+    "preco": 13.0,
+    "volume": "700 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍹",
+    "imagem": "imagens/copao_700ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "1009",
+    "nome": "Old Star + Fúria",
+    "categoria": "Copão 700 ml - Econômicos",
+    "descricao": "Old Star com Fúria.",
+    "preco": 10.0,
+    "volume": "700 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍹",
+    "imagem": "imagens/copao_700ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "1010",
+    "nome": "Gin Eternity + Bally",
+    "categoria": "Copão 700 ml - Gin Lovers",
+    "descricao": "Gin Eternity com Bally.",
+    "preco": 10.0,
+    "volume": "700 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍹",
+    "imagem": "imagens/copao_700ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "1011",
+    "nome": "Gin 38 + Bally",
+    "categoria": "Copão 700 ml - Gin Lovers",
+    "descricao": "Gin 38 com Bally.",
+    "preco": 10.0,
+    "volume": "700 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍹",
+    "imagem": "imagens/copao_700ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "1012",
+    "nome": "Licor 43 + Gelo",
+    "categoria": "Copão 700 ml - Diferenciados",
+    "descricao": "Licor 43 com gelo.",
+    "preco": 30.0,
+    "volume": "700 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍹",
+    "imagem": "imagens/copao_700ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "1013",
+    "nome": "Licor 43 + Red Bull",
+    "categoria": "Copão 700 ml - Diferenciados",
+    "descricao": "Licor 43 com Red Bull.",
+    "preco": 40.0,
+    "volume": "700 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍹",
+    "imagem": "imagens/copao_700ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2001",
+    "nome": "Lokal lata 350 ml",
+    "categoria": "Cervejas - 350 ml",
+    "descricao": "Cerveja Lokal em lata de 350 ml.",
+    "preco": 3.0,
+    "volume": "350 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_350ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2002",
+    "nome": "Cristal lata 350 ml",
+    "categoria": "Cervejas - 350 ml",
+    "descricao": "Cerveja Cristal em lata de 350 ml.",
+    "preco": 3.5,
+    "volume": "350 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_350ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2003",
+    "nome": "Itaipava lata 350 ml",
+    "categoria": "Cervejas - 350 ml",
+    "descricao": "Cerveja Itaipava em lata de 350 ml.",
+    "preco": 3.75,
+    "volume": "350 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_350ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2004",
+    "nome": "Skol lata 350 ml",
+    "categoria": "Cervejas - 350 ml",
+    "descricao": "Cerveja Skol em lata de 350 ml.",
+    "preco": null,
+    "volume": "350 ml",
+    "alcoolico": true,
+    "status_preco": "A confirmar",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_350ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2005",
+    "nome": "Brahma lata 350 ml",
+    "categoria": "Cervejas - 350 ml",
+    "descricao": "Cerveja Brahma em lata de 350 ml.",
+    "preco": null,
+    "volume": "350 ml",
+    "alcoolico": true,
+    "status_preco": "A confirmar",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_350ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2006",
+    "nome": "Amstel lata 350 ml",
+    "categoria": "Cervejas - 350 ml",
+    "descricao": "Cerveja Amstel em lata de 350 ml.",
+    "preco": 4.5,
+    "volume": "350 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_350ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2007",
+    "nome": "Heineken lata 350 ml",
+    "categoria": "Cervejas - 350 ml",
+    "descricao": "Cerveja Heineken em lata de 350 ml.",
+    "preco": 6.5,
+    "volume": "350 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_350ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2008",
+    "nome": "Bavária lata 350 ml",
+    "categoria": "Cervejas - 350 ml",
+    "descricao": "Cerveja Bavária em lata de 350 ml.",
+    "preco": 3.5,
+    "volume": "350 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_350ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2009",
+    "nome": "Império lata 350 ml",
+    "categoria": "Cervejas - 350 ml",
+    "descricao": "Cerveja Império em lata de 350 ml.",
+    "preco": 3.75,
+    "volume": "350 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_350ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2010",
+    "nome": "Spaten lata 350 ml",
+    "categoria": "Cervejas - 350 ml",
+    "descricao": "Cerveja Spaten em lata de 350 ml.",
+    "preco": 5.0,
+    "volume": "350 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_350ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2011",
+    "nome": "Original lata 350 ml",
+    "categoria": "Cervejas - 350 ml",
+    "descricao": "Cerveja Original em lata de 350 ml.",
+    "preco": 5.0,
+    "volume": "350 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_350ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2012",
+    "nome": "Budweiser lata 350 ml",
+    "categoria": "Cervejas - 350 ml",
+    "descricao": "Cerveja Budweiser em lata de 350 ml.",
+    "preco": 5.0,
+    "volume": "350 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_350ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2013",
+    "nome": "Cristal latão 473 ml",
+    "categoria": "Cervejas - 473 ml",
+    "descricao": "Cerveja Cristal em lata de 473 ml.",
+    "preco": 4.0,
+    "volume": "473 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_473ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2014",
+    "nome": "Itaipava latão 473 ml",
+    "categoria": "Cervejas - 473 ml",
+    "descricao": "Cerveja Itaipava em lata de 473 ml.",
+    "preco": 4.5,
+    "volume": "473 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_473ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2015",
+    "nome": "Lokal latão 473 ml",
+    "categoria": "Cervejas - 473 ml",
+    "descricao": "Cerveja Lokal em lata de 473 ml.",
+    "preco": 4.0,
+    "volume": "473 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_473ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2016",
+    "nome": "Império latão 473 ml",
+    "categoria": "Cervejas - 473 ml",
+    "descricao": "Cerveja Império em lata de 473 ml.",
+    "preco": 5.0,
+    "volume": "473 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_473ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2017",
+    "nome": "Bavária latão 473 ml",
+    "categoria": "Cervejas - 473 ml",
+    "descricao": "Cerveja Bavária em lata de 473 ml.",
+    "preco": 4.5,
+    "volume": "473 ml",
+    "alcoolico": true,
+    "status_preco": "Conferido",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_473ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2018",
+    "nome": "Skol latão 473 ml",
+    "categoria": "Cervejas - 473 ml",
+    "descricao": "Cerveja Skol em lata de 473 ml.",
+    "preco": null,
+    "volume": "473 ml",
+    "alcoolico": true,
+    "status_preco": "A confirmar",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_473ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2019",
+    "nome": "Skol latão 550 ml",
+    "categoria": "Cervejas - 550 ml",
+    "descricao": "Cerveja Skol em lata de 550 ml.",
+    "preco": null,
+    "volume": "550 ml",
+    "alcoolico": true,
+    "status_preco": "A confirmar",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_550ml.webp",
+    "imagem_ilustrativa": true
+  },
+  {
+    "id": "2020",
+    "nome": "Brahma latão 550 ml",
+    "categoria": "Cervejas - 550 ml",
+    "descricao": "Cerveja Brahma em lata de 550 ml.",
+    "preco": null,
+    "volume": "550 ml",
+    "alcoolico": true,
+    "status_preco": "A confirmar",
+    "emoji": "🍺",
+    "imagem": "imagens/cerveja_550ml.webp",
+    "imagem_ilustrativa": true
+  }
+];
+
+const EMBEDDED_IMAGES = {};
+function resolveImage(path){return EMBEDDED_IMAGES[path]||path;}
+const memoryStore = {};
+const storage = {
+ getItem(k){try{return window.localStorage.getItem(k)}catch{return memoryStore[k]??null}},
+ setItem(k,v){memoryStore[k]=String(v);try{window.localStorage.setItem(k,String(v))}catch{}},
+ removeItem(k){delete memoryStore[k];try{window.localStorage.removeItem(k)}catch{}}
+};
+const $ = (id) => document.getElementById(id);
+const money = n => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n);
+const readJSON=(key,fallback)=>{try{const val=storage.getItem(key);return val?JSON.parse(val):fallback}catch{return fallback}};
+const validProduct = p => p && typeof p.id==='string' && p.id.trim() && typeof p.nome==='string' && p.nome.trim() && typeof p.categoria==='string' && p.categoria.trim() && ((typeof p.preco==='number' && Number.isFinite(p.preco) && p.preco>=0) || (p.preco===null && p.status_preco==='A confirmar')); 
+let products=readJSON('adega_products_com_imagens_v3',DEMO);
+if(!Array.isArray(products)||!products.every(validProduct))products=DEMO;
+let whatsapp=storage.getItem('adega_whatsapp_v1')||'';
+let activeCategory='Todos';let query='';
+let cart=readJSON('adega_cart_com_imagens_v3',{});
+if(!cart||typeof cart!=='object'||Array.isArray(cart))cart={};
+function addText(el,text){el.textContent=text;return el;}
+function renderCategories(){const cats=['Todos',...new Set(products.map(p=>p.categoria))];if(!cats.includes(activeCategory))activeCategory='Todos';$('categories').replaceChildren();cats.forEach(cat=>{const btn=document.createElement('button');btn.className='chip'+(cat===activeCategory?' active':'');btn.type='button';btn.textContent=cat;btn.addEventListener('click',()=>{activeCategory=cat;renderCategories();renderProducts()});$('categories').append(btn)})}
+function renderProducts(){
+ const list=products.filter(p=>(activeCategory==='Todos'||p.categoria===activeCategory)&&[p.nome,p.categoria,p.descricao||''].join(' ').toLocaleLowerCase('pt-BR').includes(query));
+ $('products').replaceChildren();$('emptyState').classList.toggle('hidden',list.length!==0);
+ $('productCount').textContent=list.length+' '+(list.length===1?'produto':'produtos');
+ list.forEach(p=>{
+  const card=document.createElement('article');card.className='product';
+  const visual=document.createElement('div');visual.className='product-visual';
+  const glyph=document.createElement('span');glyph.className='product-glyph';glyph.textContent=p.emoji||'🍺';visual.append(glyph);
+  if(typeof p.imagem==='string' && (/^(https:\/\/|data:image\/|imagens\/)/i).test(p.imagem)){
+    const img=document.createElement('img');img.className='product-image';img.alt='Imagem ilustrativa de '+p.categoria;
+    img.loading='lazy';img.decoding='async';img.src=resolveImage(p.imagem);
+    img.addEventListener('error',()=>{img.remove();});visual.append(img);
+  }
+  const illustr=document.createElement('span');illustr.className='image-caption';illustr.textContent='IMAGEM ILUSTRATIVA';visual.append(illustr);
+  const body=document.createElement('div');body.className='product-body';
+  const category=document.createElement('div');category.className='product-category';category.textContent=p.categoria;
+  const title=document.createElement('h3');title.textContent=p.nome;
+  const desc=document.createElement('p');desc.className='product-desc';desc.textContent=p.descricao||'';
+  const bottom=document.createElement('div');bottom.className='product-bottom';
+  const price=document.createElement('strong');price.className='price';
+  const ready=typeof p.preco==='number'&&Number.isFinite(p.preco);
+  price.textContent=ready?money(p.preco):'Preço a confirmar';if(!ready)price.classList.add('pending');
+  const btn=document.createElement('button');btn.className='add-btn';btn.type='button';btn.textContent=ready?'+':'–';btn.disabled=!ready;
+  btn.setAttribute('aria-label',ready?'Adicionar '+p.nome+' ao carrinho':'Preço pendente: '+p.nome);
+  if(ready)btn.addEventListener('click',()=>changeQty(p.id,1));
+  bottom.append(price,btn);body.append(category,title,desc,bottom);card.append(visual,body);$('products').append(card);
+ });
+}
+function getEntries(){return products.filter(p=>typeof p.preco==='number'&&Number.isSafeInteger(cart[p.id])&&cart[p.id]>0).map(p=>({...p,qty:cart[p.id]}))}
+function persistCart(){storage.setItem('adega_cart_com_imagens_v3',JSON.stringify(cart))}
+function changeQty(id,diff){const p=products.find(p=>p.id===id);if(!p||typeof p.preco!=='number')return;const old=Number.isSafeInteger(cart[id])?cart[id]:0;const next=Math.max(0,Math.min(99,old+diff));if(next)cart[id]=next;else delete cart[id];persistCart();renderCart()}
+function renderCart(){const entries=getEntries();const count=entries.reduce((a,p)=>a+p.qty,0);const sum=entries.reduce((a,p)=>a+p.preco*p.qty,0);$('cartCount').textContent=count;$('floatCount').textContent=count;$('floatTotal').textContent=money(sum);$('floatingCart').classList.toggle('hidden',!count);$('cartTotal').textContent=money(sum);$('cartItems').replaceChildren();if(!count){const msg=document.createElement('p');msg.className='subtle';msg.textContent='Seu carrinho está vazio. Adicione produtos do cardápio.';$('cartItems').append(msg)}entries.forEach(p=>{const row=document.createElement('div');row.className='cart-line';const info=document.createElement('div');const name=document.createElement('strong');addText(name,p.nome);const sub=document.createElement('small');addText(sub,money(p.preco)+' cada');info.append(name,sub);const quantity=document.createElement('div');quantity.className='qty';for(const [symbol,delta,aria] of [['−',-1,'Diminuir'],['+',1,'Aumentar']]){const btn=document.createElement('button');btn.type='button';btn.textContent=symbol;btn.setAttribute('aria-label',aria+' quantidade de '+p.nome);btn.addEventListener('click',()=>changeQty(p.id,delta));if(delta===-1)quantity.append(btn,document.createTextNode(p.qty));else quantity.append(btn)}row.append(info,quantity);$('cartItems').append(row)})}
+function openDialog(which){$('overlay').classList.remove('hidden');$(which).classList.remove('hidden');document.body.style.overflow='hidden'}
+function closeDialogs(){$('overlay').classList.add('hidden');$('cartDrawer').classList.add('hidden');$('settingsModal').classList.add('hidden');document.body.style.overflow=''}
+function sendOrder(){const err=$('checkoutError');err.classList.add('hidden');const entries=getEntries();if(!entries.length){err.textContent='Adicione ao menos um produto.';err.classList.remove('hidden');return}if(!/^\d{12,13}$/.test(whatsapp)){err.textContent='Configure primeiro um WhatsApp válido da loja (55 + DDD + telefone).';err.classList.remove('hidden');return}const name=$('customerName').value.trim();if(!name){err.textContent='Informe o nome para o pedido.';err.classList.remove('hidden');return}const type=$('delivery').value;const notes=$('notes').value.trim();if(type==='entrega'&&!notes){err.textContent='Informe o endereço de entrega nas observações.';err.classList.remove('hidden');return}const total=entries.reduce((a,p)=>a+p.preco*p.qty,0);const lines=['Olá! Gostaria de fazer um pedido na Adega da Jé.','','*Pedido:*',...entries.map(p=>`${p.qty}x ${p.nome} (${money(p.preco*p.qty)})`),'',`*Total dos produtos:* ${money(total)}`,`*Nome:* ${name}`,`*Recebimento:* ${type==='entrega'?'Entrega (a confirmar)':'Retirada na loja'}`];if(notes)lines.push(`*Endereço/observações:* ${notes}`);lines.push('','Aguardo confirmação de disponibilidade, entrega/taxa e pagamento.');window.open(`https://wa.me/${whatsapp}?text=${encodeURIComponent(lines.join('\n'))}`,'_blank','noopener,noreferrer')}
+function openSettings(){closeDialogs();$('whatsappNumber').value=whatsapp;$('catalogJson').value=JSON.stringify(products,null,2);$('settingsError').classList.add('hidden');openDialog('settingsModal')}
+function saveSettings(){const err=$('settingsError');err.classList.add('hidden');try{const parsed=JSON.parse($('catalogJson').value);if(!Array.isArray(parsed)||!parsed.every(validProduct))throw new Error('Informe id, nome, categoria e preço válido (ou null com status_preco: A confirmar).');if(new Set(parsed.map(p=>p.id)).size!==parsed.length)throw new Error('Cada produto deve ter um id único.');if(parsed.length>1000)throw new Error('Limite de 1.000 produtos nesta versão.');const num=$('whatsappNumber').value.replace(/\D/g,'');if(num&&!/^55\d{10,11}$/.test(num))throw new Error('Informe o WhatsApp com 55 + DDD + telefone.');products=parsed;whatsapp=num;storage.setItem('adega_products_com_imagens_v3',JSON.stringify(products));storage.setItem('adega_whatsapp_v1',whatsapp);cart={};persistCart();activeCategory='Todos';$('demoNote').classList.remove('hidden');renderCategories();renderProducts();renderCart();closeDialogs()}catch(e){err.textContent=e.message;err.classList.remove('hidden')}}
+$('search').addEventListener('input',e=>{query=e.target.value.toLocaleLowerCase('pt-BR').trim();renderProducts()});$('openCart').addEventListener('click',()=>openDialog('cartDrawer'));$('floatingCart').addEventListener('click',()=>openDialog('cartDrawer'));$('closeCart').addEventListener('click',closeDialogs);$('overlay').addEventListener('click',closeDialogs);$('openSettings').addEventListener('click',openSettings);$('closeSettings').addEventListener('click',closeDialogs);$('sendOrder').addEventListener('click',sendOrder);$('saveSettings').addEventListener('click',saveSettings);$('resetDemo').addEventListener('click',()=>{$('catalogJson').value=JSON.stringify(DEMO,null,2)});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDialogs()});
+$('demoNote').classList.remove('hidden');renderCategories();renderProducts();renderCart();
+
+$('year').textContent=String(new Date().getFullYear());
+
+</script>
+</body>
+</html>
