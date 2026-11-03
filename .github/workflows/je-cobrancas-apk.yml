@@ -4,10 +4,11 @@ on:
     branches: [main]
     paths:
       - 'JeCobrancas/**'
+      - '!JeCobrancas/download/**'
       - '.github/workflows/je-cobrancas-apk.yml'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   build-debug-apk:
     runs-on: ubuntu-latest
@@ -57,3 +58,15 @@ jobs:
           path: JeCobrancas/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+      - name: Atualizar APK para download público
+        run: |
+          mkdir -p ../download
+          cp app/build/outputs/apk/debug/app-debug.apk ../download/Je_Cobrancas_1.0.apk
+          cd ../..
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add JeCobrancas/download/Je_Cobrancas_1.0.apk
+          if ! git diff --cached --quiet; then
+            git commit -m "build(je-cobrancas): atualizar APK publico [skip ci]"
+            git push origin HEAD:main
+          fi
