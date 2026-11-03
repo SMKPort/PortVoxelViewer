@@ -8,8 +8,8 @@ android {
         applicationId 'br.com.smkport.jecobrancas'
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName '1.0'
+        versionCode 2
+        versionName '1.1'
     }
     buildTypes { release { minifyEnabled false } }
     compileOptions {
@@ -23,7 +23,7 @@ android {
 dependencies { implementation 'androidx.webkit:webkit:1.12.1' }
 tasks.register('syncJeCobrancasWeb', Sync) {
     from(file('../..')) {
-        include 'index.html', 'manifest.webmanifest', 'sw.js', 'icon.svg'
+        include 'index.html', 'manifest.webmanifest', 'sw.js', 'icon.svg', 'catalogo.json', 'cardapio.html', 'imagens/**'
     }
     into layout.buildDirectory.dir('generated/je-cobrancas-assets')
 }

@@ -1,6 +1,6 @@
-# Jé Cobranças Android v1.0
-Aplicativo privado da Adega da Jé para controle de clientes, compras fiadas, saldos e pagamentos.
-## Recursos
+# Jé Cobranças Android v1.1
+Aplicativo da Adega da Jé para controle de clientes, compras fiadas, saldos e pagamentos.
+## Integração sem servidor\n- Aba Cardápio: 33 itens reais e imagens ilustrativas, seleção de quantidades e lançamento de vários produtos na conta de um cliente em uma única confirmação.\n- Cinco produtos com preço pendente aparecem bloqueados para evitar cobrança incorreta.\n- Página de cardápio separada da base financeira, sem sincronização online, pedidos automáticos nem acesso público aos dados dos clientes.\n- O app preserva o armazenamento local `je_cobrancas_v1` e não altera registros existentes.\n\n## Recursos
 - Cadastro de clientes (nome, telefone, observações).
 - Lançamentos com total automático (quantidade × preço).
 - Pagamentos parciais, vencimentos, extratos e painel financeiro.

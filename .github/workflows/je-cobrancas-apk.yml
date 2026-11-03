@@ -61,7 +61,7 @@ jobs:
       - name: Atualizar APK para download público
         run: |
           mkdir -p ../download
-          cp app/build/outputs/apk/debug/app-debug.apk ../download/Je_Cobrancas_1.0.apk
+          cp app/build/outputs/apk/debug/app-debug.apk ../download/Je_Cobrancas_1.1.apk
           cd ../..
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
