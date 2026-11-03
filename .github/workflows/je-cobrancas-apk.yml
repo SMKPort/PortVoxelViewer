@@ -61,11 +61,11 @@ jobs:
       - name: Atualizar APK para download público
         run: |
           mkdir -p ../download
-          cp app/build/outputs/apk/debug/app-debug.apk ../download/Je_Cobrancas_1.1.apk
+          cp app/build/outputs/apk/debug/app-debug.apk ../download/Je_Cobrancas_1.2.apk
           cd ../..
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add JeCobrancas/download/Je_Cobrancas_1.1.apk
+          git add JeCobrancas/download/Je_Cobrancas_1.2.apk
           if ! git diff --cached --quiet; then
             git commit -m "build(je-cobrancas): atualizar APK publico [skip ci]"
             git push origin HEAD:main

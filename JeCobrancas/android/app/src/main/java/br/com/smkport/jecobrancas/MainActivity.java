@@ -27,6 +27,7 @@ public final class MainActivity extends Activity {
     private WebView webView;
     private ValueCallback<Uri[]> fileCallback;
     private String pendingFileContent;
+    private boolean cleanupStarted = false;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -35,6 +36,8 @@ public final class MainActivity extends Activity {
         WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this)).build();
         webView = new WebView(this);
+        // Limpa somente o cache HTTP. Não apaga localStorage, clientes ou lançamentos.
+        webView.clearCache(true);
         setContentView(webView);
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -47,6 +50,25 @@ public final class MainActivity extends Activity {
         settings.setSupportMultipleWindows(false);
         webView.addJavascriptInterface(new NativeBridge(), "JeNative");
         webView.setWebViewClient(new WebViewClient() {
+            @Override public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                if (cleanupStarted || url == null || !url.startsWith(HOME)) return;
+                cleanupStarted = true;
+                // A v1.0 instalava Service Worker cache-first. Ele podia exibir o HTML antigo
+                // mesmo com um APK novo. Remover apenas os caches SW e atualizar a tela.
+                // O armazenamento local com os dados dos clientes fica preservado.
+                String fix = "(async()=>{"
+                    + "try{if(sessionStorage.getItem('je_ui_fix_12')==='ok')return;"
+                    + "if('serviceWorker'in navigator){const regs=await navigator.serviceWorker.getRegistrations();"
+                    + "await Promise.all(regs.map(r=>r.unregister()));}"
+                    + "if('caches'in window){const keys=await caches.keys();"
+                    + "await Promise.all(keys.map(k=>caches.delete(k)));}"
+                    + "sessionStorage.setItem('je_ui_fix_12','ok');"
+                    + "location.replace('/assets/index.html?ui=1.2');"
+                    + "}catch(err){console.warn('Atualizacao da interface:',err);"
+                    + "location.replace('/assets/index.html?ui=1.2');}})();";
+                view.evaluateJavascript(fix, null);
+            }
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
                 return loader.shouldInterceptRequest(req.getUrl());
             }

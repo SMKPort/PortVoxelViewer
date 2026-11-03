@@ -45,7 +45,7 @@
 </head>
 <body>
 <div class="shell">
-  <header class="topbar"><div class="brand"><div class="mark">Jé</div><div><strong>Jé Cobranças</strong><small>Adega da Jé</small></div></div><span class="offline-note">● Dados neste dispositivo</span></header>
+  <header class="topbar"><div class="brand"><div class="mark">Jé</div><div><strong>Jé Cobranças</strong><small>Adega da Jé • v1.2</small></div></div><span class="offline-note">● Dados neste dispositivo</span></header>
   <nav class="nav" aria-label="Navegação principal">
     <button data-tab="dashboard" class="active"><span>◫</span> Resumo</button>
     <button data-tab="customers"><span>♙</span> Clientes</button>
@@ -220,7 +220,9 @@
   async function importBackup(file){try{const t=await file.text();const d=JSON.parse(t);if(!d||!Array.isArray(d.customers)||!Array.isArray(d.entries))throw new Error('Formato inválido');if(d.customers.some(c=>!c||typeof c.id!=='string'||typeof c.name!=='string'||(c.phone!=null&&typeof c.phone!=='string')||(c.notes!=null&&typeof c.notes!=='string'))||d.entries.some(e=>!e||typeof e.id!=='string'||typeof e.customerId!=='string'||!['charge','payment'].includes(e.type)||!Number.isSafeInteger(e.amount)||e.amount<=0||typeof e.date!=='string'||(e.type==='charge'&&(!Number.isSafeInteger(e.qty)||e.qty<=0||!Number.isSafeInteger(e.unitCents)||e.unitCents<=0||e.amount!==e.qty*e.unitCents))|| (e.description!=null&&typeof e.description!=='string')))throw new Error('Dados inválidos');const ids=new Set(d.customers.map(c=>c.id));if(d.entries.some(e=>!ids.has(e.customerId)))throw new Error('Há lançamentos sem cliente');if(!confirm(`Restaurar ${d.customers.length} cliente(s) e ${d.entries.length} lançamento(s)? Isto substituirá seus dados atuais.`))return;db={customers:d.customers,entries:d.entries};if(save()){selected=null;tab='dashboard';render();toast('Backup restaurado com sucesso!')}}catch(e){alert('Não foi possível restaurar: '+e.message)}finally{$('import-file').value=''}}
   function clearAll(){if(!confirm('ATENÇÃO: apagar todos os clientes e lançamentos deste aparelho? Faça um backup antes.'))return;if(!confirm('Confirma a exclusão definitiva de todos os dados locais?'))return;db={customers:[],entries:[]};if(save()){selected=null;tab='dashboard';render();toast('Dados locais apagados.')}}
   read();render();
-  if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  // O APK já inclui todos os arquivos. Não instalar Service Worker no Android,
+  // pois sua política antiga cache-first escondia novas abas após atualização.
+  if(!window.JeNative && 'serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
 })();
 </script>
 </body>
