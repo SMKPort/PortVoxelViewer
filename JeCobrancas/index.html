@@ -127,7 +127,7 @@
     const customersOptions=db.customers.slice().sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'))
       .map(c=>`<option value="${esc(c.id)}" ${catalogClientId===c.id?'selected':''}>${esc(c.name)}</option>`).join('');
     return head('Catálogo integrado','Cardápio da Adega','33 produtos do cardápio real. Escolha os itens e registre o consumo diretamente na conta do cliente.',
-      '<a class="btn" href="cardapio.html" target="_blank" rel="noopener">Ver cardápio ilustrado ↗</a>')+
+      '<a class="btn" href="cardapio.html">Ver cardápio ilustrado ↗</a>')+
       `<div class="catalog-filters">
       <input class="search" id="catalog-search" value="${esc(catalogSearch)}" placeholder="Buscar produto..." aria-label="Buscar produto">
       <select class="select-filter" id="catalog-category" aria-label="Categoria">${cats.map(c=>`<option value="${esc(c)}" ${catalogCategory===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
