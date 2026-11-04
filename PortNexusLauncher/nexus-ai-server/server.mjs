@@ -179,10 +179,12 @@ export function createServer(env = process.env) {
     let config;
     try { config = providerConfig(env); }
     catch (error) { return write(res, 503, {error: error.message, code: error.code}); }
-    if (req.url === "/health" && req.method === "GET") {
+    if (req.method === "GET" && ["/", "/health", "/health/", "/status"].includes(req.url?.split("?")[0])) {
       return write(res, 200, {
         status: "online", provider: config.provider,
-        ai_configured: Boolean(config.key), version: "3.2"
+        ai_configured: Boolean(config.key), version: "3.2",
+        message: "Nexus AI Gateway ativo. Acesse /health para conferir o status da IA.",
+        help: "Para comandos use POST /v1/plan com seu token pessoal."
       });
     }
     if (req.url !== "/v1/plan" || req.method !== "POST")
