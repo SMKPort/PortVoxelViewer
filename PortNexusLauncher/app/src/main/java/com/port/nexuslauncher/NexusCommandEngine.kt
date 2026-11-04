@@ -109,7 +109,7 @@ object NexusCommandEngine {
     ): NexusCommandResult {
         val matches = rankedApps(query, apps, prefs)
         if (matches.isEmpty()) return NexusCommandResult(
-            "Não encontrei "$query" entre os aplicativos acessíveis pelo launcher. Atualize a lista ou confira o nome."
+            "Não encontrei o aplicativo $query entre os aplicativos acessíveis pelo launcher. Atualize a lista ou confira o nome."
         )
         val top = matches[0]
         val ties = matches.filter { it.second >= 80 && top.second - it.second <= 3 }
