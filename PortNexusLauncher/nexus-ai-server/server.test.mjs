@@ -24,3 +24,34 @@ test("unconfigured server refuses commands",async()=>{
     assert.equal(resp.status,503);
   } finally {app.close();}
 });
+
+test("responds with distinct quota and invalid-key diagnostic codes", async () => {
+  const app = createServer({ OPENAI_API_KEY: "unit-test-secret", NEXUS_CLIENT_TOKEN: "unit-test-client" });
+  await new Promise(resolve => app.listen(0, "127.0.0.1", resolve));
+  const originalFetch = globalThis.fetch;
+  try {
+    const endpoint = "http://127.0.0.1:" + app.address().port;
+    for (const [upstreamStatus, code, expectedHttp, expectedCode] of [
+      [429, "insufficient_quota", 402, "OPENAI_QUOTA"],
+      [401, "invalid_api_key", 424, "OPENAI_AUTH"]
+    ]) {
+      globalThis.fetch = (url, options) => String(url).startsWith("https://api.openai.com/")
+        ? Promise.resolve(new Response(JSON.stringify({error: {code, type: code}}), {
+          status: upstreamStatus, headers: {"Content-Type": "application/json"}
+        }))
+        : originalFetch(url, options);
+      const response = await originalFetch(endpoint + "/v1/plan", {
+        method: "POST",
+        headers: {"Authorization": "Bearer unit-test-client", "Content-Type":"application/json"},
+        body: JSON.stringify({utterance:"Abrir Spotify"})
+      });
+      assert.equal(response.status, expectedHttp);
+      const body = await response.json();
+      assert.equal(body.code, expectedCode);
+      assert.ok(!JSON.stringify(body).includes("unit-test-secret"));
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+    app.close();
+  }
+});
