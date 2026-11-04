@@ -112,12 +112,20 @@ object NexusAiPlanner {
                 val bytes = JSONObject().put("utterance", utterance).toString().toByteArray(Charsets.UTF_8)
                 connection.outputStream.use { it.write(bytes) }
                 val status = connection.responseCode
-                if (status != 200) throw IllegalStateException(when (status) {
-                    401 -> "Token da IA incorreto."
-                    429 -> "Limite de solicitações da IA. Tente mais tarde."
-                    503 -> "Servidor da IA ainda não configurado com a chave de API."
-                    else -> "Servidor da IA indisponível (HTTP $status)."
-                })
+                if (status != 200) {
+                    val detailedError = runCatching {
+                        val errorBody = connection.errorStream?.bufferedReader()?.use { it.readText().take(4000) }
+                        errorBody?.let { JSONObject(it).optString("error").take(250) }
+                    }.getOrNull()?.takeIf { it.isNotBlank() }
+                    throw IllegalStateException(detailedError ?: when (status) {
+                        401 -> "Token pessoal do Nexus incorreto."
+                        402 -> "Verifique os créditos ou limites de gastos da API OpenAI."
+                        424 -> "A chave da OpenAI ou o modelo configurado foi recusado."
+                        429 -> "Limite temporário de solicitações da IA."
+                        503 -> "Servidor da IA ainda não configurado com a chave da API."
+                        else -> "Falha ao consultar IA (HTTP $status)."
+                    })
+                }
                 val body = connection.inputStream.bufferedReader().use { it.readText().take(30_000) }
                 parse(body)
             } finally { connection.disconnect() }
