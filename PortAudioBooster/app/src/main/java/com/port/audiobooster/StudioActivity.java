@@ -45,6 +45,7 @@ public final class StudioActivity extends Activity {
     @Override public void onCreate(Bundle saved){
         super.onCreate(saved);
         p=getSharedPreferences(GlobalAudioEngine.PREFS,MODE_PRIVATE);
+        p.edit().putBoolean("native_mode",false).apply();
         audio=(AudioManager)getSystemService(AUDIO_SERVICE);
         if(!p.contains("eq_mode")){
             AudioProfiles.setPreset(p,p.getString("preset","Paredão"));
