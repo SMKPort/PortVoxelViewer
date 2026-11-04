@@ -2,6 +2,7 @@ package com.port.nexuslauncher
 
 import android.content.ComponentName
 import android.content.Intent
+import android.net.Uri
 import android.os.BatteryManager
 import android.os.Bundle
 import android.provider.Settings
@@ -50,6 +51,8 @@ class MainActivity : ComponentActivity() {
                 onBrightnessChange = ::setLauncherBrightness,
                 hasNotificationAccess = notificationAccessGranted,
                 onNotificationSettings = { safeStart(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) },
+                onOpenChatGPT = ::openChatGpt,
+                onOpenChatGPTWeb = ::openChatGptWeb,
             )
         }
     }
@@ -111,6 +114,17 @@ class MainActivity : ComponentActivity() {
                 ?: Intent("android.intent.action.MUSIC_PLAYER")
         }
         safeStart(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+
+    private fun openChatGpt() {
+        val app = packageManager.getLaunchIntentForPackage("com.openai.chatgpt")
+        if (app != null) safeStart(app.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        else openChatGptWeb()
+    }
+
+    private fun openChatGptWeb() {
+        safeStart(Intent(Intent.ACTION_VIEW, Uri.parse("https://chatgpt.com/"))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
     private fun safeStart(intent: Intent) {
