@@ -56,6 +56,7 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Lightbulb
+import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Refresh
@@ -130,7 +131,7 @@ private enum class NexusPage(val text: String, val icon: ImageVector) {
     SETTINGS("Visual", Icons.Rounded.Palette)
 }
 
-private enum class SidePanel { NONE, COMMAND, ARCHIVE, SIGNAL }
+private enum class SidePanel { NONE, COMMAND, ARCHIVE, SIGNAL, VOICE }
 
 @Composable
 fun PortNexusV2(
@@ -199,6 +200,7 @@ fun PortNexusV2(
                             onOpenSearch = openSearch,
                             onOpenAudio = { page = NexusPage.AUDIO },
                             onOpenChatGPT = { page = NexusPage.CHATGPT },
+                            onOpenVoice = { panel = SidePanel.VOICE },
                             onOpenHub = { page = NexusPage.HUB },
                             onMode = changeMode,
                             onLaunch = openApp)
@@ -221,7 +223,8 @@ fun PortNexusV2(
                         )
                         NexusPage.HUB -> HubV2(apps, recent, mode, onLaunch = openApp, onMode = changeMode,
                             onSystemAction = onSystemAction, onSearch = { query -> drawerQuery = query; openSearch() },
-                            onCommandDeck = { panel = SidePanel.COMMAND }, onArchive = { panel = SidePanel.ARCHIVE })
+                            onCommandDeck = { panel = SidePanel.COMMAND }, onArchive = { panel = SidePanel.ARCHIVE },
+                            onVoice = { panel = SidePanel.VOICE })
                         NexusPage.SETTINGS -> AppearanceV2(mode, animations, iconScale,
                             onMode = changeMode,
                             onAnimations = { animations = it; prefs.edit().putBoolean("v2_animations", it).apply() },
@@ -229,7 +232,7 @@ fun PortNexusV2(
                             onSystemAction = onSystemAction)
                     }
                 }
-                BottomDockV2(page, mode, onPage = { page = it; panel = SidePanel.NONE }, onCommand = { panel = SidePanel.COMMAND })
+                BottomDockV2(page, mode, onPage = { page = it; panel = SidePanel.NONE }, onVoice = { panel = SidePanel.VOICE })
             }
             AnimatedVisibility(
                 visible = panel != SidePanel.NONE,
@@ -280,6 +283,24 @@ fun PortNexusV2(
                     onSystemAction = onSystemAction,
                 )
             }
+            AnimatedVisibility(
+                visible = panel == SidePanel.VOICE,
+                enter = fadeIn(tween(240)),
+                exit = fadeOut(tween(200)),
+            ) {
+                NexusVoicePanel(
+                    mode = mode,
+                    apps = apps,
+                    onClose = { panel = SidePanel.NONE },
+                    onMode = changeMode,
+                    onSystemAction = onSystemAction,
+                    onLaunchApp = { app -> panel = SidePanel.NONE; openApp(app) },
+                    onAudio = { panel = SidePanel.NONE; page = NexusPage.AUDIO },
+                    onChatGpt = { panel = SidePanel.NONE; page = NexusPage.CHATGPT },
+                    onApps = { query -> drawerQuery = query; openSearch() },
+                    onNotifications = { panel = SidePanel.SIGNAL },
+                )
+            }
         }
     }
 }
@@ -307,7 +328,7 @@ private fun HomeV2(
     apps: List<LauncherApp>, favorites: Set<String>, recent: List<String>, mode: NexusMode,
     battery: Int, animations: Boolean,
     onOpenCommand: () -> Unit, onOpenArchive: () -> Unit, onOpenSignal: () -> Unit, onOpenSearch: () -> Unit,
-    onOpenAudio: () -> Unit, onOpenChatGPT: () -> Unit,
+    onOpenAudio: () -> Unit, onOpenChatGPT: () -> Unit, onOpenVoice: () -> Unit,
     onOpenHub: () -> Unit, onMode: (NexusMode) -> Unit, onLaunch: (LauncherApp) -> Unit,
 ) {
     var dragAmount by remember { mutableFloatStateOf(0f) }
@@ -438,6 +459,8 @@ private fun HomeV2(
             QuickModuleV2("♫", "PORT AUDIO", "Equalizador e Spotify", mode, Modifier.weight(1f), onOpenAudio)
             QuickModuleV2("✧", "CHATGPT", "Portal de conversação", mode, Modifier.weight(1f), onOpenChatGPT)
         }
+        Spacer(Modifier.height(12.dp))
+        QuickModuleV2("◎", "NEXUS VOICE", "Comandos e respostas por voz", mode, Modifier.fillMaxWidth(), onOpenVoice)
         Spacer(Modifier.height(26.dp))
     }
 }
@@ -604,6 +627,7 @@ private fun HubV2(
     apps: List<LauncherApp>, recent: List<String>, mode: NexusMode, onLaunch: (LauncherApp) -> Unit,
     onMode: (NexusMode) -> Unit, onSystemAction: (NexusAction) -> Unit,
     onSearch: (String) -> Unit, onCommandDeck: () -> Unit, onArchive: () -> Unit,
+    onVoice: () -> Unit,
 ) {
     var command by rememberSaveable { mutableStateOf("") }
     var response by remember { mutableStateOf("NEXUS pronto. Comandos locais ativos.") }
@@ -652,6 +676,8 @@ private fun HubV2(
             QuickModuleV2("⌘", "COMMAND DECK", "Conectividade e brilho", mode, Modifier.weight(1f), onCommandDeck)
             QuickModuleV2("◇", "ARCHIVE", "Histórico e notas", mode, Modifier.weight(1f), onArchive)
         }
+        Spacer(Modifier.height(9.dp))
+        QuickModuleV2("◎", "NEXUS VOICE", "Controle por voz", mode, Modifier.fillMaxWidth(), onVoice)
         Spacer(Modifier.height(18.dp))
         SectionV2("MUDANÇA DE PROTOCOLO", mode)
         Spacer(Modifier.height(10.dp))
@@ -800,7 +826,7 @@ private fun PanelHeaderV2(title: String, subtitle: String, mode: NexusMode, onCl
 }
 
 @Composable
-private fun BottomDockV2(page: NexusPage, mode: NexusMode, onPage: (NexusPage) -> Unit, onCommand: () -> Unit) {
+private fun BottomDockV2(page: NexusPage, mode: NexusMode, onPage: (NexusPage) -> Unit, onVoice: () -> Unit) {
     Row(Modifier.fillMaxWidth().background(Color(0xF408080C))
         .border(BorderStroke(1.dp, mode.gold.copy(alpha = .17f))).padding(horizontal = 3.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
@@ -814,8 +840,8 @@ private fun BottomDockV2(page: NexusPage, mode: NexusMode, onPage: (NexusPage) -
             }
         }
         Box(Modifier.clip(CircleShape).border(1.dp, mode.gold.copy(alpha = .7f), CircleShape)
-            .background(mode.primary.copy(alpha = .27f)).clickable(onClick = onCommand).padding(10.dp), contentAlignment = Alignment.Center) {
-            Text("⌘", color = mode.gold, fontSize = 18.sp)
+            .background(mode.primary.copy(alpha = .27f)).clickable(onClick = onVoice).padding(10.dp), contentAlignment = Alignment.Center) {
+            Icon(Icons.Rounded.Mic, contentDescription = "Nexus Voice", tint = mode.gold, modifier = Modifier.size(19.dp))
         }
     }
 }
