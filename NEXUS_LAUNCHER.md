@@ -1,17 +1,17 @@
-# Port Nexus Launcher (Android)
+# Port Nexus Launcher 2.0
 
-Projeto Kotlin/Jetpack Compose para Android 8.0+ com interface preta, vermelha e dourada.
+A branch **port-nexus-launcher** desenvolve um launcher Android experimental e separado do projeto principal PortVoxelViewer. A branch **main** não foi alterada.
 
-Esta branch `port-nexus-launcher` mantém o launcher separado do Port Voxel Viewer. A branch principal `main` permanece intacta.
+## Fontes
+- `PortNexusLauncher/`: código-fonte Kotlin/Jetpack Compose, projeto Gradle, README, arquitetura v2
+- `apps/PortNexusLauncher-source.tar.xz`: arquivo espelho usado pelo CI para restaurar o código
+- `.github/workflows/nexus-launcher.yml`: compilação automática do APK
 
-O código-fonte está no diretório `PortNexusLauncher/` (extraído automaticamente pela ação) e também no arquivo `apps/PortNexusLauncher-source.tar.xz`.
+## Baixar APK de teste
+[Abrir Actions do Nexus](https://github.com/SMKPort/PortVoxelViewer/actions/workflows/nexus-launcher.yml) e baixar o artefato **PortNexusLauncher-v2.0-debug** da execução concluída. Debug APK não é release assinada para distribuição pública.
 
-## Gerar APK
+## Recursos v2 implementados
+Núcleo animado, sete modos e temas, dock mutável, gaveta Grade/Arsenal/Nexus Inteligente, favoritos, ocultação, busca, Archive com notas e histórico local, Command Deck e atalhos oficiais do Android, console local de comandos, personalização de ícones/efeitos.
 
-Abra a aba **Actions** deste repositório, selecione **Port Nexus Launcher - APK** e consulte a última execução para baixar o artefato `PortNexusLauncher-v0.1-debug` com o APK de teste. Se não houver execução, o workflow pode ser acionado manualmente somente após habilitar esta branch como workflow elegível na interface do GitHub, pois o botão workflow_dispatch costuma depender da branch padrão.
-
-## Funcionalidades v0.1
-
-Launcher HOME, gaveta com busca, favoritos persistentes, dock, relógio, bateria, temas Nexus e painel de atalhos seguros. Sem root. Não substitui o painel de notificações nem a tela de recentes do Android.
-
-O APK debug serve para teste. Instale apenas se confiar no código e nas fontes.
+## Limites atuais
+Ainda não oferece drag-and-drop na Home, folders customizadas, hospedagem de widgets externos, IA remota, integração direta de smart home, notificações globais ou controle de mídia por sessão. Esses itens requerem módulos e permissões adicionais. Confira `PortNexusLauncher/ARCHITECTURE_V2.md`.
