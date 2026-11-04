@@ -1,0 +1,22 @@
+name: Nexus AI Gateway - Tests
+on:
+  push:
+    branches: [port-nexus-launcher]
+    paths:
+      - "PortNexusLauncher/nexus-ai-server/**"
+      - ".github/workflows/nexus-ai-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run Nexus AI gateway checks
+        run: node --test PortNexusLauncher/nexus-ai-server/server.test.mjs
