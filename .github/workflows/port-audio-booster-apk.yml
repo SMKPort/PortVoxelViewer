@@ -1,0 +1,84 @@
+name: Port Audio Booster Spotify - Gerar APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'PortAudioBooster/**'
+      - '.github/workflows/port-audio-booster-apk.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Compilar e publicar Port Audio Booster
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Restaurar código-fonte
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f PortAudioBooster/app/build.gradle ]; then
+            echo '82993ef129b19dcd546b76e1e6235b0e62212511855952ddc0b9519c9cac64ae  PortAudioBooster/.staging/source.tar.xz' | sha256sum --check
+            tar -xJf PortAudioBooster/.staging/source.tar.xz -C PortAudioBooster
+          fi
+          test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/MainActivity.java
+          test -f PortAudioBooster/app/src/main/AndroidManifest.xml
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Preparar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" --install 'platforms;android-35' 'build-tools;35.0.0'
+
+      - name: Configurar Gradle 8.13
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Compilar APK Android
+        working-directory: PortAudioBooster
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Publicar APK para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: PortAudioBooster-v2.0-Spotify-APK
+          path: PortAudioBooster/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Colocar APK e código-fonte no GitHub
+        if: github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p PortAudioBooster/download
+          cp PortAudioBooster/app/build/outputs/apk/debug/app-debug.apk PortAudioBooster/download/PortAudioBooster-v2.0-Spotify.apk
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add PortAudioBooster
+          if [ -d PortAudioBooster/.staging ]; then
+            git rm -rf --ignore-unmatch PortAudioBooster/.staging
+          fi
+          if ! git diff --cached --quiet; then
+            git commit -m 'build(port-audio): publicar APK Spotify e fontes [skip ci]'
+            git push origin HEAD:main
+          fi
