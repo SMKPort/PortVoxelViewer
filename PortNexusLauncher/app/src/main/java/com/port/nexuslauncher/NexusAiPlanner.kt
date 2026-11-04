@@ -41,8 +41,8 @@ data class NexusAiPlan(val reply: String, val steps: List<NexusAiStep>)
 
 object NexusAiPlanner {
     const val ENABLED = "nexus_ai_v3_enabled"
-    const val URL = "nexus_ai_v3_url"
-    const val TOKEN = "nexus_ai_v3_token"
+    const val URL_KEY = "nexus_ai_v3_url"
+    const val TOKEN_KEY = "nexus_ai_v3_token"
 
     private val ALLOWED = setOf(
         "OPEN_APP", "OPEN_CHATGPT", "OPEN_AUDIO", "SET_MODE", "SET_VOLUME",
@@ -65,8 +65,8 @@ object NexusAiPlanner {
 
     fun isConfigured(prefs: SharedPreferences): Boolean =
         prefs.getBoolean(ENABLED, false) &&
-            prefs.getString(URL, "").orEmpty().isNotBlank() &&
-            prefs.getString(TOKEN, "").orEmpty().isNotBlank()
+            prefs.getString(URL_KEY, "").orEmpty().isNotBlank() &&
+            prefs.getString(TOKEN_KEY, "").orEmpty().isNotBlank()
 
     private fun parse(raw: String): NexusAiPlan {
         val obj = JSONObject(raw)
