@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <!-- Permite consultar apenas atividades que podem aparecer no launcher. -->
     <queries>
         <intent>
@@ -9,6 +11,9 @@
         </intent>
         <package android:name="com.spotify.music" />
         <package android:name="com.openai.chatgpt" />
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
     </queries>
 
     <application
