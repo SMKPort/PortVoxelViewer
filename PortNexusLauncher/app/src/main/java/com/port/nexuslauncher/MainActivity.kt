@@ -8,6 +8,7 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.core.app.NotificationManagerCompat
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -28,6 +29,7 @@ enum class NexusAction {
 class MainActivity : ComponentActivity() {
     private var installedApps by mutableStateOf<List<LauncherApp>>(emptyList())
     private var batteryPercent by mutableIntStateOf(-1)
+    private var notificationAccessGranted by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +37,7 @@ class MainActivity : ComponentActivity() {
         window.navigationBarColor = android.graphics.Color.rgb(9, 6, 11)
         refreshInstalledApps()
         batteryPercent = readBatteryPercent()
+        notificationAccessGranted = NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
 
         setContent {
             PortNexusV2(
@@ -45,6 +48,8 @@ class MainActivity : ComponentActivity() {
                 onSystemAction = ::performAction,
                 onReloadApps = ::refreshInstalledApps,
                 onBrightnessChange = ::setLauncherBrightness,
+                hasNotificationAccess = notificationAccessGranted,
+                onNotificationSettings = { safeStart(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) },
             )
         }
     }
@@ -53,6 +58,7 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         refreshInstalledApps()
         batteryPercent = readBatteryPercent()
+        notificationAccessGranted = NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
     }
 
     @Suppress("DEPRECATION")
