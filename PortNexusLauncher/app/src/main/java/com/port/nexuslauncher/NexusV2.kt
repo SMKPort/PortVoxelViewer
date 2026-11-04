@@ -716,7 +716,7 @@ private fun CommandPanelV2(mode: NexusMode, brightness: Float, onBrightness: (Fl
         Spacer(Modifier.height(18.dp))
         SectionV2("ACESSO AO SISTEMA", mode)
         Spacer(Modifier.height(9.dp))
-        ActionBarV2("◉", "Nexus Signal", "Central de notificações personalizada", mode, onNotifications)
+        ActionBarV2("◉", "Nexus Signal", "Central de notificações personalizada", mode) { onNotifications() }
         ActionBarV2("◉", "Wi-Fi", "Abrir controles do Android", mode) { onAction(NexusAction.WIFI_SETTINGS) }
         ActionBarV2("ᛒ", "Bluetooth", "Gerenciar dispositivos", mode) { onAction(NexusAction.BLUETOOTH_SETTINGS) }
         ActionBarV2("☼", "Tela e brilho", "Configurações de exibição", mode) { onAction(NexusAction.DISPLAY_SETTINGS) }
