@@ -35,7 +35,7 @@ object NexusCommandEngine {
 
     private fun norm(source: String): String = Normalizer.normalize(source.lowercase(locale), Normalizer.Form.NFD)
         .replace(Regex("\\p{Mn}+"), "")
-        .replace(Regex("[^a-z0-9.+% ]"), " ")
+        .replace(Regex("[^a-z0-9.+%: ]"), " ")
         .replace(Regex("\\s+"), " ").trim()
 
     private fun concise(source: String): String = norm(source)
@@ -201,7 +201,7 @@ object NexusCommandEngine {
 
     private fun timer(context: Context, command: String): NexusCommandResult {
         val match = Regex("(\\d{1,3})\\s*(horas?|minutos?|min|segundos?|seg)").find(command)
-            ?: return NexusCommandResult("Diga a duração. Por exemplo: temporizador de dez minutos, ou de 10 minutos.")
+            ?: return NexusCommandResult("Diga uma duração numérica, por exemplo: temporizador de 10 minutos.")
         val count = match.groupValues[1].toIntOrNull() ?: 0
         val unit = match.groupValues[2]
         val seconds = count * when {
@@ -299,6 +299,15 @@ object NexusCommandEngine {
             } else NexusCommandResult("Não reconheci esse modo. Experimente Arcano, Música, Estudo ou Angelical.")
         }
 
+        // Consultas informativas não podem ser interpretadas como controle de volume ou de apps.
+        val webRequest = Regex("^(?:pesquisar na internet|buscar na internet|pesquisar na web|procurar na web|pesquisar no google|pesquise|busque)\\s+(.+)$")
+            .find(command)?.groupValues?.get(1)
+        if (!webRequest.isNullOrBlank()) {
+            return start(context, Intent(Intent.ACTION_VIEW,
+                Uri.parse("https://www.google.com/search?q=" + Uri.encode(webRequest))),
+                "Abrindo a pesquisa na web por $webRequest.")
+        }
+
         if (command.contains("temporizador") || command.contains("cronometro") ||
             command.startsWith("timer ") || command.contains("contagem regressiva")) {
             return timer(context, command)
@@ -337,6 +346,12 @@ object NexusCommandEngine {
         }
         if (command.contains("equalizador") || command.contains("audio booster") ||
             command.contains("estudio de audio") || command == "audio") {
+            val explicitTarget = parseOpenTarget(command)
+            if (explicitTarget != null && (explicitTarget.contains("audio booster") ||
+                    explicitTarget.contains("equalizador"))) {
+                val matches = rankedApps(explicitTarget, apps, prefs)
+                if (matches.isNotEmpty()) return appResult(explicitTarget, apps, prefs, onLaunchApp)
+            }
             onAudio()
             return NexusCommandResult("Abrindo o Port Audio.")
         }
