@@ -10,3 +10,9 @@ dependencies {
  implementation("androidx.core:core:1.13.1")
  implementation("com.google.mlkit:text-recognition:16.0.1")
 }
+
+// Kotlin 1.8+ já contém as classes JDK7/JDK8; evita duplicação transitiva.
+configurations.configureEach {
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk7")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk8")
+}
