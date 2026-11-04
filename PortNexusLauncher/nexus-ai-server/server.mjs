@@ -12,6 +12,48 @@ const MAX_STEPS = 6;
 const MAX_BODY = 12_000;
 const RATE = new Map();
 
+export class NexusGatewayError extends Error {
+  constructor(code, status, safeMessage, upstreamStatus = null) {
+    super(safeMessage);
+    this.code = code;
+    this.status = status;
+    this.upstreamStatus = upstreamStatus;
+  }
+}
+
+const QUOTA_CODES = new Set([
+  "insufficient_quota", "credit_balance_exhausted",
+  "organization_usage_limit_exceeded", "organization_spend_limit_exceeded",
+  "project_spend_limit_exceeded"
+]);
+
+function classifyOpenAiError(status, body) {
+  const code = String(body?.error?.code || "");
+  const type = String(body?.error?.type || "");
+  if (status === 401 || status === 403) {
+    return new NexusGatewayError("OPENAI_AUTH", 424,
+      "A chave da API OpenAI esta invalida ou sem permissao. Confira OPENAI_API_KEY no Render.", status);
+  }
+  if (status === 429 && (QUOTA_CODES.has(code) || QUOTA_CODES.has(type))) {
+    return new NexusGatewayError("OPENAI_QUOTA", 402,
+      "Sem creditos ou limite de gastos atingido na API OpenAI. Verifique faturamento e limites.", status);
+  }
+  if (status === 429) {
+    return new NexusGatewayError("OPENAI_RATE_LIMIT", 429,
+      "A API atingiu um limite temporario de requisicoes. Tente novamente mais tarde.", status);
+  }
+  if (status === 404 || status === 400 || status === 422) {
+    return new NexusGatewayError("OPENAI_REQUEST", 424,
+      "A API OpenAI rejeitou o modelo ou formato. Verifique o modelo configurado no servidor.", status);
+  }
+  if (status >= 500) {
+    return new NexusGatewayError("OPENAI_UPSTREAM", 502,
+      "A OpenAI esta temporariamente indisponivel. Tente novamente.", status);
+  }
+  return new NexusGatewayError("OPENAI_OTHER", 502,
+    "A API OpenAI recusou a solicitacao. Confira as configuracoes da conta.", status);
+}
+
 const schema = {
   type: "object", additionalProperties: false,
   required: ["reply", "steps"],
@@ -59,7 +101,7 @@ export function validatePlan(candidate) {
     }
     if (s.action === "SET_VOLUME" && (s.value < 0 || s.value > 100)) throw Error("Volume fora do intervalo");
     if (s.action === "SET_TIMER" && (s.value < 1 || s.value > 86400)) throw Error("Timer inválido");
-    if (s.action === "SET_ALARM" && !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(s.target)) throw Error("Horário inválido");
+    if (s.action === "SET_ALARM" && !/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(s.target)) throw Error("Horario invalido");
     return { action: s.action, target: s.target, value: s.value, text: s.text };
   });
   return { reply: candidate.reply.slice(0, 400), steps };
@@ -74,9 +116,13 @@ async function readBody(request) {
   let body = "";
   for await (const part of request) {
     body += part.toString("utf8");
-    if (Buffer.byteLength(body) > MAX_BODY) throw Error("Requisição muito grande");
+    if (Buffer.byteLength(body) > MAX_BODY) throw new NexusGatewayError("BODY_TOO_LARGE", 413, "Requisicao muito grande.");
   }
-  return JSON.parse(body);
+  try {
+    return JSON.parse(body);
+  } catch {
+    throw new NexusGatewayError("BAD_JSON", 400, "Corpo da solicitacao invalido.");
+  }
 }
 
 function write(res, status, payload) {
@@ -85,24 +131,39 @@ function write(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
-async function callModel(text, key) {
+async function callModel(text, key, model) {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     signal: AbortSignal.timeout(24000),
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+      model: model || "gpt-4o-mini",
       store: false, max_output_tokens: 1400,
       input: [{ role: "system", content: instruction }, { role: "user", content: text }],
       text: { format: { type: "json_schema", name: "nexus_plan_v1", strict: true, schema } }
     })
   });
-  if (!response.ok) throw Error("Falha ao consultar modelo (" + response.status + ")");
+  if (!response.ok) {
+    let upstream = {};
+    try { upstream = await response.json(); } catch { /* Resposta inesperada nao exposta. */ }
+    throw classifyOpenAiError(response.status, upstream);
+  }
   const result = await response.json();
+  if (result.status === "incomplete") {
+    throw new NexusGatewayError("OPENAI_INCOMPLETE", 502,
+      "A IA retornou um plano incompleto. Tente um comando mais curto.");
+  }
   const output = (result.output || []).flatMap(item => item.content || [])
     .find(item => item.type === "output_text");
-  if (!output || typeof output.text !== "string") throw Error("Resposta não estruturada");
-  return validatePlan(JSON.parse(output.text));
+  if (!output || typeof output.text !== "string")
+    throw new NexusGatewayError("OPENAI_NO_OUTPUT", 502,
+      "A IA nao retornou um plano de acoes valido.");
+  try {
+    return validatePlan(JSON.parse(output.text));
+  } catch {
+    throw new NexusGatewayError("OPENAI_PLAN_INVALID", 502,
+      "A IA retornou um plano invalido. Tente reformular o pedido.");
+  }
 }
 
 export function createServer(env = process.env) {
@@ -132,13 +193,17 @@ export function createServer(env = process.env) {
           input.utterance.trim().length < 2 || input.utterance.length > 1200) {
         return write(res, 400, { error: "Pedido de voz inválido" });
       }
-      const plan = await callModel(input.utterance, env.OPENAI_API_KEY);
+      const plan = await callModel(input.utterance, env.OPENAI_API_KEY, env.OPENAI_MODEL);
       return write(res, 200, plan);
     } catch (e) {
-      const message = String(e?.message || "");
-      if (message.includes("JSON") || message.includes("grande"))
-        return write(res, 400, { error: "Corpo inválido" });
-      return write(res, 502, { error: "Não foi possível gerar um plano válido" });
+      const err = e instanceof NexusGatewayError ? e
+        : new NexusGatewayError("OPENAI_CONNECTIVITY", 502,
+          "Falha na comunicacao com a OpenAI. Tente novamente.");
+      // Diagnostico sem armazenar fala, token pessoal ou chave de API.
+      console.warn("NEXUS_AI_ERROR", JSON.stringify({
+        code: err.code, upstream_status: err.upstreamStatus
+      }));
+      return write(res, err.status, { error: err.message, code: err.code });
     }
   });
 }
