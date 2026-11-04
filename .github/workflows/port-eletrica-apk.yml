@@ -31,8 +31,15 @@ jobs:
           node-version: '22'
       - name: Testar cálculos
         run: node --test tests/solver.test.js
-      - name: Preparar Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Preparar Android SDK 35
+        run: |
+          echo "Android SDK em: $ANDROID_HOME"
+          if [ ! -d "$ANDROID_HOME/platforms/android-35" ]; then
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-35"
+          fi
+          if [ ! -d "$ANDROID_HOME/build-tools/35.0.0" ]; then
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "build-tools;35.0.0"
+          fi
       - name: Instalar Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
