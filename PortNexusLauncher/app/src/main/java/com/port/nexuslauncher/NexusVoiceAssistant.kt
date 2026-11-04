@@ -2,6 +2,7 @@ package com.port.nexuslauncher
 
 import android.Manifest
 import android.content.Context
+import android.content.SharedPreferences
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioManager
@@ -84,133 +85,11 @@ private fun normalizeVoice(input: String): String =
         .replace(Regex("[^a-z0-9 ]"), " ")
         .replace(Regex("\\s+"), " ").trim()
 
-/**
- * Ações locais e limitadas. Sem root, automações ocultas ou envio de texto a um backend.
- * A palavra 'Nexus' é um prefixo de comando, não um detector always-on.
- */
-private fun executeVoiceCommand(
-    phrase: String,
-    context: Context,
-    apps: List<LauncherApp>,
-    onMode: (NexusMode) -> Unit,
-    onSystemAction: (NexusAction) -> Unit,
-    onLaunchApp: (LauncherApp) -> Unit,
-    onAudio: () -> Unit,
-    onChatGpt: () -> Unit,
-    onApps: (String) -> Unit,
-    onNotifications: () -> Unit,
-): String {
-    var command = normalizeVoice(phrase)
-    for (prefix in listOf("ei nexus ", "ok nexus ", "ola nexus ", "nexus ")) {
-        if (command.startsWith(prefix)) {
-            command = command.removePrefix(prefix).trim()
-            break
-        }
-    }
-    if (command == "nexus") command = ""
-    if (command.isEmpty()) return "Às suas ordens. Diga o que deseja executar."
-
-    if (command.contains("que horas") || command == "horas" || command == "hora") {
-        return "Agora são ${LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))}."
-    }
-
-    if (command.startsWith("modo ") || command.startsWith("ativar modo ") ||
-        command.startsWith("mudar para modo ") || command.startsWith("protocolo ")) {
-        val candidate = NexusMode.entries.firstOrNull {
-            command.contains(normalizeVoice(it.title)) || command.contains(normalizeVoice(it.name))
-        }
-        return if (candidate != null) {
-            onMode(candidate)
-            "Protocolo ${candidate.title} ativado."
-        } else "Não reconheci esse protocolo. Tente modo Arcano ou modo Estudo."
-    }
-
-    if (command.contains("aumentar volume") || command.contains("mais volume") ||
-        command.contains("diminuir volume") || command.contains("menos volume")) {
-        return runCatching {
-            val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            val raising = command.contains("aumentar") || command.contains("mais volume")
-            audio.adjustStreamVolume(
-                AudioManager.STREAM_MUSIC,
-                if (raising) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER,
-                0,
-            )
-            if (raising) "Aumentei o volume de mídia." else "Reduzi o volume de mídia."
-        }.getOrElse { "Não consegui ajustar o volume de mídia." }
-    }
-
-    if (command.contains("notificac") || command == "avisos" || command == "mensagens recebidas") {
-        onNotifications()
-        return "Abrindo Nexus Signal."
-    }
-
-    if (command.contains("equalizador") || command.contains("audio booster") ||
-        command.contains("painel de audio") || command == "audio") {
-        onAudio()
-        return "Abrindo o estúdio de áudio."
-    }
-
-    if (command.contains("chatgpt") || command.contains("chat gpt")) {
-        onChatGpt()
-        return "Abrindo o portal ChatGPT."
-    }
-
-    if (command == "spotify" || command.contains("abrir spotify")) {
-        onSystemAction(NexusAction.SPOTIFY)
-        return "Abrindo Spotify."
-    }
-
-    if (command.contains("wi fi") || command == "wifi" ||
-        command.contains("abrir wifi") || command.contains("configurar wifi")) {
-        onSystemAction(NexusAction.WIFI_SETTINGS)
-        return "Abrindo os ajustes de Wi-Fi."
-    }
-    if (command.contains("bluetooth")) {
-        onSystemAction(NexusAction.BLUETOOTH_SETTINGS)
-        return "Abrindo os ajustes de Bluetooth."
-    }
-
-    if (command.contains("alarme") || command.contains("despertador")) {
-        onSystemAction(NexusAction.CLOCK)
-        return "Abrindo seus alarmes."
-    }
-
-    if (command.contains("configurac") || command.contains("ajustes do sistema")) {
-        onSystemAction(NexusAction.ANDROID_SETTINGS)
-        return "Abrindo as configurações."
-    }
-
-    val appQuery = when {
-        command.startsWith("abrir aplicativo ") -> command.removePrefix("abrir aplicativo ").trim()
-        command.startsWith("abrir app ") -> command.removePrefix("abrir app ").trim()
-        command.startsWith("abrir ") -> command.removePrefix("abrir ").trim()
-        command.startsWith("iniciar ") -> command.removePrefix("iniciar ").trim()
-        else -> ""
-    }
-    if (appQuery.isNotEmpty()) {
-        val candidate = apps.firstOrNull { normalizeVoice(it.label) == appQuery }
-            ?: apps.firstOrNull { normalizeVoice(it.label).contains(appQuery) }
-        if (candidate != null) {
-            onLaunchApp(candidate)
-            return "Abrindo ${candidate.label}."
-        }
-        onApps(appQuery)
-        return "Não achei esse aplicativo diretamente. Abri a busca por $appQuery."
-    }
-
-    if (command.startsWith("buscar ") || command.startsWith("pesquisar ")) {
-        val q = command.removePrefix("buscar ").removePrefix("pesquisar ").trim()
-        onApps(q)
-        return "Pesquisando aplicativos por $q."
-    }
-
-    return "Ainda não reconheço esse comando. Tente: Nexus, abrir Spotify, ou Nexus, modo Estudo."
-}
-
 @Composable
 fun NexusVoicePanel(
     mode: NexusMode,
     apps: List<LauncherApp>,
+    prefs: SharedPreferences,
     onClose: () -> Unit,
     onMode: (NexusMode) -> Unit,
     onSystemAction: (NexusAction) -> Unit,
@@ -219,10 +98,12 @@ fun NexusVoicePanel(
     onChatGpt: () -> Unit,
     onApps: (String) -> Unit,
     onNotifications: () -> Unit,
+    onArchive: () -> Unit,
 ) {
     val context = LocalContext.current
     var status by remember { mutableStateOf("Nexus em espera. Toque no microfone para falar.") }
     var lastCommand by remember { mutableStateOf("") }
+    var suggestedApps by remember { mutableStateOf<List<LauncherApp>>(emptyList()) }
     var typed by remember { mutableStateOf("") }
     var listening by remember { mutableStateOf(false) }
     var speechEnabled by remember { mutableStateOf(true) }
@@ -245,15 +126,16 @@ fun NexusVoicePanel(
 
     val handleCommand: (String) -> Unit = { raw ->
         lastCommand = raw
-        val answer = executeVoiceCommand(
-            phrase = raw, context = context, apps = apps,
+        val result = NexusCommandEngine.run(
+            phrase = raw, context = context, apps = apps, prefs = prefs,
             onMode = onMode, onSystemAction = onSystemAction,
             onLaunchApp = onLaunchApp, onAudio = onAudio, onChatGpt = onChatGpt,
-            onApps = onApps, onNotifications = onNotifications,
+            onApps = onApps, onNotifications = onNotifications, onArchive = onArchive,
         )
-        status = answer
+        status = result.reply
+        suggestedApps = result.suggestions
         if (speechEnabled && ttsReady) {
-            engine.speak(answer, TextToSpeech.QUEUE_FLUSH, null, "nexus-voice-answer")
+            engine.speak(result.reply, TextToSpeech.QUEUE_FLUSH, null, "nexus-voice-answer")
         }
     }
     val currentHandleCommand by rememberUpdatedState(handleCommand)
@@ -413,6 +295,24 @@ fun NexusVoicePanel(
             Spacer(Modifier.height(11.dp))
             Text("VOCÊ: $lastCommand", color = VoiceMuted, fontSize = 11.sp, textAlign = TextAlign.Center)
         }
+        if (suggestedApps.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            Text("QUAL APLICATIVO?", color = mode.gold, fontSize = 11.sp, fontWeight = FontWeight.Black)
+            suggestedApps.forEach { option ->
+                Row(Modifier.fillMaxWidth().padding(top = 5.dp)
+                    .background(Color(0xFF241724), RoundedCornerShape(10.dp))
+                    .border(1.dp, mode.gold.copy(alpha = .30f), RoundedCornerShape(10.dp))
+                    .clickable {
+                        suggestedApps = emptyList()
+                        status = "Abrindo ${option.label}."
+                        onLaunchApp(option)
+                    }.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("✦", color = mode.gold, fontSize = 17.sp)
+                    Spacer(Modifier.width(10.dp))
+                    Text(option.label, color = VoiceText, fontSize = 12.sp)
+                }
+            }
+        }
         Spacer(Modifier.height(16.dp))
         Button(onClick = runMicrophone,
             colors = ButtonDefaults.buttonColors(containerColor = mode.primary),
@@ -456,9 +356,11 @@ fun NexusVoicePanel(
         Text("EXPERIMENTE DIZER", color = mode.gold, fontSize = 11.sp,
             fontWeight = FontWeight.Black, modifier = Modifier.align(Alignment.Start))
         Spacer(Modifier.height(8.dp))
-        listOf("Nexus, abrir Spotify", "Nexus, modo Angelical",
-            "Nexus, abrir ChatGPT", "Nexus, aumentar volume",
-            "Nexus, notificações", "Nexus, que horas são").forEach { example ->
+        listOf("Nexus, abre o Minecraft", "Nexus, iniciar calculadora",
+            "Nexus, volume em 50%", "Nexus, alarme às 07:30",
+            "Nexus, temporizador de 10 minutos", "Nexus, pesquisar na web sobre eletrônica",
+            "Nexus, chame Minecraft de meu jogo", "Nexus, pausa a música",
+            "Nexus, modo Angelical", "Nexus, ajuda").forEach { example ->
             Row(
                 Modifier.fillMaxWidth().padding(bottom = 6.dp)
                     .background(Color(0xFF1C131F), RoundedCornerShape(10.dp))
@@ -472,9 +374,10 @@ fun NexusVoicePanel(
             }
         }
         Spacer(Modifier.height(13.dp))
-        Text("O microfone só é ativado quando você toca para falar. O serviço de reconhecimento do Android " +
-            "pode processar áudio na nuvem, dependendo da configuração do aparelho. " +
-            "O Nexus não salva gravações e não escuta com a tela apagada.",
+        Text("O Nexus pode abrir todos os aplicativos que aparecem na gaveta do launcher. " +
+            "Você pode ensinar apelidos por voz e usar comandos do Android disponíveis sem root. " +
+            "O reconhecimento pode usar processamento em nuvem do serviço de voz do aparelho. " +
+            "Não são feitos comandos irrestritos, nem escuta contínua com a tela apagada.",
             color = VoiceMuted, fontSize = 10.sp, lineHeight = 16.sp)
         Spacer(Modifier.height(34.dp))
     }
