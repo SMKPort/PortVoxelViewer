@@ -32,11 +32,11 @@ public final class AudioEffectsService extends Service {
         String action=intent==null?ACTION_START:intent.getAction();
         SharedPreferences prefs=getSharedPreferences(GlobalAudioEngine.PREFS,MODE_PRIVATE);
         if(ACTION_STOP.equals(action)){
-            prefs.edit().putBoolean("enabled",false).putString("status","Desligado").apply();
+            prefs.edit().putBoolean("enabled",false).putBoolean("floating",false).putString("status","Desligado").apply();
             engine.close();engineStarted=false;floating.hide();active=false;
             stopForeground(STOP_FOREGROUND_REMOVE);stopSelf();return START_NOT_STICKY;
         }
-        if(ACTION_AB.equals(action))
+        if(ACTION_AB.equals(action) && !prefs.getBoolean("native_mode",true))
             prefs.edit().putBoolean("compare_original",!prefs.getBoolean("compare_original",false)).apply();
         boolean enabled=prefs.getBoolean("enabled",false);
         boolean overlay=prefs.getBoolean("floating",false);
@@ -58,19 +58,28 @@ public final class AudioEffectsService extends Service {
         return START_STICKY;
     }
     private Notification makeNotification(){
-        PendingIntent openPi=PendingIntent.getActivity(this,1,new Intent(this,MainActivity.class),
+        SharedPreferences p=getSharedPreferences(GlobalAudioEngine.PREFS,MODE_PRIVATE);
+        boolean nativeMode=p.getBoolean("native_mode",true);
+        PendingIntent openPi=PendingIntent.getActivity(this,1,
+            new Intent(this,nativeMode?NativeMusicFxActivity.class:MainActivity.class),
             PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         PendingIntent stopPi=PendingIntent.getService(this,2,
             new Intent(this,AudioEffectsService.class).setAction(ACTION_STOP),
             PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-        PendingIntent abPi=PendingIntent.getService(this,3,
-            new Intent(this,AudioEffectsService.class).setAction(ACTION_AB),
-            PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent abPi=nativeMode
+            ?PendingIntent.getActivity(this,3,
+                new Intent(this,NativeMusicFxActivity.class)
+                    .setAction(NativeMusicFxActivity.OPEN_MUSICFX),
+                PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE)
+            :PendingIntent.getService(this,3,
+                new Intent(this,AudioEffectsService.class).setAction(ACTION_AB),
+                PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         return new Notification.Builder(this,CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher).setContentTitle("Port Audio Booster 3.0")
-            .setContentText("Equalização Android experimental • controles rápidos")
+            .setSmallIcon(R.drawable.ic_launcher)
+            .setContentTitle(nativeMode?"Port Audio Booster • MusicFX":"Port Audio Booster • Experimental")
+            .setContentText(nativeMode?"Atalho MusicFX e controles flutuantes":"Processamento global Android experimental")
             .setContentIntent(openPi).setOngoing(true)
-            .addAction(new Notification.Action.Builder(null,"A/B",abPi).build())
+            .addAction(new Notification.Action.Builder(null,nativeMode?"MusicFX":"A/B",abPi).build())
             .addAction(new Notification.Action.Builder(null,"Desligar",stopPi).build())
             .build();
     }
