@@ -1,0 +1,10 @@
+{
+  "name": "port-nexus-ai-gateway",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test"
+  }
+}
