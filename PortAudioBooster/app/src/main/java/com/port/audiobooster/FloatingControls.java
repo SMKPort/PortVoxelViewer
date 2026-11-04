@@ -59,10 +59,38 @@ final class FloatingControls {
             TextView head=new TextView(service);head.setText("PORT AUDIO   ✕");
             head.setTextColor(Color.rgb(231,183,75));head.setTextSize(16);head.setPadding(dp(8),dp(6),dp(8),dp(12));
             panel.addView(head);head.setOnClickListener(v->show(false));
-            add(panel,"A/B: "+(prefs.getBoolean("compare_original",false)?"ORIGINAL":"COM EFEITOS"),()->{
-                prefs.edit().putBoolean("compare_original",!prefs.getBoolean("compare_original",false)).apply();
-                apply();show(true);
-            });
+            if(prefs.getBoolean("native_mode",true)){
+                add(panel,"Abrir MusicFX",()->{
+                    Intent i=new Intent(service,NativeMusicFxActivity.class)
+                        .setAction(NativeMusicFxActivity.OPEN_MUSICFX)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    service.startActivity(i);show(false);
+                });
+                add(panel,"Preset: "+NativeMusicFxPresets.selected(prefs),()->{
+                    String[] names=NativeMusicFxPresets.NAMES;
+                    int idx=NativeMusicFxPresets.find(NativeMusicFxPresets.selected(prefs));
+                    NativeMusicFxPresets.select(prefs,names[(idx+1)%names.length]);
+                    show(true);
+                });
+                add(panel,"Comparar A/B no MusicFX",()->{
+                    Intent i=new Intent(service,NativeMusicFxActivity.class)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    service.startActivity(i);show(false);
+                });
+                add(panel,"Volume -",()->volume(-1));
+                add(panel,"Volume +",()->volume(1));
+                add(panel,"Ocultar botão flutuante",()->{
+                    prefs.edit().putBoolean("floating",false).apply();
+                    if(!prefs.getBoolean("enabled",false))
+                        service.startService(new Intent(service,AudioEffectsService.class)
+                            .setAction(AudioEffectsService.ACTION_STOP));
+                    hide();
+                });
+            } else {
+                add(panel,"A/B: "+(prefs.getBoolean("compare_original",false)?"ORIGINAL":"COM EFEITOS"),()->{
+                    prefs.edit().putBoolean("compare_original",!prefs.getBoolean("compare_original",false)).apply();
+                    apply();show(true);
+                });
             add(panel,"Trocar preset ("+prefs.getString("preset","Paredão")+")",()->{
                 String[] names=AudioProfiles.NAMES;
                 int current=0;for(int i=0;i<names.length-1;i++)if(names[i].equals(prefs.getString("preset","")))current=i;
@@ -78,6 +106,7 @@ final class FloatingControls {
                 service.startService(new Intent(service,AudioEffectsService.class).setAction(AudioEffectsService.ACTION_STOP));
                 hide();
             });
+            }
         }
         view=panel;
         try{manager.addView(view,params(wide));}
