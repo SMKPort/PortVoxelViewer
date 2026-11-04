@@ -1,0 +1,61 @@
+name: Port Nexus Launcher - APK
+on:
+  push:
+    branches: [port-nexus-launcher]
+    paths:
+      - "apps/PortNexusLauncher-source.tar.xz"
+      - ".github/workflows/nexus-launcher.yml"
+      - "PortNexusLauncher/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-launcher:
+    name: Compilar Port Nexus Launcher
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout da branch isolada
+        uses: actions/checkout@v4
+        with:
+          ref: port-nexus-launcher
+          persist-credentials: true
+
+      - name: Extrair fonte do Port Nexus Launcher
+        run: tar -xJf apps/PortNexusLauncher-source.tar.xz
+
+      - name: Publicar arquivos de codigo-fonte na branch
+        run: |
+          git add -- PortNexusLauncher
+          if ! git diff --cached --quiet; then
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Add Port Nexus Launcher source (extracted from archive)"
+            git push origin HEAD:port-nexus-launcher
+          fi
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Instalar Gradle 8.13
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar Android 35
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Compilar APK debug
+        run: gradle -p PortNexusLauncher --no-daemon :app:assembleDebug
+
+      - name: Publicar APK para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: PortNexusLauncher-v0.1-debug
+          path: PortNexusLauncher/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
