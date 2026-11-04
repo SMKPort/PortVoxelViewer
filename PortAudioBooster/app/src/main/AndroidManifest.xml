@@ -4,43 +4,42 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <queries>
         <package android:name="com.spotify.music" />
         <intent><action android:name="android.media.action.DISPLAY_AUDIO_EFFECT_CONTROL_PANEL" /></intent>
     </queries>
-
-    <application
-        android:allowBackup="true"
+    <application android:allowBackup="true"
         android:label="Port Audio Booster"
         android:icon="@drawable/ic_launcher"
         android:theme="@android:style/Theme.Material.NoActionBar"
         android:usesCleartextTraffic="false">
-
-        <activity android:name=".MainActivity" android:exported="true">
+        <activity android:name=".StudioActivity" android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-
-        <service
-            android:name=".AudioEffectsService"
+        <activity android:name=".MainActivity" android:exported="false"/>
+        <service android:name=".AudioEffectsService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="User-initiated legacy global audio output effects while listening to other apps" />
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="User initiated experimental audio effects and optional audio overlay controls"/>
         </service>
-
-        <service
-            android:name=".SpotifyNotificationListener"
-            android:label="Port Audio: controles do Spotify"
+        <service android:name=".SpotifyNotificationListener"
+            android:label="Port Audio: controles Spotify"
             android:exported="false"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
-            <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService" />
-            </intent-filter>
+            <intent-filter><action android:name="android.service.notification.NotificationListenerService"/></intent-filter>
         </service>
+        <receiver android:name=".DeviceAutoReceiver" android:enabled="true" android:exported="true">
+            <intent-filter>
+                <action android:name="android.bluetooth.device.action.ACL_CONNECTED"/>
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>
