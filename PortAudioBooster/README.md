@@ -1,26 +1,35 @@
-# Port Audio Booster 3.0 | Spotify / Android
+# Port Audio Booster 3.1 | Native MusicFX / Spotify
 
-Aplicativo Android Java, visual preto, vermelho e dourado, com controle experimental da saída do Android e foco no uso paralelo com Spotify.
+O **MusicFX (com.android.musicfx)** é o caminho principal desta versão porque apresentou alteração audível no áudio do Spotify no aparelho de teste. Os efeitos globais da versão 3.0 continuam acessíveis somente como **modo experimental**.
 
-## Recursos
-- Presets Paredão, Grave Extremo, Voz Limpa, Funk, Grave Profundo, Voz Destacada, Rock, Eletrônica e Flat.
-- Equalizador com 5, 10 ou 31 bandas **virtuais**, interpoladas para as bandas físicas disponibilizadas pelo dispositivo.
-- Bass Boost PRO: foco no subgrave, grave e impacto por curva de EQ, com BassBoost do Android.
-- Booster com ganho de até +6 dB e tentativa de limiter pela API DynamicsProcessing. Caso não exista limiter, opção de proteção reduz ganho ao máximo de +2 dB.
-- A/B: A original (efeitos off) e B com processamento.
-- Botão flutuante opcional com configurações de sobreposição concedidas manualmente.
-- Automação Bluetooth (opt-in) via receiver e detecção de saídas ativas; perfil padrão e perfil por dispositivo.
-- Visualizador de FFT REAL via Visualizer(0), exigindo RECORD_AUDIO e sujeito a restrições de privacidade.
-- Exportar e importar presets em arquivo JSON pelo seletor nativo do Android.
-- Diagnóstico de permissões, output de áudio, EQ do sistema, compatibilidade e acesso à reprodução do Spotify.
-- Controle de reprodução do Spotify pela tela antiga integrada, com acesso opcional às notificações.
+## Recursos 3.1
 
-## Limitações reais
-A aplicação em Android audio session 0 é LEGADA, experimental, não tem garantia de efeito em apps de terceiros, inclusive Spotify. O indicador OK confirma a disponibilização de um efeito, mas não que o áudio do Spotify tenha sido modificado. 5/10/31 controles gráficos não aumentam bandas físicas do telefone. DynamicsProcessing/limiter e Visualizer(0) podem ser indisponíveis. O receiver Bluetooth pode ser bloqueado pelo Android em segundo plano. Spotify Connect tocando em outro dispositivo não passa pelo processamento deste celular. Nenhum áudio do Spotify é capturado ou armazenado pelo app; o espectro é visualização transitória da API Android.
+- Tela inicial MusicFX-first, visual preto/vermelho/dourado, atalho para Spotify e painel de áudio nativo.
+- Presets de **referência manual** para 5 bandas (60 Hz, 230 Hz, 910 Hz, 4 kHz, 14 kHz): Paredão, Grave Extremo, Funk, Voz Limpa, Rock e Neutro, com sugestões de intensidade de grave e surround.
+- Comparação A/B **manual**, orientando a alternar o MusicFX nativo e manter o mesmo volume.
+- Perfis Bluetooth: escolha de preset padrão e associação por dispositivo; seleção de referência quando detectada conexão, sem tentar controlar parâmetros internos do MusicFX.
+- Botão flutuante com atalho MusicFX, troca de referência e controle do volume multimídia.
+- Diagnóstico: MusicFX e Spotify detectados, painel disponível, saída de áudio e status do processamento experimental.
+- Modo experimental 3.0 preservado (EQ virtual até 31 bandas, Bass Boost, ganho, FFT, importação/exportação, controles de Spotify via MediaSession).
 
-Graves e volumes excessivos podem danificar a audição e os alto-falantes. A/B permite confirmar auditivamente se os controles fazem alguma diferença no seu aparelho.
+## Como usar com Spotify
 
-## APK
-Executar o workflow [Port Audio Booster - Gerar APK](../../actions/workflows/port-audio-booster-apk.yml). Após sucesso, baixe o artifact **PortAudioBooster-v3.0-Spotify-APK** na execução ou o APK na pasta [download](download/).
+1. Reproduza uma música no Spotify.
+2. Abra **Spotify > Configurações e privacidade > Reprodução > Equalizador**. Esse é o caminho mais confiável para alterar a sessão de áudio do Spotify.
+3. Selecione um preset de referência no Port Audio Booster 3.1.
+4. Aplique manualmente os valores das cinco frequências na tela do MusicFX.
+5. Faça o teste A/B alternando o botão superior do MusicFX, ouvindo o mesmo trecho da música e mantendo o mesmo volume.
 
-Compilação: Gradle 8.13, JDK 17, SDK 35. APK debug para teste, sujeito a assinatura diferente entre versões; desinstalar o debug anterior se Android bloquear a atualização.
+O botão "Abrir MusicFX do Android" usa `AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL` (sem falsificar a sessão do Spotify). O painel pode armazenar preferências por aplicativo ou sessão, portanto abrir diretamente pelo nosso app **não garante que os ajustes afetem o Spotify**. Por isso, prefira abrir pelo Spotify quando a alteração for destinada a ele.
+
+## Restrições e segurança
+
+O app **não escreve automaticamente** nas bandas internas do MusicFX. O Android não oferece API pública universal para isso. Mudar preset Bluetooth ou pelo botão flutuante seleciona **somente uma referência visual**, não modifica o equalizador. O registro de conexões Bluetooth em background pode ser restrito pelo sistema; requer autorização "Dispositivos próximos" em Android 12+.
+
+Com MusicFX ativo, mantenha o processamento global do Port Audio Booster desligado. O modo experimental da versão 3.0 pode não afetar áudio do Spotify, mesmo quando a API indica disponibilidade. Evite amplificação excessiva por risco de clipping e dano à audição.
+
+## Gerar APK
+
+O workflow [Port Audio Booster 3.1 - Gerar APK](../../actions/workflows/port-audio-booster-apk.yml) compila com Android SDK 35, Java 17 e Gradle 8.13. Depois de um build bem-sucedido na branch main, o APK fica em `download/PortAudioBooster-v3.1-MusicFX.apk`, além do artifact `PortAudioBooster-v3.1-MusicFX-APK`.
+
+Pacote Android `com.port.audiobooster`, `versionCode 4`. A compilação é **debug**, com possível mudança de assinatura entre builds.
