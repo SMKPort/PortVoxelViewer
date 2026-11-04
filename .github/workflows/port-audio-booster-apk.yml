@@ -1,9 +1,9 @@
-name: Port Audio Booster Spotify - Gerar APK
+name: Port Audio Booster 3.0 - Gerar APK Android
 
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, feature/port-audio-v3]
     paths:
       - 'PortAudioBooster/**'
       - '.github/workflows/port-audio-booster-apk.yml'
@@ -11,28 +11,34 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: port-audio-apk-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Compilar e publicar Port Audio Booster
+    name: Compilar Port Audio Booster 3.0
     steps:
       - name: Baixar repositório
         uses: actions/checkout@v4
         with:
           persist-credentials: true
 
-      - name: Restaurar código-fonte
+      - name: Verificar arquivos do projeto
         shell: bash
         run: |
           set -euo pipefail
-          if [ ! -f PortAudioBooster/app/build.gradle ]; then
-            echo '82993ef129b19dcd546b76e1e6235b0e62212511855952ddc0b9519c9cac64ae  PortAudioBooster/.staging/source.tar.xz' | sha256sum --check
-            tar -xJf PortAudioBooster/.staging/source.tar.xz -C PortAudioBooster
-          fi
-          test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/MainActivity.java
+          test -f PortAudioBooster/app/build.gradle
           test -f PortAudioBooster/app/src/main/AndroidManifest.xml
+          test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/StudioActivity.java
+          test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/AudioProfiles.java
+          test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/SpectrumView.java
+          test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/DeviceAutoReceiver.java
+          test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/FloatingControls.java
+          test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/ProfileIO.java
 
-      - name: Configurar JDK 17
+      - name: Configurar Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -51,31 +57,31 @@ jobs:
         with:
           gradle-version: '8.13'
 
-      - name: Compilar APK Android
+      - name: Compilar APK
         working-directory: PortAudioBooster
         run: gradle --no-daemon --stacktrace :app:assembleDebug
 
-      - name: Publicar APK para download
+      - name: Calcular SHA-256 do APK
+        run: sha256sum PortAudioBooster/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Publicar artefato APK
         uses: actions/upload-artifact@v4
         with:
-          name: PortAudioBooster-v2.0-Spotify-APK
+          name: PortAudioBooster-v3.0-Spotify-APK
           path: PortAudioBooster/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
-      - name: Colocar APK e código-fonte no GitHub
+      - name: Publicar APK no repositório
         if: github.ref == 'refs/heads/main'
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p PortAudioBooster/download
-          cp PortAudioBooster/app/build/outputs/apk/debug/app-debug.apk PortAudioBooster/download/PortAudioBooster-v2.0-Spotify.apk
+          cp PortAudioBooster/app/build/outputs/apk/debug/app-debug.apk PortAudioBooster/download/PortAudioBooster-v3.0-Spotify.apk
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add PortAudioBooster
-          if [ -d PortAudioBooster/.staging ]; then
-            git rm -rf --ignore-unmatch PortAudioBooster/.staging
-          fi
+          git add PortAudioBooster/download/PortAudioBooster-v3.0-Spotify.apk
           if ! git diff --cached --quiet; then
-            git commit -m 'build(port-audio): publicar APK Spotify e fontes [skip ci]'
+            git commit -m 'build(port-audio): publicar APK 3.0 [skip ci]'
             git push origin HEAD:main
           fi
