@@ -49,7 +49,7 @@ jobs:
       - name: Publicar APK para download
         uses: actions/upload-artifact@v4
         with:
-          name: PortNexusLauncher-v2.4-debug
+          name: PortNexusLauncher-v3.0-debug
           path: PortNexusLauncher/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
@@ -57,9 +57,9 @@ jobs:
         shell: bash
         run: |
           mkdir -p PortNexusLauncher/download
-          cp PortNexusLauncher/app/build/outputs/apk/debug/app-debug.apk PortNexusLauncher/download/Port-Nexus-Launcher-v2.4.apk
-          git add -f -- PortNexusLauncher/download/Port-Nexus-Launcher-v2.4.apk
+          cp PortNexusLauncher/app/build/outputs/apk/debug/app-debug.apk PortNexusLauncher/download/Port-Nexus-Launcher-v3.0.apk
+          git add -f -- PortNexusLauncher/download/Port-Nexus-Launcher-v3.0.apk
           if ! git diff --cached --quiet; then
-            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Publish Nexus 2.4 APK for direct browser download"
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Publish Nexus 3.0 APK for direct browser download"
             git push origin HEAD:port-nexus-launcher
           fi
