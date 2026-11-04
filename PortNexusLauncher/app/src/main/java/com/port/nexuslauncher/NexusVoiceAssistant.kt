@@ -57,6 +57,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,6 +67,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import kotlinx.coroutines.launch
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -108,6 +111,12 @@ fun NexusVoicePanel(
     var listening by remember { mutableStateOf(false) }
     var speechEnabled by remember { mutableStateOf(true) }
     var ttsReady by remember { mutableStateOf(false) }
+    var aiEnabled by remember { mutableStateOf(prefs.getBoolean(NexusAiPlanner.ENABLED, false)) }
+    var aiEndpoint by remember { mutableStateOf(prefs.getString(NexusAiPlanner.URL_KEY, "") ?: "") }
+    var aiToken by remember { mutableStateOf(prefs.getString(NexusAiPlanner.TOKEN_KEY, "") ?: "") }
+    var aiBusy by remember { mutableStateOf(false) }
+    var aiPlan by remember { mutableStateOf<NexusAiPlan?>(null) }
+    val scope = rememberCoroutineScope()
 
     val engine = remember(context) {
         TextToSpeech(context) { result -> ttsReady = result == TextToSpeech.SUCCESS }
@@ -124,18 +133,50 @@ fun NexusVoicePanel(
         else null
     }
 
-    val handleCommand: (String) -> Unit = { raw ->
-        lastCommand = raw
+    val say: (String) -> Unit = { answer ->
+        status = answer
+        if (speechEnabled && ttsReady) {
+            engine.speak(answer, TextToSpeech.QUEUE_FLUSH, null, "nexus-voice-answer")
+        }
+    }
+    val runLocal: (String) -> Unit = { raw ->
+        aiPlan = null
         val result = NexusCommandEngine.run(
             phrase = raw, context = context, apps = apps, prefs = prefs,
             onMode = onMode, onSystemAction = onSystemAction,
             onLaunchApp = onLaunchApp, onAudio = onAudio, onChatGpt = onChatGpt,
             onApps = onApps, onNotifications = onNotifications, onArchive = onArchive,
         )
-        status = result.reply
         suggestedApps = result.suggestions
-        if (speechEnabled && ttsReady) {
-            engine.speak(result.reply, TextToSpeech.QUEUE_FLUSH, null, "nexus-voice-answer")
+        say(result.reply)
+    }
+    val handleCommand: (String) -> Unit = { raw ->
+        lastCommand = raw
+        suggestedApps = emptyList()
+        aiPlan = null
+        if (aiBusy) {
+            status = "O Nexus ainda está interpretando o pedido anterior."
+        } else if (aiEnabled && aiEndpoint.isNotBlank() && aiToken.isNotBlank()) {
+            aiBusy = true
+            status = "Consultando Nexus AI com segurança..."
+            scope.launch {
+                try {
+                    val planned = NexusAiPlanner.request(raw, aiEndpoint, aiToken)
+                    if (planned.steps.isEmpty()) say(planned.reply)
+                    else {
+                        aiPlan = planned
+                        say(planned.reply + " Revise as ações e confirme para executar.")
+                    }
+                } catch (error: Exception) {
+                    val reason = error.message?.take(130).orEmpty()
+                    runLocal(raw)
+                    status = "IA indisponível ($reason). Modo local: " + status
+                } finally {
+                    aiBusy = false
+                }
+            }
+        } else {
+            runLocal(raw)
         }
     }
     val currentHandleCommand by rememberUpdatedState(handleCommand)
@@ -313,6 +354,46 @@ fun NexusVoicePanel(
                 }
             }
         }
+        if (aiBusy) {
+            Spacer(Modifier.height(12.dp))
+            Text("INTERPRETANDO PEDIDO...", color = mode.gold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+        aiPlan?.let { plan ->
+            Spacer(Modifier.height(14.dp))
+            Column(Modifier.fillMaxWidth()
+                .background(Color(0xFF241724), RoundedCornerShape(15.dp))
+                .border(1.dp, mode.gold.copy(alpha = .65f), RoundedCornerShape(15.dp))
+                .padding(13.dp)) {
+                Text("PLANO DE AÇÕES / APROVAÇÃO", color = mode.gold,
+                    fontSize = 11.sp, fontWeight = FontWeight.Black)
+                Spacer(Modifier.height(5.dp))
+                plan.steps.forEachIndexed { index, step ->
+                    Text("${index+1}. ${step.summary}", color = VoiceText, fontSize = 12.sp,
+                        modifier = Modifier.padding(vertical = 4.dp))
+                }
+                Text("Nenhuma ação acima é executada antes da sua confirmação.",
+                    color = VoiceMuted, fontSize = 10.sp)
+                Spacer(Modifier.height(10.dp))
+                Button(
+                    onClick = {
+                        val outcome = runCatching {
+                            NexusAiPlanner.execute(
+                                plan, context, apps, prefs, onMode, onSystemAction, onLaunchApp,
+                                onAudio, onChatGpt, onApps, onNotifications, onArchive
+                            )
+                        }.getOrElse { "Houve um erro ao executar as ações permitidas." }
+                        aiPlan = null
+                        say(outcome)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = mode.primary),
+                ) { Text("CONFIRMAR E EXECUTAR", fontWeight = FontWeight.Black) }
+                Text("CANCELAR PLANO", color = VoiceMuted, fontSize = 11.sp,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                        .clickable { aiPlan = null; status = "Plano cancelado. Nenhuma ação executada." }
+                        .padding(10.dp))
+            }
+        }
         Spacer(Modifier.height(16.dp))
         Button(onClick = runMicrophone,
             colors = ButtonDefaults.buttonColors(containerColor = mode.primary),
@@ -351,6 +432,68 @@ fun NexusVoicePanel(
             Icon(Icons.Rounded.Send, null, modifier = Modifier.size(17.dp))
             Spacer(Modifier.width(8.dp))
             Text("EXECUTAR TEXTO")
+        }
+        Spacer(Modifier.height(17.dp))
+        Column(Modifier.fillMaxWidth()
+            .background(Color(0xFF1D1422), RoundedCornerShape(15.dp))
+            .border(1.dp, mode.gold.copy(alpha = .35f), RoundedCornerShape(15.dp))
+            .padding(14.dp)) {
+            Text("NEXUS AI 3.0 / CONFIGURAÇÃO", color = mode.gold, fontSize = 12.sp,
+                fontWeight = FontWeight.Black)
+            Spacer(Modifier.height(7.dp))
+            Text(
+                "Ativação opcional. Ao usar IA, o Nexus envia o pedido falado ou escrito ao servidor configurado, " +
+                "que o encaminha ao provedor de IA. O sistema só executa os passos após sua aprovação.",
+                color = VoiceMuted, fontSize = 11.sp, lineHeight = 17.sp,
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
+                value = aiEndpoint, onValueChange = { aiEndpoint = it },
+                label = { Text("Servidor HTTPS (Render)") }, singleLine = true,
+                placeholder = { Text("https://seu-nexus-ai.onrender.com") },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(7.dp))
+            OutlinedTextField(
+                value = aiToken, onValueChange = { aiToken = it },
+                label = { Text("Token pessoal de acesso (não é a chave OpenAI)") },
+                singleLine = true, visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(9.dp))
+            Button(
+                onClick = {
+                    if (aiEndpoint.startsWith("https://") && aiToken.length >= 12) {
+                        prefs.edit()
+                            .putString(NexusAiPlanner.URL_KEY, aiEndpoint.trim())
+                            .putString(NexusAiPlanner.TOKEN_KEY, aiToken.trim())
+                            .putBoolean(NexusAiPlanner.ENABLED, true)
+                            .apply()
+                        aiEnabled = true
+                        status = "Nexus AI habilitada. Cada plano exigirá sua confirmação."
+                    } else status = "Informe endereço HTTPS e token pessoal válido antes de ativar a IA."
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = mode.primary),
+            ) {
+                Text(if (aiEnabled) "SALVAR CONFIGURAÇÃO DA IA" else "ATIVAR NEXUS AI", fontWeight = FontWeight.Bold)
+            }
+            if (aiEnabled) {
+                Text("DESATIVAR IA E VOLTAR AO MODO LOCAL",
+                    color = VoiceMuted, fontWeight = FontWeight.Bold, fontSize = 11.sp,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                        .clickable {
+                            prefs.edit().putBoolean(NexusAiPlanner.ENABLED, false).apply()
+                            aiEnabled = false
+                            aiPlan = null
+                            status = "IA desativada. Comandos locais continuam disponíveis."
+                        }.padding(vertical = 12.dp))
+            }
+            Text(
+                "A chave da API OpenAI deve ficar SOMENTE no servidor. " +
+                "O ChatGPT Plus não inclui créditos da API.",
+                color = VoiceMuted, fontSize = 10.sp, lineHeight = 16.sp,
+            )
         }
         Spacer(Modifier.height(17.dp))
         Text("EXPERIMENTE DIZER", color = mode.gold, fontSize = 11.sp,
