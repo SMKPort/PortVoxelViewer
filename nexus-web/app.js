@@ -47,9 +47,9 @@ panel("ESTADO DO SISTEMA",kv("Integridade de interface","100%")+kv("Armazenament
 function renderTecnologia(){
 return intro("MÓDULO 01 · INTEGRAÇÃO REAL","Link Tecnológico","Cadastre dispositivos, solicite conexão a aparelhos autorizados e integre automações compatíveis. Acesso universal a qualquer dispositivo não existe.","HARDWARE + AUTOMAÇÃO")+
 '<div class="grid three">'+
-panel("BLUETOOTH",'<p class="panel-caption">Pareamento Web Bluetooth (somente dispositivos BLE compatíveis, em navegadores que ofereçam suporte).</p>'+button("bluetooth","PROCURAR BLUETOOTH","gold","style='margin-top:12px'")')+
-panel("PORTA SERIAL",'<p class="panel-caption">Solicite acesso explícito a uma porta serial compatível via navegador.</p>'+button("serial","SELECIONAR PORTA","gold","style='margin-top:12px'")')+
-panel("USB",'<p class="panel-caption">Solicite acesso a dispositivos USB autorizados, se a API WebUSB estiver disponível.</p>'+button("usb","SELECIONAR USB","gold","style='margin-top:12px'")')+'</div>'+
+panel("BLUETOOTH",'<p class="panel-caption">Pareamento Web Bluetooth (somente dispositivos BLE compatíveis, em navegadores que ofereçam suporte).</p>'+button("bluetooth","PROCURAR BLUETOOTH","gold","style='margin-top:12px'"))+
+panel("PORTA SERIAL",'<p class="panel-caption">Solicite acesso explícito a uma porta serial compatível via navegador.</p>'+button("serial","SELECIONAR PORTA","gold","style='margin-top:12px'"))+
+panel("USB",'<p class="panel-caption">Solicite acesso a dispositivos USB autorizados, se a API WebUSB estiver disponível.</p>'+button("usb","SELECIONAR USB","gold","style='margin-top:12px'"))+'</div>'+
 '<h2 class="section-heading">Catálogo de dispositivos</h2><div class="grid two">'+
 panel("CADASTRAR EQUIPAMENTO",'<form id="deviceForm" class="stack">'+txt("deviceName","NOME DO DISPOSITIVO","","text","required maxlength='100'")+select("deviceType","TIPO",["Sensor","Iluminação","Máquina","Computador","CLP / gateway","Outro"])+textarea("deviceNotes","OBSERVAÇÕES")+'<button class="btn" type="submit">+ SALVAR NO CATÁLOGO</button></form>')+
 panel("EQUIPAMENTOS REGISTRADOS",state.devices.length?state.devices.slice(0,20).map(x=>'<div class="item-card" style="margin-bottom:10px"><div class="row between"><h3>'+E(x.name)+'</h3><span class="chip">'+E(x.type)+'</span></div><p>'+E(x.notes||"Nenhuma observação")+'</p><span class="muted">'+D(x.at)+' · '+E(x.status||"Catalogado")+'</span></div>').join(""):empty("Nenhum dispositivo registrado. Adicione um ou use uma API de conexão compatível."))+'</div>'+
