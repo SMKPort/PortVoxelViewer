@@ -1,0 +1,12 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const E = require('../app/src/main/assets/solver.js');
+const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,`${a} difere de ${b}`);
+test('Lei de Ohm',()=>{near(E.ohm({r:12,i:2}).value,24);near(E.ohm({v:24,r:12}).value,2);near(E.ohm({v:24,i:2}).value,12);});
+test('Potência seis pares',()=>{[{v:12,i:2},{v:12,r:6},{i:2,r:6},{v:12,p:24},{i:2,p:24},{r:6,p:24}].forEach(x=>assert.ok(E.power(x).steps.length>=2));near(E.power({v:12,i:2}).value,24);});
+test('Energia e tempo',()=>{near(E.energy({p:1000,t:2}).value,2);near(E.energy({p:2000,t:30,unit:'min'}).value,1);});
+test('Série e paralelo',()=>{near(E.association({type:'series',values:[10,20]}).value,30);near(E.association({type:'parallel',values:[10,20]}).value,20/3);});
+test('Carga e resistividade',()=>{near(E.charge({q:10,t:5}).value,2);near(E.resistivity({rho:1.72e-8,l:10,a:2}).value,0.086);});
+test('Circuitos mistos',()=>{near(E.mixed('S(10;P(20;30))').value,22);near(E.mixed('P(S(10;20);30)').value,15);});
+test('Enunciados',()=>{near(E.solveStatement('Um resistor de 12 Ω recebe 24 V. Qual corrente?').value,2);near(E.solveStatement('Um aparelho de 1000 W por 2 horas. Qual consumo?').value,2);});
+test('Erros de entrada',()=>{assert.throws(()=>E.ohm({v:12,r:0}));assert.throws(()=>E.association({type:'parallel',values:[10,0]}));assert.throws(()=>E.solveStatement('Uma lâmpada bonita.'));});

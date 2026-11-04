@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101014">
+  <meta name="description" content="Port Elétrica: exercícios e cálculos de eletricidade básica com resolução passo a passo, totalmente offline.">
+  <title>Port Elétrica • Estude e resolva</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" aria-label="Menu de navegação">
+    <div class="brand"><div class="brand-icon">⚡</div><div><strong>PORT <em>ELÉTRICA</em></strong><small>Laboratório de estudo</small></div></div>
+    <p class="nav-caption">ÁREA DE ESTUDO</p>
+    <nav class="side-nav" aria-label="Seções">
+      <button type="button" data-nav="resolver" class="active"><span>⌁</span> Resolver questões</button>
+      <button type="button" data-nav="circuitos"><span>◉</span> Circuitos mistos</button>
+      <button type="button" data-nav="treinar"><span>◎</span> Modo treino</button>
+      <button type="button" data-nav="formulas"><span>ƒ</span> Fórmulas</button>
+      <button type="button" data-nav="historico"><span>▣</span> Histórico</button>
+    </nav>
+    <div class="sidebar-foot"><span class="online-indicator"></span> 100% offline <small>Versão 1.0 · Android + Web</small></div>
+  </aside>
+  <main class="main-content">
+    <header class="topbar"><div class="mini-brand">⚡ PORT ELÉTRICA</div><span class="pill"><span class="online-indicator"></span> Sem internet</span></header>
+    <div class="content">
+      <section id="resolver" class="view active" aria-labelledby="resolver-title">
+        <div class="page-heading"><span class="eyebrow">SEU ASSISTENTE DE ESTUDOS</span><h1 id="resolver-title">Eletricidade <span>básica.</span></h1><p>Do enunciado à resposta, com cada etapa do raciocínio explicada.</p></div>
+        <div class="overview">
+          <article><span class="stat-icon">Ω</span><strong>Lei de Ohm</strong><small>V, I e R</small></article>
+          <article><span class="stat-icon">⚡</span><strong>Potência</strong><small>W e kW</small></article>
+          <article><span class="stat-icon">◷</span><strong>Energia</strong><small>Wh e kWh</small></article>
+          <article><span class="stat-icon">⤳</span><strong>Circuitos</strong><small>Série e paralelo</small></article>
+        </div>
+        <div class="panel">
+          <div class="panel-title"><div><span class="eyebrow">MODO 01</span><h2>Resolver um enunciado</h2><p>Escreva ou cole um exercício simples com valores e unidades.</p></div><span class="tag">BETA OFFLINE</span></div>
+          <label for="statement">Enunciado da questão</label>
+          <textarea id="statement" rows="4" placeholder="Ex.: Um resistor de 12 Ω recebe uma tensão de 24 V. Qual a corrente elétrica?"></textarea>
+          <div class="examples"><span>Experimente:</span><button type="button" data-example="ohm">Lei de Ohm</button><button type="button" data-example="energy">Consumo</button><button type="button" data-example="parallel">Paralelo</button></div>
+          <button type="button" id="solve-statement" class="btn-primary"><span>⚡</span> Resolver questão <span>→</span></button>
+          <div id="statement-result" class="solution-slot" aria-live="polite"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title"><div><span class="eyebrow">MODO 02</span><h2>Calculadora guiada</h2><p>Selecione um tema e informe os dados conhecidos.</p></div></div>
+          <label for="calc-mode">Tema da questão</label>
+          <select id="calc-mode">
+            <option value="ohm">Lei de Ohm</option>
+            <option value="power">Potência elétrica</option>
+            <option value="energy">Energia e custo</option>
+            <option value="series">Resistores em série</option>
+            <option value="parallel">Resistores em paralelo</option>
+            <option value="charge">Carga elétrica e corrente</option>
+            <option value="resistivity">Resistividade</option>
+          </select>
+          <div class="tip" id="calc-tip">Preencha exatamente dois dos três campos.</div>
+          <div id="calc-fields" class="field-grid"></div>
+          <button type="button" id="solve-calc" class="btn-primary">Calcular e explicar <span>→</span></button>
+          <div id="calc-result" class="solution-slot" aria-live="polite"></div>
+        </div>
+      </section>
+      <section id="circuitos" class="view" aria-labelledby="circuitos-title">
+        <div class="page-heading"><span class="eyebrow">ANÁLISE DE REDE</span><h1 id="circuitos-title">Circuitos <span>mistos.</span></h1><p>Combine grupos em série e paralelo, inclusive associações aninhadas.</p></div>
+        <div class="panel">
+          <div class="panel-title"><div><h2>Monte seu circuito</h2><p>Use S( ) para série, P( ) para paralelo e ponto e vírgula para separar resistores.</p></div></div>
+          <div class="circuit-examples"><button type="button" class="code-chip" data-circuit="S(10;P(20;30))">S(10;P(20;30))</button><button type="button" class="code-chip" data-circuit="P(S(10;20);30)">P(S(10;20);30)</button><button type="button" class="code-chip" data-circuit="S(P(10;10);P(20;20))">S(P(10;10);P(20;20))</button></div>
+          <label for="mixed-expression">Expressão do circuito (resistências em Ω)</label><input id="mixed-expression" type="text" spellcheck="false" value="S(10;P(20;30))" placeholder="S(10;P(20;30))">
+          <label for="mixed-voltage">Tensão da fonte em V (opcional)</label><input id="mixed-voltage" type="text" inputmode="decimal" placeholder="Ex.: 24">
+          <div class="diagram" aria-hidden="true"><div class="wire"><span class="source">+</span><div class="component">R₁</div><span class="fork"><span class="branch"><b>R₂</b><b>R₃</b></span></span><span class="source">−</span></div><small>Ilustração conceitual: componentes em série e ramificações em paralelo.</small></div>
+          <button id="solve-mixed" class="btn-primary" type="button">Resolver circuito <span>→</span></button>
+          <div id="mixed-result" class="solution-slot" aria-live="polite"></div>
+        </div>
+      </section>
+      <section id="treinar" class="view" aria-labelledby="treinar-title">
+        <div class="page-heading"><span class="eyebrow">PRATIQUE COM FEEDBACK</span><h1 id="treinar-title">Modo <span>treino.</span></h1><p>Questões geradas automaticamente, com gabarito comentado.</p></div>
+        <div class="score-grid"><div class="score-box"><span>ACERTOS</span><strong id="correct-count">0</strong></div><div class="score-box"><span>TENTATIVAS</span><strong id="attempt-count">0</strong></div><div class="score-box"><span>APROVEITAMENTO</span><strong id="score-rate">0%</strong></div></div>
+        <div class="panel"><div class="panel-title"><div><h2>Próxima questão</h2><p>Resolva no caderno e confira o resultado.</p></div><span class="tag">PRÁTICA</span></div>
+          <label for="quiz-topic">Assunto</label><select id="quiz-topic"><option value="mixed">Misturar assuntos</option><option value="ohm">Lei de Ohm</option><option value="power">Potência</option><option value="energy">Energia</option><option value="series">Série</option><option value="parallel">Paralelo</option></select>
+          <div id="quiz-question" class="question-card"></div>
+          <label for="quiz-answer">Sua resposta (somente o número)</label><input id="quiz-answer" type="text" inputmode="decimal" placeholder="Ex.: 2,5">
+          <button id="check-answer" class="btn-primary" type="button">Verificar resposta <span>✓</span></button><button id="next-question" class="btn-secondary" type="button">Outra questão ↻</button>
+          <div id="quiz-result" class="solution-slot" aria-live="polite"></div>
+        </div>
+      </section>
+      <section id="formulas" class="view" aria-labelledby="formulas-title">
+        <div class="page-heading"><span class="eyebrow">CONSULTA RÁPIDA</span><h1 id="formulas-title">Biblioteca de <span>fórmulas.</span></h1><p>As principais relações usadas nas questões de eletricidade básica.</p></div>
+        <div id="formulas-grid" class="formula-grid"></div>
+      </section>
+      <section id="historico" class="view" aria-labelledby="historico-title">
+        <div class="page-heading"><span class="eyebrow">SEUS CÁLCULOS</span><h1 id="historico-title">Histórico <span>local.</span></h1><p>As últimas soluções ficam salvas somente neste aparelho.</p></div>
+        <div class="panel"><div class="toolbar"><h2>Resoluções recentes</h2><button id="clear-history" class="btn-secondary" type="button">Limpar histórico</button></div><div id="history-content"></div></div>
+      </section>
+      <footer>PORT ELÉTRICA <span>•</span> Fórmulas e resultados para fins educacionais <span>•</span> v1.0</footer>
+    </div>
+  </main>
+  <nav class="bottom-nav" aria-label="Navegação inferior">
+    <button type="button" data-nav="resolver" class="active"><span>⚡</span>Resolver</button><button type="button" data-nav="circuitos"><span>◎</span>Circuitos</button><button type="button" data-nav="treinar"><span>✎</span>Treinar</button><button type="button" data-nav="formulas"><span>ƒ</span>Fórmulas</button><button type="button" data-nav="historico"><span>▣</span>Histórico</button>
+  </nav>
+</div>
+<script src="solver.js"></script><script src="app.js"></script>
+</body></html>
