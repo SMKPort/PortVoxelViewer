@@ -1,120 +1,105 @@
 package com.port.audiobooster;
 
+import android.content.SharedPreferences;
 import android.media.audiofx.BassBoost;
+import android.media.audiofx.DynamicsProcessing;
 import android.media.audiofx.Equalizer;
 import android.media.audiofx.LoudnessEnhancer;
 import android.media.audiofx.Virtualizer;
-import android.content.SharedPreferences;
-
+import android.os.Build;
 import java.util.Locale;
 
 /**
- * Modo experimental: audio session 0 (global mix). O Android descontinuou essa
- * interface, e o sucesso na criação do efeito NÃO comprova alteração do Spotify.
- * Sem captura ou redirecionamento de áudio de aplicativos terceiros.
+ * Efeitos na sessão de saída 0: recurso LEGADO/EXPERIMENTAL.
+ * O Android pode ignorar o processamento do Spotify apesar de API disponível.
  */
 final class GlobalAudioEngine {
-    static final String PREFS = "audio_global_settings";
-    static final int[] ANCHORS = {60, 230, 910, 3600, 14000};
-    private Equalizer eq;
+    static final String PREFS="audio_global_settings";
+    private Equalizer equalizer;
     private BassBoost bass;
-    private Virtualizer space;
+    private Virtualizer virtualizer;
     private LoudnessEnhancer loudness;
-    private String status = "Inativo";
+    private DynamicsProcessing dynamics;
+    private String status="Inativo";
+    String getStatus(){return status;}
 
-    String getStatus() { return status; }
-
-    void start() {
+    void start(){
         close();
-        try {
-            eq = new Equalizer(100, 0);
-            eq.setEnabled(true);
-        } catch (RuntimeException | LinkageError e) { releaseEq(); }
-        try { bass = new BassBoost(100, 0); }
-        catch (RuntimeException | LinkageError e) { releaseBass(); }
-        try { space = new Virtualizer(100, 0); }
-        catch (RuntimeException | LinkageError e) { releaseSpace(); }
-        try { loudness = new LoudnessEnhancer(0); }
-        catch (RuntimeException | LinkageError e) { releaseLoudness(); }
-        updateStatus();
+        try{equalizer=new Equalizer(100,0);}catch(RuntimeException|LinkageError e){releaseEq();}
+        try{bass=new BassBoost(100,0);}catch(RuntimeException|LinkageError e){releaseBass();}
+        try{virtualizer=new Virtualizer(100,0);}catch(RuntimeException|LinkageError e){releaseSpace();}
+        if(Build.VERSION.SDK_INT>=28)try{dynamics=new DynamicsProcessing(0);}
+            catch(RuntimeException|LinkageError e){releaseDynamics();}
+        try{loudness=new LoudnessEnhancer(0);}catch(RuntimeException|LinkageError e){releaseLoudness();}
+        updateStatus(false);
     }
 
-    void apply(SharedPreferences prefs) {
-        if (eq != null) {
-            try {
-                short[] bounds = eq.getBandLevelRange();
-                int count = eq.getNumberOfBands();
-                for (short band = 0; band < count; band++) {
-                    double hz = eq.getCenterFreq(band) / 1000.0;
-                    double db = interpolateDb(prefs, hz);
-                    int mb = (int) Math.round(db * 100.0);
-                    eq.setBandLevel(band, (short) Math.min(bounds[1], Math.max(bounds[0], mb)));
+    void apply(SharedPreferences prefs){
+        boolean original=prefs.getBoolean("compare_original",false);
+        if(equalizer!=null){
+            try{
+                int[] bounds={equalizer.getBandLevelRange()[0],equalizer.getBandLevelRange()[1]};
+                for(short i=0;i<equalizer.getNumberOfBands();i++){
+                    double hz=equalizer.getCenterFreq(i)/1000d;
+                    double db=AudioProfiles.atHz(prefs,hz)+AudioProfiles.bassDb(prefs,hz);
+                    int mb=(int)Math.round(AudioProfiles.clamp((int)Math.round(db*100),bounds[0],bounds[1]));
+                    equalizer.setBandLevel(i,(short)(original?0:mb));
                 }
-                eq.setEnabled(true);
-            } catch (RuntimeException | LinkageError ignored) {}
+                equalizer.setEnabled(!original);
+            }catch(RuntimeException|LinkageError ignored){}
         }
-        if (bass != null) {
-            try {
-                int percent = clamp(prefs.getInt("bass", 35), 0, 100);
-                bass.setStrength((short) (percent * 10));
-                bass.setEnabled(percent > 0);
-            } catch (RuntimeException | LinkageError ignored) {}
-        }
-        if (space != null) {
-            try {
-                int percent = clamp(prefs.getInt("space", 0), 0, 100);
-                space.setStrength((short) (percent * 10));
-                space.setEnabled(percent > 0);
-            } catch (RuntimeException | LinkageError ignored) {}
-        }
-        if (loudness != null) {
-            try {
-                int db = clamp(prefs.getInt("gain", 0), 0, 3);
-                loudness.setTargetGain(db * 100);
-                loudness.setEnabled(db > 0);
-            } catch (RuntimeException | LinkageError ignored) {}
-        }
-        updateStatus();
+        if(bass!=null)try{
+            int p=AudioProfiles.clamp(prefs.getInt("bass",35),0,100);
+            bass.setStrength((short)(p*10));
+            bass.setEnabled(!original&&p>0);
+        }catch(RuntimeException|LinkageError ignored){}
+        if(virtualizer!=null)try{
+            int p=AudioProfiles.clamp(prefs.getInt("space",0),0,100);
+            virtualizer.setStrength((short)(p*10));
+            virtualizer.setEnabled(!original&&p>0);
+        }catch(RuntimeException|LinkageError ignored){}
+
+        int gain=AudioProfiles.clamp(prefs.getInt("gain",0),0,6);
+        boolean protection=prefs.getBoolean("safe_gain",true);
+        boolean dynamicActive=false;
+        if(dynamics!=null)try{
+            // Modo inteligente: ganho de entrada e limiter digital em conjunto,
+            // caso o fornecedor implemente DynamicsProcessing na sessão 0.
+            dynamics.setInputGainAllChannelsTo(original?0f:(float)gain);
+            DynamicsProcessing.Limiter limiter=new DynamicsProcessing.Limiter(
+                true,!original&&protection,0,1f,80f,15f,-1.0f,0f);
+            dynamics.setLimiterAllChannelsTo(limiter);
+            dynamics.setEnabled(!original);
+            dynamicActive=dynamics.hasControl();
+        }catch(RuntimeException|LinkageError ignored){}
+        if(loudness!=null)try{
+            // Sem compressor do Android, limitar ganho conservadoramente.
+            int effective=dynamicActive?0:(protection?Math.min(gain,2):gain);
+            loudness.setTargetGain((original?0:effective)*100);
+            loudness.setEnabled(!original&&effective>0);
+        }catch(RuntimeException|LinkageError ignored){}
+        updateStatus(original);
     }
 
-    private static int clamp(int v, int lo, int hi) { return Math.min(hi, Math.max(lo, v)); }
-
-    private static double interpolateDb(SharedPreferences prefs, double hz) {
-        if (hz <= ANCHORS[0]) return prefs.getInt("band_0", 0);
-        if (hz >= ANCHORS[ANCHORS.length - 1]) return prefs.getInt("band_4", 0);
-        for (int i = 0; i < ANCHORS.length - 1; i++) {
-            if (hz <= ANCHORS[i + 1]) {
-                double logLo = Math.log(ANCHORS[i]);
-                double logHi = Math.log(ANCHORS[i + 1]);
-                double weight = (Math.log(hz) - logLo) / (logHi - logLo);
-                return (1 - weight) * prefs.getInt("band_" + i, 0)
-                    + weight * prefs.getInt("band_" + (i + 1), 0);
-            }
-        }
-        return 0;
+    private void updateStatus(boolean original){
+        if(original){status="A/B: ORIGINAL (efeitos desativados).";return;}
+        boolean any=(equalizer!=null&&equalizer.hasControl())||(bass!=null&&bass.hasControl())
+             ||(virtualizer!=null&&virtualizer.hasControl())||(loudness!=null&&loudness.hasControl())
+             ||(dynamics!=null&&dynamics.hasControl());
+        if(!any){status="Nenhum efeito global controlável. Use o equalizador do Spotify/Android.";return;}
+        status=String.format(Locale.US,
+            "API global: EQ %s | Bass %s | Espaço %s | Ganho %s | Limiter %s. Verificação auditiva obrigatória.",
+            marker(equalizer!=null&&equalizer.hasControl()),
+            marker(bass!=null&&bass.hasControl()),
+            marker(virtualizer!=null&&virtualizer.hasControl()),
+            marker(loudness!=null&&loudness.hasControl()),
+            marker(dynamics!=null&&dynamics.hasControl()));
     }
-
-    private void updateStatus() {
-        boolean any = (eq != null && eq.hasControl()) || (bass != null && bass.hasControl())
-            || (space != null && space.hasControl()) || (loudness != null && loudness.hasControl());
-        if (!any) {
-            status = "Este dispositivo não disponibilizou um efeito global controlável.";
-            return;
-        }
-        status = String.format(Locale.US,
-            "Efeitos criados: EQ %s | Grave %s | 3D %s | Ganho %s. Teste auditivo necessário.",
-            marker(eq != null && eq.hasControl()), marker(bass != null && bass.hasControl()),
-            marker(space != null && space.hasControl()), marker(loudness != null && loudness.hasControl()));
-    }
-
-    private String marker(boolean state) { return state ? "OK" : "N/D"; }
-    private void releaseEq() { if (eq != null) { try { eq.release(); } catch (RuntimeException ignored) {} eq = null; } }
-    private void releaseBass() { if (bass != null) { try { bass.release(); } catch (RuntimeException ignored) {} bass = null; } }
-    private void releaseSpace() { if (space != null) { try { space.release(); } catch (RuntimeException ignored) {} space = null; } }
-    private void releaseLoudness() { if (loudness != null) { try { loudness.release(); } catch (RuntimeException ignored) {} loudness = null; } }
-
-    void close() {
-        releaseEq(); releaseBass(); releaseSpace(); releaseLoudness();
-        status = "Inativo";
-    }
+    private String marker(boolean value){return value?"OK":"N/D";}
+    private void releaseEq(){if(equalizer!=null){try{equalizer.release();}catch(RuntimeException ignored){}equalizer=null;}}
+    private void releaseBass(){if(bass!=null){try{bass.release();}catch(RuntimeException ignored){}bass=null;}}
+    private void releaseSpace(){if(virtualizer!=null){try{virtualizer.release();}catch(RuntimeException ignored){}virtualizer=null;}}
+    private void releaseLoudness(){if(loudness!=null){try{loudness.release();}catch(RuntimeException ignored){}loudness=null;}}
+    private void releaseDynamics(){if(dynamics!=null){try{dynamics.release();}catch(RuntimeException ignored){}dynamics=null;}}
+    void close(){releaseEq();releaseBass();releaseSpace();releaseLoudness();releaseDynamics();status="Inativo";}
 }
