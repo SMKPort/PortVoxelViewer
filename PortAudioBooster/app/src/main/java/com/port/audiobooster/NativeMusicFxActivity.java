@@ -64,6 +64,14 @@ public final class NativeMusicFxActivity extends Activity {
     @Override protected void onResume(){
         super.onResume();
         if(prefs!=null) {
+            if(!prefs.getBoolean("native_mode",true)) {
+                boolean enabled=prefs.getBoolean("enabled",false);
+                prefs.edit().putBoolean("native_mode",true).putBoolean("enabled",false).apply();
+                if(enabled)try{
+                    startService(new Intent(this,AudioEffectsService.class)
+                        .setAction(AudioEffectsService.ACTION_STOP));
+                }catch(RuntimeException ignored){}
+            }
             checkAudioRoute();
             render();
         }
