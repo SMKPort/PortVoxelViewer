@@ -55,3 +55,78 @@ test("responds with distinct quota and invalid-key diagnostic codes", async () =
     app.close();
   }
 });
+
+test("Gemini provider runs a safe two-step plan without calling OpenAI", async () => {
+  const app = createServer({
+    NEXUS_AI_PROVIDER: "gemini", GEMINI_API_KEY: "fake-google-key",
+    GEMINI_MODEL: "gemini-3.5-flash-lite",
+    NEXUS_CLIENT_TOKEN: "unit-test-client"
+  });
+  await new Promise(resolve => app.listen(0, "127.0.0.1", resolve));
+  const originalFetch = globalThis.fetch;
+  let calledGemini = 0;
+  try {
+    const endpoint = "http://127.0.0.1:" + app.address().port;
+    globalThis.fetch = (url, options) => {
+      assert.ok(String(url).startsWith("https://generativelanguage.googleapis.com/"));
+      assert.equal(options.headers["x-goog-api-key"], "fake-google-key");
+      const body = JSON.parse(options.body);
+      assert.equal(body.contents[0].parts[0].text, "Abra Spotify e ajuste volume em 50%");
+      calledGemini++;
+      const output = {
+        reply: "Vou abrir Spotify e ajustar volume.",
+        steps: [
+          {action: "OPEN_APP", target: "Spotify", value: 0, text: ""},
+          {action: "SET_VOLUME", target: "", value: 50, text: ""}
+        ]
+      };
+      return Promise.resolve(new Response(JSON.stringify({
+        candidates: [{content: {parts: [{text: JSON.stringify(output)}]}}]
+      }), {status: 200, headers: {"Content-Type": "application/json"}}));
+    };
+    const health = await (await originalFetch(endpoint + "/health")).json();
+    assert.equal(health.provider, "gemini");
+    assert.equal(health.ai_configured, true);
+    const result = await originalFetch(endpoint + "/v1/plan", {
+      method: "POST",
+      headers: {"Authorization": "Bearer unit-test-client", "Content-Type": "application/json"},
+      body: JSON.stringify({utterance: "Abra Spotify e ajuste volume em 50%"})
+    });
+    assert.equal(result.status, 200);
+    const plan = await result.json();
+    assert.equal(plan.steps.length, 2);
+    assert.equal(calledGemini, 1);
+    assert.ok(!JSON.stringify(plan).includes("fake-google-key"));
+  } finally {
+    globalThis.fetch = originalFetch;
+    app.close();
+  }
+});
+
+test("Gemini quota failures are clearly separated from OpenAI billing", async () => {
+  const app = createServer({
+    NEXUS_AI_PROVIDER: "gemini", GEMINI_API_KEY: "fake-google-key",
+    NEXUS_CLIENT_TOKEN: "unit-test-client"
+  });
+  await new Promise(resolve => app.listen(0, "127.0.0.1", resolve));
+  const originalFetch = globalThis.fetch;
+  try {
+    const endpoint = "http://127.0.0.1:" + app.address().port;
+    globalThis.fetch = (url, options) => Promise.resolve(
+      new Response(JSON.stringify({error:{status:"RESOURCE_EXHAUSTED", code:429}}), {
+        status:429, headers:{"Content-Type":"application/json"}
+      })
+    );
+    const result = await originalFetch(endpoint + "/v1/plan", {
+      method: "POST",
+      headers: {"Authorization": "Bearer unit-test-client", "Content-Type":"application/json"},
+      body:JSON.stringify({utterance: "Nexus, abrir Spotify"})
+    });
+    assert.equal(result.status, 429);
+    const error = await result.json();
+    assert.equal(error.code, "GEMINI_QUOTA");
+  } finally {
+    globalThis.fetch = originalFetch;
+    app.close();
+  }
+});
