@@ -1,5 +1,6 @@
 import http from "node:http";
 import { timingSafeEqual } from "node:crypto";
+import { planWithGemini, GeminiGatewayError } from "./gemini.mjs";
 
 const ALLOWED = new Set([
   "OPEN_APP", "OPEN_CHATGPT", "OPEN_AUDIO", "SET_MODE", "SET_VOLUME",
@@ -166,16 +167,34 @@ async function callModel(text, key, model) {
   }
 }
 
+function providerConfig(env) {
+  const provider = String(env.NEXUS_AI_PROVIDER || (env.GEMINI_API_KEY ? "gemini" : "openai")).toLowerCase().trim();
+  if (!["gemini", "openai"].includes(provider))
+    throw new NexusGatewayError("BAD_PROVIDER", 503, "Provedor de IA inválido.");
+  return {provider, key: provider === "gemini" ? env.GEMINI_API_KEY : env.OPENAI_API_KEY};
+}
+
 export function createServer(env = process.env) {
   return http.createServer(async (req, res) => {
+    let config;
+    try { config = providerConfig(env); }
+    catch (error) { return write(res, 503, {error: error.message, code: error.code}); }
     if (req.url === "/health" && req.method === "GET") {
-      return write(res, 200, { status: "online", ai_configured: Boolean(env.OPENAI_API_KEY), version: "3.0" });
+      return write(res, 200, {
+        status: "online", provider: config.provider,
+        ai_configured: Boolean(config.key), version: "3.2"
+      });
     }
     if (req.url !== "/v1/plan" || req.method !== "POST")
       return write(res, 404, { error: "Rota não encontrada" });
 
-    if (!env.OPENAI_API_KEY || !env.NEXUS_CLIENT_TOKEN)
-      return write(res, 503, { error: "Servidor ainda não configurado pelo proprietário" });
+    if (!config.key || !env.NEXUS_CLIENT_TOKEN)
+      return write(res, 503, {
+        error: config.provider === "gemini"
+          ? "Adicione GEMINI_API_KEY no Render para usar a IA gratuita."
+          : "Adicione OPENAI_API_KEY no Render para utilizar a IA.",
+        code: "AI_NOT_CONFIGURED"
+      });
     const token = req.headers.authorization?.replace(/^Bearer /i, "") || "";
     if (!authorized(token, env.NEXUS_CLIENT_TOKEN))
       return write(res, 401, { error: "Acesso não autorizado" });
@@ -193,12 +212,18 @@ export function createServer(env = process.env) {
           input.utterance.trim().length < 2 || input.utterance.length > 1200) {
         return write(res, 400, { error: "Pedido de voz inválido" });
       }
-      const plan = await callModel(input.utterance, env.OPENAI_API_KEY, env.OPENAI_MODEL);
+      const plan = config.provider === "gemini"
+        ? await planWithGemini({
+            utterance: input.utterance, key: config.key,
+            model: env.GEMINI_MODEL || "gemini-3.5-flash-lite",
+            instructions: instruction, validatePlan
+          })
+        : await callModel(input.utterance, config.key, env.OPENAI_MODEL);
       return write(res, 200, plan);
     } catch (e) {
-      const err = e instanceof NexusGatewayError ? e
-        : new NexusGatewayError("OPENAI_CONNECTIVITY", 502,
-          "Falha na comunicacao com a OpenAI. Tente novamente.");
+      const err = e instanceof NexusGatewayError || e instanceof GeminiGatewayError ? e
+        : new NexusGatewayError("AI_CONNECTIVITY", 502,
+          "Falha ao conectar com a IA. Tente novamente.");
       // Diagnostico sem armazenar fala, token pessoal ou chave de API.
       console.warn("NEXUS_AI_ERROR", JSON.stringify({
         code: err.code, upstream_status: err.upstreamStatus
