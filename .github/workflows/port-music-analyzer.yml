@@ -1,0 +1,58 @@
+name: Port Music Analyzer - Windows
+
+on:
+  push:
+    branches: [port-music-analyzer]
+    paths:
+      - "music_analyzer/**"
+      - ".github/workflows/port-music-analyzer.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-exe:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: music_analyzer
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: music_analyzer/requirements.txt
+
+      - name: Install app and build requirements
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pyinstaller
+
+      - name: Syntax and module import check
+        run: |
+          python -m compileall -q .
+          python -c "from port_music_analyzer.app import Window; from port_music_analyzer.audio_core import analyze_track; print('Imports OK')"
+
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Package native Windows executable
+        run: |
+          python -m PyInstaller --noconfirm --clean --windowed --onedir --name PortMusicAnalyzer --collect-all imageio_ffmpeg --collect-all sounddevice --hidden-import librosa --hidden-import soundfile main.py
+
+      - name: Prepare distributable ZIP
+        shell: pwsh
+        run: Compress-Archive -Path "dist\PortMusicAnalyzer" -DestinationPath "PortMusicAnalyzer-Windows.zip" -Force
+
+      - name: Upload Windows executable folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: PortMusicAnalyzer-Windows
+          path: music_analyzer/PortMusicAnalyzer-Windows.zip
+          if-no-files-found: error
+          retention-days: 30
