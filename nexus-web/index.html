@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b0a0d">
+  <meta name="description" content="Nexus Aterna, console de engenharia arcana e tecnologia de Port Morningstar.">
+  <meta name="color-scheme" content="dark">
+  <title>NEXUS ATERNA | Arcane Operating System</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <aside class="sidebar" id="sidebar" aria-label="Navegação principal">
+      <a class="identity" href="#nucleo" aria-label="Nexus Aterna, início">
+        <span class="brand-mark">✦</span>
+        <span><strong>NEXUS <em>ATERNA</em></strong><small>ARCANE OPERATING SYSTEM</small></span>
+      </a>
+      <div class="side-group-title">CENTRAL DE OPERAÇÕES</div>
+      <nav id="sideNav">
+        <button class="nav-item active" data-page="nucleo"><span>◈</span> Núcleo Central</button>
+        <button class="nav-item" data-page="tecnologia"><span>⌘</span> Link Tecnológico</button>
+        <button class="nav-item" data-page="arcano"><span>◉</span> Visão Arcana</button>
+        <button class="nav-item" data-page="rituais"><span>✧</span> Laboratório Ritualístico</button>
+        <button class="nav-item" data-page="energia"><span>⌁</span> Mapa Energético</button>
+        <button class="nav-item" data-page="engenharia"><span>⚙</span> Engenharia Arcana</button>
+        <button class="nav-item" data-page="diagnostico"><span>◎</span> Diagnóstico</button>
+        <button class="nav-item" data-page="registros"><span>▤</span> Arquivos e Segurança</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="side-line"><span class="signal-dot"></span><span>SISTEMA LOCAL ATIVO</span></div>
+        <div class="side-line"><span>ISOLAMENTO TS</span><b id="isolationSide">ATIVO</b></div>
+        <button class="side-command" id="openTerminalSide">⌨ ABRIR TERMINAL <span>↗</span></button>
+        <div class="version">PROTOCOLO ATERNA / v1.0 WEB</div>
+      </div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <button class="menu-btn" id="mobileMenu" aria-label="Abrir menu">☰</button>
+        <div class="breadcrumbs">NEXUS / <strong id="breadcrumb">NÚCLEO CENTRAL</strong></div>
+        <div class="topbar-actions">
+          <span class="online-label"><span class="signal-dot"></span> ONLINE LOCAL</span>
+          <button class="top-btn" id="holoToggle" title="Alternar modo holográfico">◎ <span>HOLOGRAMA</span></button>
+          <button class="top-btn" id="terminalToggle" title="Abrir terminal">⌨ <span>TERMINAL</span></button>
+        </div>
+      </header>
+      <main class="main" id="main" tabindex="-1">
+        <div id="content" aria-live="polite"></div>
+      </main>
+      <footer class="footer"><span>✦ NEXUS ATERNA</span><span id="clock"></span><span>PORT MORNINGSTAR · SESSÃO LOCAL</span></footer>
+    </div>
+    <section class="terminal-drawer" id="terminalDrawer" aria-label="Terminal de comandos" aria-hidden="true">
+      <div class="drawer-header"><div><span class="gold">⌨</span> TERMINAL ATERNA <small>INTERPRETADOR LOCAL</small></div><button id="terminalClose" class="icon-button" aria-label="Fechar terminal">✕</button></div>
+      <div class="terminal-output" id="terminalOutput" role="log" aria-live="polite">
+        <div class="t-muted">NEXUS ATERNA CONSOLE v1.0</div>
+        <div class="t-success">[OK] Núcleo inicializado</div>
+        <div class="t-success">[OK] Identidade narrativa: PORT</div>
+        <div class="t-gold">[READY] Digite AJUDA para visualizar os comandos.</div>
+      </div>
+      <form id="terminalForm" class="terminal-form"><span class="gold">❯</span><input id="terminalInput" autocomplete="off" aria-label="Comando" placeholder="Digite um comando..."><button type="submit">EXECUTAR ↵</button></form>
+    </section>
+    <div class="toast-area" id="toasts" aria-live="polite"></div>
+    <div class="overlay" id="overlay" hidden></div>
+  </div>
+  <script src="./app.js" defer></script>
+</body>
+</html>
