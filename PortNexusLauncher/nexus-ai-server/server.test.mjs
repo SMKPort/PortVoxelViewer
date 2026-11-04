@@ -20,6 +20,9 @@ test("unconfigured server refuses commands",async()=>{
     const url="http://127.0.0.1:"+app.address().port;
     const health=await (await fetch(url+"/health")).json();
     assert.equal(health.ai_configured,false);
+    const home = await fetch(url+"/");
+    assert.equal(home.status, 200);
+    assert.equal((await home.json()).status, "online");
     const resp=await fetch(url+"/v1/plan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({utterance:"Abrir Spotify"})});
     assert.equal(resp.status,503);
   } finally {app.close();}
