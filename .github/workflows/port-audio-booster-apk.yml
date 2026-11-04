@@ -1,9 +1,9 @@
-name: Port Audio Booster 3.0 - Gerar APK Android
+name: Port Audio Booster 3.1 - MusicFX - Gerar APK Android
 
 on:
   workflow_dispatch:
   push:
-    branches: [main, feature/port-audio-v3]
+    branches: [main, feature/port-audio-v3-1-musicfx]
     paths:
       - 'PortAudioBooster/**'
       - '.github/workflows/port-audio-booster-apk.yml'
@@ -18,7 +18,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Compilar Port Audio Booster 3.0
+    name: Compilar Port Audio Booster 3.1
     steps:
       - name: Baixar repositório
         uses: actions/checkout@v4
@@ -31,6 +31,8 @@ jobs:
           set -euo pipefail
           test -f PortAudioBooster/app/build.gradle
           test -f PortAudioBooster/app/src/main/AndroidManifest.xml
+          test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/NativeMusicFxActivity.java
+          test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/NativeMusicFxPresets.java
           test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/StudioActivity.java
           test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/AudioProfiles.java
           test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/SpectrumView.java
@@ -67,7 +69,7 @@ jobs:
       - name: Publicar artefato APK
         uses: actions/upload-artifact@v4
         with:
-          name: PortAudioBooster-v3.0-Spotify-APK
+          name: PortAudioBooster-v3.1-MusicFX-APK
           path: PortAudioBooster/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
@@ -77,11 +79,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p PortAudioBooster/download
-          cp PortAudioBooster/app/build/outputs/apk/debug/app-debug.apk PortAudioBooster/download/PortAudioBooster-v3.0-Spotify.apk
+          cp PortAudioBooster/app/build/outputs/apk/debug/app-debug.apk PortAudioBooster/download/PortAudioBooster-v3.1-MusicFX.apk
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add PortAudioBooster/download/PortAudioBooster-v3.0-Spotify.apk
+          git add PortAudioBooster/download/PortAudioBooster-v3.1-MusicFX.apk
           if ! git diff --cached --quiet; then
-            git commit -m 'build(port-audio): publicar APK 3.0 [skip ci]'
+            git commit -m 'build(port-audio): publicar APK 3.1 MusicFX [skip ci]'
             git push origin HEAD:main
           fi
