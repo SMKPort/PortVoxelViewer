@@ -47,6 +47,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Headphones
+import androidx.compose.material.icons.rounded.Chat
 import androidx.compose.material.icons.rounded.Bluetooth
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ChevronRight
@@ -122,6 +124,8 @@ private val V2Locale = Locale("pt", "BR")
 private enum class NexusPage(val text: String, val icon: ImageVector) {
     HOME("Início", Icons.Rounded.Home),
     APPS("Arsenal", Icons.Rounded.Apps),
+    AUDIO("Áudio", Icons.Rounded.Headphones),
+    CHATGPT("ChatGPT", Icons.Rounded.Chat),
     HUB("Nexus", Icons.Rounded.AutoAwesome),
     SETTINGS("Visual", Icons.Rounded.Palette)
 }
@@ -139,6 +143,8 @@ fun PortNexusV2(
     onBrightnessChange: (Float) -> Unit,
     hasNotificationAccess: Boolean,
     onNotificationSettings: () -> Unit,
+    onOpenChatGPT: () -> Unit,
+    onOpenChatGPTWeb: () -> Unit,
 ) {
     var page by rememberSaveable { mutableStateOf(NexusPage.HOME) }
     var panel by remember { mutableStateOf(SidePanel.NONE) }
@@ -191,12 +197,28 @@ fun PortNexusV2(
                             onOpenArchive = { panel = SidePanel.ARCHIVE },
                             onOpenSignal = { panel = SidePanel.SIGNAL },
                             onOpenSearch = openSearch,
+                            onOpenAudio = { page = NexusPage.AUDIO },
+                            onOpenChatGPT = { page = NexusPage.CHATGPT },
                             onOpenHub = { page = NexusPage.HUB },
                             onMode = changeMode,
                             onLaunch = openApp)
                         NexusPage.APPS -> DrawerV2(apps, favorites, hidden, recent, mode, drawerView, drawerQuery, iconScale,
                             onQuery = { drawerQuery = it }, onMode = changeDrawer, onFavorite = toggleFavorite,
                             onHidden = toggleHidden, onLaunch = openApp, onReload = onReloadApps)
+                        NexusPage.AUDIO -> NexusAudioTab(
+                            mode = mode, apps = apps, prefs = prefs,
+                            hasNotificationAccess = hasNotificationAccess,
+                            onLaunchApp = openApp,
+                            onSpotify = { onSystemAction(NexusAction.SPOTIFY) },
+                            onGrantMedia = onNotificationSettings,
+                            onReloadApps = onReloadApps,
+                        )
+                        NexusPage.CHATGPT -> NexusChatGptTab(
+                            mode = mode,
+                            installed = apps.any { it.packageName == "com.openai.chatgpt" },
+                            onOpenApp = onOpenChatGPT,
+                            onOpenWeb = onOpenChatGPTWeb,
+                        )
                         NexusPage.HUB -> HubV2(apps, recent, mode, onLaunch = openApp, onMode = changeMode,
                             onSystemAction = onSystemAction, onSearch = { query -> drawerQuery = query; openSearch() },
                             onCommandDeck = { panel = SidePanel.COMMAND }, onArchive = { panel = SidePanel.ARCHIVE })
@@ -285,6 +307,7 @@ private fun HomeV2(
     apps: List<LauncherApp>, favorites: Set<String>, recent: List<String>, mode: NexusMode,
     battery: Int, animations: Boolean,
     onOpenCommand: () -> Unit, onOpenArchive: () -> Unit, onOpenSignal: () -> Unit, onOpenSearch: () -> Unit,
+    onOpenAudio: () -> Unit, onOpenChatGPT: () -> Unit,
     onOpenHub: () -> Unit, onMode: (NexusMode) -> Unit, onLaunch: (LauncherApp) -> Unit,
 ) {
     var dragAmount by remember { mutableFloatStateOf(0f) }
@@ -409,6 +432,11 @@ private fun HomeV2(
         Row(horizontalArrangement = Arrangement.spacedBy(11.dp), modifier = Modifier.fillMaxWidth()) {
             QuickModuleV2("⌘", "COMMAND DECK", "Controle local", mode, Modifier.weight(1f), onOpenCommand)
             QuickModuleV2("◇", "ARCHIVE", "Notas e histórico", mode, Modifier.weight(1f), onOpenArchive)
+        }
+        Spacer(Modifier.height(11.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(11.dp), modifier = Modifier.fillMaxWidth()) {
+            QuickModuleV2("♫", "PORT AUDIO", "Equalizador e Spotify", mode, Modifier.weight(1f), onOpenAudio)
+            QuickModuleV2("✧", "CHATGPT", "Portal de conversação", mode, Modifier.weight(1f), onOpenChatGPT)
         }
         Spacer(Modifier.height(26.dp))
     }
@@ -774,19 +802,19 @@ private fun PanelHeaderV2(title: String, subtitle: String, mode: NexusMode, onCl
 @Composable
 private fun BottomDockV2(page: NexusPage, mode: NexusMode, onPage: (NexusPage) -> Unit, onCommand: () -> Unit) {
     Row(Modifier.fillMaxWidth().background(Color(0xF408080C))
-        .border(BorderStroke(1.dp, mode.gold.copy(alpha = .17f))).padding(horizontal = 8.dp, vertical = 9.dp),
+        .border(BorderStroke(1.dp, mode.gold.copy(alpha = .17f))).padding(horizontal = 3.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
         NexusPage.entries.forEach { entry ->
             Column(Modifier.weight(1f).clip(RoundedCornerShape(15.dp))
                 .background(if (page == entry) mode.primary.copy(alpha = .27f) else Color.Transparent)
-                .clickable { onPage(entry) }.padding(vertical = 9.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(entry.icon, entry.text, tint = if (page == entry) mode.gold else V2Muted, modifier = Modifier.size(22.dp))
+                .clickable { onPage(entry) }.padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(entry.icon, entry.text, tint = if (page == entry) mode.gold else V2Muted, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.height(3.dp))
-                Text(entry.text, color = if (page == entry) mode.gold else V2Muted, fontSize = 10.sp, fontWeight = if (page == entry) FontWeight.Bold else FontWeight.Normal)
+                Text(entry.text, color = if (page == entry) mode.gold else V2Muted, fontSize = 9.sp, fontWeight = if (page == entry) FontWeight.Bold else FontWeight.Normal)
             }
         }
         Box(Modifier.clip(CircleShape).border(1.dp, mode.gold.copy(alpha = .7f), CircleShape)
-            .background(mode.primary.copy(alpha = .27f)).clickable(onClick = onCommand).padding(14.dp), contentAlignment = Alignment.Center) {
+            .background(mode.primary.copy(alpha = .27f)).clickable(onClick = onCommand).padding(10.dp), contentAlignment = Alignment.Center) {
             Text("⌘", color = mode.gold, fontSize = 18.sp)
         }
     }
