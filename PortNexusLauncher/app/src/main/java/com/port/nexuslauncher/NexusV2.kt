@@ -291,6 +291,7 @@ fun PortNexusV2(
                 NexusVoicePanel(
                     mode = mode,
                     apps = apps,
+                    prefs = prefs,
                     onClose = { panel = SidePanel.NONE },
                     onMode = changeMode,
                     onSystemAction = onSystemAction,
@@ -299,6 +300,10 @@ fun PortNexusV2(
                     onChatGpt = { panel = SidePanel.NONE; page = NexusPage.CHATGPT },
                     onApps = { query -> drawerQuery = query; openSearch() },
                     onNotifications = { panel = SidePanel.SIGNAL },
+                    onArchive = {
+                        notes = prefs.getString("v2_notes", "") ?: ""
+                        panel = SidePanel.ARCHIVE
+                    },
                 )
             }
         }
