@@ -112,7 +112,7 @@ fun NexusVoicePanel(
     var speechEnabled by remember { mutableStateOf(true) }
     var ttsReady by remember { mutableStateOf(false) }
     var aiEnabled by remember { mutableStateOf(prefs.getBoolean(NexusAiPlanner.ENABLED, false)) }
-    var aiEndpoint by remember { mutableStateOf(prefs.getString(NexusAiPlanner.URL_KEY, "") ?: "") }
+    var aiEndpoint by remember { mutableStateOf(prefs.getString(NexusAiPlanner.URL_KEY, "https://port-nexus-ai-gateway.onrender.com") ?: "https://port-nexus-ai-gateway.onrender.com") }
     var aiToken by remember { mutableStateOf(prefs.getString(NexusAiPlanner.TOKEN_KEY, "") ?: "") }
     var aiBusy by remember { mutableStateOf(false) }
     var aiPlan by remember { mutableStateOf<NexusAiPlan?>(null) }
