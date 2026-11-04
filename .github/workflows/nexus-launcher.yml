@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-launcher:
@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: port-nexus-launcher
-          persist-credentials: false
+          persist-credentials: true
 
       - name: Configurar JDK 17
         uses: actions/setup-java@v4
@@ -52,3 +52,14 @@ jobs:
           name: PortNexusLauncher-v2.1-debug
           path: PortNexusLauncher/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Publicar APK avulso para download direto
+        shell: bash
+        run: |
+          mkdir -p PortNexusLauncher/download
+          cp PortNexusLauncher/app/build/outputs/apk/debug/app-debug.apk PortNexusLauncher/download/Port-Nexus-Launcher-v2.1.apk
+          git add -- PortNexusLauncher/download/Port-Nexus-Launcher-v2.1.apk
+          if ! git diff --cached --quiet; then
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Publish Nexus 2.1 APK for direct browser download"
+            git push origin HEAD:port-nexus-launcher
+          fi
