@@ -8,6 +8,7 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
         <package android:name="com.spotify.music" />
+        <package android:name="com.openai.chatgpt" />
     </queries>
 
     <application
