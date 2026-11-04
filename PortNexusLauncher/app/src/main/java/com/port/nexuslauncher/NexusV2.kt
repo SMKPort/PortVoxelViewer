@@ -19,6 +19,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -125,7 +126,7 @@ private enum class NexusPage(val text: String, val icon: ImageVector) {
     SETTINGS("Visual", Icons.Rounded.Palette)
 }
 
-private enum class SidePanel { NONE, COMMAND, ARCHIVE }
+private enum class SidePanel { NONE, COMMAND, ARCHIVE, SIGNAL }
 
 @Composable
 fun PortNexusV2(
@@ -136,6 +137,8 @@ fun PortNexusV2(
     onSystemAction: (NexusAction) -> Unit,
     onReloadApps: () -> Unit,
     onBrightnessChange: (Float) -> Unit,
+    hasNotificationAccess: Boolean,
+    onNotificationSettings: () -> Unit,
 ) {
     var page by rememberSaveable { mutableStateOf(NexusPage.HOME) }
     var panel by remember { mutableStateOf(SidePanel.NONE) }
@@ -186,6 +189,7 @@ fun PortNexusV2(
                         NexusPage.HOME -> HomeV2(apps, favorites, recent, mode, batteryPercent, animations,
                             onOpenCommand = { panel = SidePanel.COMMAND },
                             onOpenArchive = { panel = SidePanel.ARCHIVE },
+                            onOpenSignal = { panel = SidePanel.SIGNAL },
                             onOpenSearch = openSearch,
                             onOpenHub = { page = NexusPage.HUB },
                             onMode = changeMode,
@@ -222,6 +226,7 @@ fun PortNexusV2(
                         prefs.edit().putFloat("v2_brightness", it).apply()
                         onBrightnessChange(it)
                     }, onClose = { panel = SidePanel.NONE }, onAction = onSystemAction,
+                        onNotifications = { panel = SidePanel.SIGNAL },
                         onApp = { app -> panel = SidePanel.NONE; openApp(app) }, apps = apps)
                 }
             }
@@ -234,6 +239,24 @@ fun PortNexusV2(
                     ArchivePanelV2(mode, recent, apps, notes, onNotes = { notes = it; prefs.edit().putString("v2_notes", it).apply() },
                         onClose = { panel = SidePanel.NONE }, onLaunch = { app -> panel = SidePanel.NONE; openApp(app) }, onAction = onSystemAction)
                 }
+            }
+            AnimatedVisibility(
+                visible = panel == SidePanel.SIGNAL,
+                enter = fadeIn(tween(230)),
+                exit = fadeOut(tween(180)),
+            ) {
+                NexusNotificationPanel(
+                    mode = mode,
+                    hasPermission = hasNotificationAccess,
+                    isConnected = NexusNotificationStore.connected,
+                    notices = NexusNotificationStore.notices,
+                    onClose = { panel = SidePanel.NONE },
+                    onGrant = onNotificationSettings,
+                    onOpen = { key -> if (NexusNotificationStore.open(key)) panel = SidePanel.NONE },
+                    onDismiss = NexusNotificationStore::dismiss,
+                    onDismissAll = NexusNotificationStore::dismissClearable,
+                    onSystemAction = onSystemAction,
+                )
             }
         }
     }
@@ -261,10 +284,11 @@ private fun AmbientGrid(mode: NexusMode) {
 private fun HomeV2(
     apps: List<LauncherApp>, favorites: Set<String>, recent: List<String>, mode: NexusMode,
     battery: Int, animations: Boolean,
-    onOpenCommand: () -> Unit, onOpenArchive: () -> Unit, onOpenSearch: () -> Unit,
+    onOpenCommand: () -> Unit, onOpenArchive: () -> Unit, onOpenSignal: () -> Unit, onOpenSearch: () -> Unit,
     onOpenHub: () -> Unit, onMode: (NexusMode) -> Unit, onLaunch: (LauncherApp) -> Unit,
 ) {
     var dragAmount by remember { mutableFloatStateOf(0f) }
+    var signalDrag by remember { mutableFloatStateOf(0f) }
     val dockApps = remember(apps, favorites, recent, mode) {
         val favoritesFirst = apps.filter { it.packageName in favorites }
         val recentFirst = recent.mapNotNull { id -> apps.firstOrNull { it.component.flattenToString() == id } }
@@ -292,15 +316,39 @@ private fun HomeV2(
         }.verticalScroll(rememberScrollState()).padding(horizontal = 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.height(17.dp))
+        Spacer(Modifier.height(4.dp))
+        Box(
+            Modifier.fillMaxWidth().height(25.dp).pointerInput(Unit) {
+                detectVerticalDragGestures(
+                    onDragStart = { signalDrag = 0f },
+                    onVerticalDrag = { change, amount -> if (amount > 0) signalDrag += amount; change.consume() },
+                    onDragEnd = { if (signalDrag > 55f) onOpenSignal(); signalDrag = 0f },
+                    onDragCancel = { signalDrag = 0f },
+                )
+            }.clickable(onClick = onOpenSignal),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("⌄   N E X U S   S I G N A L   ⌄", color = mode.gold.copy(alpha = .75f),
+                fontSize = 9.sp, letterSpacing = 1.sp)
+        }
+        Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("P O R T   /   N E X U S", color = mode.gold, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
                 Text("PERSONAL OPERATING INTERFACE", color = V2Muted, fontSize = 9.sp, letterSpacing = .8.sp)
             }
-            Box(Modifier.clip(RoundedCornerShape(14.dp)).border(1.dp, mode.gold.copy(alpha = .6f), RoundedCornerShape(14.dp))
-                .clickable(onClick = onOpenCommand).padding(horizontal = 12.dp, vertical = 10.dp)) {
-                Text("⌘  DECK", color = mode.gold, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                Box(Modifier.clip(RoundedCornerShape(14.dp))
+                    .border(1.dp, mode.primary.copy(alpha = .85f), RoundedCornerShape(14.dp))
+                    .clickable(onClick = onOpenSignal).padding(horizontal = 9.dp, vertical = 10.dp)) {
+                    Text("◉  ${NexusNotificationStore.notices.size}", color = mode.gold,
+                        fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+                Box(Modifier.clip(RoundedCornerShape(14.dp))
+                    .border(1.dp, mode.gold.copy(alpha = .6f), RoundedCornerShape(14.dp))
+                    .clickable(onClick = onOpenCommand).padding(horizontal = 10.dp, vertical = 10.dp)) {
+                    Text("⌘ DECK", color = mode.gold, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
         Spacer(Modifier.height(24.dp))
@@ -648,7 +696,8 @@ private fun AppearanceV2(mode: NexusMode, animations: Boolean, iconSize: Float,
 
 @Composable
 private fun CommandPanelV2(mode: NexusMode, brightness: Float, onBrightness: (Float) -> Unit,
-    onClose: () -> Unit, onAction: (NexusAction) -> Unit, onApp: (LauncherApp) -> Unit, apps: List<LauncherApp>) {
+    onClose: () -> Unit, onAction: (NexusAction) -> Unit,
+    onNotifications: () -> Unit, onApp: (LauncherApp) -> Unit, apps: List<LauncherApp>) {
     val spotify = apps.firstOrNull { it.packageName == "com.spotify.music" }
     Column(Modifier.fillMaxHeight().fillMaxWidth(.91f).background(Brush.verticalGradient(listOf(Color(0xFF23141D), V2Ink)))
         .border(BorderStroke(1.dp, mode.gold.copy(alpha = .55f))).verticalScroll(rememberScrollState()).padding(19.dp)) {
@@ -667,6 +716,7 @@ private fun CommandPanelV2(mode: NexusMode, brightness: Float, onBrightness: (Fl
         Spacer(Modifier.height(18.dp))
         SectionV2("ACESSO AO SISTEMA", mode)
         Spacer(Modifier.height(9.dp))
+        ActionBarV2("◉", "Nexus Signal", "Central de notificações personalizada", mode, onNotifications)
         ActionBarV2("◉", "Wi-Fi", "Abrir controles do Android", mode) { onAction(NexusAction.WIFI_SETTINGS) }
         ActionBarV2("ᛒ", "Bluetooth", "Gerenciar dispositivos", mode) { onAction(NexusAction.BLUETOOTH_SETTINGS) }
         ActionBarV2("☼", "Tela e brilho", "Configurações de exibição", mode) { onAction(NexusAction.DISPLAY_SETTINGS) }
