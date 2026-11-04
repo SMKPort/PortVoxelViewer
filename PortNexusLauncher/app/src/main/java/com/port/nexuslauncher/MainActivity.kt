@@ -22,7 +22,7 @@ data class LauncherApp(
 }
 
 enum class NexusAction {
-    WIFI_SETTINGS, BLUETOOTH_SETTINGS, ANDROID_SETTINGS, HOME_SETTINGS, CLOCK, SPOTIFY
+    WIFI_SETTINGS, BLUETOOTH_SETTINGS, ANDROID_SETTINGS, HOME_SETTINGS, CLOCK, SPOTIFY, DISPLAY_SETTINGS, SOUND_SETTINGS, CALENDAR, STORAGE_SETTINGS
 }
 
 class MainActivity : ComponentActivity() {
@@ -37,13 +37,14 @@ class MainActivity : ComponentActivity() {
         batteryPercent = readBatteryPercent()
 
         setContent {
-            PortNexusUi(
+            PortNexusV2(
                 apps = installedApps,
                 prefs = getSharedPreferences("port_nexus_settings", MODE_PRIVATE),
                 batteryPercent = batteryPercent,
                 onLaunchApp = ::launchApp,
                 onSystemAction = ::performAction,
                 onReloadApps = ::refreshInstalledApps,
+                onBrightnessChange = ::setLauncherBrightness,
             )
         }
     }
@@ -83,6 +84,12 @@ class MainActivity : ComponentActivity() {
         return manager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
     }
 
+    private fun setLauncherBrightness(level: Float) {
+        val params = window.attributes
+        params.screenBrightness = level.coerceIn(0.05f, 1f)
+        window.attributes = params
+    }
+
     private fun performAction(action: NexusAction) {
         val intent = when (action) {
             NexusAction.WIFI_SETTINGS -> Intent(Settings.ACTION_WIFI_SETTINGS)
@@ -90,6 +97,10 @@ class MainActivity : ComponentActivity() {
             NexusAction.ANDROID_SETTINGS -> Intent(Settings.ACTION_SETTINGS)
             NexusAction.HOME_SETTINGS -> Intent(Settings.ACTION_HOME_SETTINGS)
             NexusAction.CLOCK -> Intent("android.intent.action.SHOW_ALARMS")
+            NexusAction.DISPLAY_SETTINGS -> Intent(Settings.ACTION_DISPLAY_SETTINGS)
+            NexusAction.SOUND_SETTINGS -> Intent(Settings.ACTION_SOUND_SETTINGS)
+            NexusAction.CALENDAR -> Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CALENDAR)
+            NexusAction.STORAGE_SETTINGS -> Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS)
             NexusAction.SPOTIFY -> packageManager.getLaunchIntentForPackage("com.spotify.music")
                 ?: Intent("android.intent.action.MUSIC_PLAYER")
         }

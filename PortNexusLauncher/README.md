@@ -1,38 +1,28 @@
-# Port Nexus Launcher (v0.1)
+# Port Nexus Launcher 2.0
 
-Launcher Android em Kotlin e Jetpack Compose, com identidade Nexus nas cores preto, vermelho e dourado. Projeto inicial funcional para Android 8.0+.
+Launcher experimental e autoral para Android 8.0+, sem root, com UI própria em Kotlin + Jetpack Compose.
 
-## Funcionalidades implementadas
+## Funcionalidades já implementadas
 
-- Atividade Android HOME registrável como tela inicial padrão.
-- Lista de aplicativos instalados com atividades de lançamento (sem `QUERY_ALL_PACKAGES`).
-- Gaveta em grade, pesquisa local, abertura de apps pelo componente correto.
-- Favoritos persistentes e dock com atalhos.
-- Relógio e data, leitura de bateria e núcleo animado.
-- Central Nexus com atalhos para configurações Wi-Fi, Bluetooth e Android, relógio e Spotify (se instalado).
-- Temas Nexus Prime, Infernal Core, Celestial Crown e Industrial, com seleção salva.
-- Acesso à tela de seleção do launcher padrão.
-- GitHub Actions para gerar APK debug como artefato.
+- Home Nexus com núcleo arcano animado em duas rotações, relógio, data, bateria e dock mutável.
+- Sete modos de uso e temas: Arcano, Infernal, Angelical, Industrial, Música, Estudo e Performance.
+- Gaveta com Grade, Arsenal (categorias automáticas) e Nexus Inteligente (ordenação local por apps abertos no Nexus + favoritos).
+- Favoritos, apps ocultos com opção de reexibir, filtro de busca, tamanho de ícones editável.
+- Painéis laterais: Command Deck com brilho local da janela e atalhos de configurações oficiais. Archive com notas locais e histórico de aplicativos abertos pelo Nexus.
+- Hub de comandos locais: `abrir [app]`, `modo música`, `wifi`, `bluetooth`, `spotify`, `alarme`, `configurações`. Outros termos filtram a gaveta.
+- Gestos horizontais na Home para abrir painéis, seleção do launcher como tela inicial via sistema Android.
+- Persistência em SharedPreferences, sem serviço remoto nem rastreamento de uso de outros apps.
 
-## Abrir no Android Studio
+## Montagem APK
 
-1. Extraia o ZIP e abra a pasta `PortNexusLauncher` no Android Studio.
-2. Use JDK 17. O projeto utiliza Android Gradle Plugin 8.13.2, Kotlin 2.2.20 e Gradle 8.13.
-3. Como o ZIP não inclui o binário Gradle Wrapper, configure Gradle 8.13 localmente (ou execute `gradle wrapper --gradle-version 8.13` com Gradle já instalado). No GitHub Actions o Gradle é instalado automaticamente.
-4. Aguarde a sincronização do Gradle e execute `app` em um celular Android.
-5. No app, abra `Visual` > `Definir como tela inicial`. O Android pedirá a escolha do launcher.
-6. Para voltar ao launcher anterior: Configurações do Android > Apps > Apps padrão > App de início.
+Requer Android SDK 35 e JDK 17. Abra a pasta `PortNexusLauncher` no Android Studio ou execute `gradle :app:assembleDebug` com Gradle 8.13.
 
-### Gerar APK pelo GitHub
+No GitHub, o workflow `Port Nexus Launcher - APK` compila a partir da branch `port-nexus-launcher` e disponibiliza o arquivo instalável como artefato de execução.
 
-Crie um repositório e envie o conteúdo desta pasta para a raiz. Na aba **Actions**, execute **Gerar APK Android**. Quando o fluxo terminar com sucesso, abra a execução e baixe o artefato `Port-Nexus-Launcher-v0.1-debug`. O APK dentro do ZIP do artefato é `app-debug.apk`.
+## Limites e próximas integrações
 
-Obs.: as ações são preparadas e não foram executadas automaticamente nesta entrega. O APK ainda não foi compilado aqui.
+Os atalhos de Wi-Fi, Bluetooth e outros controles protegidos abrem configurações nativas (o Android não permite alternar muitos desses ajustes diretamente por apps comuns). Brilho afeta apenas a janela Nexus, não o brilho global. O hub é local baseado em comandos, sem integração com IA online. A organização automática usa heurísticas, sem acesso a uso do sistema.
 
-## Limitações intencionais
+Recursos planejados, mas ainda não incluídos: arrastar ícones, pastas personalizadas, widgets de apps externos, player com controle direto por MediaSession, clima com fonte de dados, automações contextuais e IA conectada com consentimento.
 
-A interface não altera a central nativa de notificações, o painel de configurações rápidas nem a tela de apps recentes. Os atalhos de Wi-Fi e Bluetooth abrem páginas autorizadas do Android e não alteram o rádio de forma silenciosa. O atalho Spotify apenas abre o app. A versão 0.1 ainda não oferece mídia integrada, widgets de terceiros, gestos personalizados ou automações externas. Não requer root, acesso a notificações, permissão de sobreposição nem acesso à internet.
-
-## Segurança
-
-A escolha do launcher padrão é feita pelo usuário no diálogo do Android. Evitamos permissões perigosas e não usamos serviços em segundo plano. O APK debug é para teste. Para uma distribuição pública, é necessário gerar e assinar uma versão release.
+Documentação técnica: `ARCHITECTURE_V2.md`.
