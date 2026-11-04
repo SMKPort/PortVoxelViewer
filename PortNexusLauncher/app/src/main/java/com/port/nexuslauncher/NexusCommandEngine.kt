@@ -249,6 +249,37 @@ object NexusCommandEngine {
         }
         if (command.isBlank() || command == "nexus") return NexusCommandResult("Estou ouvindo. Qual é o comando?")
 
+        // Se o servidor da IA falhar, comandos simples encadeados ainda funcionam offline.
+        // So divide quando TODOS os segmentos sao claramente comandos suportados.
+        val pieces = command.split(Regex("\\s+(?:e depois|e em seguida|depois|e)\\s+"))
+            .map { it.trim() }.filter { it.isNotBlank() }
+        val recognized: (String) -> Boolean = { part ->
+            val appTarget = parseOpenTarget(part)
+            appTarget != null && appTarget.isNotBlank() ||
+                (part.contains("volume") && part.length < 110) ||
+                part.startsWith("modo ") || part.startsWith("ativar modo ") ||
+                part.contains("proxima faixa") || part.contains("pausar musica") ||
+                part.contains("tocar musica") || part.contains("faixa anterior") ||
+                part.startsWith("navegar para ") || part.startsWith("pesquisar na web ")
+        }
+        if (pieces.size in 2..4 && pieces.all(recognized)) {
+            val responses = mutableListOf<String>()
+            for (single in pieces) {
+                val result = run(
+                    phrase = single, context = context, apps = apps, prefs = prefs,
+                    onMode = onMode, onSystemAction = onSystemAction,
+                    onLaunchApp = onLaunchApp, onAudio = onAudio,
+                    onChatGpt = onChatGpt, onApps = onApps,
+                    onNotifications = onNotifications, onArchive = onArchive
+                )
+                responses.add(result.reply)
+                if (result.suggestions.isNotEmpty()) {
+                    return NexusCommandResult(responses.joinToString(" "), result.suggestions)
+                }
+            }
+            return NexusCommandResult(responses.joinToString(" "))
+        }
+
         // Apelidos são locais e vinculados a um aplicativo instalado.
         val teach = Regex("^(?:chame|chama|apelide) (?:o |a |app |aplicativo )?(.+?) (?:de|como) (.+)$").find(command)
         if (teach != null) {
