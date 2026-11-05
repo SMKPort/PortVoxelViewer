@@ -1,35 +1,42 @@
-# Port Audio Booster 3.1 | Native MusicFX / Spotify
+# Port Audio Booster 3.2 | Car Audio Edition
 
-O **MusicFX (com.android.musicfx)** é o caminho principal desta versão porque apresentou alteração audível no áudio do Spotify no aparelho de teste. Os efeitos globais da versão 3.0 continuam acessíveis somente como **modo experimental**.
+Aplicativo Android com equalizador próprio, reforço de graves, comparador A/B, presets e ferramentas voltadas ao som automotivo. **Sem integração com MusicFX** ou outras interfaces externas de equalização.
 
-## Recursos 3.1
+## Funcionalidades
 
-- Tela inicial MusicFX-first, visual preto/vermelho/dourado, atalho para Spotify e painel de áudio nativo.
-- Presets de **referência manual** para 5 bandas (60 Hz, 230 Hz, 910 Hz, 4 kHz, 14 kHz): Paredão, Grave Extremo, Funk, Voz Limpa, Rock e Neutro, com sugestões de intensidade de grave e surround.
-- Comparação A/B **manual**, orientando a alternar o MusicFX nativo e manter o mesmo volume.
-- Perfis Bluetooth: escolha de preset padrão e associação por dispositivo; seleção de referência quando detectada conexão, sem tentar controlar parâmetros internos do MusicFX.
-- Botão flutuante com atalho MusicFX, troca de referência e controle do volume multimídia.
-- Diagnóstico: MusicFX e Spotify detectados, painel disponível, saída de áudio e status do processamento experimental.
-- Modo experimental 3.0 preservado (EQ virtual até 31 bandas, Bass Boost, ganho, FFT, importação/exportação, controles de Spotify via MediaSession).
+- **A/B no topo da tela:** A = áudio original (efeitos do Port Audio desligados), B = efeitos ativos, com sinalização grande; requer ativar o processamento antes.
+- **Car Audio Edition:** presets Paredão Controlado, Pancada Limpa, Subgrave Suave, Voz Presente e Flat Seguro.
+- **Proteção preventiva:** quando ativada, limita o EQ digital a no máximo +2 dB, Bass Boost do Android a 15% e força ganho extra de 0 dB; tenta o limiter do Android quando disponível. Não analisa o sinal de saída do amplificador e não garante eliminação de clipping.
+- **Equalizador próprio:** controles de 5/10/31 bandas virtuais, EQ do sistema conforme disponibilizado ao aplicativo, grave, espacialização e ganho opcional (pela tela avançada).
+- **Spotify:** botão para abrir Spotify, além de controles opcionais de reprodução por MediaSession; áudio é processado somente se o Android aceitar efeitos na sessão global 0.
+- **Bluetooth:** ativação opt-in, seleção automática de preset do Car Audio Edition e vínculo de perfil ao dispositivo. A inicialização do serviço em segundo plano pode ser bloqueada pelo Android.
+- **Botão flutuante:** comparação A/B, escolha de preset, proteção e volume.
+- **Meu Paredão:** formulário para dois módulos, quatro falantes, ligação série/paralelo e tensões inseridas manualmente; cálculo estimado de impedância e registro de dados. Não há medição automática de clipping ou de tensão elétrica.
+- **Ferramentas avançadas:** analisador FFT pela API Visualizer quando autorizado, importação/exportação de presets, diagnóstico de recursos e permissões.
 
-## Como usar com Spotify
+## Como usar com o som do carro
 
-1. Reproduza uma música no Spotify.
-2. Abra **Spotify > Configurações e privacidade > Reprodução > Equalizador**. Esse é o caminho mais confiável para alterar a sessão de áudio do Spotify.
-3. Selecione um preset de referência no Port Audio Booster 3.1.
-4. Aplique manualmente os valores das cinco frequências na tela do MusicFX.
-5. Faça o teste A/B alternando o botão superior do MusicFX, ouvindo o mesmo trecho da música e mantendo o mesmo volume.
+1. Ligue o Spotify e abra o Port Audio Booster 3.2.
+2. Ative o processamento do aplicativo e selecione **B COM EFEITOS** no comparador.
+3. Comece com **Flat Seguro** ou **Paredão Controlado** e **proteção preventiva ligada**.
+4. Aumente o volume gradualmente, interrompendo imediatamente se os graves distorcerem.
+5. Cadastre as informações reais dos módulos e alto-falantes em **Meu Paredão** para estimar ligações. Confira sempre a potência por impedância, a fiação e os cortes com profissional.
 
-O botão "Abrir MusicFX do Android" usa `AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL` (sem falsificar a sessão do Spotify). O painel pode armazenar preferências por aplicativo ou sessão, portanto abrir diretamente pelo nosso app **não garante que os ajustes afetem o Spotify**. Por isso, prefira abrir pelo Spotify quando a alteração for destinada a ele.
+### Limitações técnicas
 
-## Restrições e segurança
+O Android considera obsoleto conectar efeitos de inserção à sessão global 0. Por isso, o aplicativo **não pode garantir processamento do Spotify ou outros aplicativos** em todos os celulares. A indicação de API disponível também não confirma efeito audível. O app não consegue medir a distorção do módulo nem corrente, tensão ou a temperatura por software comum. Um limiter digital é diferente de proteção de clipping física do amplificador.
 
-O app **não escreve automaticamente** nas bandas internas do MusicFX. O Android não oferece API pública universal para isso. Mudar preset Bluetooth ou pelo botão flutuante seleciona **somente uma referência visual**, não modifica o equalizador. O registro de conexões Bluetooth em background pode ser restrito pelo sistema; requer autorização "Dispositivos próximos" em Android 12+.
+Os valores de potência e impedância dependem do modelo exato e da ligação das bobinas. Os cálculos simplificados supõem **dois falantes idênticos por caixa**, com impedância efetiva já definida em cada falante, e uma das duas opções (paralelo/série). Não servem para dimensionar um amplificador sem inspeção da instalação.
 
-Com MusicFX ativo, mantenha o processamento global do Port Audio Booster desligado. O modo experimental da versão 3.0 pode não afetar áudio do Spotify, mesmo quando a API indica disponibilidade. Evite amplificação excessiva por risco de clipping e dano à audição.
+## APK Android
 
-## Gerar APK
+Workflow: [Port Audio Booster 3.2 - Car Audio APK](../../actions/workflows/port-audio-booster-apk.yml).
 
-O workflow [Port Audio Booster 3.1 - Gerar APK](../../actions/workflows/port-audio-booster-apk.yml) compila com Android SDK 35, Java 17 e Gradle 8.13. Depois de um build bem-sucedido na branch main, o APK fica em `download/PortAudioBooster-v3.1-MusicFX.apk`, além do artifact `PortAudioBooster-v3.1-MusicFX-APK`.
+Após build de `main` com sucesso, APK de teste publicado em [download/PortAudioBooster-v3.2-CarAudio.apk](download/PortAudioBooster-v3.2-CarAudio.apk). GitHub Actions também publica o artifact `PortAudioBooster-v3.2-CarAudio-APK`.
 
-Pacote Android `com.port.audiobooster`, `versionCode 4`. A compilação é **debug**, com possível mudança de assinatura entre builds.
+- Android SDK 35, JDK 17, Gradle 8.13
+- Package: `com.port.audiobooster`
+- Version: `3.2.0-car-audio` (`versionCode 5`)
+- APK debug; sua assinatura pode diferir de outros APKs.
+
+Código-fonte e APK de versões anteriores podem permanecer no histórico do GitHub, mas a versão 3.2 não tem controles ou dependências do MusicFX.
