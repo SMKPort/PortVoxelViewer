@@ -1,6 +1,9 @@
 package com.port.audiobooster;
 
 import android.app.Activity;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
@@ -63,6 +66,9 @@ public final class PortAudioActivity extends Activity {
     }
     @Override protected void onResume(){super.onResume();render();handler.removeCallbacks(refresh);handler.post(refresh);}
     @Override protected void onPause(){handler.removeCallbacks(refresh);super.onPause();}
+    @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] result){
+        super.onRequestPermissionsResult(request,permissions,result);render();
+    }
     private int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}
     private GradientDrawable style(int color){
         GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(14));return d;
@@ -153,6 +159,28 @@ public final class PortAudioActivity extends Activity {
         gap(protect,12);
         protect.addView(label("O indicador estima risco a partir das regulagens. Não mede distorção, corrente ou temperatura dos amplificadores.",12,MUTED,false));
 
+        LinearLayout btCard=card("📡 Bluetooth do paredão",
+            "Ao conectar um dispositivo de áudio, tentar aplicar o preset próprio escolhido. O Android pode bloquear início em segundo plano.");
+        LinearLayout btRow=new LinearLayout(this);btRow.setGravity(Gravity.CENTER_VERTICAL);btCard.addView(btRow);
+        btRow.addView(label("Ativação automática",14,WHITE,false),new LinearLayout.LayoutParams(0,-2,1));
+        Switch btSwitch=new Switch(this);btSwitch.setChecked(prefs.getBoolean("auto_bt",false));btRow.addView(btSwitch);
+        btSwitch.setOnCheckedChangeListener((v,onBt)->{
+            if(onBt&&Build.VERSION.SDK_INT>=31
+                &&checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT)!=PackageManager.PERMISSION_GRANTED){
+                btSwitch.setChecked(false);
+                requestPermissions(new String[]{Manifest.permission.BLUETOOTH_CONNECT},302);return;
+            }
+            prefs.edit().putBoolean("auto_bt",onBt).apply();
+        });
+        gap(btCard,10);
+        btCard.addView(label("Preset padrão Bluetooth: "+
+            prefs.getString("bt_car_default","Paredão Controlado"),13,GOLD,true));
+        gap(btCard,8);
+        for(String name:CarAudioPresets.NAMES){
+            button(btCard,name,()->{
+                prefs.edit().putString("bt_car_default",name).apply();render();
+            },name.equals(prefs.getString("bt_car_default","Paredão Controlado")));
+        }
         LinearLayout tools=card("Ferramentas e diagnóstico",
             "Acesse o equalizador avançado, medições e controles flutuantes.");
         button(tools,"Equalizador profissional e Bass Boost",()->startActivity(new Intent(this,StudioActivity.class)),false);
