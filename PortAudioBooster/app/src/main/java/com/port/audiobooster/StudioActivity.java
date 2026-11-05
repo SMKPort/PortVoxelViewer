@@ -11,7 +11,6 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
-import android.media.audiofx.AudioEffect;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -31,7 +30,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
-/** Interface principal do Port Audio Booster 3.0. */
+/** Edição avançada do EQ e Bass Boost do Port Audio Booster 3.2. */
 public final class StudioActivity extends Activity {
     private static final int BG=0xff0a090d, PANEL=0xff1d171e, GOLD=0xffe7b74b, RED=0xffcc2639, LIGHT=0xfff4efe8;
     private static final String[] TABS={"SPOTIFY","EQ","BOOST","ESPECTRO","BLUETOOTH","AJUSTES"};
@@ -119,7 +118,7 @@ public final class StudioActivity extends Activity {
     private void render(){
         if(spectrum!=null){spectrum.stop();spectrum=null;}
         LinearLayout root=vertical();root.setPadding(dp(14),dp(14),dp(14),dp(12));root.setBackgroundColor(BG);setContentView(root);
-        TextView tag=text("P O R T  A U D I O  /  V 3.0",11,GOLD);tag.setTypeface(null,Typeface.BOLD);root.addView(tag);
+        TextView tag=text("P O R T  A U D I O  /  V 3.2",11,GOLD);tag.setTypeface(null,Typeface.BOLD);root.addView(tag);
         root.addView(text("AUDIO BOOSTER",27,LIGHT));space(root,10);
         HorizontalScrollView scrollTabs=new HorizontalScrollView(this);scrollTabs.setHorizontalScrollBarEnabled(false);root.addView(scrollTabs);
         LinearLayout tabRow=new LinearLayout(this);scrollTabs.addView(tabRow);
@@ -143,13 +142,9 @@ public final class StudioActivity extends Activity {
             Intent launch=getPackageManager().getLaunchIntentForPackage("com.spotify.music");
             if(launch!=null)startActivity(launch);else toast("Spotify não encontrado");
         });
-        button(c,"Painel de EQ do Android",()->{
-            try{startActivity(new Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL)
-                .putExtra(AudioEffect.EXTRA_CONTENT_TYPE,AudioEffect.CONTENT_TYPE_MUSIC));}
-            catch(RuntimeException e){toast("Sem equalizador nativo compatível");}
-        });
+
         button(c,"Reprodução do Spotify / permissões",()->startActivity(new Intent(this,MainActivity.class)));
-        LinearLayout ab=section("Comparação A/B","A = original (sem efeitos). B = processamento configurado, se compatível.");
+        LinearLayout ab=section("Comparação A/B","A = original (sem efeitos). B = Port Audio Booster ativo. Também aparece na tela principal.");
         button(ab,p.getBoolean("compare_original",false)?"A: original. Ativar B":"B: efeitos. Ouvir A",()->{
             p.edit().putBoolean("compare_original",!p.getBoolean("compare_original",false)).apply();apply();render();
         });
@@ -224,7 +219,7 @@ public final class StudioActivity extends Activity {
         });
     }
     private void settings(){
-        LinearLayout overlay=section("Botão flutuante","Controle rápido sobre o Spotify: A/B, presets, graves e volume.");
+        LinearLayout overlay=section("Botão flutuante","Controle do próprio Port Audio Booster: A/B, presets, proteção e volume.");
         if(!Settings.canDrawOverlays(this))button(overlay,"Autorizar sobreposição",()->{
             startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:"+getPackageName())));
         });
