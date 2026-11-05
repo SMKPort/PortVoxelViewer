@@ -102,7 +102,7 @@ public final class StudioActivity extends Activity {
             }else if("floating".equals(key)){
                 if(on||p.getBoolean("enabled",false))service(AudioEffectsService.ACTION_START);
                 else service(AudioEffectsService.ACTION_STOP);
-            }else if("safe_gain".equals(key))apply();
+            }else if("safe_gain".equals(key)||"car_guard".equals(key))apply();
             if("auto_bt".equals(key)&&on)checkBluetoothRoute();
         });
     }
@@ -184,8 +184,9 @@ public final class StudioActivity extends Activity {
             String key=keys[i];slider(c,titles[i],0,max[i],p.getInt(key,defaults[i]),units[i],
                 n->{p.edit().putInt(key,n).apply();apply();});
         }
+        toggle(c,"Proteção preventiva Car Audio","car_guard",true);
         toggle(c,"Limitar ganho / compressor quando suportado","safe_gain",true);
-        c.addView(text("O limiter DynamicsProcessing e o ganho externo podem ser ignorados pelo Android. Cuidado com audição e alto-falantes.",12,GOLD));
+        c.addView(text("A proteção preventiva limita o boost ao aplicar efeitos, mas não mede clipping no módulo. O limiter do Android pode ser ignorado.",12,GOLD));
         LinearLayout volume=section("Volume do Android","Volume multimídia padrão, inclusive Spotify.");
         int mx=audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         slider(volume,"Volume",0,mx,audio.getStreamVolume(AudioManager.STREAM_MUSIC)," / "+mx,
@@ -207,10 +208,9 @@ public final class StudioActivity extends Activity {
             button(c,"Permitir dispositivos próximos",()->requestPermissions(new String[]{Manifest.permission.BLUETOOTH_CONNECT},BT));
         toggle(c,"Iniciar efeito ao conectar dispositivo Bluetooth","auto_bt",false);
         c.addView(text("Ao conectar um dispositivo de áudio, será aplicado o preset padrão ou o perfil específico vinculado.",12,GOLD));
-        LinearLayout preset=section("Preset Bluetooth padrão",p.getString("bt_default","Paredão"));
-        for(int i=0;i<AudioProfiles.NAMES.length-1;i++){
-            String name=AudioProfiles.NAMES[i];
-            button(preset,name,()->{p.edit().putString("bt_default",name).apply();render();});
+        LinearLayout preset=section("Preset Bluetooth padrão",p.getString("bt_car_default","Paredão Controlado"));
+        for(String name:CarAudioPresets.NAMES){
+            button(preset,name,()->{p.edit().putString("bt_car_default",name).apply();render();});
         }
         LinearLayout device=section("Dispositivo atual","Última conexão: "+p.getString("bt_name","nenhum registrado"));
         String addr=p.getString("bt_current","");
@@ -259,7 +259,7 @@ public final class StudioActivity extends Activity {
             int type=d.getType();
             if(type==AudioDeviceInfo.TYPE_BLUETOOTH_A2DP||type==AudioDeviceInfo.TYPE_BLUETOOTH_SCO
                 ||(Build.VERSION.SDK_INT>=31&&type==AudioDeviceInfo.TYPE_BLE_HEADSET)){
-                AudioProfiles.setPreset(p,p.getString("bt_default","Paredão"));
+                CarAudioPresets.apply(p,p.getString("bt_car_default","Paredão Controlado"));
                 p.edit().putBoolean("enabled",true).apply();service(AudioEffectsService.ACTION_START);render();break;
             }
         }
