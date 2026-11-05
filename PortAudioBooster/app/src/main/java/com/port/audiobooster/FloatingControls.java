@@ -7,7 +7,6 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.media.AudioManager;
-import android.os.Build;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
@@ -16,119 +15,94 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-/** Botão flutuante opcional com a permissão de sobreposição concedida manualmente. */
+/** Botão flutuante exclusivo Port Audio Booster; exige permissão explícita de overlay. */
 final class FloatingControls {
     private final Service service;
-    private final SharedPreferences prefs;
+    private final SharedPreferences p;
     private WindowManager manager;
     private View view;
-    private boolean expanded;
-    FloatingControls(Service service) {
-        this.service=service;
-        prefs=service.getSharedPreferences(GlobalAudioEngine.PREFS,Context.MODE_PRIVATE);
+    FloatingControls(Service s){
+        service=s;
+        p=s.getSharedPreferences(GlobalAudioEngine.PREFS,Context.MODE_PRIVATE);
     }
     private int dp(int n){return (int)(n*service.getResources().getDisplayMetrics().density+.5f);}
-    private GradientDrawable shape(int color){
-        GradientDrawable g=new GradientDrawable();g.setColor(color);g.setCornerRadius(dp(17));return g;
-    }
+    private GradientDrawable bg(int c){GradientDrawable g=new GradientDrawable();g.setColor(c);g.setCornerRadius(dp(15));return g;}
     void sync(){
-        if(!prefs.getBoolean("floating",false)||!Settings.canDrawOverlays(service)){hide();return;}
+        if(!p.getBoolean("floating",false)||!Settings.canDrawOverlays(service)){hide();return;}
         if(view==null)show(false);
     }
-    private WindowManager.LayoutParams params(boolean wide){
-        WindowManager.LayoutParams p=new WindowManager.LayoutParams(
-            dp(wide?274:58),-2,WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            android.graphics.PixelFormat.TRANSLUCENT);
-        p.gravity=Gravity.TOP|Gravity.END;p.x=dp(12);p.y=dp(130);return p;
-    }
-    private void show(boolean wide){
-        hide(); expanded=wide;
-        if(!Settings.canDrawOverlays(service))return;
+    private void show(boolean expanded){
+        hide();if(!Settings.canDrawOverlays(service))return;
         manager=(WindowManager)service.getSystemService(Context.WINDOW_SERVICE);
-        LinearLayout panel=new LinearLayout(service);
-        panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(dp(8),dp(8),dp(8),dp(8));
-        panel.setBackground(shape(Color.rgb(29,23,30)));
-        if(!wide){
+        LinearLayout panel=new LinearLayout(service);panel.setOrientation(1);panel.setPadding(dp(8),dp(8),dp(8),dp(8));
+        panel.setBackground(bg(0xff2c222c));
+        if(!expanded){
             TextView bubble=new TextView(service);bubble.setText("🔊");bubble.setTextSize(25);
-            bubble.setGravity(Gravity.CENTER);
-            bubble.setBackground(shape(Color.rgb(166,36,49)));panel.addView(bubble,
-                new LinearLayout.LayoutParams(dp(46),dp(46)));
+            bubble.setGravity(Gravity.CENTER);bubble.setBackground(bg(0xffb73345));
+            panel.addView(bubble,new LinearLayout.LayoutParams(dp(45),dp(45)));
             bubble.setOnClickListener(v->show(true));
-        }else{
-            TextView head=new TextView(service);head.setText("PORT AUDIO   ✕");
-            head.setTextColor(Color.rgb(231,183,75));head.setTextSize(16);head.setPadding(dp(8),dp(6),dp(8),dp(12));
-            panel.addView(head);head.setOnClickListener(v->show(false));
-            if(prefs.getBoolean("native_mode",true)){
-                add(panel,"Abrir MusicFX",()->{
-                    Intent i=new Intent(service,NativeMusicFxActivity.class)
-                        .setAction(NativeMusicFxActivity.OPEN_MUSICFX)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                    service.startActivity(i);show(false);
-                });
-                add(panel,"Preset: "+NativeMusicFxPresets.selected(prefs),()->{
-                    String[] names=NativeMusicFxPresets.NAMES;
-                    int idx=NativeMusicFxPresets.find(NativeMusicFxPresets.selected(prefs));
-                    NativeMusicFxPresets.select(prefs,names[(idx+1)%names.length]);
-                    show(true);
-                });
-                add(panel,"Comparar A/B no MusicFX",()->{
-                    Intent i=new Intent(service,NativeMusicFxActivity.class)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                    service.startActivity(i);show(false);
-                });
-                add(panel,"Volume -",()->volume(-1));
-                add(panel,"Volume +",()->volume(1));
-                add(panel,"Ocultar botão flutuante",()->{
-                    prefs.edit().putBoolean("floating",false).apply();
-                    if(!prefs.getBoolean("enabled",false))
-                        service.startService(new Intent(service,AudioEffectsService.class)
-                            .setAction(AudioEffectsService.ACTION_STOP));
-                    hide();
-                });
-            } else {
-                add(panel,"A/B: "+(prefs.getBoolean("compare_original",false)?"ORIGINAL":"COM EFEITOS"),()->{
-                    prefs.edit().putBoolean("compare_original",!prefs.getBoolean("compare_original",false)).apply();
-                    apply();show(true);
-                });
-            add(panel,"Trocar preset ("+prefs.getString("preset","Paredão")+")",()->{
-                String[] names=AudioProfiles.NAMES;
-                int current=0;for(int i=0;i<names.length-1;i++)if(names[i].equals(prefs.getString("preset","")))current=i;
-                AudioProfiles.setPreset(prefs,names[(current+1)%(names.length-1)]);apply();show(true);
+        } else {
+            TextView head=new TextView(service);head.setText("PORT AUDIO 3.2   ✕");
+            head.setTextColor(0xffe2b25b);head.setTextSize(15);
+            head.setPadding(dp(8),dp(7),dp(8),dp(9));panel.addView(head);
+            head.setOnClickListener(v->show(false));
+            String state=!p.getBoolean("enabled",false)?"DESLIGADO":p.getBoolean("compare_original",false)?"A ORIGINAL":"B COM EFEITOS";
+            add(panel,"A/B: "+state,()->{
+                if(!p.getBoolean("enabled",false)){openMain();return;}
+                p.edit().putBoolean("compare_original",!p.getBoolean("compare_original",false)).apply();
+                apply();show(true);
             });
-            add(panel,"Graves +10%",()->{
-                prefs.edit().putInt("bass",AudioProfiles.clamp(prefs.getInt("bass",35)+10,0,100)).apply();apply();
+            add(panel,"Preset: "+p.getString("car_preset","Paredão Controlado"),()->{
+                int i=CarAudioPresets.find(p.getString("car_preset","Paredão Controlado"));
+                CarAudioPresets.apply(p,CarAudioPresets.NAMES[(i+1)%CarAudioPresets.NAMES.length]);
+                apply();show(true);
+            });
+            add(panel,"Proteção: "+(p.getBoolean("car_guard",true)?"ON":"OFF"),()->{
+                p.edit().putBoolean("car_guard",!p.getBoolean("car_guard",true)).apply();
+                apply();show(true);
             });
             add(panel,"Volume -",()->volume(-1));
             add(panel,"Volume +",()->volume(1));
-            add(panel,"Desligar efeito",()->{
-                prefs.edit().putBoolean("enabled",false).apply();
-                service.startService(new Intent(service,AudioEffectsService.class).setAction(AudioEffectsService.ACTION_STOP));
+            add(panel,"Abrir Port Audio",this::openMain);
+            add(panel,"Ocultar botão",()->{
+                p.edit().putBoolean("floating",false).apply();
+                if(!p.getBoolean("enabled",false))
+                    service.startService(new Intent(service,AudioEffectsService.class).setAction(AudioEffectsService.ACTION_STOP));
                 hide();
             });
-            }
         }
-        view=panel;
-        try{manager.addView(view,params(wide));}
-        catch(RuntimeException e){view=null;}
+        WindowManager.LayoutParams lp=new WindowManager.LayoutParams(
+            dp(expanded?282:61),-2,WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            android.graphics.PixelFormat.TRANSLUCENT);
+        lp.gravity=Gravity.TOP|Gravity.END;lp.x=dp(12);lp.y=dp(135);
+        view=panel;try{manager.addView(view,lp);}catch(RuntimeException e){view=null;}
     }
-    private void add(LinearLayout panel,String s,Runnable action){
-        Button b=new Button(service);b.setAllCaps(false);b.setText(s);b.setTextSize(12);
-        b.setTextColor(Color.WHITE);b.setBackground(shape(Color.rgb(66,44,51)));
-        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(42));
-        lp.bottomMargin=dp(4);panel.addView(b,lp);b.setOnClickListener(v->action.run());
+    private void add(LinearLayout parent,String name,Runnable run){
+        Button b=new Button(service);b.setAllCaps(false);b.setText(name);b.setTextColor(Color.WHITE);b.setTextSize(13);
+        b.setBackground(bg(0xff65414e));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(42));
+        lp.bottomMargin=dp(5);parent.addView(b,lp);b.setOnClickListener(v->run.run());
     }
-    private void volume(int delta) {
-        AudioManager am=(AudioManager)service.getSystemService(Context.AUDIO_SERVICE);
-        int value=am.getStreamVolume(AudioManager.STREAM_MUSIC);
-        am.setStreamVolume(AudioManager.STREAM_MUSIC,
-           AudioProfiles.clamp(value+delta,0,am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)),0);
+    private void openMain(){
+        try{
+            Intent i=new Intent(service,PortAudioActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            service.startActivity(i);show(false);
+        }catch(RuntimeException ignored){}
     }
-    private void apply() {
-        service.startService(new Intent(service,AudioEffectsService.class).setAction(AudioEffectsService.ACTION_APPLY));
+    private void apply(){
+        if(p.getBoolean("enabled",false))try{
+            service.startService(new Intent(service,AudioEffectsService.class).setAction(AudioEffectsService.ACTION_APPLY));
+        }catch(RuntimeException ignored){}
     }
-    void hide() {
-        if(manager!=null && view!=null)try{manager.removeView(view);}catch(RuntimeException ignored){}
+    private void volume(int delta){
+        AudioManager a=(AudioManager)service.getSystemService(Context.AUDIO_SERVICE);
+        int current=a.getStreamVolume(AudioManager.STREAM_MUSIC);
+        a.setStreamVolume(AudioManager.STREAM_MUSIC,
+            AudioProfiles.clamp(current+delta,0,a.getStreamMaxVolume(AudioManager.STREAM_MUSIC)),0);
+    }
+    void hide(){
+        if(manager!=null&&view!=null)try{manager.removeView(view);}catch(RuntimeException ignored){}
         view=null;
     }
 }
