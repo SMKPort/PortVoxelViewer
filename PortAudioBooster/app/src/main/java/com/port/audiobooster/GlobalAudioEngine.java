@@ -31,17 +31,19 @@ final class GlobalAudioEngine {
         if(Build.VERSION.SDK_INT>=28)try{dynamics=new DynamicsProcessing(0);}
             catch(RuntimeException|LinkageError e){releaseDynamics();}
         try{loudness=new LoudnessEnhancer(0);}catch(RuntimeException|LinkageError e){releaseLoudness();}
-        updateStatus(false);
+        updateStatus(false,false);
     }
 
     void apply(SharedPreferences prefs){
         boolean original=prefs.getBoolean("compare_original",false);
+        boolean carGuard=prefs.getBoolean("car_guard",true);
         if(equalizer!=null){
             try{
                 int[] bounds={equalizer.getBandLevelRange()[0],equalizer.getBandLevelRange()[1]};
                 for(short i=0;i<equalizer.getNumberOfBands();i++){
                     double hz=equalizer.getCenterFreq(i)/1000d;
                     double db=AudioProfiles.atHz(prefs,hz)+AudioProfiles.bassDb(prefs,hz);
+                    if(carGuard)db=Math.min(2.0,Math.max(-12.0,db));
                     int mb=(int)Math.round(AudioProfiles.clamp((int)Math.round(db*100),bounds[0],bounds[1]));
                     equalizer.setBandLevel(i,(short)(original?0:mb));
                 }
@@ -49,18 +51,18 @@ final class GlobalAudioEngine {
             }catch(RuntimeException|LinkageError ignored){}
         }
         if(bass!=null)try{
-            int p=AudioProfiles.clamp(prefs.getInt("bass",35),0,100);
+            int p=AudioProfiles.clamp(prefs.getInt("bass",35),0,carGuard?15:100);
             bass.setStrength((short)(p*10));
             bass.setEnabled(!original&&p>0);
         }catch(RuntimeException|LinkageError ignored){}
         if(virtualizer!=null)try{
-            int p=AudioProfiles.clamp(prefs.getInt("space",0),0,100);
+            int p=AudioProfiles.clamp(prefs.getInt("space",0),0,carGuard?0:100);
             virtualizer.setStrength((short)(p*10));
             virtualizer.setEnabled(!original&&p>0);
         }catch(RuntimeException|LinkageError ignored){}
 
-        int gain=AudioProfiles.clamp(prefs.getInt("gain",0),0,6);
-        boolean protection=prefs.getBoolean("safe_gain",true);
+        int gain=carGuard?0:AudioProfiles.clamp(prefs.getInt("gain",0),0,6);
+        boolean protection=carGuard||prefs.getBoolean("safe_gain",true);
         boolean dynamicActive=false;
         if(dynamics!=null)try{
             // Modo inteligente: ganho de entrada e limiter digital em conjunto,
@@ -78,15 +80,15 @@ final class GlobalAudioEngine {
             loudness.setTargetGain((original?0:effective)*100);
             loudness.setEnabled(!original&&effective>0);
         }catch(RuntimeException|LinkageError ignored){}
-        updateStatus(original);
+        updateStatus(original,carGuard);
     }
 
-    private void updateStatus(boolean original){
+    private void updateStatus(boolean original,boolean carGuard){
         if(original){status="A/B: ORIGINAL (efeitos desativados).";return;}
         boolean any=(equalizer!=null&&equalizer.hasControl())||(bass!=null&&bass.hasControl())
              ||(virtualizer!=null&&virtualizer.hasControl())||(loudness!=null&&loudness.hasControl())
              ||(dynamics!=null&&dynamics.hasControl());
-        if(!any){status="Nenhum efeito global controlável. Use o equalizador do Spotify/Android.";return;}
+        if(!any){status="Nenhum efeito global controlável detectado. O Android pode bloquear o processamento.";return;}
         status=String.format(Locale.US,
             "API global: EQ %s | Bass %s | Espaço %s | Ganho %s | Limiter %s. Verificação auditiva obrigatória.",
             marker(equalizer!=null&&equalizer.hasControl()),
@@ -94,6 +96,8 @@ final class GlobalAudioEngine {
             marker(virtualizer!=null&&virtualizer.hasControl()),
             marker(loudness!=null&&loudness.hasControl()),
             marker(dynamics!=null&&dynamics.hasControl()));
+        if(carGuard)status="Proteção preventiva ativa: EQ até +2 dB, Bass até 15%, ganho extra 0 dB. "+status;
+        // Sem acesso ao sinal do módulo, não podemos afirmar que o clipping foi eliminado.
     }
     private String marker(boolean value){return value?"OK":"N/D";}
     private void releaseEq(){if(equalizer!=null){try{equalizer.release();}catch(RuntimeException ignored){}equalizer=null;}}
