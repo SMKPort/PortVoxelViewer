@@ -2,6 +2,9 @@ package com.port.nexuslauncher
 
 import android.content.ComponentName
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.net.Uri
 import android.os.BatteryManager
 import android.os.Bundle
@@ -31,6 +34,18 @@ class MainActivity : ComponentActivity() {
     private var installedApps by mutableStateOf<List<LauncherApp>>(emptyList())
     private var batteryPercent by mutableIntStateOf(-1)
     private var notificationAccessGranted by mutableStateOf(false)
+
+    private val batteryReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) { batteryPercent = readBatteryPercent() }
+    }
+    override fun onStart() {
+        super.onStart()
+        registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+    }
+    override fun onStop() {
+        unregisterReceiver(batteryReceiver)
+        super.onStop()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

@@ -1,6 +1,10 @@
 package com.port.nexuslauncher
 
 import android.content.SharedPreferences
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -131,7 +135,7 @@ private enum class NexusPage(val text: String, val icon: ImageVector) {
     SETTINGS("Visual", Icons.Rounded.Palette)
 }
 
-private enum class SidePanel { NONE, COMMAND, ARCHIVE, SIGNAL, VOICE }
+private enum class SidePanel { NONE, COMMAND, ARCHIVE, SIGNAL, VOICE, STUDIO }
 
 @Composable
 fun PortNexusV2(
@@ -159,6 +163,20 @@ fun PortNexusV2(
     var brightness by remember { mutableFloatStateOf(prefs.getFloat("v2_brightness", 0.7f)) }
     var iconScale by remember { mutableFloatStateOf(prefs.getFloat("v2_icon", 54f)) }
     var drawerQuery by rememberSaveable { mutableStateOf("") }
+
+    var studioRevision by remember { mutableIntStateOf(0) }
+    DisposableEffect(prefs) {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key?.startsWith("v3_") == true) studioRevision++
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+    val visual = remember(studioRevision) { readSovereignVisual(prefs) }
+    val visibleApps = remember(apps, hidden) { apps.filter { it.packageName !in hidden } }
+    BackHandler(panel != SidePanel.NONE || page != NexusPage.HOME) {
+        if (panel != SidePanel.NONE) panel = SidePanel.NONE else page = NexusPage.HOME
+    }
 
     val changeMode: (NexusMode) -> Unit = { chosen ->
         mode = chosen
@@ -188,12 +206,13 @@ fun PortNexusV2(
     val openSearch: () -> Unit = { page = NexusPage.APPS; panel = SidePanel.NONE }
 
     MaterialTheme(colorScheme = darkColorScheme(primary = mode.primary, secondary = mode.gold, background = V2Ink, surface = V2Panel, onSurface = V2White, onBackground = V2White)) {
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(V2Ink, mode.primary.copy(alpha = .16f).compositeOver(V2Ink), V2Ink)))) {
+        Box(Modifier.fillMaxSize().safeDrawingPadding().background(Brush.verticalGradient(listOf(V2Ink, mode.primary.copy(alpha = .16f).compositeOver(V2Ink), V2Ink)))) {
             AmbientGrid(mode)
             Column(Modifier.fillMaxSize()) {
                 Box(Modifier.weight(1f)) {
                     when (page) {
-                        NexusPage.HOME -> HomeV2(apps, favorites, recent, mode, batteryPercent, animations,
+                        NexusPage.HOME -> HomeV2(visibleApps, favorites, recent, mode, batteryPercent, animations, visual,
+                            onOpenStudio = { panel = SidePanel.STUDIO },
                             onOpenCommand = { panel = SidePanel.COMMAND },
                             onOpenArchive = { panel = SidePanel.ARCHIVE },
                             onOpenSignal = { panel = SidePanel.SIGNAL },
@@ -229,6 +248,7 @@ fun PortNexusV2(
                             onMode = changeMode,
                             onAnimations = { animations = it; prefs.edit().putBoolean("v2_animations", it).apply() },
                             onIconSize = { iconScale = it; prefs.edit().putFloat("v2_icon", it).apply() },
+                            onStudio = { panel = SidePanel.STUDIO },
                             onSystemAction = onSystemAction)
                     }
                 }
@@ -283,6 +303,19 @@ fun PortNexusV2(
                     onSystemAction = onSystemAction,
                 )
             }
+            if (panel == SidePanel.STUDIO) {
+                SovereignStudio(mode, prefs, visibleApps, onLaunch = openApp,
+                    onClose = { panel = SidePanel.NONE }, onRestored = {
+                        favorites = prefs.getStringSet("favorites", emptySet())?.toSet() ?: emptySet()
+                        hidden = prefs.getStringSet("v2_hidden", emptySet())?.toSet() ?: emptySet()
+                        animations = prefs.getBoolean("v2_animations", true)
+                        iconScale = prefs.getFloat("v2_icon", 54f)
+                        notes = prefs.getString("v2_notes", "") ?: ""
+                        mode = NexusMode.entries.firstOrNull { it.name == prefs.getString("v2_mode", "ARCANO") } ?: NexusMode.ARCANO
+                        drawerView = DrawerView.entries.firstOrNull { it.name == prefs.getString("v2_drawer", "GRADE") } ?: DrawerView.GRADE
+                        studioRevision++
+                    })
+            }
             AnimatedVisibility(
                 visible = panel == SidePanel.VOICE,
                 enter = fadeIn(tween(240)),
@@ -331,7 +364,8 @@ private fun AmbientGrid(mode: NexusMode) {
 @Composable
 private fun HomeV2(
     apps: List<LauncherApp>, favorites: Set<String>, recent: List<String>, mode: NexusMode,
-    battery: Int, animations: Boolean,
+    battery: Int, animations: Boolean, visual: SovereignVisual,
+    onOpenStudio: () -> Unit,
     onOpenCommand: () -> Unit, onOpenArchive: () -> Unit, onOpenSignal: () -> Unit, onOpenSearch: () -> Unit,
     onOpenAudio: () -> Unit, onOpenChatGPT: () -> Unit, onOpenVoice: () -> Unit,
     onOpenHub: () -> Unit, onMode: (NexusMode) -> Unit, onLaunch: (LauncherApp) -> Unit,
@@ -384,7 +418,7 @@ private fun HomeV2(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("P O R T   /   N E X U S", color = mode.gold, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
-                Text("PERSONAL OPERATING INTERFACE", color = V2Muted, fontSize = 9.sp, letterSpacing = .8.sp)
+                Text("SOVEREIGN EDITION  /  3.2", color = V2Muted, fontSize = 9.sp, letterSpacing = .8.sp)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 Box(Modifier.clip(RoundedCornerShape(14.dp))
@@ -413,8 +447,8 @@ private fun HomeV2(
             }
         }
         Spacer(Modifier.height(4.dp))
-        ReactorV2(mode, animations, onOpenHub)
-        Text("N E X U S    /    C O R E", color = mode.gold, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+        SovereignCore(mode, animations && battery !in 0..15, visual, onOpenHub)
+        Text(visual.signature.uppercase(V2Locale), color = mode.gold, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
         Text(mode.caption, color = V2Muted, fontSize = 10.sp, letterSpacing = 1.3.sp)
         Spacer(Modifier.height(17.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
@@ -423,6 +457,8 @@ private fun HomeV2(
             TinyActionV2("DECK  ▷", mode, onOpenCommand)
         }
         Spacer(Modifier.height(23.dp))
+        ActionBarV2("✦", "SOVEREIGN STUDIO", "Coleções • Foco • Missões • Identidade", mode, onClick = onOpenStudio)
+        Spacer(Modifier.height(10.dp))
         SectionV2("PROTOCOLOS DISPONÍVEIS", mode)
         Spacer(Modifier.height(11.dp))
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
@@ -467,54 +503,6 @@ private fun HomeV2(
         Spacer(Modifier.height(12.dp))
         QuickModuleV2("◎", "NEXUS VOICE", "Comandos e respostas por voz", mode, Modifier.fillMaxWidth(), onOpenVoice)
         Spacer(Modifier.height(26.dp))
-    }
-}
-
-@Composable
-private fun ReactorV2(mode: NexusMode, animations: Boolean, onClick: () -> Unit) {
-    val transition = rememberInfiniteTransition(label = "nexus-v2-core")
-    val spin by transition.animateFloat(0f, 360f, infiniteRepeatable(tween(24000, easing = LinearEasing), RepeatMode.Restart), label = "spin")
-    val reverse by transition.animateFloat(360f, 0f, infiniteRepeatable(tween(32000, easing = LinearEasing), RepeatMode.Restart), label = "reverse")
-    Box(Modifier.size(276.dp).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
-        Box(Modifier.size(252.dp).graphicsLayer { rotationZ = if (animations) spin else 0f }) {
-            Canvas(Modifier.fillMaxSize()) {
-                val radius = min(size.width, size.height) * .45f
-                val center = Offset(size.width / 2f, size.height / 2f)
-                drawCircle(mode.primary.copy(alpha = .08f), radius * 1.03f)
-                drawCircle(mode.gold.copy(alpha = .4f), radius, center, style = Stroke(1.dp.toPx()))
-                drawCircle(mode.primary.copy(alpha = .6f), radius * .78f, center, style = Stroke(1.5.dp.toPx()))
-                for (i in 0 until 9) {
-                    val start = i * 40f
-                    drawArc(mode.gold.copy(alpha = if (i % 2 == 0) .88f else .25f), start, 20f, false,
-                        topLeft = Offset(center.x - radius, center.y - radius),
-                        size = androidx.compose.ui.geometry.Size(radius * 2, radius * 2),
-                        style = Stroke(3.dp.toPx(), cap = StrokeCap.Round))
-                }
-                repeat(24) { index ->
-                    val theta = Math.toRadians(index * 15.0)
-                    val start = Offset(center.x + cos(theta).toFloat() * radius * .90f, center.y + sin(theta).toFloat() * radius * .90f)
-                    val end = Offset(center.x + cos(theta).toFloat() * radius, center.y + sin(theta).toFloat() * radius)
-                    drawLine(mode.gold.copy(alpha = .48f), start, end, if (index % 3 == 0) 2.dp.toPx() else 1.dp.toPx())
-                }
-            }
-        }
-        Canvas(Modifier.size(190.dp).graphicsLayer { rotationZ = if (animations) reverse else 0f }) {
-            val radius = size.minDimension * .46f
-            drawCircle(mode.gold.copy(alpha = .22f), radius = radius, style = Stroke(1.dp.toPx()))
-            for (i in 0..5) drawArc(mode.primary.copy(alpha = .8f), i * 60f, 34f, false, style = Stroke(5.dp.toPx(), cap = StrokeCap.Round))
-        }
-        Box(Modifier.size(124.dp).clip(CircleShape)
-            .background(Brush.radialGradient(listOf(mode.primary.copy(alpha = .53f), Color(0xFF230B18), V2Ink)))
-            .border(1.5.dp, mode.gold, CircleShape), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(mode.glyph, color = mode.gold, fontSize = 42.sp, lineHeight = 46.sp)
-                Text("NEXUS", color = V2White, fontSize = 15.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Black)
-                Text("V 2 . 0", color = mode.gold, fontSize = 9.sp, letterSpacing = 1.5.sp)
-            }
-        }
-        Text("✦", color = mode.gold, modifier = Modifier.align(Alignment.TopCenter).offset(y = 4.dp), fontSize = 19.sp)
-        Text("✧", color = mode.primary, modifier = Modifier.align(Alignment.CenterStart).offset(x = 4.dp), fontSize = 16.sp)
-        Text("✧", color = mode.primary, modifier = Modifier.align(Alignment.CenterEnd).offset(x = (-4).dp), fontSize = 16.sp)
     }
 }
 
@@ -616,7 +604,7 @@ private fun AppTileV2(app: LauncherApp, mode: NexusMode, favorite: Boolean, hidd
 }
 
 @Composable
-private fun V2AppIcon(app: LauncherApp, size: Int) {
+internal fun V2AppIcon(app: LauncherApp, size: Int) {
     val context = LocalContext.current
     val image = remember(app.component) {
         runCatching { context.packageManager.getActivityIcon(app.component).toBitmap(width = 96, height = 96).asImageBitmap() }.getOrNull()
@@ -698,11 +686,12 @@ private fun HubV2(
 @Composable
 private fun AppearanceV2(mode: NexusMode, animations: Boolean, iconSize: Float,
     onMode: (NexusMode) -> Unit, onAnimations: (Boolean) -> Unit, onIconSize: (Float) -> Unit,
-    onSystemAction: (NexusAction) -> Unit) {
+    onSystemAction: (NexusAction) -> Unit, onStudio: () -> Unit) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(19.dp)) {
         TitleV2("O ATELIÊ", mode)
         Text("Personalize a assinatura do Nexus", color = V2Muted, fontSize = 12.sp)
         Spacer(Modifier.height(18.dp))
+        ActionBarV2("✦", "Sovereign Studio", "Assinatura, núcleo e backup", mode, onClick = onStudio)
         SectionV2("PROTOCOLOS VISUAIS", mode)
         Spacer(Modifier.height(12.dp))
         NexusMode.entries.forEach { candidate ->
@@ -852,7 +841,7 @@ private fun BottomDockV2(page: NexusPage, mode: NexusMode, onPage: (NexusPage) -
 }
 
 @Composable
-private fun ActionBarV2(glyph: String, title: String, subtitle: String, mode: NexusMode, selected: Boolean = false, onClick: () -> Unit) {
+internal fun ActionBarV2(glyph: String, title: String, subtitle: String, mode: NexusMode, selected: Boolean = false, onClick: () -> Unit) {
     Surface(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).clickable(onClick = onClick),
         color = if (selected) mode.primary.copy(alpha = .24f) else V2Panel,
         shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, mode.gold.copy(alpha = if (selected) .65f else .17f))) {
@@ -871,7 +860,7 @@ private fun ActionBarV2(glyph: String, title: String, subtitle: String, mode: Ne
 }
 
 @Composable
-private fun GlassV2(mode: NexusMode, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+internal fun GlassV2(mode: NexusMode, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Surface(modifier = modifier, color = V2Panel, shape = RoundedCornerShape(18.dp),
         border = BorderStroke(1.dp, mode.gold.copy(alpha = .28f))) {
         Column(Modifier.padding(14.dp), content = { content() })
@@ -901,7 +890,7 @@ private fun TinyActionV2(title: String, mode: NexusMode, onClick: () -> Unit) {
 }
 
 @Composable
-private fun FilterPillV2(title: String, selected: Boolean, mode: NexusMode, modifier: Modifier = Modifier, onClick: () -> Unit) {
+internal fun FilterPillV2(title: String, selected: Boolean, mode: NexusMode, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(modifier.clip(RoundedCornerShape(11.dp))
         .background(if (selected) mode.primary.copy(alpha = .3f) else V2Panel)
         .border(1.dp, if (selected) mode.gold else mode.gold.copy(alpha = .2f), RoundedCornerShape(11.dp))
@@ -912,12 +901,12 @@ private fun FilterPillV2(title: String, selected: Boolean, mode: NexusMode, modi
 }
 
 @Composable
-private fun SectionV2(title: String, mode: NexusMode) {
+internal fun SectionV2(title: String, mode: NexusMode) {
     Text(title, color = mode.gold, fontWeight = FontWeight.Black, letterSpacing = 1.2.sp, fontSize = 11.sp)
 }
 
 @Composable
-private fun TitleV2(title: String, mode: NexusMode) {
+internal fun TitleV2(title: String, mode: NexusMode) {
     Text(title, color = V2White, fontWeight = FontWeight.Black, fontSize = 27.sp, letterSpacing = .8.sp)
     Box(Modifier.width(50.dp).height(2.dp).background(mode.gold))
 }
