@@ -10,21 +10,20 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <queries>
         <package android:name="com.spotify.music" />
-        <package android:name="com.android.musicfx" />
-        <intent><action android:name="android.media.action.DISPLAY_AUDIO_EFFECT_CONTROL_PANEL" /></intent>
     </queries>
     <application android:allowBackup="true"
         android:label="Port Audio Booster"
         android:icon="@drawable/ic_launcher"
         android:theme="@android:style/Theme.Material.NoActionBar"
         android:usesCleartextTraffic="false">
-        <activity android:name=".NativeMusicFxActivity" android:exported="true">
+        <activity android:name=".PortAudioActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
         <activity android:name=".StudioActivity" android:exported="false"/>
+        <activity android:name=".CarSystemActivity" android:exported="false"/>
         <activity android:name=".MainActivity" android:exported="false"/>
         <service android:name=".AudioEffectsService"
             android:exported="false"
