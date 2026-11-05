@@ -1,9 +1,9 @@
-name: Port Audio Booster 3.1 - MusicFX - Gerar APK Android
+name: Port Audio Booster 3.2 - Car Audio - Gerar APK Android
 
 on:
   workflow_dispatch:
   push:
-    branches: [main, feature/port-audio-v3-1-musicfx]
+    branches: [main, feature/port-audio-v3-2-car-audio]
     paths:
       - 'PortAudioBooster/**'
       - '.github/workflows/port-audio-booster-apk.yml'
@@ -18,7 +18,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Compilar Port Audio Booster 3.1
+    name: Compilar Port Audio Booster 3.2
     steps:
       - name: Baixar repositório
         uses: actions/checkout@v4
@@ -31,10 +31,13 @@ jobs:
           set -euo pipefail
           test -f PortAudioBooster/app/build.gradle
           test -f PortAudioBooster/app/src/main/AndroidManifest.xml
-          test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/NativeMusicFxActivity.java
-          test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/NativeMusicFxPresets.java
+          test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/PortAudioActivity.java
+          ! grep -q 'NativeMusicFxActivity' PortAudioBooster/app/src/main/AndroidManifest.xml
+          ! grep -q 'com.android.musicfx' PortAudioBooster/app/src/main/AndroidManifest.xml
+          test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/CarSystemActivity.java
           test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/StudioActivity.java
           test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/AudioProfiles.java
+          test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/CarAudioPresets.java
           test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/SpectrumView.java
           test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/DeviceAutoReceiver.java
           test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/FloatingControls.java
@@ -69,7 +72,7 @@ jobs:
       - name: Publicar artefato APK
         uses: actions/upload-artifact@v4
         with:
-          name: PortAudioBooster-v3.1-MusicFX-APK
+          name: PortAudioBooster-v3.2-CarAudio-APK
           path: PortAudioBooster/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
@@ -79,11 +82,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p PortAudioBooster/download
-          cp PortAudioBooster/app/build/outputs/apk/debug/app-debug.apk PortAudioBooster/download/PortAudioBooster-v3.1-MusicFX.apk
+          cp PortAudioBooster/app/build/outputs/apk/debug/app-debug.apk PortAudioBooster/download/PortAudioBooster-v3.2-CarAudio.apk
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add PortAudioBooster/download/PortAudioBooster-v3.1-MusicFX.apk
+          git add PortAudioBooster/download/PortAudioBooster-v3.2-CarAudio.apk
           if ! git diff --cached --quiet; then
-            git commit -m 'build(port-audio): publicar APK 3.1 MusicFX [skip ci]'
+            git commit -m 'build(port-audio): publicar APK 3.2 Car Audio [skip ci]'
             git push origin HEAD:main
           fi
