@@ -64,7 +64,11 @@ public final class PortAudioActivity extends Activity {
         getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);
         render();
     }
-    @Override protected void onResume(){super.onResume();render();handler.removeCallbacks(refresh);handler.post(refresh);}
+    @Override protected void onResume(){
+        super.onResume();
+        if(prefs.getBoolean("enabled",false)||prefs.getBoolean("floating",false))runService(AudioEffectsService.ACTION_START);
+        render();handler.removeCallbacks(refresh);handler.post(refresh);
+    }
     @Override protected void onPause(){handler.removeCallbacks(refresh);super.onPause();}
     @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] result){
         super.onRequestPermissionsResult(request,permissions,result);render();
