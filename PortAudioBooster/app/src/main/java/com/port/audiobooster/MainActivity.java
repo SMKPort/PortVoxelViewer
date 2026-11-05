@@ -9,7 +9,6 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.media.AudioManager;
-import android.media.audiofx.AudioEffect;
 import android.media.session.MediaController;
 import android.media.session.MediaSessionManager;
 import android.media.session.PlaybackState;
@@ -145,12 +144,12 @@ public final class MainActivity extends Activity {
         root = column(); root.setBackgroundColor(BG);
         root.setPadding(dp(15), dp(16), dp(15), dp(9));
         setContentView(root);
-        TextView brand = text("P O R T   A U D I O   /   V 2.0", 11, GOLD, true);
+        TextView brand = text("P O R T   A U D I O   /   V 3.2", 11, GOLD, true);
         root.addView(brand);
         space(root, 4);
         root.addView(text("AUDIO BOOSTER", 27, WHITE, true));
         space(root, 4);
-        root.addView(text("Modo Spotify • Android", 13, MUTED, false));
+        root.addView(text("Controles do Spotify • Port Audio", 13, MUTED, false));
         space(root, 14);
         LinearLayout tabs = row();
         root.addView(tabs);
@@ -182,8 +181,8 @@ public final class MainActivity extends Activity {
         LinearLayout c = card(content);
         title(c, "🎵 Spotify", "A música continua tocando pelo Spotify. Nosso app ajusta o modo de áudio experimental.");
         addButton(c, "Abrir Spotify", true, this::openSpotify);
-        addButton(c, "Abrir equalizador do Android", false, this::openSystemEq);
-        c.addView(text("Dica: Spotify > Configurações e privacidade > Reprodução > Equalizador (se disponível).", 12, MUTED, false));
+
+        c.addView(text("A equalização é controlada pelo próprio Port Audio Booster. Volte ao painel Car Audio para alternar A/B.", 12, MUTED, false));
 
         LinearLayout connect = card(content);
         title(connect, "Controle de reprodução", "Opcional: controle as músicas sem sair do Port Audio Booster.");
@@ -353,13 +352,6 @@ public final class MainActivity extends Activity {
             catch (RuntimeException ignored) { toast("Spotify não encontrado."); }
         }
     }
-    private void openSystemEq() {
-        Intent panel = new Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL);
-        panel.putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC);
-        try { startActivity(panel); }
-        catch (RuntimeException e) { toast("Seu Android não disponibilizou um painel de equalização."); }
-    }
-
     private MediaController spotifyController() {
         try {
             MediaSessionManager manager = (MediaSessionManager) getSystemService(Context.MEDIA_SESSION_SERVICE);
