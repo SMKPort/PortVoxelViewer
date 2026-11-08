@@ -52,13 +52,21 @@ final class FloatingControls {
                 p.edit().putBoolean("compare_original",!p.getBoolean("compare_original",false)).apply();
                 apply();show(true);
             });
-            add(panel,"Preset: "+p.getString("car_preset","Paredão Controlado"),()->{
-                int i=CarAudioPresets.find(p.getString("car_preset","Paredão Controlado"));
-                CarAudioPresets.apply(p,CarAudioPresets.NAMES[(i+1)%CarAudioPresets.NAMES.length]);
+            add(panel,"Preset: "+("headphones".equals(p.getString("audio_mode","car"))?
+                p.getString("headphone_preset","Xiaomi Buds Equilibrado"):
+                p.getString("car_preset","Paredão Controlado")),()->{
+                if("headphones".equals(p.getString("audio_mode","car"))){
+                    int i=HeadphonePresets.index(p.getString("headphone_preset","Xiaomi Buds Equilibrado"));
+                    HeadphonePresets.apply(p,HeadphonePresets.NAMES[(i+1)%HeadphonePresets.NAMES.length]);
+                }else{
+                    int i=CarAudioPresets.find(p.getString("car_preset","Paredão Controlado"));
+                    CarAudioPresets.apply(p,CarAudioPresets.NAMES[(i+1)%CarAudioPresets.NAMES.length]);
+                }
                 apply();show(true);
             });
-            add(panel,"Proteção: "+(p.getBoolean("car_guard",true)?"ON":"OFF"),()->{
-                p.edit().putBoolean("car_guard",!p.getBoolean("car_guard",true)).apply();
+            String guardKey="headphones".equals(p.getString("audio_mode","car"))?"headphone_guard":"car_guard";
+            add(panel,"Proteção: "+(p.getBoolean(guardKey,true)?"ON":"OFF"),()->{
+                p.edit().putBoolean(guardKey,!p.getBoolean(guardKey,true)).apply();
                 apply();show(true);
             });
             add(panel,"Volume -",()->volume(-1));
@@ -85,7 +93,8 @@ final class FloatingControls {
     }
     private void openMain(){
         try{
-            Intent i=new Intent(service,PortAudioActivity.class)
+            Intent i=new Intent(service,"headphones".equals(p.getString("audio_mode","car"))?
+                HeadphoneActivity.class:PortAudioActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
             service.startActivity(i);show(false);
         }catch(RuntimeException ignored){}
