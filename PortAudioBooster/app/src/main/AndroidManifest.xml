@@ -24,6 +24,7 @@
         </activity>
         <activity android:name=".StudioActivity" android:exported="false"/>
         <activity android:name=".CarSystemActivity" android:exported="false"/>
+        <activity android:name=".HeadphoneActivity" android:exported="false"/>
         <activity android:name=".MainActivity" android:exported="false"/>
         <service android:name=".AudioEffectsService"
             android:exported="false"
