@@ -110,9 +110,9 @@ public final class PortAudioActivity extends Activity {
     private void render(){
         LinearLayout root=column();root.setBackgroundColor(BG);
         root.setPadding(dp(15),dp(15),dp(15),dp(10));setContentView(root);
-        root.addView(label("P O R T  A U D I O  /  3.2",11,GOLD,true));
+        root.addView(label("P O R T  A U D I O  /  3.3",11,GOLD,true));
         gap(root,5);root.addView(label("CAR AUDIO EDITION",26,WHITE,true));
-        gap(root,4);root.addView(label("Equalizador próprio • Spotify • Paredão",12,MUTED,false));
+        gap(root,4);root.addView(label("Equalizador próprio • Spotify • Paredão e Xiaomi Buds",12,MUTED,false));
         gap(root,15);
         ScrollView scroll=new ScrollView(this);scroll.setVerticalScrollBarEnabled(false);
         root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
@@ -137,6 +137,14 @@ public final class PortAudioActivity extends Activity {
             apply();render();
         },false);
 
+        LinearLayout headphones=card("🎧 Xiaomi Buds",
+            "Perfis de fones Bluetooth separados do paredão, com ganho moderado e graves mais suaves.");
+        headphones.addView(label("Modo atual: "+("headphones".equals(prefs.getString("audio_mode","car"))?"FONES":"CAR AUDIO"),14,GOLD,true));
+        gap(headphones,10);
+        button(headphones,"Abrir Modo Xiaomi Buds",()->startActivity(new Intent(this,HeadphoneActivity.class)),true);
+        if("headphones".equals(prefs.getString("audio_mode","car"))){
+            headphones.addView(label("O perfil de fones está ativo. Se for usar o som do carro, escolha um preset Car Audio abaixo.",12,MUTED,false));
+        }
         LinearLayout car=card("🚗 Car Audio",
             "Regulagens mais moderadas para graves fortes sem exagerar no sinal digital.");
         TextView carName=label(prefs.getString("car_preset","Paredão Controlado"),17,GOLD,true);
@@ -189,6 +197,7 @@ public final class PortAudioActivity extends Activity {
             "Acesse o equalizador avançado, medições e controles flutuantes.");
         button(tools,"Equalizador profissional e Bass Boost",()->startActivity(new Intent(this,StudioActivity.class)),false);
         button(tools,"Meu Paredão • calcular ligações",()->startActivity(new Intent(this,CarSystemActivity.class)),false);
+        button(tools,"Modo Xiaomi Buds • fones",()->startActivity(new Intent(this,HeadphoneActivity.class)),false);
         button(tools,"Abrir Spotify",()->{
             Intent i=getPackageManager().getLaunchIntentForPackage("com.spotify.music");
             if(i!=null)startActivity(i);else toast("Spotify não está instalado.");
