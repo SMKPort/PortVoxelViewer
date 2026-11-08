@@ -20,6 +20,7 @@ final class CarAudioPresets {
     static void apply(SharedPreferences p,String preset){
         int n=find(preset);
         SharedPreferences.Editor e=p.edit()
+            .putString("audio_mode","car")
             .putString("car_preset",NAMES[n])
             .putString("preset",NAMES[n])
             .putInt("bass",BASS[n])
