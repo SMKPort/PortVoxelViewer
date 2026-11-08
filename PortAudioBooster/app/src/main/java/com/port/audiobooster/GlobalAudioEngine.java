@@ -31,19 +31,22 @@ final class GlobalAudioEngine {
         if(Build.VERSION.SDK_INT>=28)try{dynamics=new DynamicsProcessing(0);}
             catch(RuntimeException|LinkageError e){releaseDynamics();}
         try{loudness=new LoudnessEnhancer(0);}catch(RuntimeException|LinkageError e){releaseLoudness();}
-        updateStatus(false,false);
+        updateStatus(false,false,false);
     }
 
     void apply(SharedPreferences prefs){
         boolean original=prefs.getBoolean("compare_original",false);
-        boolean carGuard=prefs.getBoolean("car_guard",true);
+        boolean headphoneMode="headphones".equals(prefs.getString("audio_mode","car"));
+        boolean headphoneGuard=headphoneMode&&prefs.getBoolean("headphone_guard",true);
+        boolean carGuard=!headphoneMode&&prefs.getBoolean("car_guard",true);
+        boolean restrained=carGuard||headphoneGuard;
         if(equalizer!=null){
             try{
                 int[] bounds={equalizer.getBandLevelRange()[0],equalizer.getBandLevelRange()[1]};
                 for(short i=0;i<equalizer.getNumberOfBands();i++){
                     double hz=equalizer.getCenterFreq(i)/1000d;
                     double db=AudioProfiles.atHz(prefs,hz)+AudioProfiles.bassDb(prefs,hz);
-                    if(carGuard)db=Math.min(2.0,Math.max(-12.0,db));
+                    if(restrained)db=Math.min(2.0,Math.max(-12.0,db));
                     int mb=(int)Math.round(AudioProfiles.clamp((int)Math.round(db*100),bounds[0],bounds[1]));
                     equalizer.setBandLevel(i,(short)(original?0:mb));
                 }
@@ -51,18 +54,18 @@ final class GlobalAudioEngine {
             }catch(RuntimeException|LinkageError ignored){}
         }
         if(bass!=null)try{
-            int p=AudioProfiles.clamp(prefs.getInt("bass",35),0,carGuard?15:100);
+            int p=AudioProfiles.clamp(prefs.getInt("bass",35),0,headphoneGuard?10:carGuard?15:100);
             bass.setStrength((short)(p*10));
             bass.setEnabled(!original&&p>0);
         }catch(RuntimeException|LinkageError ignored){}
         if(virtualizer!=null)try{
-            int p=AudioProfiles.clamp(prefs.getInt("space",0),0,carGuard?0:100);
+            int p=AudioProfiles.clamp(prefs.getInt("space",0),0,headphoneGuard?20:carGuard?0:100);
             virtualizer.setStrength((short)(p*10));
             virtualizer.setEnabled(!original&&p>0);
         }catch(RuntimeException|LinkageError ignored){}
 
-        int gain=carGuard?0:AudioProfiles.clamp(prefs.getInt("gain",0),0,6);
-        boolean protection=carGuard||prefs.getBoolean("safe_gain",true);
+        int gain=restrained?0:AudioProfiles.clamp(prefs.getInt("gain",0),0,6);
+        boolean protection=restrained||prefs.getBoolean("safe_gain",true);
         boolean dynamicActive=false;
         if(dynamics!=null)try{
             // Modo inteligente: ganho de entrada e limiter digital em conjunto,
@@ -80,10 +83,10 @@ final class GlobalAudioEngine {
             loudness.setTargetGain((original?0:effective)*100);
             loudness.setEnabled(!original&&effective>0);
         }catch(RuntimeException|LinkageError ignored){}
-        updateStatus(original,carGuard);
+        updateStatus(original,carGuard,headphoneGuard);
     }
 
-    private void updateStatus(boolean original,boolean carGuard){
+    private void updateStatus(boolean original,boolean carGuard,boolean headphoneGuard){
         if(original){status="A/B: ORIGINAL (efeitos desativados).";return;}
         boolean any=(equalizer!=null&&equalizer.hasControl())||(bass!=null&&bass.hasControl())
              ||(virtualizer!=null&&virtualizer.hasControl())||(loudness!=null&&loudness.hasControl())
@@ -96,7 +99,8 @@ final class GlobalAudioEngine {
             marker(virtualizer!=null&&virtualizer.hasControl()),
             marker(loudness!=null&&loudness.hasControl()),
             marker(dynamics!=null&&dynamics.hasControl()));
-        if(carGuard)status="Proteção preventiva ativa: EQ até +2 dB, Bass até 15%, ganho extra 0 dB. "+status;
+        if(carGuard)status="Proteção Car Audio: EQ até +2 dB, Bass até 15%, ganho extra 0 dB. "+status;
+        if(headphoneGuard)status="Proteção Xiaomi Buds: EQ até +2 dB, Bass até 10%, ganho extra 0 dB. "+status;
         // Sem acesso ao sinal do módulo, não podemos afirmar que o clipping foi eliminado.
     }
     private String marker(boolean value){return value?"OK":"N/D";}
