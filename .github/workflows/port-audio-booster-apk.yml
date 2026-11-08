@@ -1,9 +1,9 @@
-name: Port Audio Booster 3.2 - Car Audio - Gerar APK Android
+name: Port Audio Booster 3.3 - Xiaomi Buds - Gerar APK Android
 
 on:
   workflow_dispatch:
   push:
-    branches: [main, feature/port-audio-v3-2-car-audio]
+    branches: [main, feature/port-audio-v3-3-xiaomi-buds]
     paths:
       - 'PortAudioBooster/**'
       - '.github/workflows/port-audio-booster-apk.yml'
@@ -18,7 +18,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Compilar Port Audio Booster 3.2
+    name: Compilar Port Audio Booster 3.3
     steps:
       - name: Baixar repositório
         uses: actions/checkout@v4
@@ -38,6 +38,8 @@ jobs:
           test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/StudioActivity.java
           test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/AudioProfiles.java
           test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/CarAudioPresets.java
+          test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/HeadphoneActivity.java
+          test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/HeadphonePresets.java
           test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/SpectrumView.java
           test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/DeviceAutoReceiver.java
           test -f PortAudioBooster/app/src/main/java/com/port/audiobooster/FloatingControls.java
@@ -72,7 +74,7 @@ jobs:
       - name: Publicar artefato APK
         uses: actions/upload-artifact@v4
         with:
-          name: PortAudioBooster-v3.2-CarAudio-APK
+          name: PortAudioBooster-v3.3-XiaomiBuds-APK
           path: PortAudioBooster/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
@@ -82,11 +84,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p PortAudioBooster/download
-          cp PortAudioBooster/app/build/outputs/apk/debug/app-debug.apk PortAudioBooster/download/PortAudioBooster-v3.2-CarAudio.apk
+          cp PortAudioBooster/app/build/outputs/apk/debug/app-debug.apk PortAudioBooster/download/PortAudioBooster-v3.3-XiaomiBuds.apk
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add PortAudioBooster/download/PortAudioBooster-v3.2-CarAudio.apk
+          git add PortAudioBooster/download/PortAudioBooster-v3.3-XiaomiBuds.apk
           if ! git diff --cached --quiet; then
-            git commit -m 'build(port-audio): publicar APK 3.2 Car Audio [skip ci]'
+            git commit -m 'build(port-audio): publicar APK 3.3 Xiaomi Buds [skip ci]'
             git push origin HEAD:main
           fi
