@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   gerar-apk:
-    name: Compilar ChuvaPort 1.1
+    name: Compilar ChuvaPort 2.0
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     defaults:
@@ -66,6 +66,11 @@ jobs:
           assert 'geocoding-api.open-meteo.com' in html
           scripts = re.findall(r'<script\b[^>]*>(.*?)</script>', html, re.S | re.I)
           assert scripts, 'JavaScript nao encontrado'
+          assert 'function renderStorms' in html
+          assert 'function renderAtmosphere' in html
+          assert 'cape' in html and 'wind_gusts_10m' in html
+          for identifier in ['id="storms"','id="atmosphere"','id="hourly"','id="daily"']:
+              assert identifier in html, identifier
           Path('/tmp/chuvaport-core.js').write_text('\n'.join(scripts), encoding='utf-8')
           for required in ['manifest.webmanifest', 'sw.js', 'assets/icon.svg']:
               assert (root / required).is_file(), f'Arquivo ausente: {required}'

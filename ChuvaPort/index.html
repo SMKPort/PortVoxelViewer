@@ -19,8 +19,28 @@
 @media(max-width:520px){.topbar{margin-bottom:21px}.brand-name{font-size:21px}.brand-mark{width:45px;height:45px}.brand-subtitle{font-size:10px}.location-card{padding:17px 13px}.location-bottom{font-size:11px}.tabs{gap:2px;margin-top:17px}.tab{padding:12px 3px;font-size:11px}.hero-card{padding:21px 19px}.hero-tag{font-size:8px;letter-spacing:.5px}.eyebrow{font-size:9px;letter-spacing:1px}.main-rain strong{font-size:74px;letter-spacing:-4px}.main-rain>span{font-size:24px}.hero-card h1{font-size:18px}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.metric-grid .metric-card:last-child{grid-column:span 2}.metric-card{padding:17px}.metric-val{margin-top:9px}.metric-val strong{font-size:31px}.surface{padding:19px 14px}.quick-days{gap:5px}.quick-day .day-icon{font-size:21px}.quick-day strong{font-size:16px}.quick-day .day-unit{font-size:9px}.hour-row{grid-template-columns:75px 65px minmax(35px,1fr) 48px;gap:10px}.hour-volume{font-size:13px}.daily-card{grid-template-columns:67px 30px 70px minmax(36px,1fr) 43px;gap:6px;padding:12px 9px}.daily-weather{font-size:21px}.daily-mm{font-size:17px}.daily-mm span{font-size:9px}.daily-chance{font-size:10px}.daily-date{font-size:12px}.daily-date small{font-size:10px}.info-row{grid-template-columns:1fr;gap:4px}.footer{align-items:flex-start;flex-direction:column}.small-caption{font-size:10px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
 
+/* ChuvaPort 2.0: central meteorológica e monitor de condições severas */
+.tabs{overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;position:sticky}
+.tabs .tab{flex:0 0 auto;min-width:108px;white-space:nowrap}
+.weather-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.weather-fact{background:linear-gradient(140deg,#2b1d27,#18141b);border:1px solid #47323e;border-radius:14px;padding:15px;min-width:0}
+.weather-fact-label{font-size:10px;color:#c0aab2;font-weight:800;letter-spacing:0.5px}
+.weather-fact-value{color:#f9e8d9;margin:8px 0 2px;font-size:23px;letter-spacing:-.7px;font-weight:850;overflow-wrap:anywhere}
+.weather-fact-unit{font-size:13px;color:#e6bb76}
+.weather-fact-help{color:#a995a0;font-size:11px;line-height:1.5}
+.atmos-list{display:grid;gap:8px;max-height:640px;overflow-y:auto}
+.atmos-row{display:grid;grid-template-columns:86px repeat(3,minmax(0,1fr));gap:10px;align-items:center;padding:13px 12px;background:#241a23;border:1px solid #3b2d35;border-radius:11px}
+.atmos-row>span{font-size:12px;color:#e2c8cf;min-width:0}.atmos-row>span strong{display:block;font-size:13px;color:#f1c47d;margin-bottom:4px}
+.risk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.risk-card{margin-bottom:0}.risk-card p{font-size:13px;line-height:1.75;color:#cbb4bd;margin-bottom:0}
+.official-note{color:#e1c2c5;font-size:13px;line-height:1.6}.official-link{display:inline-flex;border:1px solid #b67c4b;background:#442d23;padding:12px 16px;border-radius:11px;text-decoration:none;font-size:13px;font-weight:750}
+.day-secondary{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:9px;margin-top:2px;border-top:1px solid #352730;padding-top:9px}
+.day-secondary span{font-size:11px;color:#beacb7;background:#34242d;border-radius:8px;padding:5px 8px}
+.hour-extra{grid-column:1/-1;color:#b4a1aa;font-size:11px;margin-top:-3px}
+@media(max-width:700px){.risk-grid{grid-template-columns:1fr}.weather-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.atmos-row{grid-template-columns:76px repeat(3,minmax(0,1fr));gap:6px;padding:10px 7px}.atmos-row>span{font-size:10px}.atmos-row>span strong{font-size:11px}}
+@media(max-width:365px){.weather-grid{grid-template-columns:1fr 1fr}.weather-fact{padding:10px}.weather-fact-value{font-size:19px}}
+
 </style>
-    <title>ChuvaPort | Previsão de chuva em mm</title>
+    <title>ChuvaPort | Meteorologia e tempestades</title>
   </head>
   <body>
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -31,7 +51,7 @@
           <div class="brand-mark" aria-hidden="true">
             <svg viewBox="0 0 48 48" fill="none"><path d="M24 5C18 15 11 21 11 30a13 13 0 0 0 26 0C37 21 30 15 24 5Z" stroke="currentColor" stroke-width="2.6"/><path d="M18 31c0 3 2.3 5.3 5.5 5.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
           </div>
-          <div><div class="brand-name">Chuva<span>Port</span></div><div class="brand-subtitle">Previsão de chuva, sem complicação.</div></div>
+          <div><div class="brand-name">Chuva<span>Port</span></div><div class="brand-subtitle">Chuva, atmosfera e condições severas.</div></div>
         </div>
         <div class="header-actions">
           <button type="button" id="installBtn" class="icon-button install-button hidden" title="Instalar aplicativo" aria-label="Instalar aplicativo">
@@ -74,8 +94,8 @@
           </svg>
         </div>
         <div class="pill eyebrow"><span class="pulse-dot"></span> DADOS METEOROLÓGICOS REAIS</div>
-        <h1 id="emptyTitle">Saiba <em>quanto</em> vai chover.</h1>
-        <p>Busque uma cidade ou use sua localização para ver o volume de chuva previsto em mm, hora por hora, com até 16 dias de antecedência.</p>
+        <h1 id="emptyTitle">Sua central <em>meteorológica.</em></h1>
+        <p>Busque uma cidade ou use sua localização para ver o volume de chuva, vento, temperatura, sensação térmica e indicadores de tempestades, com até 16 dias de antecedência.</p>
         <button type="button" id="emptyLocationBtn" class="primary-button big-cta">Usar minha localização</button>
       </section>
 
@@ -84,6 +104,8 @@
           <button class="tab active" type="button" data-tab="overview" aria-selected="true">Visão geral</button>
           <button class="tab" type="button" data-tab="hourly" aria-selected="false">Por hora</button>
           <button class="tab" type="button" data-tab="daily" aria-selected="false">16 dias</button>
+          <button class="tab" type="button" data-tab="atmosphere" aria-selected="false">Atmosfera</button>
+          <button class="tab" type="button" data-tab="storms" aria-selected="false">Tempestades</button>
           <button class="tab" type="button" data-tab="settings" aria-selected="false">Ajustes</button>
         </nav>
 
@@ -104,6 +126,10 @@
               <article class="metric-card"><div class="metric-top">PICO DE CHUVA <span class="metric-icon">◉</span></div><div class="metric-val"><strong id="peakRain">--</strong><span>mm/h</span></div><div id="peakTime" class="metric-help">Maior volume em uma hora</div></article>
             </div>
             <div id="rainAlert" class="rain-alert" role="status"></div>
+            <section class="surface" aria-label="Condições meteorológicas de agora">
+              <div class="surface-heading"><div><div class="section-kicker">CONDIÇÕES ATUAIS</div><h2>Além da chuva</h2></div><button type="button" class="text-button" id="openAtmosphere">Ver atmosfera →</button></div>
+              <div id="overviewWeather" class="weather-grid"></div>
+            </section>
             <section class="surface chart-surface">
               <div class="surface-heading"><div><div class="section-kicker">DISTRIBUIÇÃO HORÁRIA</div><h2>Quando vai chover?</h2></div><span class="small-caption">próximas 24h</span></div>
               <div id="overviewChart" class="graph-host"></div>
@@ -132,15 +158,36 @@
             <div id="dailyList" class="daily-list"></div>
           </section>
 
+          <section id="atmosphere" class="tab-panel hidden" aria-label="Detalhes atmosféricos">
+            <div class="page-heading"><div class="section-kicker">CONDIÇÕES DO TEMPO</div><h1>Atmosfera em <em>detalhes.</em></h1><p>Valores modelados de temperatura, vento, pressão, umidade, nuvens e visibilidade para a localização escolhida.</p></div>
+            <section class="surface"><div class="surface-heading"><h2>Agora</h2><span class="small-caption">condições modeladas</span></div><div id="atmosCurrent" class="weather-grid"></div></section>
+            <section class="surface"><div class="surface-heading"><h2>Próximas 24 horas</h2><span class="small-caption">vento, sensação e umidade</span></div><div id="atmosHourly" class="atmos-list"></div></section>
+            <section class="surface"><h2>Sol e radiação UV</h2><div id="atmosSolar" class="weather-grid"></div><p class="detail-note">UV é um valor previsto, não uma medição instantânea. Use proteção solar conforme orientações locais.</p></section>
+          </section>
+
+          <section id="storms" class="tab-panel hidden" aria-label="Tempestades e riscos">
+            <div class="page-heading"><div class="section-kicker">ATENÇÃO METEOROLÓGICA</div><h1>Tempestades e <em>indicadores.</em></h1><p>Os modelos permitem identificar instabilidade e rajadas previstas. Avisos oficiais têm prioridade, especialmente para granizo e tornados.</p></div>
+            <div id="severeHeadline" class="rain-alert"></div>
+            <section class="surface"><div class="surface-heading"><h2>Indicadores nas próximas 24h</h2></div><div id="severeMetrics" class="weather-grid"></div><p class="detail-note">CAPE é energia potencial disponível para convecção. Isoladamente, não prevê granizo, tornado ou mesmo a ocorrência de tempestade.</p></section>
+            <div class="risk-grid">
+              <section class="surface risk-card"><h2>⛈️ Trovoadas</h2><p id="thunderAdvice"></p></section>
+              <section class="surface risk-card"><h2>🧊 Granizo</h2><p id="hailAdvice"></p></section>
+              <section class="surface risk-card"><h2>🌪️ Tornados</h2><p id="tornadoAdvice"></p></section>
+              <section class="surface risk-card"><h2>💨 Vendavais</h2><p id="windAdvice"></p></section>
+            </div>
+            <section class="surface"><h2>Avisos oficiais</h2><p class="official-note">Este painel não recebe avisos em tempo real das autoridades. Consulte as fontes oficiais para alertas e orientações da sua região.</p><a class="official-link" href="https://avisos.inmet.gov.br/" target="_blank" rel="noopener noreferrer">Avisos do INMET (Brasil) ↗</a><p class="detail-note">Fora do Brasil, consulte o serviço meteorológico e a Defesa Civil locais. Em ameaça imediata, siga as orientações das autoridades.</p></section>
+          </section>
+
           <section id="settings" class="tab-panel hidden" aria-label="Ajustes">
             <div class="page-heading"><div class="section-kicker">PREFERÊNCIAS</div><h1>Do seu <em>jeito.</em></h1><p>Personalize o aviso de volume elevado de chuva.</p></div>
             <section class="surface settings-card"><div class="surface-heading"><h2>Limite para aviso</h2><strong id="thresholdValue" class="gold-text">20 mm</strong></div><p>Mostra um alerta na tela quando o acumulado previsto para as próximas 24h atingir o valor escolhido.</p><input id="thresholdSlider" type="range" min="5" max="100" step="5" value="20" aria-label="Limite de aviso de chuva em milímetros" /><div class="range-markers"><span>5 mm</span><span>100 mm</span></div><p class="detail-note">Esse aviso aparece ao consultar o app. Não é uma notificação enviada com o aplicativo fechado.</p></section>
             <section class="surface settings-card"><h2>Como interpretar</h2><div class="info-row"><strong>Milímetros (mm)</strong><span>Volume estimado de chuva acumulado sobre uma superfície. 1 mm equivale a 1 litro por m².</span></div><div class="info-row"><strong>Probabilidade (%)</strong><span>Chance de precipitação durante o período. Não representa a intensidade da chuva.</span></div><div class="info-row"><strong>Precisão</strong><span>São projeções de modelos meteorológicos, não medições. Os valores podem mudar entre atualizações.</span></div></section>
+            <section class="surface settings-card"><h2>Limites da previsão de tempestades</h2><div class="info-row"><strong>Granizo</strong><span>Os códigos 96 e 99 do modelo indicam trovoadas com granizo, mas não identificam a ocorrência exata em cada bairro.</span></div><div class="info-row"><strong>Tornados</strong><span>Não há previsão pontual nem percentual confiável de tornado nesta fonte. Consulte os alertas oficiais.</span></div><div class="info-row"><strong>Indicadores</strong><span>CAPE, índice de levantamento e rajadas são projeções atmosféricas, não alertas emitidos por órgãos oficiais.</span></div></section>
             <section class="surface settings-card"><h2>Instalação</h2><p>Ao hospedar o projeto em HTTPS, você pode instalá-lo pela opção de adicionar à tela inicial do navegador. Assim ele funciona como um aplicativo independente.</p><p class="detail-note">A previsão precisa de internet para atualizar. A última consulta pode aparecer em modo offline, identificada como dados salvos.</p></section>
           </section>
         </main>
       </div>
-      <footer class="footer"><span>CHUVAPORT <span class="footer-version">V1.1</span></span><span>Dados de previsão por <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> (CC BY 4.0)</span></footer>
+      <footer class="footer"><span>CHUVAPORT <span class="footer-version">V2.0</span></span><span>Dados de previsão por <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> (CC BY 4.0)</span></footer>
     </div>
     <script>
 /** ChuvaPort: funções puras de transformação da previsão. */
@@ -165,12 +212,39 @@ function normalizeForecast(data) {
     rain: rainMillimeters(data.hourly.rain?.[i], data.hourly.showers?.[i], data.hourly.precipitation?.[i]),
     chance: numeric(data.hourly.precipitation_probability?.[i]),
     code: numeric(data.hourly.weather_code?.[i]),
+    temperature: numeric(data.hourly.temperature_2m?.[i]),
+    feels: numeric(data.hourly.apparent_temperature?.[i]),
+    humidity: numeric(data.hourly.relative_humidity_2m?.[i]),
+    dewPoint: numeric(data.hourly.dew_point_2m?.[i]),
+    wind: numeric(data.hourly.wind_speed_10m?.[i]),
+    gust: numeric(data.hourly.wind_gusts_10m?.[i]),
+    direction: numeric(data.hourly.wind_direction_10m?.[i]),
+    pressure: numeric(data.hourly.pressure_msl?.[i]),
+    visibility: numeric(data.hourly.visibility?.[i]),
+    clouds: numeric(data.hourly.cloud_cover?.[i]),
+    uv: numeric(data.hourly.uv_index?.[i]),
+    cape: numeric(data.hourly.cape?.[i]),
+    liftedIndex: numeric(data.hourly.lifted_index?.[i]),
+    inhibition: numeric(data.hourly.convective_inhibition?.[i]),
+    freezingLevel: numeric(data.hourly.freezing_level_height?.[i]),
+    snowfall: numeric(data.hourly.snowfall?.[i]),
   }));
   const daily = data.daily.time.map((date, i) => ({
     date,
     rain: rainMillimeters(data.daily.rain_sum?.[i], data.daily.showers_sum?.[i], data.daily.precipitation_sum?.[i]),
     chance: numeric(data.daily.precipitation_probability_max?.[i]),
     code: numeric(data.daily.weather_code?.[i]),
+    tempMax: numeric(data.daily.temperature_2m_max?.[i]),
+    tempMin: numeric(data.daily.temperature_2m_min?.[i]),
+    feelsMax: numeric(data.daily.apparent_temperature_max?.[i]),
+    feelsMin: numeric(data.daily.apparent_temperature_min?.[i]),
+    windMax: numeric(data.daily.wind_speed_10m_max?.[i]),
+    gustMax: numeric(data.daily.wind_gusts_10m_max?.[i]),
+    uvMax: numeric(data.daily.uv_index_max?.[i]),
+    sunrise: data.daily.sunrise?.[i] ?? null,
+    sunset: data.daily.sunset?.[i] ?? null,
+    sunlight: numeric(data.daily.sunshine_duration?.[i]),
+    rainHours: numeric(data.daily.precipitation_hours?.[i]),
   }));
   return {
     hourly, daily,
@@ -178,6 +252,13 @@ function normalizeForecast(data) {
       time: data.current?.time || null,
       temperature: numeric(data.current?.temperature_2m),
       code: numeric(data.current?.weather_code),
+      feels: numeric(data.current?.apparent_temperature),
+      humidity: numeric(data.current?.relative_humidity_2m),
+      wind: numeric(data.current?.wind_speed_10m),
+      gust: numeric(data.current?.wind_gusts_10m),
+      direction: numeric(data.current?.wind_direction_10m),
+      pressure: numeric(data.current?.pressure_msl),
+      clouds: numeric(data.current?.cloud_cover),
     },
     timezone: data.timezone || "auto",
   };
@@ -250,10 +331,56 @@ function makeForecastUrl(lat, lon) {
   url.searchParams.set("timezone", "auto");
   url.searchParams.set("forecast_days", "16");
   url.searchParams.set("precipitation_unit", "mm");
-  url.searchParams.set("current", "temperature_2m,weather_code");
-  url.searchParams.set("hourly", "rain,showers,precipitation,precipitation_probability,weather_code");
-  url.searchParams.set("daily", "rain_sum,showers_sum,precipitation_sum,precipitation_probability_max,weather_code");
+  url.searchParams.set("current", "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,wind_gusts_10m,wind_direction_10m,pressure_msl,cloud_cover,weather_code");
+  url.searchParams.set("hourly", [
+    "rain", "showers", "precipitation", "precipitation_probability", "weather_code",
+    "temperature_2m", "apparent_temperature", "relative_humidity_2m", "dew_point_2m",
+    "wind_speed_10m", "wind_gusts_10m", "wind_direction_10m", "pressure_msl",
+    "visibility", "cloud_cover", "uv_index", "cape", "lifted_index",
+    "convective_inhibition", "freezing_level_height", "snowfall"
+  ].join(","));
+  url.searchParams.set("daily", [
+    "rain_sum", "showers_sum", "precipitation_sum", "precipitation_probability_max", "weather_code",
+    "temperature_2m_max", "temperature_2m_min", "apparent_temperature_max", "apparent_temperature_min",
+    "wind_speed_10m_max", "wind_gusts_10m_max", "uv_index_max", "sunrise", "sunset",
+    "sunshine_duration", "precipitation_hours"
+  ].join(","));
   return url.toString();
+}
+
+/** Indicadores exploratorios, sem equivalencia a avisos oficiais ou probabilidades. */
+function compassDirection(degrees) {
+  if (!isFiniteNumber(degrees)) return 'indisponível';
+  return ['N','NE','L','SE','S','SO','O','NO'][Math.round((((degrees % 360) + 360) % 360) / 45) % 8];
+}
+
+function maxAvailable(items, key) {
+  const values = items.map(item => item[key]).filter(isFiniteNumber);
+  return values.length ? Math.max(...values) : null;
+}
+
+function minAvailable(items, key) {
+  const values = items.map(item => item[key]).filter(isFiniteNumber);
+  return values.length ? Math.min(...values) : null;
+}
+
+function stormIndicators(hours) {
+  const severeCodes = [95, 96, 99];
+  const thunder = hours.some(h => severeCodes.includes(h.code));
+  const hailModel = hours.some(h => [96, 99].includes(h.code));
+  const highCape = maxAvailable(hours, 'cape');
+  const minLi = minAvailable(hours, 'liftedIndex');
+  const maxGust = maxAvailable(hours, 'gust');
+  const intenseRain = maxAvailable(hours, 'rain');
+  const unstable = highCape != null && highCape >= 1000;
+  const strongGusts = maxGust != null && maxGust >= 60;
+  // An indicator of potentially hazardous conditions, not a probabilistic severe-storm model.
+  const attention = thunder || strongGusts || (unstable && (intenseRain ?? 0) >= 3);
+  return {
+    thunder, hailModel, maxCape: highCape, minLiftedIndex: minLi,
+    maxGust, maxHourlyRain: intenseRain, unstable, strongGusts, attention,
+    windAlert: maxGust == null ? 'indisponível' : maxGust >= 90 ? 'Rajadas muito fortes' : maxGust >= 60 ? 'Rajadas fortes' : 'Sem rajadas fortes previstas',
+  };
 }
 
 const $ = (id) => document.getElementById(id);
@@ -537,6 +664,15 @@ function renderOverview() {
   $('currentConditions').textContent = weatherLabel(state.forecast.current.code);
   $('currentTemp').textContent = state.forecast.current.temperature == null ? '-- °C' : `${Math.round(state.forecast.current.temperature)} °C`;
   renderAlert(sum24);
+  const current = state.forecast.current;
+  renderFacts($('overviewWeather'), [
+    ['🌡 Temperatura', current.temperature, '°C', 'No momento da consulta'],
+    ['☀️ Sensação térmica', current.feels, '°C', 'Temperatura percebida'],
+    ['💨 Vento', current.wind, 'km/h', `De ${compassDirection(current.direction)}`],
+    ['🍃 Rajadas', current.gust, 'km/h', 'Velocidade máxima modelada'],
+    ['💧 Umidade', current.humidity, '%', 'Umidade relativa'],
+    ['☁️ Nuvens', current.clouds, '%', 'Cobertura total'],
+  ]);
   makeChart($('overviewChart'), next24, 3);
   $('nextRainLabel').textContent = sum24.firstRain ? `Primeira chuva: ${displayDate(sum24.firstRain.time)} às ${labelTime(sum24.firstRain.time)}` : 'Sem chuva significativa nas próximas 24h';
   const quickDays = $('quickDays');
@@ -568,7 +704,10 @@ function renderHourly() {
     const chanceFill = document.createElement('div'); chanceFill.className = 'chance-fill';
     chanceFill.style.width = `${Math.max(0, Math.min(100, hour.chance ?? 0))}%`; chanceTrack.append(chanceFill);
     const chance = document.createElement('div'); chance.className = 'chance-val'; chance.textContent = hour.chance == null ? '--' : `${hour.chance}%`;
-    row.append(when, volume, chanceTrack, chance); list.append(row);
+    row.append(when, volume, chanceTrack, chance);
+    const extra = document.createElement('div'); extra.className = 'hour-extra';
+    extra.textContent = `🌡 ${fmt(hour.temperature, '°C')} · 💨 ${fmt(hour.wind, 'km/h')} · Raj. ${fmt(hour.gust, 'km/h')} · Sensação ${fmt(hour.feels, '°C')}`;
+    row.append(extra); list.append(row);
   });
 }
 function renderDaily() {
@@ -593,9 +732,113 @@ function renderDaily() {
     const fill = document.createElement('div'); fill.style.width = `${Math.max(0, day.rain / max * 100)}%`; track.append(fill);
     const chance = document.createElement('div'); chance.className = 'daily-chance'; chance.textContent = day.chance == null ? '--' : `${day.chance}%`;
     chance.title = 'Maior chance de precipitação ao longo do dia';
-    row.append(date, icon, volume, track, chance); host.append(row);
+    row.append(date, icon, volume, track, chance);
+    const secondary = document.createElement('div'); secondary.className = 'day-secondary';
+    [
+      `🌡 ${fmt(day.tempMin,'°C')} a ${fmt(day.tempMax,'°C')}`,
+      `💨 ${fmt(day.windMax,'km/h')} (raj. ${fmt(day.gustMax,'km/h')})`,
+      `☀️ UV ${fmt(day.uvMax)}`,
+      `🌅 ${labelTime(day.sunrise)} · 🌇 ${labelTime(day.sunset)}`,
+    ].forEach(value => { const span = document.createElement('span'); span.textContent = value; secondary.append(span); });
+    row.append(secondary); host.append(row);
   });
 }
+
+function fmt(value, unit = '') {
+  if (value == null || !Number.isFinite(value)) return 'indisponível';
+  const roundedValue = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(value);
+  return roundedValue + (unit ? ` ${unit}` : '');
+}
+
+function renderFacts(host, facts) {
+  host.replaceChildren();
+  facts.forEach(([label, value, unit = '', help = '']) => {
+    const node = document.createElement('article'); node.className = 'weather-fact';
+    const title = document.createElement('div'); title.className = 'weather-fact-label'; title.textContent = label;
+    const val = document.createElement('div'); val.className = 'weather-fact-value'; val.textContent = fmt(value, unit);
+    const text = document.createElement('div'); text.className = 'weather-fact-help'; text.textContent = help;
+    node.append(title, val, text); host.append(node);
+  });
+}
+
+function renderAtmosphere() {
+  const f = state.forecast;
+  const current = f.current;
+  renderFacts($('atmosCurrent'), [
+    ['🌡 Temperatura', current.temperature, '°C', 'Temperatura a 2 metros'],
+    ['🌞 Sensação térmica', current.feels, '°C', 'Temperatura percebida'],
+    ['💧 Umidade', current.humidity, '%', 'Umidade relativa'],
+    ['💨 Vento', current.wind, 'km/h', `Direção ${compassDirection(current.direction)}`],
+    ['🍃 Rajadas', current.gust, 'km/h', 'Pico modelado'],
+    ['🧭 Direção', current.direction, '°', compassDirection(current.direction)],
+    ['🔘 Pressão', current.pressure, 'hPa', 'Pressão ao nível do mar'],
+    ['☁️ Nuvens', current.clouds, '%', 'Cobertura total'],
+  ]);
+  const next = futureHours(f, 24);
+  const host = $('atmosHourly'); host.replaceChildren();
+  next.forEach(h => {
+    const row = document.createElement('div'); row.className = 'atmos-row';
+    [
+      [displayDate(h.time) + ' ' + labelTime(h.time), 'Hora'],
+      [fmt(h.temperature,'°C'), 'Temperatura'],
+      [fmt(h.wind,'km/h'), 'Vento'],
+      [fmt(h.gust,'km/h'), 'Rajadas'],
+    ].forEach(([value,label]) => {
+      const el=document.createElement('span');
+      const strong=document.createElement('strong'); strong.textContent=label;
+      el.append(strong,document.createTextNode(value)); row.append(el);
+    });
+    host.append(row);
+  });
+  const today = f.daily[0] || {};
+  renderFacts($('atmosSolar'), [
+    ['☀️ UV máximo', today.uvMax, '', 'Índice máximo previsto para hoje'],
+    ['🌅 Nascer do sol', null, '', labelTime(today.sunrise)],
+    ['🌇 Pôr do sol', null, '', labelTime(today.sunset)],
+    ['🌫 Visibilidade', next[0]?.visibility == null ? null : next[0].visibility / 1000, 'km', 'Próxima hora modelada'],
+    ['💦 Ponto de orvalho', next[0]?.dewPoint, '°C', 'Próxima hora modelada'],
+    ['☁️ Cobertura de nuvens', next[0]?.clouds, '%', 'Próxima hora modelada'],
+  ]);
+  // Horários de sol aparecem como valores e não como dados ausentes.
+  const solar = $('atmosSolar').children;
+  if (solar[1]) solar[1].querySelector('.weather-fact-value').textContent = labelTime(today.sunrise);
+  if (solar[2]) solar[2].querySelector('.weather-fact-value').textContent = labelTime(today.sunset);
+}
+
+function renderStorms() {
+  const next24 = futureHours(state.forecast, 24);
+  const s = stormIndicators(next24);
+  const host = $('severeHeadline');
+  host.replaceChildren();
+  host.className = 'rain-alert ' + (s.attention ? 'critical' : '');
+  const glyph = document.createElement('span'); glyph.className = 'alert-glyph'; glyph.textContent = s.attention ? '⚠️' : '🔎';
+  const info = document.createElement('div');
+  const title = document.createElement('strong');
+  title.textContent = s.attention ? 'Condições que merecem acompanhamento' : 'Sem sinal destacado pelos critérios informativos';
+  const desc = document.createTextNode(s.attention
+    ? ' Há sinais modelados de trovoadas, rajadas ou instabilidade. Consulte os avisos oficiais.'
+    : ' Isso não significa ausência de risco. Monitoramento local e avisos oficiais continuam essenciais.');
+  info.append(title, desc); host.append(glyph, info);
+  renderFacts($('severeMetrics'), [
+    ['🌩 CAPE máximo', s.maxCape, 'J/kg', 'Energia convectiva disponível'],
+    ['📉 Índice de levantamento', s.minLiftedIndex, '°C', 'Menor valor nas próximas 24 horas'],
+    ['🍃 Rajada máxima', s.maxGust, 'km/h', 'Vento forte possível'],
+    ['🌧 Chuva/h máxima', s.maxHourlyRain, 'mm/h', 'Pico modelado no período'],
+    ['🧊 Nível de congelamento', next24[0]?.freezingLevel, 'm', 'Aproximação na primeira hora'],
+    ['☁️ Inibição convectiva', next24[0]?.inhibition, 'J/kg', 'CIN na primeira hora'],
+  ]);
+  $('thunderAdvice').textContent = s.thunder
+    ? 'O modelo sinaliza trovoadas em pelo menos um horário das próximas 24 horas (códigos 95/96/99). Não equivale a detecção de raios em tempo real.'
+    : 'Não há código explícito de trovoada nas próximas 24 horas. Tempestades isoladas ainda podem ocorrer.';
+  $('hailAdvice').textContent = s.hailModel
+    ? 'Há indicação modelada de trovoadas com granizo (código 96 ou 99). A ocorrência no seu endereço e o tamanho das pedras não são determinados.'
+    : 'Sem indicação explícita de granizo nos códigos consultados. Não é possível descartar granizo apenas com esses dados.';
+  $('tornadoAdvice').textContent = 'Não disponível como previsão local confiável. CAPE, vento e índices de instabilidade NÃO permitem calcular, sozinhos, a chance de tornado. Consulte avisos oficiais e radares meteorológicos.';
+  $('windAdvice').textContent = s.maxGust == null
+    ? 'Sem dados de rajada para avaliação. Consulte as fontes oficiais.'
+    : `${s.windAlert}: pico modelado de ${fmt(s.maxGust,'km/h')} nas próximas 24 horas. Este indicador é informativo e não é um aviso meteorológico oficial.`;
+}
+
 function render() {
   if (!state.forecast) return;
   $('emptyState').classList.add('hidden');
@@ -607,6 +850,8 @@ function render() {
   renderOverview();
   renderHourly();
   renderDaily();
+  renderAtmosphere();
+  renderStorms();
   showTab(state.tab);
 }
 
@@ -647,6 +892,7 @@ function initialize() {
     if (state.forecast) renderHourly();
   }));
   $('seeAllDays').addEventListener('click', () => showTab('daily'));
+  $('openAtmosphere').addEventListener('click', () => showTab('atmosphere'));
   window.addEventListener('beforeinstallprompt', (event) => {
     event.preventDefault(); state.installPrompt = event; $('installBtn').classList.remove('hidden');
   });

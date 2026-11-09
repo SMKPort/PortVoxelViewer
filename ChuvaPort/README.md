@@ -1,18 +1,19 @@
-# ChuvaPort 1.1 🌧️
+# ChuvaPort 2.0 🌧️🌪️
 
-Aplicativo de previsão de precipitação em milímetros, probabilidade de chuva e acumulados horários/diários (16 dias). Visual preto, vinho e dourado.
+Amplia o ChuvaPort 1.1 mantendo todas as funções de chuva e adicionando: temperatura, sensação térmica, umidade, ponto de orvalho, vento e rajadas, direção, pressão, nuvens, visibilidade, UV, nascer e pôr do sol, previsões de temperatura e ventos para 16 dias, índices CAPE, LI, CIN e nível de congelamento.
 
-## Abrir e instalar
-Depois de configurar o GitHub Pages para **GitHub Actions** no repositório PortVoxelViewer, acesse:
-https://smkport.github.io/PortVoxelViewer/ChuvaPort/
+## Atenção à interpretação
 
-No Android, abra no Chrome e escolha **Instalar aplicativo** ou **Adicionar à tela inicial**, conforme a opção disponível.
+O painel **Tempestades** é informativo, com indicadores de instabilidade do modelo Open-Meteo. A existência ou ausência de um indicador **não confirma nem exclui** tempestades severas. Códigos WMO 96 e 99 sinalizam trovoadas com granizo no modelo, mas não substituem medições de radar/observação. **Não existe previsão pontual ou probabilidade de tornado neste app.** Acesse [INMET](https://avisos.inmet.gov.br/) para avisos oficiais do Brasil.
 
-## Arquivos
-- `index.html`: aplicação completa (HTML, CSS e JavaScript incorporados, para evitar problemas com visualizadores de arquivos locais).
-- `manifest.webmanifest`, `sw.js` e `assets/icon.svg`: configuração da versão web instalável.
+## Fonte
 
-## Dados e diagnósticos
-A previsão vem da API pública Open-Meteo. O app precisa de conexão para buscar novos dados. Se a busca falhar, experimente abrir a Open-Meteo diretamente no navegador e desligar temporariamente VPN/DNS privado. A previsão não é uma medida oficial de chuva observada. Avisos por volume elevado aparecem apenas com o app aberto.
+Open-Meteo Forecast API: https://open-meteo.com/en/docs. Variáveis podem ser nulas dependendo do modelo e da região. Previsão até 16 dias; incerteza crescente com o prazo.
 
-**Atenção:** o repositório é **privado**. GitHub Pages em repositórios privados exige plano compatível do GitHub. Não altere a visibilidade do repositório inteiro sem avaliar os demais projetos nele presentes.
+## Android
+
+O build Android continua usando WebViewAssetLoader e assets gerados a partir de `ChuvaPort/index.html`. A compilação automática disponibiliza APK de teste nos artifacts do GitHub Actions; não requer GitHub Pages.
+
+## Testes
+
+`node tests/weather-utils.test.mjs` (regressão da chuva) e `node tests/test_extended.mjs` (ampliação meteorológica).

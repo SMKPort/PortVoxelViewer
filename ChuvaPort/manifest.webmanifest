@@ -1,7 +1,7 @@
 {
-  "name": "ChuvaPort | Previsão de chuva",
+  "name": "ChuvaPort | Meteorologia e tempestades",
   "short_name": "ChuvaPort",
-  "description": "Previsão de chuva em milímetros, hora a hora, com até 16 dias.",
+  "description": "Previsão de chuva, vento, temperatura e indicadores de tempestades.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

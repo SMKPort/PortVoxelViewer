@@ -1,5 +1,5 @@
 // O cache contém apenas os arquivos estáticos locais. Previsões da API não são interceptadas.
-const CACHE = 'chuvaport-pwa-1.1';
+const CACHE = 'chuvaport-pwa-2.0';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './assets/icon.svg'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
