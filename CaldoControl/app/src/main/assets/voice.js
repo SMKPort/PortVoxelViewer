@@ -57,10 +57,13 @@
       const t=tokens[j];
       if(t==='e'){
         if(!seen||!numericWord(tokens[j+1]||''))break;
+        // "sete e cinco" nao define decimal nem inteiro de forma inequívoca.
+        if(sum<10)return null;
         j++;continue;
       }
       if(!numericWord(t))break;
       const val=units[t];
+      if(seen && sum<10 && val<10)return null;
       if(seen && val>=100)break;
       if(val>=100&&sum>=100)break;
       sum+=val;j++;seen++;
