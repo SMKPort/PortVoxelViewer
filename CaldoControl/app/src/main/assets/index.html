@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0d1620">
   <meta name="description" content="Monitoramento de tratamento de caldo para açúcar e etanol. Registros por turno, decantadores, aquecimento e leitura de sensores.">
-  <title>CaldoControl 2.6 | Açúcar e Etanol</title>
+  <title>CaldoControl 2.7 | Açúcar e Etanol</title>
   <style>
     :root { color-scheme:dark; --bg:#0a121a; --bg2:#0e1923; --surface:#14222d; --surface2:#1a2a37; --border:#2b3b49; --muted:#99aab8; --fg:#edf5f7; --accent:#b9ee63; --accent2:#55cfc1; --warning:#f7c26e; --danger:#ff8b80; --shadow:0 12px 30px rgba(0,0,0,.16) }
     * {box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;min-height:100vh;background:radial-gradient(circle at 95% 0%,#193527 0%, transparent 35%),linear-gradient(160deg,var(--bg),#0b1720 60%,#0a141e);color:var(--fg);font:15px/1.5 Inter,system-ui,-apple-system,'Segoe UI',sans-serif}
@@ -48,13 +48,13 @@
   <div class="shell">
     <header class="header">
       <div class="brand"><div class="mark" aria-hidden="true">C<span style="font-size:14px">²</span></div><div><strong>CaldoControl</strong><small>Açúcar + etanol • Gestão de processo</small></div></div>
-      <span class="top-pill">● v2.5 · Registro local</span>
+      <span class="top-pill">● v2.7 · Registro local</span>
     </header>
-    <div class="intro"><div><div class="eyebrow">Controle de processo</div><h1>Controle de pH e Brix.</h1><p>pH e Brix do caldo caleado, clarificado e xarope em um só painel. Registre por turno e acompanhe as tags de leitura do supervisório.</p></div><div class="date-stamp" id="todayStamp"></div></div>
+    <div class="intro"><div><div class="eyebrow">Controle de processo</div><h1>Controle de pH e Brix.</h1><p>pH e Brix do caldo caleado, clarificado e xarope em um só painel. Registre por turno, importe fotos e preencha análises com ditado de voz.</p></div><div class="date-stamp" id="todayStamp"></div></div>
     <nav class="tabs" aria-label="Navegação do aplicativo">
       <button type="button" class="tab active" data-tab="painel">◫ Painel</button>
       <button type="button" class="tab" data-tab="registro">✎ Registrar</button>
-<button type="button" class="tab" data-tab="aovivo">◉ Ao vivo</button>
+
 <button type="button" class="tab" data-tab="fechamentos">▣ Fechar turnos</button>
 <button type="button" class="tab" data-tab="diagnostico">⌁ Tendências</button>
 <button type="button" class="tab" data-tab="importacao">▥ OCR em lote</button>
@@ -63,7 +63,7 @@
       
       <button type="button" class="tab" data-tab="medias">▦ Médias por turno</button>
       <button type="button" class="tab" data-tab="relatorios">▤ Relatórios</button>
-      <button type="button" class="tab" data-tab="sensores">⌁ Sensores/CLP</button>
+      
       <button type="button" class="tab" data-tab="historico">≡ Histórico</button>
       <button type="button" class="tab" data-tab="ajustes">⚙ Ajustes</button>
     </nav>
@@ -105,12 +105,29 @@
           <div class="field"><label for="brixXarope">°Brix do xarope</label><input id="brixXarope" inputmode="decimal" type="number" min="0" max="100" step="0.1" placeholder="Ex.: 62"></div>
           
         </div></div>
+
+        <div class="form-section" id="voiceEntry">
+          <div class="subhead"><h3>🎙️ Digitação por voz</h3><span>pH e Brix no campo correto</span></div>
+          <p class="fineprint">Exemplo: “Caleado, pH sete vírgula dois e Brix quinze. Clarificado, pH seis vírgula oito.” O aplicativo mostra os valores detectados para revisão antes de preencher. Nada é salvo automaticamente.</p>
+          <div class="button-row" style="margin-bottom:12px">
+            <button type="button" class="button primary" id="startVoice">🎤 Falar análise</button>
+            <button type="button" class="button" id="parseVoice">Analisar texto</button>
+            <button type="button" class="button ghost" id="clearVoice">Limpar ditado</button>
+          </div>
+          <div class="field"><label for="voiceTranscript">Texto reconhecido (pode corrigir ou digitar)</label>
+            <textarea id="voiceTranscript" rows="3" maxlength="1200" placeholder="Ex.: caleado pH 7,2 e Brix 15, clarificado pH 6,8 e Brix 15,2"></textarea>
+          </div>
+          <div id="voiceStatus" class="status-line" role="status" aria-live="polite">Toque em Falar análise ou digite uma frase.</div>
+          <div id="voicePreview" class="tablewrap" style="margin-top:12px"></div>
+          <div class="button-row" style="margin-top:12px"><button type="button" class="button primary" id="applyVoice" disabled>Aplicar valores conferidos</button></div>
+          <p class="fineprint">O reconhecimento usa o serviço de voz instalado no Android, que pode exigir internet e usar o serviço do fornecedor para transcrição. Em outras plataformas, você pode usar o microfone do teclado neste campo. Verifique sempre os números transcritos.</p>
+        </div>
         <div class="form-section"><div class="subhead"><h3>Registro e observações</h3></div><div class="form-grid">
- <div class="field"><label for="source">Origem do registro</label><select id="source"><option value="manual">Manual</option><option value="gateway">Sensor / gateway</option><option value="csv">Arquivo CSV</option><option value="foto">Importado de foto</option><option value="demo">Simulação</option></select></div>
+ <div class="field"><label for="source">Origem do registro</label><select id="source"><option value="manual">Manual</option><option value="foto">Importado de foto</option><option value="demo">Simulação</option></select></div>
  <div class="field span2"><label for="notes">Ocorrências e observações</label><textarea id="notes" maxlength="2000" placeholder="Ex.: observações sobre as análises de pH e Brix"></textarea></div>
  </div></div>
  <div class="form-section"><div class="subhead"><h3>Hidratação de cal e polímero</h3><span>Preenchimento manual e opcional</span></div>
-   <p class="fineprint">Registre livremente as informações de hidratação conforme a rotina da usina, incluindo as unidades e condições relevantes. Não há cálculos nem comandos ao supervisório.</p>
+   <p class="fineprint">Registre livremente as informações de hidratação conforme a rotina da usina, incluindo as unidades e condições relevantes. Sem cálculos automáticos de dosagem.</p>
    <div class="form-grid two">
     <div class="field"><label for="hydrationLime">Hidratação de cal</label><textarea id="hydrationLime" rows="3" maxlength="1200" placeholder="Informe manualmente as condições, valores, unidades e observações da hidratação de cal."></textarea></div>
     <div class="field"><label for="hydrationPolymer">Hidratação de polímero</label><textarea id="hydrationPolymer" rows="3" maxlength="1200" placeholder="Informe manualmente as condições, valores, unidades e observações da hidratação de polímero."></textarea></div>
@@ -161,54 +178,6 @@
       </div>
     </section>
 
-    <section class="panel" id="sensores">
-      <div class="main-grid" style="margin-top:0"><div class="card">
-        <div class="card-heading"><div><h2>Supervisório da usina</h2><small>Assistente de conexão ao gateway existente · somente leitura</small></div><span id="connectionBadge" class="badge-inline"><span class="status-dot"></span>Desconectado</span></div>
-        <div class="callout info">Use somente o endpoint de leitura autorizado pela TI/automação. Este aplicativo não envia comandos e não se conecta diretamente ao CLP. Se o supervisório disponibilizar apenas OPC UA, Modbus ou MQTT, será necessário um adaptador de leitura aprovado.</div>
-        <div class="form-grid two" style="margin-top:16px">
-          <div class="field"><label for="gatewayName">Nome da conexão</label><input id="gatewayName" type="text" maxlength="60" placeholder="Ex.: Supervisório da moenda"></div>
-          <div class="field"><label for="gatewayType">Interface disponível</label><select id="gatewayType"><option value="wss">WebSocket JSON (WSS)</option><option value="https">API HTTPS (JSON/GET)</option><option value="opcua">OPC UA (requer adaptador)</option><option value="modbus">Modbus TCP (requer adaptador)</option><option value="mqtt">MQTT (requer adaptador)</option></select></div>
-          <div class="field span2"><label for="gatewayEndpoint">Endereço do gateway autorizado</label><input id="gatewayEndpoint" type="url" autocomplete="off" placeholder="wss://gateway.usina.local/leituras"></div>
-          <div class="field"><label for="gatewayInterval">Intervalo de leitura HTTPS (s)</label><select id="gatewayInterval"><option value="15">15 segundos</option><option value="30">30 segundos</option><option value="60">60 segundos</option></select></div>
-          
-        </div>
-        <p id="gatewayProtocolHint" class="fineprint">WSS exige URL e certificado TLS válidos. A conexão recebe mensagens JSON que o gateway publica.</p>
-        <div class="button-row" style="margin-top:13px"><button type="button" id="gatewayTest" class="button">1. Testar / descobrir tags</button><button type="button" id="gatewaySave" class="button">2. Salvar configuração</button><button type="button" id="gatewayConnect" class="button primary">3. Conectar</button><button type="button" id="gatewayDisconnect" class="button">Desconectar</button></div>
-        <div id="gatewayTestStatus" class="status-line" role="status">Nenhuma configuração testada.</div>
-        <details style="margin-top:14px" open><summary><strong>Associação de tags do supervisório</strong> (preencha após receber uma amostra)</summary><p class="fineprint">Selecione para onde vai cada tag do supervisório. Nenhuma leitura será gravada sem revisão.</p><div id="gatewayTagMappings" class="gateway-map"></div></details>
-        <div class="button-row" style="margin-top:10px"><button type="button" id="gatewayExport" class="button small">↓ Exportar configuração</button><label class="button small">↑ Importar configuração <input id="gatewayImport" type="file" accept=".json,application/json" style="display:none"></label></div>
-        <input id="wsUrl" type="hidden"><button type="button" id="connectWs" style="display:none">Compatibilidade WebSocket</button><button type="button" id="disconnectWs" style="display:none">Desconectar WebSocket</button>
-        <div class="button-row" style="margin-top:13px"><button type="button" id="demoSensor" class="button ghost">Simular leitura</button></div>
-        <div id="sensorStatus" class="status-line" role="status">Aguardando conexão. Nenhum comando é enviado ao CLP.</div>
-        <div class="subtle-line"></div><div class="card-heading"><h3>Última leitura recebida</h3><small id="sensorTime">Sem leitura</small></div><div id="sensorReadings" class="section-grid"><div class="empty">Nenhuma leitura recebida.</div></div>
-        <div class="button-row" style="margin-top:18px"><button type="button" id="applyReading" class="button primary" disabled>Copiar leitura para análise</button></div>
-        <p class="fineprint">A leitura copiada poderá ser conferida e salva manualmente em “Registrar”. Dados do gateway não são gravados automaticamente.</p>
-      </div><div class="card"><h2>Como integrar</h2><p class="muted">O assistente aceita WSS JSON ou uma API HTTPS JSON/GET, sem autenticação no aplicativo. O gateway deve disponibilizar uma interface de consulta separada, autorizada pela equipe de automação e TI. OPC UA, Modbus TCP e MQTT exigem um serviço de adaptação de leitura. O aplicativo utiliza apenas tags de pH e Brix.</p>
-        <h3>Formato aceito</h3><pre class="codebox">{
-  "timestamp": "2026-11-01T12:00:00Z",
-  "source": "gateway",
-  "tags": {
-    "phCalado": 7.1,
-    "phDec": 6.9,
-    "phXarope": 6.0,
-    "phTorre": 7.4,
-    "brixCalado": 15.0,
-    "brixClarificado": 15.2,
-    "brixXarope": 61.0
-  }
-}</pre>
-        <h3>Importar leitura CSV</h3><div class="field"><label for="sensorCsv">Arquivo com cabeçalhos iguais às tags acima e uma linha de valores</label><input id="sensorCsv" type="file" accept=".csv,text/csv"></div>
-        <div class="callout info">Somente dados de monitoramento. Setpoints, intertravamentos e dosagens devem permanecer no sistema de controle aprovado pela usina.</div>
-      </div></div>
-    </section>
-
-    
-<section class="panel" id="aovivo"><div class="card">
-<div class="card-heading"><div><h2>Telemetria do supervisório</h2><small>Novas amostras recebidas via gateway WSS/HTTPS.</small></div><span id="liveBadge" class="tag">Sem conexão</span></div>
-<div class="button-row"><button class="button" type="button" data-goto="sensores">⚙ Gateway</button><button class="button" type="button" id="liveRefresh">Atualizar</button><span id="liveTimestamp" class="muted"></span></div>
-<div class="section-grid" id="liveTiles"><div class="empty">Nenhuma leitura recebida.</div></div>
-<div class="field"><label for="liveMetric">Indicador no gráfico</label><select id="liveMetric"></select></div><div id="liveTrend" class="chart-space"></div>
-<p class="fineprint">Amostragem local, sem controle do processo. Horários e qualidade da leitura devem ser verificados. Simulações identificadas separadamente.</p></div></section>
 <section class="panel" id="fechamentos"><div class="card">
 <h2>Fechamento de turnos</h2><p class="muted">Rascunhos automáticos após o fim do turno, enquanto o aplicativo estiver aberto. Apenas o operador pode conferir e confirmar o fechamento.</p>
 <div class="form-grid">
@@ -259,7 +228,7 @@
         <h3 style="margin-top:22px">Sobre as medições</h3><p class="fineprint">Os parâmetros disponíveis são pH e Brix. O backup JSON preserva registros de versões anteriores, inclusive medições antigas de categorias removidas.</p>
       </div></div>
     </section>
-    <footer class="footer"><span>CaldoControl v2.6 • Açúcar e etanol • Offline</span><span>Desenvolvido para acompanhamento do tratamento de caldo de cana</span></footer>
+    <footer class="footer"><span>CaldoControl v2.7 • Açúcar e etanol • Offline</span><span>Desenvolvido para acompanhamento do tratamento de caldo de cana</span></footer>
   </div>
 <script>
 (() => {
@@ -291,7 +260,7 @@
   const getRange = (key) => ({min:numOrNull(settings?.[key]?.min), max:numOrNull(settings?.[key]?.max)});
   const alertFlag = (key, val) => { const range=getRange(key);if(!Number.isFinite(val))return 'missing';if (range.min===null && range.max===null) return 'unconfigured';if ((range.min!==null && val < range.min) || (range.max!==null && val > range.max)) return 'outside';return 'inside';};
   const statusText = (key,val) => {const state=alertFlag(key,val);return state==='outside'?'Fora da faixa definida':state==='inside'?'Dentro da faixa definida':state==='missing'?'Sem leitura':'Sem limite configurado';};
-  function goTab(name){document.querySelectorAll('.tab').forEach(x=>{x.classList.toggle('active',x.dataset.tab===name);x.setAttribute('aria-current',x.dataset.tab===name?'page':'false')});document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===name));window.scrollTo({top:0,behavior:'smooth'});if(name==='historico')renderHistory();if(name==='painel')renderDashboard();if(name==='relatorios')renderReport();if(name==='medias')renderAverages();if(name==='sensores')renderSensors();if(name==='aovivo')renderLive();if(name==='fechamentos')renderClosures();if(name==='diagnostico')renderTrends();if(name==='auditoria')renderAudit();}
+  function goTab(name){document.querySelectorAll('.tab').forEach(x=>{x.classList.toggle('active',x.dataset.tab===name);x.setAttribute('aria-current',x.dataset.tab===name?'page':'false')});document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===name));window.scrollTo({top:0,behavior:'smooth'});if(name==='historico')renderHistory();if(name==='painel')renderDashboard();if(name==='relatorios')renderReport();if(name==='medias')renderAverages();if(name==='fechamentos')renderClosures();if(name==='diagnostico')renderTrends();if(name==='auditoria')renderAudit();}
   document.querySelectorAll('[data-tab]').forEach(x=>x.addEventListener('click',()=>goTab(x.dataset.tab)));
   document.querySelectorAll('[data-goto]').forEach(x=>x.addEventListener('click',()=>goTab(x.dataset.goto)));
   function resetForm(){ $('logForm').reset();if($('photoPreview')){$('photoPreview').style.display='none';$('photoPreview').removeAttribute('src');$('ocrTextPreview').textContent='Nenhum texto.';$('ocrCandidates').innerHTML='';$('applyOcr').disabled=true;$('photoStatus').textContent='Nenhuma foto selecionada.';}$('editId').value='';$('dateTime').value=timeInput();$('process').value='ambos';$('source').value='manual';if(activeOperator.name){$('operator').value=activeOperator.name;if(activeOperator.shift)$('shift').value=activeOperator.shift;}$('formTitle').textContent='Nova análise operacional';$('saveBtn').textContent='Salvar análise';$('formStatus').textContent='';renderCalc(); }
@@ -437,7 +406,7 @@
   $('generateReport').addEventListener('click',renderReport);
   for(const k of ['reportStart','reportEnd','reportProcess','reportShift','reportLine','reportDemo'])$(k).addEventListener('change',renderReport);
   $('exportReportCsv').addEventListener('click',()=>{renderReport();if(!currentReport.length)return window.alert('Não há dados para o relatório selecionado.');const cols=['dataOperacional','dateTime','line','process','shift','operator','source','phCalado','phDec','phXarope','phTorre','brixCalado','brixClarificado','brixXarope','hydrationLime','hydrationPolymer','notes','photoOcrText'];const rows=[cols.map(csvCell).join(';')];for(const r of currentReport){const row={...r,dataOperacional:dateOperational(r.dateTime),dateTime:showDate(r.dateTime)};rows.push(cols.map(k=>csvCell(row[k])).join(';'));}download('caldocontrol_relatorio_turno_'+isoDate()+'.csv','text/csv;charset=utf-8','\ufeff'+rows.join('\r\n'));});
-  $('printReport').addEventListener('click',()=>{renderReport();if(!currentReport.length)return window.alert('Selecione um período com registros.');const body=$('reportResults').innerHTML;const summary=$('reportSummary').innerHTML;const w=(window.CaldoAndroid&&typeof window.CaldoAndroid.printReport==='function')?{document:{open(){},write(markup){window.CaldoAndroid.printReport(markup)},close(){}}}:window.open('','_blank');if(!w)return window.alert('Permita janelas pop-up para imprimir.');w.document.open();w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório CaldoControl</title><style>body{font:14px Arial;padding:25px;color:#17232a}table{width:100%;border-collapse:collapse;font-size:11px}th,td{padding:8px;border:1px solid #bbb;text-align:left}.report-summary{display:flex;gap:16px;margin:15px 0}.summary-tile{padding:10px;border:1px solid #bbb}.summary-tile small{display:block}.summary-tile strong{font-size:20px}.fineprint{font-size:11px}</style></head><body><h1>CaldoControl v2.6 | Relatório por turno</h1><p>Gerado em '+html(showDate(new Date().toISOString()))+'. Total: '+currentReport.length+' análises. Virada do dia: '+html(dayStart)+'.</p><div class="report-summary">'+summary+'</div>'+body+'<script>window.onload=()=>window.print()<\/script></body></html>');w.document.close();});
+  $('printReport').addEventListener('click',()=>{renderReport();if(!currentReport.length)return window.alert('Selecione um período com registros.');const body=$('reportResults').innerHTML;const summary=$('reportSummary').innerHTML;const w=(window.CaldoAndroid&&typeof window.CaldoAndroid.printReport==='function')?{document:{open(){},write(markup){window.CaldoAndroid.printReport(markup)},close(){}}}:window.open('','_blank');if(!w)return window.alert('Permita janelas pop-up para imprimir.');w.document.open();w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório CaldoControl</title><style>body{font:14px Arial;padding:25px;color:#17232a}table{width:100%;border-collapse:collapse;font-size:11px}th,td{padding:8px;border:1px solid #bbb;text-align:left}.report-summary{display:flex;gap:16px;margin:15px 0}.summary-tile{padding:10px;border:1px solid #bbb}.summary-tile small{display:block}.summary-tile strong{font-size:20px}.fineprint{font-size:11px}</style></head><body><h1>CaldoControl v2.7 | Relatório por turno</h1><p>Gerado em '+html(showDate(new Date().toISOString()))+'. Total: '+currentReport.length+' análises. Virada do dia: '+html(dayStart)+'.</p><div class="report-summary">'+summary+'</div>'+body+'<script>window.onload=()=>window.print()<\/script></body></html>');w.document.close();});
 
   // Conexão SOMENTE de leitura por WebSocket com gateway autorizado.
   const WS_KEY='caldocontrol_gateway_url_v2';let socket=null,sensorData=null,sensorSource='',sensorAt=null,lastSensorError='',httpConnected=false;
