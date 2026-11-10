@@ -261,7 +261,7 @@
   function goTab(name){document.querySelectorAll('.tab').forEach(x=>{x.classList.toggle('active',x.dataset.tab===name);x.setAttribute('aria-current',x.dataset.tab===name?'page':'false')});document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===name));window.scrollTo({top:0,behavior:'smooth'});if(name==='historico')renderHistory();if(name==='painel')renderDashboard();if(name==='relatorios')renderReport();if(name==='medias')renderAverages();if(name==='fechamentos')renderClosures();if(name==='diagnostico')renderTrends();if(name==='auditoria')renderAudit();}
   document.querySelectorAll('[data-tab]').forEach(x=>x.addEventListener('click',()=>goTab(x.dataset.tab)));
   document.querySelectorAll('[data-goto]').forEach(x=>x.addEventListener('click',()=>goTab(x.dataset.goto)));
-  function resetForm(){ $('logForm').reset();if($('photoPreview')){$('photoPreview').style.display='none';$('photoPreview').removeAttribute('src');$('ocrTextPreview').textContent='Nenhum texto.';$('ocrCandidates').innerHTML='';$('applyOcr').disabled=true;$('photoStatus').textContent='Nenhuma foto selecionada.';}$('editId').value='';$('dateTime').value=timeInput();$('process').value='ambos';$('source').value='manual';if(activeOperator.name){$('operator').value=activeOperator.name;if(activeOperator.shift)$('shift').value=activeOperator.shift;}$('formTitle').textContent='Nova análise operacional';$('saveBtn').textContent='Salvar análise';$('formStatus').textContent='';renderCalc(); }
+  function resetForm(){ $('logForm').reset();for(const opt of Array.from($('source').options))if(opt.dataset.legacySource)opt.remove();clearVoiceReview();$('voiceTranscript').value='';$('voiceStatus').textContent='Toque em Falar análise ou digite uma frase.';if($('photoPreview')){$('photoPreview').style.display='none';$('photoPreview').removeAttribute('src');$('ocrTextPreview').textContent='Nenhum texto.';$('ocrCandidates').innerHTML='';$('applyOcr').disabled=true;$('photoStatus').textContent='Nenhuma foto selecionada.';}$('editId').value='';$('dateTime').value=timeInput();$('process').value='ambos';$('source').value='manual';if(activeOperator.name){$('operator').value=activeOperator.name;if(activeOperator.shift)$('shift').value=activeOperator.shift;}$('formTitle').textContent='Nova análise operacional';$('saveBtn').textContent='Salvar análise';$('formStatus').textContent='';renderCalc(); }
   function readForm(){ const o={}; for(const k of FIELDS){o[k]=NUMS.includes(k)?numeric(k):$(k).value.trim();}return o; }
   function validForm(r){
     if(!r.dateTime||Number.isNaN(new Date(r.dateTime).getTime()))return 'Informe data e hora válidas.';
@@ -277,6 +277,80 @@
   }
   function renderCalc(){/* Nenhum indicador calculado de vazão ou temperatura nesta versão. */}
   NUMS.forEach(k=>$(k).addEventListener('input',renderCalc));
+
+  // Interface de ditado: reconhecimento por serviço Android ou texto manual, com confirmação explícita.
+  let voiceCandidates=[];
+  const voiceFields=new Set(['phCalado','phDec','phTorre','phXarope','brixCalado','brixClarificado','brixXarope']);
+  function clearVoiceReview(){
+    voiceCandidates=[];
+    $('voicePreview').innerHTML='';
+    $('applyVoice').disabled=true;
+  }
+  function analyzeVoice(){
+    clearVoiceReview();
+    const raw=$('voiceTranscript').value.trim();
+    if(!raw){$('voiceStatus').textContent='Diga ou digite uma frase com etapa e valor de pH/Brix.';return;}
+    if(!window.CaldoVoiceParser){$('voiceStatus').textContent='Interpretador de voz indisponível. Confira a instalação do aplicativo.';return;}
+    const result=window.CaldoVoiceParser.parse(raw);
+    voiceCandidates=result.pairs.filter(x=>voiceFields.has(x.field));
+    const messages=[voiceCandidates.length+' campo(s) reconhecido(s).'];
+    if(result.warnings.length)messages.push(result.warnings.join(' '));
+    $('voiceStatus').textContent=messages.join(' ');
+    if(!voiceCandidates.length)return;
+    $('voicePreview').innerHTML='<table class="voice-result-table"><thead><tr><th>Aplicar</th><th>Campo identificado</th><th>Valor (conferir)</th></tr></thead><tbody>'+
+      voiceCandidates.map(item=>'<tr><td><input class="voice-include" type="checkbox" checked aria-label="Incluir '+html(item.label)+'"></td>'+
+        '<td>'+html(item.label)+'</td>'+
+        '<td><input class="voice-value" data-field="'+html(item.field)+'" type="number" min="0" max="'+(item.field.startsWith('ph')?'14':'100')+
+        '" step="any" inputmode="decimal" value="'+String(item.value)+'" aria-label="Conferir '+html(item.label)+'"></td></tr>').join('')+'</tbody></table>';
+    $('applyVoice').disabled=false;
+  }
+  window.CaldoVoice={
+    receive(text){
+      $('startVoice').disabled=false;
+      $('voiceTranscript').value=String(text||'').slice(0,1200);
+      analyzeVoice();
+    },
+    error(message){
+      $('startVoice').disabled=false;
+      $('voiceStatus').textContent=String(message||'Ditado cancelado. Você pode tentar novamente ou digitar manualmente.');
+    }
+  };
+  $('startVoice').addEventListener('click',()=>{
+    clearVoiceReview();
+    if(window.CaldoAndroid&&typeof window.CaldoAndroid.startVoiceRecognition==='function'){
+      $('startVoice').disabled=true;
+      $('voiceStatus').textContent='Aguardando o reconhecimento de voz. Fale a etapa e o parâmetro.';
+      try{window.CaldoAndroid.startVoiceRecognition();}
+      catch(err){window.CaldoVoice.error('Não foi possível abrir o ditado: '+err.message);}
+    }else{
+      $('voiceStatus').textContent='O botão de microfone é exclusivo do APK Android. Use o microfone do teclado na caixa de texto e toque em Analisar texto.';
+      $('voiceTranscript').focus();
+    }
+  });
+  $('voiceTranscript').addEventListener('input',()=>{clearVoiceReview();$('voiceStatus').textContent='Texto alterado. Toque em Analisar texto para revisar os valores.';});
+  $('parseVoice').addEventListener('click',analyzeVoice);
+  $('clearVoice').addEventListener('click',()=>{$('voiceTranscript').value='';clearVoiceReview();$('voiceStatus').textContent='Ditado limpo. Nenhuma medição foi alterada.';});
+  $('applyVoice').addEventListener('click',()=>{
+    const updates=[],selected=[...$('voicePreview').querySelectorAll('tr')].filter(row=>row.querySelector('.voice-include')?.checked);
+    if(!selected.length){$('voiceStatus').textContent='Marque pelo menos um valor para aplicar.';return;}
+    for(const row of selected){
+      const input=row.querySelector('.voice-value');
+      const field=input?.dataset.field,raw=input?.value.trim().replace(',','.');
+      if(!voiceFields.has(field)||!raw){$('voiceStatus').textContent='Informe valores para todas as medições selecionadas.';return;}
+      const number=Number(raw),max=field.startsWith('ph')?14:100;
+      if(!Number.isFinite(number)||number<0||number>max){$('voiceStatus').textContent='Confira o valor: '+field+' deve estar entre 0 e '+max+'.';return;}
+      updates.push({field,number});
+    }
+    const previous=updates.filter(({field,number})=>{
+      const old=$(field).value.trim();return old!==''&&Number(old.replace(',','.'))!==number;
+    });
+    if(previous.length&&!window.confirm('Alguns campos já têm medições. Substituir '+previous.length+' valor(es) pelos valores do ditado revisado?'))return;
+    for(const {field,number} of updates)$(field).value=String(number);
+    clearVoiceReview();
+    $('voiceStatus').textContent=updates.length+' campo(s) preenchido(s). Confira a análise completa e clique em Salvar análise para registrar.';
+    $('formStatus').textContent='Medições do ditado copiadas para conferência. Nenhum registro foi salvo automaticamente.';
+  });
+
   $('logForm').addEventListener('submit',e=>{e.preventDefault();const data=readForm(),error=validForm(data);if(error){$('formStatus').textContent=error;$('formStatus').style.color='var(--danger)';return;}if(!data.operator.trim()){$('formStatus').textContent='Identifique o responsável pela análise.';return;}if(data.source==='demo'&&!window.confirm('Esta análise contém dados SIMULADOS. Deseja salvá-la no histórico identificada como simulação? Ela não aparecerá nos indicadores operacionais e relatórios padrão.'))return;const previous=$('editId').value?records.find(r=>r.id===$('editId').value):null;const changeReason=previous?window.prompt('Motivo da alteração desta análise (obrigatório):'):'';if(previous&&!String(changeReason||'').trim())return;const id=$('editId').value||('r_'+Date.now()+'_'+Math.random().toString(36).slice(2,9));const item={...(previous||{}),...data,id,dateTime:new Date(data.dateTime).toISOString(),updatedAt:new Date().toISOString()};const next=[...records];const i=next.findIndex(x=>x.id===id);if(i>=0)next[i]=item;else next.push(item);if(!writeStore(DATA_KEY,next))return;records=next;appendAudit(previous?'atualizar':'criar',id,data.operator,changeReason||'Registro',previous,item);afterRecordsChanged();$('formStatus').style.color='var(--accent)';resetForm();$('formStatus').textContent=i>=0?'Análise atualizada com sucesso.':'Análise salva com sucesso.';renderDashboard();renderHistory();renderReport();setTimeout(()=>{$('formStatus').textContent='';},4000);});
   $('resetForm').addEventListener('click',resetForm);
   function renderDashboard(){
@@ -320,7 +394,13 @@
     $('historyContent').innerHTML=head+body+'</tbody></table></div>';
   }
   $('search').addEventListener('input',renderHistory);$('historyShift').addEventListener('change',renderHistory);$('historyProcess').addEventListener('change',renderHistory);
-  $('historyContent').addEventListener('click',e=>{const ed=e.target.closest('[data-edit]'),del=e.target.closest('[data-delete]');if(ed){const rec=records.find(r=>r.id===ed.dataset.edit);if(!rec)return;for(const k of FIELDS){const v=rec[k];$(k).value=k==='dateTime'?timeInput(new Date(rec.dateTime)):(v===null||v===undefined?'':v);} $('editId').value=rec.id;$('formTitle').textContent='Editar análise';$('saveBtn').textContent='Atualizar análise';$('formStatus').textContent='';renderCalc();goTab('registro');}else if(del){const rec=records.find(r=>r.id===del.dataset.delete);if(!rec)return;if(!window.confirm('Excluir a análise de '+showDate(rec.dateTime)+'?'))return;const reason=window.prompt('Motivo da exclusão (obrigatório):');if(!String(reason||'').trim())return;const actor=activeOperator.name||window.prompt('Identifique o responsável pela exclusão:');if(!String(actor||'').trim())return;const next=records.filter(r=>r.id!==rec.id);if(writeStore(DATA_KEY,next)){records=next;appendAudit('excluir',rec.id,actor,reason,rec,null);afterRecordsChanged();renderHistory();renderDashboard();renderReport();}}});
+  $('historyContent').addEventListener('click',e=>{const ed=e.target.closest('[data-edit]'),del=e.target.closest('[data-delete]');if(ed){const rec=records.find(r=>r.id===ed.dataset.edit);if(!rec)return;for(const k of FIELDS){const v=rec[k];
+    if(k==='source'&&v&&!Array.from($('source').options).some(o=>o.value===v)){
+      for(const opt of Array.from($('source').options))if(opt.dataset.legacySource)opt.remove();
+      const archived=document.createElement('option');archived.value=v;archived.textContent='Origem histórica: '+v;archived.dataset.legacySource='true';$('source').appendChild(archived);
+    }
+    $(k).value=k==='dateTime'?timeInput(new Date(rec.dateTime)):(v===null||v===undefined?'':v);
+  } $('editId').value=rec.id;$('formTitle').textContent='Editar análise';$('saveBtn').textContent='Atualizar análise';$('formStatus').textContent='';renderCalc();goTab('registro');}else if(del){const rec=records.find(r=>r.id===del.dataset.delete);if(!rec)return;if(!window.confirm('Excluir a análise de '+showDate(rec.dateTime)+'?'))return;const reason=window.prompt('Motivo da exclusão (obrigatório):');if(!String(reason||'').trim())return;const actor=activeOperator.name||window.prompt('Identifique o responsável pela exclusão:');if(!String(actor||'').trim())return;const next=records.filter(r=>r.id!==rec.id);if(writeStore(DATA_KEY,next)){records=next;appendAudit('excluir',rec.id,actor,reason,rec,null);afterRecordsChanged();renderHistory();renderDashboard();renderReport();}}});
   function setupRanges(){let content='';for(const [key,name] of METRICS){const v=getRange(key);content+='<div class="range-box"><strong>'+html(name)+'</strong><div class="range-pair"><div class="field"><label for="min_'+key+'">Mínimo</label><input id="min_'+key+'" type="number" step="any" placeholder="Sem limite" value="'+(v.min??'')+'"></div><div class="field"><label for="max_'+key+'">Máximo</label><input id="max_'+key+'" type="number" step="any" placeholder="Sem limite" value="'+(v.max??'')+'"></div></div></div>';} $('rangeList').innerHTML=content;}
   $('settingsForm').addEventListener('submit',e=>{e.preventDefault();const next={};for(const [key] of METRICS){const rawMin=$('min_'+key).value.trim(),rawMax=$('max_'+key).value.trim();const min=rawMin===''?null:Number(rawMin), max=rawMax===''?null:Number(rawMax);if((min!==null&&!Number.isFinite(min))||(max!==null&&!Number.isFinite(max))||(min!==null&&max!==null&&min>max)){$('settingsStatus').textContent='Confira os limites: mínimo não pode exceder o máximo.';return;}if(key.startsWith('ph')&&((min!==null&&(min<0||min>14))||(max!==null&&(max<0||max>14)))){$('settingsStatus').textContent='Os limites de pH precisam estar entre 0 e 14.';return;}next[key]={min,max};}if(writeStore(SETTINGS_KEY,next)){settings=next;renderDashboard();$('settingsStatus').textContent='Limites salvos. Os indicadores foram atualizados.';}});
   $('clearRanges').addEventListener('click',()=>{if(!window.confirm('Remover todas as faixas de referência configuradas?'))return;const next=emptySettings();if(writeStore(SETTINGS_KEY,next)){settings=next;setupRanges();renderDashboard();$('settingsStatus').textContent='Faixas removidas.';}});
