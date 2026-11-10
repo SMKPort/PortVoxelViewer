@@ -2,7 +2,7 @@
 
 ## Novo: ditado de voz e remoção do gateway
 
-A versão 2.7 removeu completamente o painel **Sensores/CLP**, a conexão WSS/HTTPS, a API de gateway no Android e o painel **Ao vivo**, pois a integração com o supervisório não será utilizada. O app não solicita mais permissão INTERNET para se conectar diretamente à rede.
+A versão 2.7 removeu completamente o painel **Sensores/CLP**, a conexão WSS/HTTPS, a API de gateway no Android e o painel **Ao vivo**, pois a integração com o supervisório não será utilizada. O app não oferece mais chamadas de rede ao supervisório ou CLP. A permissão de rede do Android foi mantida para preservar a compatibilidade da WebView, mas não há conexão de gateway no aplicativo.
 
 Na aba **Registrar**, clique em **Falar análise**. O Android abre o serviço de reconhecimento de voz disponível no aparelho, em **português do Brasil**. A transcrição volta ao CaldoControl e o interpretador tenta reconhecer **somente pH e Brix** de uma etapa explicitamente mencionada. Exemplo:
 
