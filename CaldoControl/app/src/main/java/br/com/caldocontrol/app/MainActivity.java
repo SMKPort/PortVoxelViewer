@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.print.PrintManager;
 import android.content.Context;
 import android.content.Intent;
+import android.speech.RecognizerIntent;
+import java.util.ArrayList;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -26,10 +28,12 @@ import java.nio.charset.StandardCharsets;
 public class MainActivity extends Activity {
     private static final int PICK_JSON = 1001;
     private static final int SAVE_DOCUMENT = 1002;
+    private static final int VOICE_REQUEST = 1003;
     private static final String APP_HOST = "appassets.androidplatform.net";
     private FrameLayout root;
     private WebView webView;
     private WebView reportView;
+    private boolean voiceInProgress = false;
     private ValueCallback<Uri[]> fileCallback;
     private String pendingText;
     private byte[] pendingBinary;
@@ -97,53 +101,29 @@ public class MainActivity extends Activity {
     }
 
     private final class AndroidBridge {
-        // HTTPS de leitura: TLS do Android, sem credenciais persistidas, sem redirecionamento, GET somente.
-        @JavascriptInterface public void readGatewayJson(String endpoint, String requestId) {
-            if (requestId == null || !requestId.matches("[A-Za-z0-9_-]{1,40}")) return;
-            new Thread(() -> {
-                String content = null;
-                String failure = null;
-                java.net.HttpURLConnection conn = null;
+
+        // O sistema de reconhecimento de voz instalado no Android captura o áudio.
+        // Sem permissão RECORD_AUDIO no CaldoControl e sem armazenamento local de áudio.
+        @JavascriptInterface public void startVoiceRecognition() {
+            runOnUiThread(() -> {
+                if (voiceInProgress) return;
+                Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "pt-BR");
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "pt-BR");
+                intent.putExtra(RecognizerIntent.EXTRA_PROMPT,
+                    "Diga a etapa, pH e Brix. Exemplo: caleado, pH sete vírgula dois e Brix quinze.");
+                intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
                 try {
-                    java.net.URI uri = new java.net.URI(endpoint);
-                    if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null
-                        || uri.getRawUserInfo() != null || uri.getRawFragment() != null)
-                        throw new IllegalArgumentException("Exige endereço HTTPS sem usuário ou senha.");
-                    java.net.URL url = uri.toURL();
-                    conn = (java.net.HttpURLConnection)url.openConnection();
-                    conn.setConnectTimeout(5000);
-                    conn.setReadTimeout(5000);
-                    conn.setInstanceFollowRedirects(false);
-                    conn.setRequestMethod("GET");
-                    conn.setRequestProperty("Accept", "application/json");
-                    int status = conn.getResponseCode();
-                    if (status < 200 || status >= 300) throw new java.io.IOException("HTTP " + status);
-                    int size = conn.getContentLength();
-                    if (size > 65536) throw new java.io.IOException("Resposta muito grande.");
-                    java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
-                    try (java.io.InputStream in = conn.getInputStream()) {
-                        byte[] chunk = new byte[4096]; int count;
-                        while ((count = in.read(chunk)) != -1) {
-                            if (buffer.size() + count > 65536) throw new java.io.IOException("Limite de 64 KB.");
-                            buffer.write(chunk, 0, count);
-                        }
-                    }
-                    content = buffer.toString("UTF-8");
-                } catch (Exception e) {
-                    failure = e instanceof javax.net.ssl.SSLException ?
-                        "Falha TLS/certificado. Consulte a TI/automação." : e.getMessage();
-                } finally { if (conn != null) conn.disconnect(); }
-                final String output = content, error = failure;
-                runOnUiThread(() -> {
-                    if (webView == null) return;
-                    String cb = error == null ? "receive" : "error";
-                    String val = error == null ? output : error;
-                    webView.evaluateJavascript(
-                        "window.CaldoGatewayNative && window.CaldoGatewayNative."+cb+"("+
-                        org.json.JSONObject.quote(requestId)+","+
-                        org.json.JSONObject.quote(val == null ? "Falha desconhecida" : val)+")", null);
-                });
-            }, "caldocontrol-gateway-read").start();
+                    voiceInProgress = true;
+                    startActivityForResult(intent, VOICE_REQUEST);
+                } catch (Exception ex) {
+                    voiceInProgress = false;
+                    sendVoiceResult(false,
+                        "Reconhecimento de voz indisponível. Instale/ative um serviço de voz, ou use o microfone do teclado.");
+                }
+            });
         }
 
         @JavascriptInterface public void recognizeSheetPhoto(String imageDataUrl) {
@@ -229,9 +209,30 @@ public class MainActivity extends Activity {
         }
     }
 
+
+    private void sendVoiceResult(boolean success, String message) {
+        if (webView == null) return;
+        final String name = success ? "receive" : "error";
+        final String payload = org.json.JSONObject.quote(message == null ? "" : message);
+        runOnUiThread(() -> {
+            if (webView != null) webView.evaluateJavascript(
+                "window.CaldoVoice && window.CaldoVoice." + name + "(" + payload + ")", null);
+        });
+    }
+
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == PICK_JSON) {
+        if (requestCode == VOICE_REQUEST) {
+            voiceInProgress = false;
+            if (resultCode == RESULT_OK && data != null) {
+                ArrayList<String> recognized = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                String transcript = recognized == null ? "" : recognized.stream()
+                    .filter(t -> t != null && !t.trim().isEmpty()).findFirst().orElse("");
+                if (!transcript.trim().isEmpty())
+                    sendVoiceResult(true, transcript.substring(0, Math.min(transcript.length(), 1200)));
+                else sendVoiceResult(false, "Nenhuma fala reconhecida. Tente novamente ou digite manualmente.");
+            } else sendVoiceResult(false, "Ditado cancelado. Nenhum campo foi modificado.");
+        } else if (requestCode == PICK_JSON) {
             if (fileCallback != null) {
                 Uri selected = resultCode == RESULT_OK && data != null ? data.getData() : null;
                 fileCallback.onReceiveValue(selected == null ? null : new Uri[]{selected});
