@@ -1,0 +1,32 @@
+{
+  "source": "Somake Network export manifest 1.10",
+  "modpack_name": "SSMP - Season 1 - Capitulo 2",
+  "minecraft_version": "1.21.1",
+  "neoforge_version": "21.1.235",
+  "items_total": 214,
+  "mods_count": 213,
+  "resource_packs": 1,
+  "client_optimizers_installed": [
+    "Sodium", "Sodium Extra", "Sodium/Embeddium Extras",
+    "ImmediatelyFast", "Entity Culling Fabric/Forge", "Dynamic FPS",
+    "FerriteCore ((Neo)Forge)", "ModernFix", "AllTheLeaks (Memory Leak Fix)",
+    "Better Fps - Render Distance", "Immersive Optimization", "Fast Item Frames", "FastBoot"
+  ],
+  "compatibility_sensitive": [
+    "Armourer's Workshop", "Emotecraft (Forge)", "playerAnimator",
+    "GeckoLib", "Iris Shaders", "Iron's Spells 'n Spellbooks",
+    "Lodestone", "Create", "WATERFRAMES: Multimedia Displays",
+    "MCEF (Minecraft Chromium Embedded Framework)"
+  ],
+  "default_options": {
+    "enabled": true, "show_hud": true, "adapt_entities": false,
+    "adapt_particles": false, "min_entity_scale": 0.85,
+    "target_fps": 60, "log_diagnostics": false
+  },
+  "notes": [
+    "A lista do CurseForge descreve mods/pack; nao mede desempenho real",
+    "Nao modifica renderizadores de terceiros nem logica do servidor",
+    "Ativar adapt_entities esconde entidades distantes, inclusive armaduras de jogadores",
+    "Particulas globais nao garantem preservacao de todos os efeitos de magia"
+  ]
+}

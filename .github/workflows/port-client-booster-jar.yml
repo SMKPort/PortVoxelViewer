@@ -1,0 +1,39 @@
+name: Port Client Booster JAR
+
+on:
+  push:
+    paths:
+      - 'PortClientBooster/**'
+      - '.github/workflows/port-client-booster-jar.yml'
+  pull_request:
+    paths:
+      - 'PortClientBooster/**'
+      - '.github/workflows/port-client-booster-jar.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: PortClientBooster
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Gradle 9.2.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Build
+        run: gradle clean build --stacktrace
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: PortClientBooster-0.2.0-JAR
+          path: PortClientBooster/build/libs/*.jar
+          if-no-files-found: error
