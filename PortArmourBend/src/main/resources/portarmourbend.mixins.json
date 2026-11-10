@@ -1,0 +1,8 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.port.armourbend.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["LivingRendererMixin", "ArmatureHandMixin", "AdvancedChildMixin"],
+  "injectors": {"defaultRequire": 1}
+}

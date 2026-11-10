@@ -1,0 +1,37 @@
+name: Build Port Armour Bend (NeoForge 1.21.1)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'PortArmourBend/**'
+      - '.github/workflows/build-port-armour-bend.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: PortArmourBend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Test forearm bone names
+        run: |
+          mkdir -p /tmp/arm-names
+          javac -d /tmp/arm-names src/main/java/dev/port/armourbend/ArmSide.java TestArmSide.java
+          java -cp /tmp/arm-names TestArmSide
+      - name: Compile mod
+        run: gradle --no-daemon build
+      - name: Upload mod jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: portarmourbend-1.21.1-neoforge
+          path: PortArmourBend/build/libs/*.jar
+          if-no-files-found: error

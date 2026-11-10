@@ -1,0 +1,6 @@
+/.gradle/
+/build/
+/run-client/
+/run-mods/
+/.idea/
+*.iml
