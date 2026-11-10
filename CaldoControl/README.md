@@ -1,4 +1,22 @@
-# CaldoControl 2.6 para Android
+# CaldoControl 2.7 para Android
+
+## Novo: ditado de voz e remoção do gateway
+
+A versão 2.7 removeu completamente o painel **Sensores/CLP**, a conexão WSS/HTTPS, a API de gateway no Android e o painel **Ao vivo**, pois a integração com o supervisório não será utilizada. O app não solicita mais permissão INTERNET para se conectar diretamente à rede.
+
+Na aba **Registrar**, clique em **Falar análise**. O Android abre o serviço de reconhecimento de voz disponível no aparelho, em **português do Brasil**. A transcrição volta ao CaldoControl e o interpretador tenta reconhecer **somente pH e Brix** de uma etapa explicitamente mencionada. Exemplo:
+
+> "Caleado, pH sete vírgula dois e Brix quinze. Clarificado, pH seis vírgula oito e Brix quatorze vírgula cinco. Xarope, Brix sessenta e dois. Torre, pH sete vírgula quatro."
+
+O aplicativo reconhece sinônimos como `dosado` (caleado), `decantado` (clarificado), e `pe agá` (pH), além de números com vírgula, ponto ou falados por extenso. O usuário vê uma tabela **editável** com cada parâmetro, valor e caixa de seleção. Precisa clicar em **Aplicar valores conferidos** para copiar as leituras à ficha, e depois clicar em **Salvar análise**. O app nunca salva dados apenas por ouvir uma frase, nem atribui valores sem etapa conhecida. Valores conflitantes e fora da faixa são rejeitados. Se já houver medições no campo, o aplicativo pede confirmação antes de sobrescrevê-las.
+
+Na versão HTML fora do APK, use o microfone do teclado no campo "Texto reconhecido" e toque em **Analisar texto**. O interpretador de voz fica em `app/src/main/assets/voice.js` e funciona offline **depois da transcrição**.
+
+**Privacidade:** o áudio é capturado pelo serviço de reconhecimento de voz instalado no Android. Dependendo desse serviço, o reconhecimento pode usar internet e enviar áudio ao respectivo fornecedor. O CaldoControl não armazena o áudio, não solicita `RECORD_AUDIO` e só recebe o texto reconhecido. O uso depende da disponibilidade de serviço de voz no aparelho. Para operação em área industrial, siga as normas de segurança locais, não use o celular em condições proibidas.
+
+Permanecem os dados, pH/Brix, hidratação manual de cal e polímero, médias e fechamento dos turnos, OCR de fotos, relatórios, auditoria e backup JSON. Registros antigos com origem "gateway" continuam no histórico e no backup por compatibilidade, mas não existe mais conexão de rede ou botão de gateway. Exporte backup JSON antes de atualizar.
+
+## Histórico anterior
 
 ## Novo na versão 2.6: hidratação de cal e polímero (manual)
 
@@ -29,7 +47,7 @@ Permanece: médias e fechamento de turnos com conferência, gráficos, OCR de fo
 
 ## Instalar o APK
 
-Acesse **Actions > CaldoControl APK Android > execução mais recente > Artifacts > CaldoControl-2.6-debug-APK**. Extraia `app-debug.apk` do ZIP gerado. O APK debug requer backup anterior dos dados se for necessário reinstalar o app por diferença de assinatura.
+Acesse **Actions > CaldoControl APK Android > execução mais recente > Artifacts > CaldoControl-2.7-debug-APK**. Extraia `app-debug.apk` do ZIP gerado. O APK debug requer backup anterior dos dados se for necessário reinstalar o app por diferença de assinatura.
 
 ## Versões anteriores e limitações
 
@@ -64,7 +82,7 @@ O GitHub Actions valida sintaxe JavaScript, campos críticos da interface, expor
 
 ## APK
 
-No GitHub, acesse **Actions > CaldoControl APK Android > execução mais recente > Artifacts > CaldoControl-2.6-debug-APK**. Baixe o ZIP e extraia o arquivo **app-debug.apk** para instalar no Android. Este é um APK debug para teste, não assinado para distribuição pela Play Store.
+No GitHub, acesse **Actions > CaldoControl APK Android > execução mais recente > Artifacts > CaldoControl-2.7-debug-APK**. Baixe o ZIP e extraia o arquivo **app-debug.apk** para instalar no Android. Este é um APK debug para teste, não assinado para distribuição pela Play Store.
 
 O workflow `.github/workflows/caldocontrol-apk.yml` compila o projeto com Java 17, Gradle 8.9 e Android SDK 35. Também pode ser executado manualmente via **Run workflow**.
 
