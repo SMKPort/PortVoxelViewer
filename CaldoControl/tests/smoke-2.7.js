@@ -3,23 +3,23 @@ const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const src=fs.readFileSync(path.join(__dirname,'../app/src/main/assets/index.html'),'utf8');
 const html=src.split('<script>')[0];
 const required=['phCalado','phDec','phXarope','phTorre','brixCalado','brixClarificado','brixXarope',
- 'aovivo','fechamentos','diagnostico','importacao','auditoria','batchSave','exportExcel','activeOperator','closureCards','liveTrend'];
+ 'fechamentos','diagnostico','importacao','auditoria','batchSave','exportExcel','activeOperator' ,'closureCards'];
 for(const id of required)assert(html.includes('id="'+id+'"'),'Campo ausente: '+id);
 const removed=['temperature','tempInput','heaterId','steamPressure','baume','decanterId','decanterStatus',
  'sludgeLevelPct','sludgeFlow','turbidity','residenceTime','juiceFlow','limeFlow','limeUnit','polymerFlow',
  'decantacao','aquecimento','reportDecanter','gatewayLimeUnit','ratioResult','percentResult','tempRiseResult','procTemp','quickUnits'];
 for(const id of removed)assert(!html.includes('id="'+id+'"'),'Campo removido reapareceu: '+id);
-for(const marker of ['function appendAudit(', 'function createShiftDrafts(', 'function renderLive(', 'function renderTrends(', 'function xlsxWorkbook(', 'window.CaldoControlTableOCR','ph_xarope'])
+for(const marker of ['function appendAudit(', 'function createShiftDrafts(', 'function renderTrends(', 'function xlsxWorkbook(', 'window.CaldoControlTableOCR','ph_xarope'])
  assert(src.includes(marker),'Funcionalidade ausente '+marker);
 const fields=src.match(/const FIELDS = (\[[^\n;]+\]);/);
 const nums=src.match(/const NUMS = (\[[^\n;]+\]);/);
 const metricLine=src.match(/const METRICS = (\[[^\n;]+\]);/);
-const sensors=src.match(/const SENSOR_FIELDS=(\[[^\n;]+\]);/);
-assert(fields&&nums&&metricLine&&sensors,'Esquemas de pH/Brix ausentes');
+assert(fields&&nums&&metricLine,'Esquemas de pH/Brix ausentes');
 const forbidden=/temperature|tempInput|heaterId|steamPressure|baume|decanterId|decanterStatus|sludge|turbidity|residenceTime|juiceFlow|limeFlow|limeUnit|polymerFlow/;
-for(const [name,match] of [['FIELDS',fields],['NUMS',nums],['METRICS',metricLine],['SENSOR_FIELDS',sensors]])
+for(const [name,match] of [['FIELDS',fields],['NUMS',nums],['METRICS',metricLine]])
  assert(!forbidden.test(match[1]),'Parâmetro removido em '+name);
 assert(src.includes("version:6,createdAt:"),'Backup versão 5 ausente');
+assert(!src.includes('const SENSOR_FIELDS='),'O antigo módulo de sensores ainda está presente');
 assert(src.includes('legacyNumeric')&&src.includes('legacyText'),'Migração de dados legados ausente');
 // Todos os IDs estáticos usados pela UI devem existir e ser únicos.
 const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);
@@ -40,12 +40,11 @@ console.log('Validação CaldoControl 2.7 concluída; XLSX:',zip.length,'bytes')
 // Hidratação manual: dois campos independentes, exportáveis e fora das médias do processo.
 for(const id of ['hydrationLime','hydrationPolymer'])
   assert(html.includes('id="'+id+'"'),'Campo de hidratação ausente no formulário: '+id);
-const fieldLiteral=fields[1],numericLiteral=nums[1],metricLiteral=metricLine[1],sensorLiteral=sensors[1];
+const fieldLiteral=fields[1],numericLiteral=nums[1],metricLiteral=metricLine[1];
 for(const key of ['hydrationLime','hydrationPolymer']){
   assert(fieldLiteral.includes("'"+key+"'"),'Hidratação fora do armazenamento: '+key);
   assert(!numericLiteral.includes("'"+key+"'"),'Hidratação foi marcada incorretamente como numérica: '+key);
   assert(!metricLiteral.includes("'"+key+"'"),'Hidratação entrou indevidamente nas médias: '+key);
-  assert(!sensorLiteral.includes("'"+key+"'"),'Hidratação entrou indevidamente na telemetria: '+key);
 }
 const validStart=src.indexOf('function validForm(r){');
 const validEnd=src.indexOf('function renderCalc(){',validStart);
