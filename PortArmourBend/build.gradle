@@ -32,9 +32,9 @@ neoForge {
     }
 }
 dependencies {
-    modCompileOnly 'maven.modrinth:y4JF3gXL:aXfzs8l3' // AW 3.4.0-beta.3, MC 1.21.1 NeoForge
-    modCompileOnly 'dev.kosmx.player-anim:player-animation-lib-forge:2.0.4+1.21.1'
-    modCompileOnly 'io.github.kosmx.bendy-lib:bendy-lib-forge:5.1'
+    compileOnly 'maven.modrinth:y4JF3gXL:aXfzs8l3' // AW 3.4.0-beta.3, MC 1.21.1 NeoForge
+    compileOnly 'dev.kosmx.player-anim:player-animation-lib-forge:2.0.4+1.21.1'
+    compileOnly 'io.github.kosmx.bendy-lib:bendy-lib-forge:5.1'
     runtimeOnly fileTree(dir: 'run-mods', include: '*.jar')
 }
 tasks.withType(JavaCompile).configureEach {
