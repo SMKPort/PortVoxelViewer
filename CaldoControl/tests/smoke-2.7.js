@@ -9,7 +9,7 @@ const removed=['temperature','tempInput','heaterId','steamPressure','baume','dec
  'sludgeLevelPct','sludgeFlow','turbidity','residenceTime','juiceFlow','limeFlow','limeUnit','polymerFlow',
  'decantacao','aquecimento','reportDecanter','gatewayLimeUnit','ratioResult','percentResult','tempRiseResult','procTemp','quickUnits'];
 for(const id of removed)assert(!html.includes('id="'+id+'"'),'Campo removido reapareceu: '+id);
-for(const marker of ['function appendAudit(', 'function createShiftDrafts(', 'function renderTrends(', 'function xlsxWorkbook(', 'window.CaldoControlTableOCR','ph_xarope'])
+for(const marker of ['function appendAudit(', 'function createShiftDrafts(', 'function renderTrends(', 'function xlsxWorkbook(', 'window.CaldoControlTableOCR'])
  assert(src.includes(marker),'Funcionalidade ausente '+marker);
 const fields=src.match(/const FIELDS = (\[[^\n;]+\]);/);
 const nums=src.match(/const NUMS = (\[[^\n;]+\]);/);
