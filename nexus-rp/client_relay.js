@@ -65,8 +65,12 @@ function createClientRelay({send,verifyUser,limit}){
     }
     if(route==="/api/client/chat"&&req.method==="POST"){
       try{
-        const data=await body(req),message=String(data.message||"").replace(/[\u0000-\u001f\u007f]/g," ").trim();
-        if(!message||message.length>230||message.startsWith("/"))return err(res,422,"Mensagem deve ter 1 a 230 caracteres, sem comandos.");
+        const data=await body(req),raw=String(data.message||"").replace(/[\u0000-\u001f\u007f]/g," ").trim();
+        if(!raw||raw.length>230||raw.startsWith("/"))return err(res,422,"Mensagem deve ter 1 a 230 caracteres, sem comandos.");
+        // All outgoing Nexus Client messages are unmistakably labeled, including requests from old browser settings.
+        const content=raw.replace(/^(?:\[(?:nexus(?:\s+aterna)?)\]\s*)+/i,"").trim();
+        const message="[Nexus Aterna] "+content;
+        if(!content||message.length>230)return err(res,422,"Mensagem excede o limite de 230 caracteres após incluir [Nexus Aterna].");
         // Restrict commands to configured chat channels; messages cannot contain slash commands.
         const channel=["global","local","custom"].includes(data.channel)?data.channel:"local";
         const custom=String(data.command||"").trim().toLowerCase();
