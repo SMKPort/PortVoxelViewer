@@ -43,7 +43,8 @@ window.NexusRPClientUpgrade=function(rp,views){
    '<div class="grid two">'+
    '<section class="card"><div class="card-header"><h2>VINCULAÇÃO SEGURA</h2></div>'+
    '<div class="rp-evo-emergency '+(on?"online":"")+'"><strong>'+(on?"MINECRAFT CONECTADO":"AGUARDANDO MINECRAFT")+'</strong><span>Jogador: '+E(player)+'</span></div>'+
-   '<p class="hint">1. Instale o mod Nexus Aterna Client na pasta mods do Minecraft 1.21.1 com NeoForge.</p>'+
+   '<p class="hint">1. Instale o mod Nexus Aterna Client na pasta mods do Minecraft 1.21.1 com NeoForge.</p>'+ 
+   '<p><a href="https://github.com/SMKPort/PortVoxelViewer/actions/runs/43069905931" target="_blank" rel="noopener noreferrer">Baixar JAR compilado pelo GitHub Actions</a></p>'+
    '<p class="hint">2. Selecione o modo Nexus Client em Configurações e gere um código temporário.</p>'+
    '<p class="hint">3. No jogo, execute <code>/nexusclient pair SEU_CODIGO</code>. Este comando é executado no cliente, não no servidor.</p>'+
    '<p class="hint">4. Autorize mensagens com <code>/nexusclient chat on</code> e telemetria com <code>/nexusclient telemetry on</code>.</p>'+
