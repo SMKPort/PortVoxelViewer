@@ -123,7 +123,7 @@ async function parseRequest(req){
 }
 async function serve(req,res,route){
   const requested=route==="/"?"index.html":decodeURIComponent(route).slice(1);
-  if(!/^(index\.html|styles\.css|views\.js|app\.js|icon\.svg|manifest\.webmanifest)$/.test(requested))return json(res,404,{error:"Arquivo não encontrado."});
+  if(!/^(index\.html|styles\.css|upgrade\.css|views\.js|upgrade\.js|app\.js|icon\.svg|manifest\.webmanifest)$/.test(requested))return json(res,404,{error:"Arquivo não encontrado."});
   try{
     const file=await fs.readFile(path.join(ROOT,requested));
     res.writeHead(200,{...security,"Content-Type":types[path.extname(requested)]||"application/octet-stream","Cache-Control":requested==="index.html"?"no-cache":"public, max-age=300"});
