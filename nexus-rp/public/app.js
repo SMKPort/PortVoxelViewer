@@ -8,7 +8,7 @@ const PRESETS=[
 {id:"renovar",name:"Renovação do Núcleo",school:"Híbrida",cost:32,description:"O núcleo é recalibrado e a energia se redistribui entre as placas."},
 {id:"custom",name:"Personalizado",school:"Personalizado",cost:20,description:"O Port executa uma sequência de símbolos e componentes escolhidos."}
 ];
-const PAGES={painel:"NÚCLEO",chat:"COMUNICADOR",armadura:"ARMADURA ARCANA",rituais:"RITUAIS",ao_vivo:"RP AO VIVO",ts:"PROTOCOLO TS",sequencias:"SEQUENCIADOR",eventos:"EVENTOS DO JOGO",emergencia:"EMERGÊNCIA",emotes:"EMOTES",config:"CONFIGURAÇÕES"};
+const PAGES={painel:"NÚCLEO",chat:"COMUNICADOR",armadura:"ARMADURA ARCANA",rituais:"RITUAIS",ao_vivo:"RP AO VIVO",ts:"PROTOCOLO TS",sequencias:"SEQUENCIADOR",eventos:"EVENTOS DO JOGO",emergencia:"EMERGÊNCIA",emotes:"EMOTES",cliente:"NEXUS CLIENT",config:"CONFIGURAÇÕES"};
 const DEFAULT=()=>({
 integrity:100,energy:85,armor:"integrada",form:"Celestial",selectedRitual:"bencao",
 logs:[{id:"origin",at:new Date().toISOString(),kind:"SISTEMA",text:"Nexus Aterna RP inicializado. Aguardando instruções do Port."}],
@@ -36,10 +36,11 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){to
 function log(text,kind="RP"){state.logs.unshift({id:uid(),at:new Date().toISOString(),kind,text});state.logs=state.logs.slice(0,140);save();}
 function toast(text){const el=document.createElement("div");el.className="toast";el.textContent=text;$("#toasts").appendChild(el);setTimeout(()=>el.remove(),4600);}
 function addChat(text,status){state.chat.push({id:uid(),at:new Date().toISOString(),text,status});state.chat=state.chat.slice(-100);save();}
-const rp={state,escape:esc,date,presets:PRESETS,isConnected:()=>connected,isHealthy:()=>healthy,save,log,toast,navigate,rerender:render,sendToChat:messageToMinecraft,armorAction,performRitual,runFunctionId:async function(functionId){return api("function",{functionId});},getAccess:()=>secrets.access,requestEvents:async function(since,player){if(!secrets.access)throw Error("Informe o código de acesso no menu Configurações.");const url="/api/game/events?since="+encodeURIComponent(since)+"&player="+encodeURIComponent(player||"");const response=await fetch(url,{headers:{"X-Nexus-Key":secrets.access}});const result=await response.json();if(!response.ok)throw Error(result.error||"Falha na consulta de eventos.");return result;},requestBridgeStatus:async function(){if(!secrets.access)throw Error("Informe código da ponte no painel.");const response=await fetch("/api/bridge/status",{headers:{"X-Nexus-Key":secrets.access}});const result=await response.json();if(!response.ok)throw Error(result.error||"Agente inacessível.");return result;}};
+const rp={state,escape:esc,date,presets:PRESETS,isConnected:()=>connected,isHealthy:()=>healthy,save,log,toast,navigate,rerender:render,sendToChat:messageToMinecraft,armorAction,performRitual,runFunctionId:async function(functionId){return api("function",{functionId});},getAccess:()=>secrets.access,requestEvents:async function(since,player){if(!secrets.access)throw Error("Informe o código de acesso no menu Configurações.");const isClient=state.config.connectionMode==="client";const url=(isClient?"/api/client/events":"/api/game/events")+"?since="+encodeURIComponent(since)+"&player="+encodeURIComponent(player||"");const response=await fetch(url,{headers:{"X-Nexus-Key":secrets.access}});const result=await response.json();if(!response.ok)throw Error(result.error||"Falha na consulta de eventos.");return result;},requestBridgeStatus:async function(){if(!secrets.access)throw Error("Informe código da ponte no painel.");const response=await fetch(state.config.connectionMode==="client"?"/api/client/status":"/api/bridge/status",{headers:{"X-Nexus-Key":secrets.access}});const result=await response.json();if(!response.ok)throw Error(result.error||"Agente inacessível.");return result;}};
 let views=window.NexusRPViews(rp);
 if(window.NexusRPUpgrade)views=window.NexusRPUpgrade(rp,views);
 if(window.NexusRPEvolution)views=window.NexusRPEvolution(rp,views);
+if(window.NexusRPClientUpgrade)views=window.NexusRPClientUpgrade(rp,views);
 function render(){
 $("#content").innerHTML=views[page]?.()||views.painel();
 $("#pageLabel").textContent=PAGES[page]||"NÚCLEO";
@@ -53,7 +54,7 @@ function navigate(next){if(!PAGES[next])return;page=next;if(location.hash!=="#"+
 function readConfig(){
 const form=$("#configForm");if(!form)return;
 const d=new FormData(form),c=state.config;
-c.connectionMode=d.get("connectionMode")==="agent"?"agent":"public";
+c.connectionMode=["agent","client"].includes(d.get("connectionMode"))?String(d.get("connectionMode")):"public";
 c.host=String(d.get("host")||"").trim().slice(0,253);
 c.port=clamp(Number(d.get("port"))||25575,1024,65535);
 c.player=String(d.get("player")||"Port").trim().replace(/[^a-z0-9_]/ig,"").slice(0,16)||"Port";
@@ -68,8 +69,16 @@ save();
 }
 async function api(route,payload={}){
 if(!secrets.access)throw Error("Digite o código de acesso em Configurações.");
-if(state.config.connectionMode!=="agent"&&!secrets.password)throw Error("Digite a senha RCON em Configurações.");
-if(state.config.connectionMode!=="agent"&&!state.config.host)throw Error("Informe o host público do seu Minecraft.");
+if(!["agent","client"].includes(state.config.connectionMode)&&!secrets.password)throw Error("Digite a senha RCON em Configurações.");
+if(!["agent","client"].includes(state.config.connectionMode)&&!state.config.host)throw Error("Informe o host público do seu Minecraft.");
+if(state.config.connectionMode==="client"){
+ const run=rp.clientQueue;
+ if(!run)throw Error("Nexus Client não carregado.");
+ if(route==="test"){const res=await fetch("/api/client/status",{headers:{"X-Nexus-Key":secrets.access}});const result=await res.json();if(!res.ok||!result.online)throw Error("Mod Nexus Client offline. Pareie no Minecraft.");return {ok:true,response:"Nexus Client conectado: "+result.player};}
+ if(route==="message")return run("/chat",{message:((state.config.prefix||"")+" "+String(payload.message||"")).trim().slice(0,230)});
+ if(route==="action")return run("/action",payload);
+ throw Error("O Nexus Client não pode executar funções administrativas do servidor.");
+}
 const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),state.config.connectionMode==="agent"?25000:14500);
 try{
 const res=await fetch("/api/rcon/"+route,{method:"POST",headers:{"Content-Type":"application/json","X-Nexus-Key":secrets.access},body:JSON.stringify({server:{mode:state.config.connectionMode||"public",host:state.config.host,port:state.config.port,password:secrets.password},...payload}),signal:ctrl.signal});
@@ -91,17 +100,22 @@ finally{clearTimeout(timer);}
 }
 async function testConnection(){
 if(busy)return;readConfig();busy=true;toast("Verificando acesso ao servidor...");
-try{const out=await api("test");connected=true;log("Autenticação RCON confirmada. "+String(out.response||"").slice(0,150),"MINECRAFT");toast("Minecraft conectado com sucesso!");}
+try{const out=await api("test");connected=true;log("Conexão Minecraft confirmada: "+String(out.response||"").slice(0,150),"MINECRAFT");toast("Minecraft conectado com sucesso!");}
 catch(e){connected=false;log("Falha de conexão: "+e.message,"CONEXÃO");toast(e.message);}
 finally{busy=false;render();}
 }
 async function messageToMinecraft(text,category="COMUNICADOR"){
 const c=state.config;
+if(c.connectionMode==="client"&&c.target==="player")throw Error("No modo Nexus Client, a mensagem é enviada ao chat geral pela sua conta.");
 if(c.target==="player"&&!/^[A-Za-z0-9_]{3,16}$/.test(c.recipient))throw Error("Informe um jogador de destino válido.");
 await api("message",{message:text,target:c.target,player:c.recipient,prefix:c.prefix,color:c.color});
 connected=true;addChat(text,"sent");log("Transmitido ao Minecraft ("+category+"): "+text,"MINECRAFT");return true;
 }
 async function gameFunction(which){
+if(state.config.connectionMode==="client"){
+  if(!connected)return false;
+  try{await api("action",{action:which,form:state.form});return true;}catch(e){toast("Ação local não executada: "+e.message);return false;}
+}
 const fn=state.config.functions?.[which];
 if(!connected||!fn)return false;
 if(!/^[a-z0-9_.-]{1,32}:[a-z0-9_./-]{1,90}$/.test(fn)){toast("Função configurada inválida: "+which);return false;}
