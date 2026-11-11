@@ -8,7 +8,7 @@ O código-fonte fica em `nexus-client/`, dentro da branch `nexus-aterna-rp`. O p
 
 1. Use **Minecraft Java Edition 1.21.1** com **NeoForge 21.1.x**.
 2. Baixe o JAR a partir do artefato do workflow **Nexus Aterna Client NeoForge 1.21.1** do GitHub Actions.
-3. Coloque `nexusclient-1.1.0.jar` na pasta `.minecraft/mods/` do perfil 1.21.1.
+3. Coloque `nexusclient-1.2.0.jar` na pasta `.minecraft/mods/` do perfil 1.21.1.
 4. Inicie o Minecraft e entre em um mundo ou servidor.
 5. No painel Nexus RP (HTTPS), entre em **Configurações** e selecione **NEXUS CLIENT (MOD APENAS NO JOGADOR)**. Informe o código de acesso normal do painel e salve.
 6. Abra **Nexus Client** no menu lateral. Clique em **Gerar código de pareamento**.
@@ -57,7 +57,7 @@ Projeto Gradle ModDevGradle 2.x, Java 21, NeoForge 21.1.265. Use Gradle 9.2.1:
 gradle -p nexus-client build --no-daemon
 ```
 
-O resultado fica em `nexus-client/build/libs/nexusclient-1.1.0.jar`.
+O resultado fica em `nexus-client/build/libs/nexusclient-1.2.0.jar`.
 
 O workflow `.github/workflows/nexus-client-build.yml` compila automaticamente o mod na branch `nexus-aterna-rp` e disponibiliza o artefato ZIP com JAR após finalizar.
 
@@ -70,3 +70,16 @@ No painel, vá em **Configurações > Comunicador do Jogador > Canal das Mensage
 Também há **Global** (mensagem direta pelo `sendChat`) e **Personalizado**, que aceita apenas comandos de chat seguros listados na interface, como `/rp` e `/me`. Escreva apenas a mensagem no painel, sem barra inicial. O prefixo `[NEXUS ATERNA]` é opcional e, no modo cliente, fica desmarcado inicialmente.
 
 O comando `/l` deve existir no servidor e respeita as regras do plugin de chat local. O resultado no jogo deve ser testado no seu servidor. Para aplicar a novidade, **substitua o JAR antigo pelo Nexus Client 1.1.0** e reinicie o Minecraft.
+
+
+## Estilo de texto local /l (Nexus Client 1.2.0)
+
+Por padrão, todas as mensagens do canal **Local (/l)** recebem os códigos literais **`&6&l`** imediatamente antes do conteúdo. `&6` indica dourado e `&l` indica negrito em plugins de chat que reconheçam essa sintaxe. O mod envia o comando pela API do Minecraft, por exemplo:
+
+```text
+/l &6&lAs placas do Nexus começam a se integrar.
+```
+
+No Nexus RP, em Configurações, escolha **Nexus Client** e **Local (/l)**. O campo **Códigos de formatação do chat local** vem preenchido com `&6&l`. É possível alterá-lo para outros códigos da família `&`, ou esvaziá-lo para não aplicar formatação. Não é necessário escrever o código manualmente no Comunicador.
+
+O servidor precisa permitir a interpretação dos códigos `&` no comando `/l`. Se o plugin remover, bloquear ou ignorar essa formatação, as mensagens podem aparecer com o código literal ou sem cor. Os códigos não dão permissões especiais ao jogador.
