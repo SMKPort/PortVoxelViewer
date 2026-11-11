@@ -1,0 +1,24 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+authors="Port / Nexus Aterna"
+description='''
+Mod exclusivamente do cliente para conectar o Nexus Aterna RP ao Minecraft 1.21.1.
+Integra chat autorizado, eventos e animações visuais locais, sem acesso ao servidor.
+'''
+[[dependencies.${mod_id}]]
+modId="neoforge"
+type="required"
+versionRange="[${neo_version},)"
+ordering="NONE"
+side="CLIENT"
+[[dependencies.${mod_id}]]
+modId="minecraft"
+type="required"
+versionRange="${minecraft_version_range}"
+ordering="NONE"
+side="CLIENT"
