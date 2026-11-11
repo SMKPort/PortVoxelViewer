@@ -59,7 +59,7 @@ S.chat.push({who:"user",text:message,at:Date.now()});keep();V.rerender();
 let response="",mode="local";const endpoint=(S.settings.endpoint||"").replace(/\/+$/,"");
 try{
 const ctl=new AbortController();const timer=setTimeout(()=>ctl.abort(),14000);
-try{const res=await fetch(endpoint+"/api/chat",{method:"POST",headers:{"Content-Type":"application/json",...(authSession?{"X-Aterna-Access":authSession}:{})},body:JSON.stringify({message,context:contextFacts(),history:S.chat.slice(-12).map(m=>({role:m.who==="user"?"user":"model",text:m.text}))}),signal:ctl.signal});if(res.ok){const out=await res.json();if(typeof out.reply==="string"&&out.reply.trim()){response=out.reply.slice(0,5000);mode="ia";}}}finally{clearTimeout(timer);}
+try{const res=await fetch(endpoint+"/api/chat",{method:"POST",headers:{"Content-Type":"application/json",...(authSession?{"X-Aterna-Access":authSession}:{})},body:JSON.stringify({message,context:contextFacts(),history:S.chat.slice(-13,-1).map(m=>({role:m.who==="user"?"user":"model",text:m.text}))}),signal:ctl.signal});if(res.ok){const out=await res.json();if(typeof out.reply==="string"&&out.reply.trim()){response=out.reply.slice(0,5000);mode="ia";}}}finally{clearTimeout(timer);}
 }catch(e){}
 if(!response){response=offlineAnswer(message);mode="local";}
 S.chat.push({who:"assistant",text:response,at:Date.now(),mode});S.chat=S.chat.slice(-100);keep();V.log("Consulta à ATERNA AI ("+(mode==="ia"?"modelo remoto":"modo local")+").","ATERNA");V.rerender();if(S.settings.speak)readResponse(response);
@@ -119,4 +119,8 @@ if(!("NDEFReader" in window))throw Error("Web NFC indisponível. Tente Chrome no
 const reader=new NDEFReader();await reader.scan();V.toast("Aproxime a etiqueta NFC de sua propriedade.");const timeout=setTimeout(()=>{reader.onreading=null;},30000);
 reader.onreading=e=>{clearTimeout(timeout);const texts=[];for(const record of e.message.records){if(record.recordType==="text"){try{texts.push(new TextDecoder(record.encoding||"utf-8").decode(record.data));}catch(err){}}}deviceEvent("Etiqueta NFC lida","UID "+(e.serialNumber||"indisponível")+" · "+texts.join(" | ").slice(0,350));reader.onreading=null;};
 };
+V.actions["nav-v2"]=el=>V.navigate(el.dataset.to);
+V.exportState=()=>S;
+V.importState=data=>{if(!data||typeof data!=="object")return;const base=initial();for(const key of ["chat","memories","ts","blueprint","ritualCanvas","spectro","deviceHistory","settings"]){if(Object.prototype.hasOwnProperty.call(data,key)){const v=data[key];if(Array.isArray(base[key])&&!Array.isArray(v))continue;if(base[key]&&typeof base[key]==="object"&&!Array.isArray(base[key])&&(typeof v!=="object"||!v))continue;S[key]=v;}}keep();};
+V.clearState=()=>{const fresh=initial();for(const key of Object.keys(fresh))S[key]=fresh[key];keep();};
 })();
