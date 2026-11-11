@@ -30,4 +30,4 @@ jobs:
       - name: Check Python agent
         run: python -m py_compile nexus-rp/agent/bridge_agent.py
       - name: Run bridge integration tests
-        run: node --test nexus-rp/tests/bridge.test.js nexus-rp/tests/client-relay.test.js nexus-rp/tests/client-ui.test.js
+        run: node --test nexus-rp/tests/bridge.test.js nexus-rp/tests/client-relay.test.js nexus-rp/tests/client-ui.test.js nexus-rp/tests/http-routes.test.js
