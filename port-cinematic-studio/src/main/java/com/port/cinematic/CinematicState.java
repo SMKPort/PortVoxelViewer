@@ -179,7 +179,7 @@ public final class CinematicState {
             stop();return;
         }
         if(!playing)return;
-        if(frameIndex>=FRAMES.size()-1){haltPlayback();return;}
+        if(frameIndex>=FRAMES.size()-1){stop();return;}
         Keyframe a=FRAMES.get(frameIndex),b=FRAMES.get(frameIndex+1);
         int duration=Math.max(1,b.durationTicks());
         frameTick++;
@@ -187,7 +187,7 @@ public final class CinematicState {
         lastTimeline=((double)frameIndex+(double)frameTick/duration)/(FRAMES.size()-1);
         if(frameTick>=duration){
             frameTick=0;frameIndex++;
-            if(frameIndex>=FRAMES.size()-1)haltPlayback();
+            if(frameIndex>=FRAMES.size()-1)stop();
         }
     }
     private CinematicState(){}
