@@ -41,6 +41,7 @@ let views=window.NexusRPViews(rp);
 if(window.NexusRPUpgrade)views=window.NexusRPUpgrade(rp,views);
 if(window.NexusRPEvolution)views=window.NexusRPEvolution(rp,views);
 if(window.NexusRPClientUpgrade)views=window.NexusRPClientUpgrade(rp,views);
+if(window.NexusRPClientUpgrade)views=window.NexusRPClientUpgrade(rp,views);
 function render(){
 $("#content").innerHTML=views[page]?.()||views.painel();
 $("#pageLabel").textContent=PAGES[page]||"NÚCLEO";
