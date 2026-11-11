@@ -150,3 +150,7 @@ Para instalação completa, consulte [Nexus Client README](../nexus-client/READM
 ## Canais de chat no modo Nexus Client (RP 1.4)
 
 A opção **Local (/l)** é o padrão para o servidor de roleplay. O Comunicador não precisa digitar `/l`: o mod chama a API `ClientPacketListener.sendCommand("l " + mensagem)` diretamente, sem simulação de teclado. Também é possível selecionar **Global** ou um comando **Personalizado** permitido (somente canais de chat, não comandos de administração). O prefixo do Nexus é opcional no modo cliente. O JAR mínimo é Nexus Client 1.1.0.
+
+## Formatação local automática (RP 1.5)
+
+Por padrão, o canal **Local (/l)** acrescenta `&6&l` imediatamente antes da mensagem para solicitar **dourado e negrito** ao plugin de chat do servidor. O mod passa o comando ao Minecraft como `/l &6&lMensagem`, sem emular teclas. No painel, Configurações > Comunicador do Jogador, você pode editar os códigos ou deixá-los vazios. O recurso exige o JAR Nexus Client **1.2.0**. Se o plugin de chat não interpretar códigos `&`, a formatação pode não aparecer.
