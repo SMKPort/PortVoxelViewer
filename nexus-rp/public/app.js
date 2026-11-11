@@ -8,7 +8,7 @@ const PRESETS=[
 {id:"renovar",name:"Renovação do Núcleo",school:"Híbrida",cost:32,description:"O núcleo é recalibrado e a energia se redistribui entre as placas."},
 {id:"custom",name:"Personalizado",school:"Personalizado",cost:20,description:"O Port executa uma sequência de símbolos e componentes escolhidos."}
 ];
-const PAGES={painel:"NÚCLEO",chat:"COMUNICADOR",armadura:"ARMADURA ARCANA",rituais:"RITUAIS",ao_vivo:"RP AO VIVO",ts:"PROTOCOLO TS",config:"CONFIGURAÇÕES"};
+const PAGES={painel:"NÚCLEO",chat:"COMUNICADOR",armadura:"ARMADURA ARCANA",rituais:"RITUAIS",ao_vivo:"RP AO VIVO",ts:"PROTOCOLO TS",sequencias:"SEQUENCIADOR",eventos:"EVENTOS DO JOGO",emergencia:"EMERGÊNCIA",emotes:"EMOTES",config:"CONFIGURAÇÕES"};
 const DEFAULT=()=>({
 integrity:100,energy:85,armor:"integrada",form:"Celestial",selectedRitual:"bencao",
 logs:[{id:"origin",at:new Date().toISOString(),kind:"SISTEMA",text:"Nexus Aterna RP inicializado. Aguardando instruções do Port."}],
@@ -39,6 +39,7 @@ function addChat(text,status){state.chat.push({id:uid(),at:new Date().toISOStrin
 const rp={state,escape:esc,date,presets:PRESETS,isConnected:()=>connected,isHealthy:()=>healthy,save,log,toast,navigate,rerender:render,sendToChat:messageToMinecraft,armorAction,performRitual,runFunctionId:async function(functionId){return api("function",{functionId});},getAccess:()=>secrets.access,requestEvents:async function(since,player){if(!secrets.access)throw Error("Informe o código de acesso no menu Configurações.");const url="/api/game/events?since="+encodeURIComponent(since)+"&player="+encodeURIComponent(player||"");const response=await fetch(url,{headers:{"X-Nexus-Key":secrets.access}});const result=await response.json();if(!response.ok)throw Error(result.error||"Falha na consulta de eventos.");return result;},requestBridgeStatus:async function(){if(!secrets.access)throw Error("Informe código da ponte no painel.");const response=await fetch("/api/bridge/status",{headers:{"X-Nexus-Key":secrets.access}});const result=await response.json();if(!response.ok)throw Error(result.error||"Agente inacessível.");return result;}};
 let views=window.NexusRPViews(rp);
 if(window.NexusRPUpgrade)views=window.NexusRPUpgrade(rp,views);
+if(window.NexusRPEvolution)views=window.NexusRPEvolution(rp,views);
 function render(){
 $("#content").innerHTML=views[page]?.()||views.painel();
 $("#pageLabel").textContent=PAGES[page]||"NÚCLEO";
