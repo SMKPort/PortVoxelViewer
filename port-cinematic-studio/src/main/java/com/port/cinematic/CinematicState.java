@@ -183,7 +183,7 @@ public final class CinematicState {
         if(!playing)return;
         if(frameIndex>=FRAMES.size()-1){stop();return;}
         Keyframe a=FRAMES.get(frameIndex),b=FRAMES.get(frameIndex+1);
-        int duration=Math.max(1,b.durationTicks());
+        int duration=Math.max(1,a.durationTicks());
         frameTick++;
         interpolate(a,b,(double)frameTick/duration);
         lastTimeline=((double)frameIndex+(double)frameTick/duration)/(FRAMES.size()-1);
