@@ -124,3 +124,25 @@ O agente RCON consulta periodicamente a vida do jogador para inferir dano e cura
 O bônus de Holy Spellpower, a energia arcana e a integridade do Nexus são **atributos narrativos**, não medições do Minecraft. O usuário pode personalizá-los conforme as regras do RPG. Registros ficam no navegador; o histórico de eventos da ponte é temporário e pode ser perdido quando a Render reiniciar.
 
 Para animações reais com Blockbench ou Armourer's Workshop, instale/implemente o datapack ou mod que responda aos comandos configurados. A interface não altera automaticamente a malha 3D no cliente Minecraft.
+
+---
+
+## Nexus Aterna Client (versão RP 1.3)
+
+Para jogadores **sem acesso administrativo ao servidor**, o Nexus pode se conectar através de um mod **Client-Side NeoForge 1.21.1**. Isso dispensa RCON público, agente Python no servidor e acesso aos arquivos da hospedagem.
+
+O projeto está em [../nexus-client/README.md](../nexus-client/README.md) e é compilado pelo workflow `.github/workflows/nexus-client-build.yml`. O JAR `nexusclient-1.0.0.jar` pode ser baixado do GitHub Actions.
+
+Abra o painel web em Configurações e escolha **Nexus Client (mod apenas no jogador)**. Em seguida, abra a aba Nexus Client e gere um código temporário. Execute no Minecraft:
+
+```text
+/nexusclient pair CODIGO
+/nexusclient chat on
+/nexusclient telemetry on
+```
+
+O mod transmite mensagens como a **própria conta do jogador**, respeitando as restrições do chat. Monitora vida, dano, cura, morte e mudanças em efeitos ativos quando telemetria estiver autorizada. As ações de armadura, emotes e rituais produzem avisos e partículas **somente no cliente**. Modelos 3D do Armourer's Workshop não são alterados sem um adaptador próprio.
+
+O Nexus usa pareamento temporário e uma credencial privada no cliente para solicitar ações via HTTPS. O mod bloqueia o envio remoto de mensagens até o jogador autorizar explicitamente. Credenciais de pareamento não são armazenadas no código fonte nem expostas em páginas públicas. Um novo pareamento pode ser necessário após reinicialização do serviço Render, porque o estado da sessão é temporário.
+
+Para instalação completa, consulte [Nexus Client README](../nexus-client/README.md).
