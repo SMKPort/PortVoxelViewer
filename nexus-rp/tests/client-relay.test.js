@@ -30,6 +30,7 @@ test("pairing requires user authorization and a one time code",async()=>{
  assert.equal(polled.payload.jobs[0].id,job.payload.jobId);
  assert.equal(polled.payload.jobs[0].payload.channel,"local");
  assert.equal(polled.payload.jobs[0].payload.command,"l");
+ assert.equal(polled.payload.jobs[0].payload.format,"&6&l");
  assert.equal((await run("POST","/api/client/ack",client,{id:job.payload.jobId,success:true,output:"ok"})).status,200);
  assert.equal((await run("GET","/api/client/job?id="+job.payload.jobId,user)).payload.success,true);
  const global=await run("POST","/api/client/chat",user,{message:"Ola, geral!",channel:"global"});
@@ -42,6 +43,19 @@ test("pairing requires user authorization and a one time code",async()=>{
  assert.equal(pending.payload.jobs.length,2);
  assert.equal(pending.payload.jobs[0].payload.channel,"global");
  assert.equal(pending.payload.jobs[0].payload.command,"");
+ assert.equal(pending.payload.jobs[0].payload.format,"");
  assert.equal(pending.payload.jobs[1].payload.channel,"custom");
  assert.equal(pending.payload.jobs[1].payload.command,"rp");
+ assert.equal(pending.payload.jobs[1].payload.format,"");
+ const changed=await run("POST","/api/client/chat",user,{message:"Teste de cor",channel:"local",format:"&a&l"});
+ assert.equal(changed.status,200);
+ const changedPoll=await run("GET","/api/client/poll",client);
+ assert.equal(changedPoll.payload.jobs.length,1);
+ assert.equal(changedPoll.payload.jobs[0].payload.format,"&a&l");
+ const invalidFormat=await run("POST","/api/client/chat",user,{message:"Texto",channel:"local",format:"&6/kill"});
+ assert.equal(invalidFormat.status,422);
+ const noStyle=await run("POST","/api/client/chat",user,{message:"Sem estilo",channel:"local",format:""});
+ assert.equal(noStyle.status,200);
+ const noStylePoll=await run("GET","/api/client/poll",client);
+ assert.equal(noStylePoll.payload.jobs[0].payload.format,"");
 });
