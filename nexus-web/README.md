@@ -1,33 +1,44 @@
-# Nexus Aterna (Web v1.0)
+# Nexus Aterna Web 2.0
 
-Painel web/PWA do universo Port Morningstar. Interface responsiva preta, vermelha e dourada. Projeto em ramo separado `nexus-aterna-web` para preservar os outros aplicativos.
+Sistema web/PWA do universo de Port Morningstar. Site HTTPS atual: https://nexus-aterna-web.onrender.com
 
-## Executar
+## Arquitetura
 
-Abra a URL HTTPS da implantação ou sirva este diretório em um servidor local HTTP (exemplo: `python3 -m http.server 8000` dentro de `nexus-web`). O acesso ao hardware exige origem segura, normalmente HTTPS ou localhost.
+A versão 2.0 é **aditiva**. A aplicação V1 continua funcionando, com as oito telas originais (Núcleo, Link Tecnológico, Visão Arcana, Laboratório Ritualístico, Mapa Energético, Engenharia Arcana, Diagnóstico e Arquivos). Os módulos V2 são carregados por `v2-base.js`, `v2-3d.js`, `v2-ritual.js` e `v2-spectrum.js`. A camada `v2.css` complementa a identidade preta, vermelha e dourada.
 
-## Módulos
+O aplicativo está na branch `nexus-aterna-web` do repositório `SMKPort/PortVoxelViewer`. O serviço estático da Render publica o diretório `nexus-web` com auto-deploy ativado.
 
-Núcleo, Link Tecnológico, Visão Arcana, Laboratório Ritualístico, Mapa Energético, Engenharia Arcana, Diagnóstico, Arquivos e Segurança. Inclui terminal de comandos, modo holográfico, logs, editor de rituais, registros de projeto, simulações, exportação/importação JSON e PWA instalável.
+## Novos módulos
 
-## Integrações
+- **ATERNA AI**: chat, consulta a memórias locais, entrada por voz via Web Speech API e leitura de respostas pelo sintetizador do navegador. Modo local por regras, com backend Gemini **opcional e protegido**, caso configurado.
+- **Gêmeo Digital 3D**: modelo geométrico articulado do braço, visualização orbitável por Three.js, separação de placas, captura PNG e importação GLB/GLTF/BBMODEL. BBMODEL importa cubos como geometria simplificada e não garante texturas/bones. GLB é o formato recomendado.
+- **Rituais Avançados**: editor SVG de runas, drag-and-drop com mouse/toque, simulação narrativa de coesão e custo, exportação SVG e integração com o acervo de rituais da V1.
+- **Tecnologia Real**: recursos opcionais Web Bluetooth BLE com leitura de Battery Service, Web Serial para dispositivos autorizados, seleção WebUSB e leitura Web NFC. Integração Home Assistant original permanece na V1.
+- **Protocolo TS**: campanha narrativa de cinco fragmentos, escolhas, integridade fictícia e histórico persistente. Nenhum sistema real é atacado ou protegido pelo protocolo ficcional.
+- **Espectrômetro**: gráfico temporal, DFT de espectro, controles de sinal sintético, importação CSV de medições, cálculo RMS/pico/média/frequência dominante e arquivo de amostras.
 
-- **Web Bluetooth (BLE)**: escolha de dispositivos com consentimento do usuário; o controle específico requer implementação de serviços GATT compatíveis.
-- **Web Serial / WebUSB**: seleção de portas ou dispositivos com permissão. A versão atual ainda não envia comandos aos protocolos desses equipamentos.
-- **Home Assistant**: URL HTTPS acessível e token informado na sessão. Lista entidades e executa `homeassistant.toggle` em entidades compatíveis, mediante confirmação. O servidor deve aceitar CORS da origem da aplicação. Não armazenamos o token em localStorage.
+## Segurança e limites
 
-## Segurança, limitações e privacidade
+O site é público, sem login para o portal. **Não armazene segredos nos campos de lore** em dispositivos compartilhados. Memória/rituais/TS/leituras V2 são salvos em `localStorage`, separado do legado V1. Backup JSON do módulo Arquivos agora inclui V1 + V2.
 
-- Site público HTTPS não significa conteúdo privado. Não há login, autorização multiusuário ou banco remoto.
-- Dados de lore, rituais, equipamentos e relatórios são salvos **somente em localStorage** no navegador. Exportar um backup JSON é recomendado.
-- O protocolo de isolamento TS é **fictício**. Não constitui isolamento de redes ou proteção de dispositivos.
-- O terminal interpreta comandos localmente por regras. **Não** usa um modelo de IA remoto. IA conversacional real requer backend protegido e credenciais no servidor, nunca em JavaScript público.
-- Energia arcana, análise de maldições, rituais e entidades são **simulações narrativas**, sem detecção física ou previsão científica.
-- Nenhum acesso indiscriminado a equipamentos existe; somente tecnologias com API compatível e autorização.
-- Não insira segredos ou dados sensíveis nos campos de lore de um computador compartilhado.
+O protocolo TS, os rituais e a análise de energia arcana **são simulados**, sem medição sobrenatural ou proteção cibernética. Controle de dispositivos depende do navegador, permissões do usuário, protocolos e equipamentos reais compatíveis.
 
-## Extensões sugeridas
+O assistente local **não é um LLM**. Para respostas generativas reais, configure o backend separado em `nexus-api/` com variáveis privadas na Render. Nunca coloque `GEMINI_API_KEY` em JavaScript do site. O token de acesso da API é fornecido ao navegador em cada sessão e não é salvo. O backend opcional utiliza CORS com origem específica, rate limit e validação simples de código de acesso. Para usos sensíveis, implante autenticação mais forte.
 
-Backend de IA com autenticação, armazenamento criptografado e sincronização, integração MQTT/CLP com permissões, importação Blockbench, leitura de dados de sensores reais com unidades físicas e controle de acesso.
+## Como executar
 
-Feito para desenvolvimento incremental, mantendo a fronteira entre tecnologia real e lore.
+Em HTTPS, abra https://nexus-aterna-web.onrender.com e, em navegador compatível, use Instalar aplicativo. Para desenvolvimento, sirva `nexus-web/` em localhost por HTTP (PWA/Web APIs funcionam em contexto seguro). O renderizador 3D importa a versão fixa do Three.js por CDN e requer internet e WebGL.
+
+Para integrar dados reais de sensores, forneça CSV ou um adaptador explícito. Não trate valores fictícios como medidas físicas.
+
+## Backend de IA
+
+Arquivo: `nexus-api/server.js` e `nexus-api/package.json`. Render Web Service, Node >=20, **plano free** se disponível, branch `nexus-aterna-web`. Build: `echo ready`. Start: `node nexus-api/server.js`.
+
+Configure, nas variáveis **privadas** de ambiente: `GEMINI_API_KEY` (chave de API legítima da sua conta Gemini), `ATERNA_ACCESS_CODE` (código longo e aleatório para a sessão do operador), e opcionalmente `GEMINI_MODEL` (modelo disponível, inicialmente `gemini-2.5-flash`). O site usa por padrão `https://nexus-aterna-api.onrender.com`, ajustável em ATERNA AI.
+
+A API retorna 503 até que a chave e o código sejam configurados. Isso é esperado e o chat continua funcionando em modo local.
+
+## Backups
+
+Exporte os dados em Arquivos e Segurança, após configurar rituais e memórias. O backup é um JSON local; restaurar substitui o conjunto de dados do navegador. Senhas de acesso não são exportadas.
