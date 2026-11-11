@@ -145,7 +145,9 @@ final class ClientLink {
         String output="";String error="";boolean success=false;
         try{
             if("chat".equals(kind)){
-                output=chat(payload.get("message").getAsString());success=true;
+                output=chat(payload.get("message").getAsString(),
+                    payload.has("channel")?payload.get("channel").getAsString():"local",
+                    payload.has("command")?payload.get("command").getAsString():"");success=true;
             }else if("action".equals(kind)){
                 output=action(payload.get("action").getAsString(),
                     payload.has("form")?payload.get("form").getAsString():"");success=true;
@@ -157,19 +159,46 @@ final class ClientLink {
         post("/api/client/ack",ack,true).exceptionally(err -> null);
     }
 
-    private static String chat(String message){
+    private static String chat(String message,String channel,String command){
         Minecraft mc=Minecraft.getInstance();
-        if(!ClientConfig.allowChat)throw new IllegalStateException("Chat remoto não autorizado. Use /nexusclient chat on.");
-        if(mc.player==null||mc.getConnection()==null)throw new IllegalStateException("Você precisa estar conectado a um mundo.");
+        if(!ClientConfig.allowChat)
+            throw new IllegalStateException("Chat remoto não autorizado. Use /nexusclient chat on.");
+        if(mc.player==null||mc.getConnection()==null)
+            throw new IllegalStateException("Você precisa estar conectado a um mundo.");
         message=message.replaceAll("[\\p{Cntrl}]", " ").trim();
         if(message.isEmpty()||message.length()>230||message.startsWith("/"))
             throw new IllegalArgumentException("Mensagem inválida ou comando bloqueado.");
         long now=System.currentTimeMillis();
-        if(now-lastChatAt<4500)throw new IllegalStateException("Proteção contra spam. Aguarde alguns segundos.");
+        if(now-lastChatAt<4500)
+            throw new IllegalStateException("Proteção contra spam. Aguarde alguns segundos.");
+        // Only chat-channel roots are permitted, not arbitrary admin commands.
+        final String root;
+        if("local".equals(channel)){
+            root="l";
+        }else if("custom".equals(channel)){
+            String candidate=command.toLowerCase(java.util.Locale.ROOT).trim();
+            if(candidate.startsWith("/"))candidate=candidate.substring(1);
+            if(!java.util.Set.of("l","local","g","global","rp","me","ooc","chat","ch","yell","shout","action").contains(candidate))
+                throw new IllegalArgumentException("Canal de chat personalizado não autorizado.");
+            root=candidate;
+        }else if("global".equals(channel)){
+            root="";
+        }else{
+            throw new IllegalArgumentException("Canal de chat inválido.");
+        }
         lastChatAt=now;
-        mc.getConnection().sendChat(message);
-        NexusClientMod.notifyPlayer("Mensagem enviada como seu jogador.");
-        return "Mensagem enviada pela conta "+mc.player.getGameProfile().getName();
+        if(root.isEmpty()){
+            mc.getConnection().sendChat(message);
+        }else{
+            // Use Minecraft's own client command API. Never fake T or keyboard input.
+            // sendCommand takes the command without the leading slash.
+            mc.getConnection().sendCommand(root+" "+message);
+        }
+        NexusClientMod.notifyPlayer(root.isEmpty()?
+            "Mensagem enviada no chat global.":
+            "Mensagem enviada via /"+root+".");
+        return "Mensagem enviada como "+mc.player.getGameProfile().getName()+
+               (root.isEmpty()?" no chat global.":" pelo canal /"+root+".");
     }
 
     private static String action(String kind,String form){
