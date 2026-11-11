@@ -166,3 +166,12 @@ As ações do Nexus enviam agora **somente mensagens curtas de sistema**, sem de
 Todas as mensagens que saem do painel pelo modo Nexus Client são identificadas com **`[Nexus Aterna]`**, mesmo se o navegador tiver salvo a configuração antiga com prefixo desligado. Exemplo de comando transmitido: `/l &6&l[Nexus Aterna] Desintegrando armadura`. A identificação é aplicada uma única vez, incluindo mensagens digitadas manualmente. O servidor Minecraft ainda identifica tecnicamente a conta do jogador que envia a mensagem, pois o Nexus Client usa a conexão do próprio jogador.
 
 A opção de ocultar a identificação foi desativada apenas no modo Nexus Client para evitar mensagens confundidas com falas do Port. O campo do prefixo aparece somente para consulta. Os avisos de armadura e rituais permanecem objetivos, no estilo de sistema. **Nenhum JAR novo é necessário:** a mudança foi implementada exclusivamente no painel e na ponte HTTPS, compatíveis com Nexus Client 1.2.0.
+
+
+## RP 1.8 | Nexus Client sem senha RCON
+
+Por padrão, o painel começa em **Nexus Client**. Ao entrar na aba Nexus Client, a conexão é ajustada automaticamente para o modo do jogador; perfis antigos configurados em RCON direto sem host são migrados para Nexus Client. A tela Configurações agora mostra apenas **NEXUS_RP_ACCESS_KEY** e preferências de chat quando o modo Client é escolhido, ocultando host, porta e senha RCON.
+
+Procedimento: na Render, encontre o valor configurado em `NEXUS_RP_ACCESS_KEY` (não confunda com `NEXUS_RP_AGENT_KEY`), entre em **Configurações**, informe em **Código de acesso HTTPS do painel**, clique em **Salvar código e configurações**, abra a aba **Nexus Client** e toque em **Gerar código de pareamento**. No Minecraft instalado com Nexus Client 1.2.0, use `/nexusclient pair CODIGO` e autorize chat e telemetria separadamente. O código HTTPS fica só em memória na aba, não na biblioteca/localStorage. Não é necessário senha RCON nem acesso ao servidor Minecraft. O teste de conexão apenas confirma se o Minecraft já está pareado e online.
+
+O painel agora inclui teste de regressão para impedir que o modo Client volte a exigir RCON. Os scripts possuem marcação de versão na URL para atualizar corretamente em navegadores de celular.
