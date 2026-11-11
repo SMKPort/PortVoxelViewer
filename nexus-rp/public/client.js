@@ -54,7 +54,10 @@ window.NexusRPClientUpgrade=function(rp,views){
        '<div class="notice">Exemplo do comando: <strong>/l &6&l[Nexus Aterna] Desintegrando armadura</strong>. O identificador do Nexus é aplicado mesmo se o perfil antigo tiver desativado o prefixo.</div>';
      html=html.replace('<form id="configForm">','<form id="configForm">'+channelForm);
    }
-   const note='<div class="notice">Sem acesso administrativo ao servidor? Escolha <strong>NEXUS CLIENT</strong>, abra a aba de pareamento e instale o mod NeoForge no seu Minecraft. A porta RCON e a senha não são usadas neste modo.</div>';
+   const keyReady=!!rp.getAccess?.();
+   const note=S.config.connectionMode==="client"
+     ?'<div class="notice">'+(keyReady?'<strong>Código HTTPS carregado nesta aba.</strong> Você já pode gerar um código temporário na aba Nexus Client.':'<strong>Falta o código HTTPS.</strong> Insira o valor de NEXUS_RP_ACCESS_KEY da Render, salve e depois gere o código temporário de pareamento.')+' Nenhuma senha RCON é necessária.</div>'
+     :'<div class="notice">Não tem acesso ao servidor Minecraft? Escolha <strong>NEXUS CLIENT</strong>. O modo funciona sem RCON.</div>';
    if(S.config.connectionMode==="client")html=html.replaceAll("TESTAR RCON","TESTAR NEXUS CLIENT").replaceAll("Servidor RCON","Mod Minecraft").replaceAll("NÃO TESTADO","AGUARDANDO PAREAMENTO");
    return html+note+'<div class="buttons">'+button("open","ABRIR NEXUS CLIENT","gold")+'</div>';
  };
