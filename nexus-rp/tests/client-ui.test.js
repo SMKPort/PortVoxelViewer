@@ -51,6 +51,9 @@ test("Nexus Client uses no RCON fields and exposes code pairing",()=>{
  assert.ok(html.includes("Nenhuma senha RCON é necessária"));
  assert.ok(pair.includes('data-nexus-client="settings"'));
  assert.ok(pair.includes("GERAR CÓDIGO DE PAREAMENTO"));
+ assert.ok(pair.includes("TESTAR API E MOSTRAR DETALHES"));
+ assert.ok(pair.includes("PAINEL 2.0"));
+ assert.ok(pair.includes("DIAGNÓSTICO DA API"));
 });
 test("RCON fields remain available only in RCON mode",()=>{
  const html=boot("public").config();
