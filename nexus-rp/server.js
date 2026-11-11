@@ -136,9 +136,11 @@ async function serve(req,res,route){
 }
 const server=http.createServer(async(req,res)=>{
   let route,url;try{url=new URL(req.url||"/","http://localhost");route=url.pathname;}catch(e){return json(res,400,{error:"URL inválida."});}
-  if(req.method==="GET"&&route==="/api/health")return json(res,200,{status:"online",name:"Nexus Aterna RP",version:"1.8",bridgeReady:ACCESS.length>=20,client:nexusClient.status(),agent:bridge.status(),adapter:"Minecraft Java RCON + HTTPS agent",configuredOnBrowser:true});
-  if(await nexusClient.handle(req,res,route,url))return;
-  if(await bridge.handle(req,res,route,url))return;
+  if(req.method==="GET"&&route==="/api/health")return json(res,200,{status:"online",name:"Nexus Aterna RP",version:"1.9",bridgeReady:ACCESS.length>=20,client:nexusClient.status(),agent:bridge.status(),adapter:"Minecraft Java RCON + HTTPS agent",configuredOnBrowser:true});
+  // Every /api/client/ request belongs exclusively to the client relay.
+  // Never fall through after a response: writing headers twice can crash the service.
+  if(route.startsWith("/api/client/")){await nexusClient.handle(req,res,route,url);return;}
+  if(await bridge.handle(req,res,route,url)||res.writableEnded)return;
   if(req.method==="GET")return serve(req,res,route);
   if(req.method!=="POST"||!["/api/rcon/test","/api/rcon/message","/api/rcon/function"].includes(route))return json(res,404,{error:"Rota inexistente."});
   if(!rateLimit(req))return json(res,429,{error:"Limite de requisições. Aguarde um minuto."});
