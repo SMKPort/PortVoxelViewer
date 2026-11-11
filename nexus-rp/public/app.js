@@ -1,6 +1,7 @@
 "use strict";
 (()=>{
 const KEY="nexus-aterna-rp-v1";
+const ACCESS_REMEMBER_KEY="nexus-aterna-rp-remember-access-v1";
 const PRESETS=[
 {id:"bencao",name:"Bênção Divina",school:"Divina",cost:16,description:"A bênção de Anael percorre as placas douradas do Nexus, estabilizando o núcleo."},
 {id:"selo",name:"Selo de Contenção",school:"Arcana",cost:22,description:"Runas douradas emergem ao redor da prótese e consolidam o selo ritualístico."},
@@ -33,6 +34,16 @@ const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
 const date=t=>new Date(t).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
 const uid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36);
 const secrets={access:"",password:""};
+let rememberedAccess=false;
+// The secret is never injected into HTML or the exportable RP state.
+// Only browsers that explicitly opted in retain it between visits.
+try{
+  const remembered=localStorage.getItem(ACCESS_REMEMBER_KEY);
+  if(remembered&&remembered.length>=20&&remembered.length<=512){
+    secrets.access=remembered;
+    rememberedAccess=true;
+  }
+}catch(e){}
 let connected=false,healthy=false,busy=false;
 let page=PAGES[location.hash.slice(1)]?location.hash.slice(1):"painel";
 if(page==="cliente"){state.config.connectionMode="client";save();}
@@ -40,7 +51,14 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){to
 function log(text,kind="RP"){state.logs.unshift({id:uid(),at:new Date().toISOString(),kind,text});state.logs=state.logs.slice(0,140);save();}
 function toast(text){const el=document.createElement("div");el.className="toast";el.textContent=text;$("#toasts").appendChild(el);setTimeout(()=>el.remove(),4600);}
 function addChat(text,status){state.chat.push({id:uid(),at:new Date().toISOString(),text,status});state.chat=state.chat.slice(-100);save();}
-const rp={state,escape:esc,date,presets:PRESETS,isConnected:()=>connected,isHealthy:()=>healthy,save,log,toast,navigate,rerender:render,sendToChat:messageToMinecraft,armorAction,performRitual,runFunctionId:async function(functionId){return api("function",{functionId});},getAccess:()=>secrets.access,requestEvents:async function(since,player){if(!secrets.access)throw Error("Informe o código de acesso no menu Configurações.");const isClient=state.config.connectionMode==="client";const url=(isClient?"/api/client/events":"/api/game/events")+"?since="+encodeURIComponent(since)+"&player="+encodeURIComponent(player||"");const response=await fetch(url,{headers:{"X-Nexus-Key":secrets.access}});const result=await response.json();if(!response.ok)throw Error(result.error||"Falha na consulta de eventos.");return result;},requestBridgeStatus:async function(){if(!secrets.access)throw Error("Informe código da ponte no painel.");const response=await fetch(state.config.connectionMode==="client"?"/api/client/status":"/api/bridge/status",{headers:{"X-Nexus-Key":secrets.access}});const result=await response.json();if(!response.ok)throw Error(result.error||"Agente inacessível.");return result;}};
+const rp={state,escape:esc,date,presets:PRESETS,isConnected:()=>connected,isHealthy:()=>healthy,save,log,toast,navigate,rerender:render,sendToChat:messageToMinecraft,armorAction,performRitual,runFunctionId:async function(functionId){return api("function",{functionId});},getAccess:()=>secrets.access,isAccessRemembered:()=>rememberedAccess,
+forgetAccess:()=>{
+  try{localStorage.removeItem(ACCESS_REMEMBER_KEY);}catch(e){}
+  rememberedAccess=false;
+  secrets.access="";
+  connected=false;
+  render();
+},requestEvents:async function(since,player){if(!secrets.access)throw Error("Informe o código de acesso no menu Configurações.");const isClient=state.config.connectionMode==="client";const url=(isClient?"/api/client/events":"/api/game/events")+"?since="+encodeURIComponent(since)+"&player="+encodeURIComponent(player||"");const response=await fetch(url,{headers:{"X-Nexus-Key":secrets.access}});const result=await response.json();if(!response.ok)throw Error(result.error||"Falha na consulta de eventos.");return result;},requestBridgeStatus:async function(){if(!secrets.access)throw Error("Informe código da ponte no painel.");const response=await fetch(state.config.connectionMode==="client"?"/api/client/status":"/api/bridge/status",{headers:{"X-Nexus-Key":secrets.access}});const result=await response.json();if(!response.ok)throw Error(result.error||"Agente inacessível.");return result;}};
 let views=window.NexusRPViews(rp);
 if(window.NexusRPUpgrade)views=window.NexusRPUpgrade(rp,views);
 if(window.NexusRPEvolution)views=window.NexusRPEvolution(rp,views);
@@ -76,7 +94,22 @@ c.color=String(d.get("color")||"white");
 c.autoAnnounce=d.has("autoAnnounce");
 if(c.connectionMode==="client"){c.prefix="[Nexus Aterna]";c.chatUsePrefix=true;}
 if(d.get("password"))secrets.password=String(d.get("password"));
-if(d.get("access"))secrets.access=String(d.get("access"));
+if(d.get("access"))secrets.access=String(d.get("access")).trim();
+if(c.connectionMode==="client"){
+  if(d.has("rememberAccess")){
+    if(!secrets.access)throw Error("Digite a chave HTTPS uma vez para ativar a opção de lembrar neste dispositivo.");
+    try{
+      localStorage.setItem(ACCESS_REMEMBER_KEY,secrets.access);
+      rememberedAccess=true;
+    }catch(e){
+      rememberedAccess=false;
+      throw Error("O navegador bloqueou o armazenamento. A chave ficará disponível apenas nesta aba.");
+    }
+  }else{
+    try{localStorage.removeItem(ACCESS_REMEMBER_KEY);}catch(e){}
+    rememberedAccess=false;
+  }
+}
 save();
 }
 async function api(route,payload={}){
@@ -221,7 +254,13 @@ if(e.target.id==="connectionMode"){try{readConfig();connected=false;render();toa
 });
 $("#content").addEventListener("submit",async e=>{
 e.preventDefault();const f=e.target;try{
-if(f.id==="configForm"){readConfig();connected=false;toast("Configurações salvas. Execute o teste de conexão.");render();}
+if(f.id==="configForm"){
+  readConfig();connected=false;
+  toast(state.config.connectionMode==="client"
+    ?(rememberedAccess?"Chave HTTPS salva neste dispositivo. Abra Nexus Client para parear.":"Chave HTTPS disponível nesta aba. Abra Nexus Client para parear.")
+    :"Configurações salvas. Execute o teste de conexão.");
+  render();
+}
 if(f.id==="functionForm"){
 const fd=new FormData(f),next={};
 for(const k of ["integrar","desintegrar","remodelar","ritual"]){const value=String(fd.get(k)||"").trim();if(value&&!/^[a-z0-9_.-]{1,32}:[a-z0-9_./-]{1,90}$/.test(value))throw Error("Função inválida: "+k);next[k]=value;}
@@ -241,6 +280,11 @@ const el=e.target.closest("[data-action]");if(!el)return;
 const action=el.dataset.action;
 if(action.startsWith("go-"))return navigate(action.slice(3));
 if(action==="datapack-preset"){const functions={integrar:"nexus:armadura/integrar",desintegrar:"nexus:armadura/desintegrar",remodelar:"nexus:armadura/remodelar",ritual:"nexus:rituais/ativar"};for(const [key,val] of Object.entries(functions)){const field=document.querySelector('#functionForm [name="'+key+'"]');if(field)field.value=val;}toast("Funções preenchidas. Toque em SALVAR FUNÇÕES.");return;}
+if(action==="forget-access"){
+  rp.forgetAccess();
+  toast("Chave HTTPS apagada deste navegador. Informe-a novamente quando quiser parear.");
+  return;
+}
 if(action==="test-connection")return testConnection();
 if(action==="template"){
 const v=templates[Number(el.dataset.index)],input=$("#chatMessage");
