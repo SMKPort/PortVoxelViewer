@@ -8,7 +8,7 @@ O código-fonte fica em `nexus-client/`, dentro da branch `nexus-aterna-rp`. O p
 
 1. Use **Minecraft Java Edition 1.21.1** com **NeoForge 21.1.x**.
 2. Baixe o JAR a partir do artefato do workflow **Nexus Aterna Client NeoForge 1.21.1** do GitHub Actions.
-3. Coloque `nexusclient-1.0.0.jar` na pasta `.minecraft/mods/` do perfil 1.21.1.
+3. Coloque `nexusclient-1.1.0.jar` na pasta `.minecraft/mods/` do perfil 1.21.1.
 4. Inicie o Minecraft e entre em um mundo ou servidor.
 5. No painel Nexus RP (HTTPS), entre em **Configurações** e selecione **NEXUS CLIENT (MOD APENAS NO JOGADOR)**. Informe o código de acesso normal do painel e salve.
 6. Abra **Nexus Client** no menu lateral. Clique em **Gerar código de pareamento**.
@@ -57,8 +57,16 @@ Projeto Gradle ModDevGradle 2.x, Java 21, NeoForge 21.1.265. Use Gradle 9.2.1:
 gradle -p nexus-client build --no-daemon
 ```
 
-O resultado fica em `nexus-client/build/libs/nexusclient-1.0.0.jar`.
+O resultado fica em `nexus-client/build/libs/nexusclient-1.1.0.jar`.
 
 O workflow `.github/workflows/nexus-client-build.yml` compila automaticamente o mod na branch `nexus-aterna-rp` e disponibiliza o artefato ZIP com JAR após finalizar.
 
 O JAR foi compilado no GitHub Actions. Ainda é recomendado testar no seu modpack específico para identificar conflitos de outros mods ou configurações do servidor.
+
+## Canais de chat (Nexus Client 1.1.0)
+
+No painel, vá em **Configurações > Comunicador do Jogador > Canal das Mensagens** e escolha **Local (/l)**, que é o padrão. Ao escrever `As placas estão se integrando.`, o mod chama a API do Minecraft para enviar `/l As placas estão se integrando.` usando `sendCommand`. **Não abre o chat, não pressiona T e não simula digitação**.
+
+Também há **Global** (mensagem direta pelo `sendChat`) e **Personalizado**, que aceita apenas comandos de chat seguros listados na interface, como `/rp` e `/me`. Escreva apenas a mensagem no painel, sem barra inicial. O prefixo `[NEXUS ATERNA]` é opcional e, no modo cliente, fica desmarcado inicialmente.
+
+O comando `/l` deve existir no servidor e respeita as regras do plugin de chat local. O resultado no jogo deve ser testado no seu servidor. Para aplicar a novidade, **substitua o JAR antigo pelo Nexus Client 1.1.0** e reinicie o Minecraft.
