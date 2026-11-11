@@ -1,0 +1,13 @@
+{
+  "name": "port-performance-monitor-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Painel exclusivo Port Performance Monitor",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
