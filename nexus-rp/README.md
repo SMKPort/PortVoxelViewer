@@ -146,3 +146,7 @@ O mod transmite mensagens como a **própria conta do jogador**, respeitando as r
 O Nexus usa pareamento temporário e uma credencial privada no cliente para solicitar ações via HTTPS. O mod bloqueia o envio remoto de mensagens até o jogador autorizar explicitamente. Credenciais de pareamento não são armazenadas no código fonte nem expostas em páginas públicas. Um novo pareamento pode ser necessário após reinicialização do serviço Render, porque o estado da sessão é temporário.
 
 Para instalação completa, consulte [Nexus Client README](../nexus-client/README.md).
+
+## Canais de chat no modo Nexus Client (RP 1.4)
+
+A opção **Local (/l)** é o padrão para o servidor de roleplay. O Comunicador não precisa digitar `/l`: o mod chama a API `ClientPacketListener.sendCommand("l " + mensagem)` diretamente, sem simulação de teclado. Também é possível selecionar **Global** ou um comando **Personalizado** permitido (somente canais de chat, não comandos de administração). O prefixo do Nexus é opcional no modo cliente. O JAR mínimo é Nexus Client 1.1.0.
