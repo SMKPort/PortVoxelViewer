@@ -10,6 +10,7 @@ const net=require("node:net");
 const dns=require("node:dns/promises");
 const crypto=require("node:crypto");
 const {createBridge}=require("./bridge.js");
+const {createClientRelay}=require("./client_relay.js");
 
 const ROOT=path.join(__dirname,"public");
 const PORT=Number(process.env.PORT)||10000;
@@ -123,6 +124,7 @@ async function parseRequest(req){
   return body;
 }
 const bridge=createBridge({send:json,verifyUser:req=>checkToken(req.headers["x-nexus-key"])});
+const nexusClient=createClientRelay({send:json,verifyUser:req=>checkToken(req.headers["x-nexus-key"]),limit:rateLimit});
 async function serve(req,res,route){
   const requested=route==="/"?"index.html":decodeURIComponent(route).slice(1);
   if(!/^(index\.html|styles\.css|upgrade\.css|evolution\.css|views\.js|upgrade\.js|evolution\.js|app\.js|icon\.svg|manifest\.webmanifest)$/.test(requested))return json(res,404,{error:"Arquivo não encontrado."});
@@ -134,7 +136,8 @@ async function serve(req,res,route){
 }
 const server=http.createServer(async(req,res)=>{
   let route,url;try{url=new URL(req.url||"/","http://localhost");route=url.pathname;}catch(e){return json(res,400,{error:"URL inválida."});}
-  if(req.method==="GET"&&route==="/api/health")return json(res,200,{status:"online",name:"Nexus Aterna RP",version:"1.2",bridgeReady:ACCESS.length>=20,agent:bridge.status(),adapter:"Minecraft Java RCON + HTTPS agent",configuredOnBrowser:true});
+  if(req.method==="GET"&&route==="/api/health")return json(res,200,{status:"online",name:"Nexus Aterna RP",version:"1.3",bridgeReady:ACCESS.length>=20,client:nexusClient.status(),agent:bridge.status(),adapter:"Minecraft Java RCON + HTTPS agent",configuredOnBrowser:true});
+  if(await nexusClient.handle(req,res,route,url))return;
   if(await bridge.handle(req,res,route,url))return;
   if(req.method==="GET")return serve(req,res,route);
   if(req.method!=="POST"||!["/api/rcon/test","/api/rcon/message","/api/rcon/function"].includes(route))return json(res,404,{error:"Rota inexistente."});
@@ -145,9 +148,9 @@ const server=http.createServer(async(req,res)=>{
   if(!checkToken(req.headers["x-nexus-key"]))return json(res,401,{error:"Código de acesso do Nexus inválido."});
   try{
     const data=await parseRequest(req);
-    if(route==="/api/rcon/test"){if(data.server.mode==="agent")return json(res,200,bridge.enqueue("list"));const response=await rcon(data.server,"list");return json(res,200,{ok:true,response,adapter:"RCON"});}
-    if(route==="/api/rcon/message"){const payload=buildTellraw(data);if(data.server.mode==="agent")return json(res,200,bridge.enqueue(payload.command));const response=await rcon(data.server,payload.command);return json(res,200,{ok:true,target:payload.target,response});}
-    if(route==="/api/rcon/function"){const command=validFunction(data.functionId);if(data.server.mode==="agent")return json(res,200,bridge.enqueue(command));const response=await rcon(data.server,command);return json(res,200,{ok:true,response});}
+    if(route==="/api/rcon/test"){if(data.server.mode==="client"){const status=nexusClient.status();if(!status.online)return json(res,503,{ok:false,error:"Mod Nexus Client offline. Pareie e abra o Minecraft."});return json(res,200,{ok:true,response:"Nexus Client online: "+(status.player||"jogador"),adapter:"client"});}if(data.server.mode==="agent")return json(res,200,bridge.enqueue("list"));const response=await rcon(data.server,"list");return json(res,200,{ok:true,response,adapter:"RCON"});}
+    if(route==="/api/rcon/message"){if(data.server.mode==="client"){const response=nexusClient.status();if(!response.online)return json(res,503,{ok:false,error:"Nexus Client offline."});return json(res,422,{ok:false,error:"Use /api/client/chat para enviar pelo jogador."});}const payload=buildTellraw(data);if(data.server.mode==="agent")return json(res,200,bridge.enqueue(payload.command));const response=await rcon(data.server,payload.command);return json(res,200,{ok:true,target:payload.target,response});}
+    if(route==="/api/rcon/function"){if(data.server.mode==="client")return json(res,403,{ok:false,error:"O mod client não executa comandos de servidor."});const command=validFunction(data.functionId);if(data.server.mode==="agent")return json(res,200,bridge.enqueue(command));const response=await rcon(data.server,command);return json(res,200,{ok:true,response});}
   }catch(e){return json(res,400,replyError(e));}
 });
 server.listen(PORT,"0.0.0.0",()=>console.log("Nexus Aterna RP listening on port "+PORT));
