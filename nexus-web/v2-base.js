@@ -14,7 +14,7 @@ let bridge=null,activePage=null,disposers=[],speech=null,serialPort=null,voiceRe
 const V={PAGE_LABELS:LABELS,state:S,hasPage:p=>!!LABELS[p],pageLabels:LABELS,views:{},esc,save:keep,id,clamp,
 getOld:()=>bridge?.getState?.()||{},toast:msg=>bridge?.toast?.(msg)||console.info(msg),log:(msg,kind="ATERNA 2.0")=>{bridge?.log?.(msg,kind);},navigate:p=>bridge?.navigate?.(p),rerender:()=>bridge?.render?.(),addDisposer:f=>disposers.push(f),
 register:(name,fn,after)=>{V.views[name]={fn,after};},
-beforeRender(next){if(activePage===next)return;disposers.splice(0).forEach(f=>{try{f();}catch(e){}});activePage=next;},
+beforeRender(next){disposers.splice(0).forEach(f=>{try{f();}catch(e){}});activePage=next;},
 renderPage:p=>V.views[p]?.fn?.()||'<div class="notice">Módulo não disponível.</div>',
 afterRender:p=>{V.views[p]?.after?.();},
 init(b){bridge=b;const nav=q("#sideNav");if(nav&&!q("#nexusV2Nav")){const label=document.createElement("div");label.className="side-group-title";label.id="nexusV2Nav";label.textContent="EXPANSÃO ATERNA 2.0";label.style.marginTop="24px";nav.after(label);const ext=document.createElement("nav");ext.id="sideNavV2";label.after(ext);[["aterna","✦"],["gemeo","⬡"],["rituais2","✧"],["tecnologia2","⌘"],["ts","⊗"],["espectrometro","⌁"]].forEach(([name,icon])=>{const b=document.createElement("button");b.className="nav-item";b.setAttribute("data-v2-page",name);b.innerHTML='<span>'+icon+'</span> '+esc(LABELS[name]);ext.append(b);});ext.addEventListener("click",e=>{const btn=e.target.closest("[data-v2-page]");if(btn)V.navigate(btn.dataset.v2Page);});}
