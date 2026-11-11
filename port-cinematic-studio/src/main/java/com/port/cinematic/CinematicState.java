@@ -89,9 +89,11 @@ public final class CinematicState {
     }
     public static void stop(){
         Minecraft mc=Minecraft.getInstance();
+        ArmorStand previousCamera=cameraEntity;
         if(playing){mc.options.hideGui=oldHideGui;}
         playing=false;active=false;cameraEntity=null;cameraLevel=null;
-        if(mc.player!=null&&mc.getCameraEntity()!=mc.player)mc.setCameraEntity(mc.player);
+        // Do not override a camera that another mod may have installed meanwhile.
+        if(mc.player!=null&&mc.getCameraEntity()==previousCamera)mc.setCameraEntity(mc.player);
     }
 
     private static void sync(){
