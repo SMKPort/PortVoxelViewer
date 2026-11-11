@@ -25,6 +25,7 @@ for(const k of ["logs","chat","rituals"])if(!Array.isArray(state[k]))state[k]=[]
 }
 }catch(e){}
 // Nexus-originated chat messages always carry an explicit sender label, even for existing stored profiles.
+if(state.config.connectionMode==="public"&&!state.config.host){state.config.connectionMode="client";}
 if(state.config.connectionMode==="client"){state.config.prefix="[Nexus Aterna]";state.config.chatUsePrefix=true;}
 const $=x=>document.querySelector(x);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
