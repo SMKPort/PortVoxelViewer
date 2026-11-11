@@ -36,7 +36,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){to
 function log(text,kind="RP"){state.logs.unshift({id:uid(),at:new Date().toISOString(),kind,text});state.logs=state.logs.slice(0,140);save();}
 function toast(text){const el=document.createElement("div");el.className="toast";el.textContent=text;$("#toasts").appendChild(el);setTimeout(()=>el.remove(),4600);}
 function addChat(text,status){state.chat.push({id:uid(),at:new Date().toISOString(),text,status});state.chat=state.chat.slice(-100);save();}
-const rp={state,escape:esc,date,presets:PRESETS,isConnected:()=>connected,isHealthy:()=>healthy,save,log,toast,navigate,rerender:render,sendToChat:messageToMinecraft,armorAction,performRitual};
+const rp={state,escape:esc,date,presets:PRESETS,isConnected:()=>connected,isHealthy:()=>healthy,save,log,toast,navigate,rerender:render,sendToChat:messageToMinecraft,armorAction,performRitual,runFunctionId:async function(functionId){return api("function",{functionId});}};
 let views=window.NexusRPViews(rp);
 if(window.NexusRPUpgrade)views=window.NexusRPUpgrade(rp,views);
 function render(){
@@ -196,7 +196,7 @@ const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.d
 }
 if(action==="clear"){
 if(!confirm("Reiniciar os registros narrativos e os indicadores locais?"))return;
-const initial=DEFAULT();for(const key of Object.keys(initial))state[key]=initial[key];save();connected=false;render();toast("Registros reiniciados.");
+const initial=DEFAULT();for(const key of Object.keys(initial))state[key]=initial[key];rp.resetUpgrade?.();save();connected=false;render();toast("Registros reiniciados.");
 }
 });
 async function checkHealth(){try{const res=await fetch("/api/health"),j=await res.json();healthy=res.ok&&j.status==="online";}catch(e){healthy=false;}if(page==="config")render();}
