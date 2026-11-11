@@ -41,12 +41,15 @@ window.NexusRPClientUpgrade=function(rp,views){
      const channelForm='<div class="divider"></div><div class="eyebrow">COMUNICADOR DO JOGADOR</div>'+
        '<div class="field"><label for="chatChannel">CANAL DAS MENSAGENS</label><select name="chatChannel" id="chatChannel">'+options+'</select>'+
        '<small>Local envia /l seguido da sua mensagem. O mod usa a conexão normal do Minecraft, sem simular teclado.</small></div>'+
+       '<div class="field"><label for="chatFormatting">CÓDIGOS DE FORMATAÇÃO DO CHAT LOCAL</label>'+ 
+       '<input name="chatFormatting" id="chatFormatting" maxlength="16" value="'+E(c.chatFormatting??"&6&l")+
+       '" placeholder="&6&l"><small><code>&6</code> = dourado. <code>&l</code> = negrito. O padrão envia /l &6&l seguido diretamente do texto. Deixe vazio para desativar.</small></div>'+ 
        '<div class="field"><label for="chatCustomCommand">COMANDO PERSONALIZADO (SOMENTE CANAIS DE CHAT)</label>'+
        '<input name="chatCustomCommand" id="chatCustomCommand" maxlength="24" value="'+E(c.chatCustomCommand||"")+
        '" placeholder="/rp"><small>Exemplos: /rp, /me, /ooc. Comandos administrativos são bloqueados.</small></div>'+
        '<label class="field inline"><input name="chatUsePrefix" type="checkbox" '+(c.chatUsePrefix===true?"checked":"")+
        '><span>Acrescentar prefixo do Nexus antes da mensagem</span></label>'+
-       '<div class="notice">Canal padrão: <strong>/l</strong>. Você digita apenas a mensagem no Comunicador, sem escrever /l. Salve as configurações para aplicar.</div>';
+       '<div class="notice">Comando padrão: <strong>/l &6&lSua mensagem</strong>. Digite apenas o texto no Comunicador. Cor e negrito serão adicionados automaticamente quando o canal for Local.</div>';
      html=html.replace('<form id="configForm">','<form id="configForm">'+channelForm);
    }
    const note='<div class="notice">Sem acesso administrativo ao servidor? Escolha <strong>NEXUS CLIENT</strong>, abra a aba de pareamento e instale o mod NeoForge no seu Minecraft. A porta RCON e a senha não são usadas neste modo.</div>';
@@ -59,8 +62,9 @@ window.NexusRPClientUpgrade=function(rp,views){
    if(S.config.connectionMode!=="client")return html;
    const c=S.config,channel=["global","local","custom"].includes(c.chatChannel)?c.chatChannel:"local";
    const label=channel==="global"?"GLOBAL":channel==="local"?"/l":"/"+String(c.chatCustomCommand||"rp").replace(/^\//,"");
+   const displayPrefix=channel==="local"?" "+String(c.chatFormatting??"&6&l"):"";
    const previous='<div class="chat-preview"><strong>'+E(c.prefix)+'</strong>';
-   const preview='<div class="chat-preview"><strong>'+E(label+(c.chatUsePrefix?" "+c.prefix:""))+'</strong>';
+   const preview='<div class="chat-preview"><strong>'+E(label+displayPrefix+(c.chatUsePrefix?" "+c.prefix:""))+'</strong>';
    html=html.replace(previous,preview);
    const info='<div class="notice">CANAL CONFIGURADO: <strong>'+E(label)+'</strong>. Mensagens saem pelo seu próprio jogador, respeitando as regras do servidor.</div>';
    return info+html;
@@ -69,8 +73,8 @@ window.NexusRPClientUpgrade=function(rp,views){
  if(oldLive)views.ao_vivo=function(){
    const html=oldLive();
    if(S.config.connectionMode!=="client")return html;
-   const label=S.config.chatChannel==="global"?"GLOBAL":S.config.chatChannel==="custom"?"/"+E(S.config.chatCustomCommand||"rp"):"/l";
-   return '<div class="notice">Chat do Nexus Client: <strong>'+label+'</strong> · envie só o texto, sem digitar o comando.</div>'+html;
+   const label=S.config.chatChannel==="global"?"GLOBAL":S.config.chatChannel==="custom"?"/"+String(S.config.chatCustomCommand||"rp"):"/l "+String(S.config.chatFormatting??"&6&l");
+   return '<div class="notice">Chat do Nexus Client: <strong>'+E(label)+'</strong> · envie só o texto, sem digitar o comando.</div>'+html;
  };
  views.cliente=function(){
    const on=lastStatus?.online,player=lastStatus?.player||"Não identificado";
