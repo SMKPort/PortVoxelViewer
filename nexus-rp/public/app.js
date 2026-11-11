@@ -13,7 +13,7 @@ const DEFAULT=()=>({
 integrity:100,energy:85,armor:"integrada",form:"Celestial",selectedRitual:"bencao",
 logs:[{id:"origin",at:new Date().toISOString(),kind:"SISTEMA",text:"Nexus Aterna RP inicializado. Aguardando instruções do Port."}],
 chat:[],rituals:[],
-config:{connectionMode:"public",chatChannel:"local",chatCustomCommand:"rp",chatFormatting:"&6&l",chatUsePrefix:false,host:"",port:25575,player:"Port",prefix:"[NEXUS ATERNA]",target:"global",recipient:"",color:"white",autoAnnounce:true,functions:{integrar:"",desintegrar:"",remodelar:"",ritual:""}}
+config:{connectionMode:"public",chatChannel:"local",chatCustomCommand:"rp",chatFormatting:"&6&l",chatUsePrefix:true,host:"",port:25575,player:"Port",prefix:"[Nexus Aterna]",target:"global",recipient:"",color:"white",autoAnnounce:true,functions:{integrar:"",desintegrar:"",remodelar:"",ritual:""}}
 });
 const state=DEFAULT();
 try{
@@ -24,6 +24,8 @@ state.config={...DEFAULT().config,...(s.config||{}),functions:{...DEFAULT().conf
 for(const k of ["logs","chat","rituals"])if(!Array.isArray(state[k]))state[k]=[];
 }
 }catch(e){}
+// Nexus-originated chat messages always carry an explicit sender label, even for existing stored profiles.
+if(state.config.connectionMode==="client"){state.config.prefix="[Nexus Aterna]";state.config.chatUsePrefix=true;}
 const $=x=>document.querySelector(x);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
@@ -40,7 +42,6 @@ const rp={state,escape:esc,date,presets:PRESETS,isConnected:()=>connected,isHeal
 let views=window.NexusRPViews(rp);
 if(window.NexusRPUpgrade)views=window.NexusRPUpgrade(rp,views);
 if(window.NexusRPEvolution)views=window.NexusRPEvolution(rp,views);
-if(window.NexusRPClientUpgrade)views=window.NexusRPClientUpgrade(rp,views);
 if(window.NexusRPClientUpgrade)views=window.NexusRPClientUpgrade(rp,views);
 function render(){
 $("#content").innerHTML=views[page]?.()||views.painel();
@@ -71,6 +72,7 @@ c.target=d.get("target")==="player"?"player":"global";
 c.recipient=String(d.get("recipient")||"").trim().slice(0,16);
 c.color=String(d.get("color")||"white");
 c.autoAnnounce=d.has("autoAnnounce");
+if(c.connectionMode==="client"){c.prefix="[Nexus Aterna]";c.chatUsePrefix=true;}
 if(d.get("password"))secrets.password=String(d.get("password"));
 if(d.get("access"))secrets.access=String(d.get("access"));
 save();
@@ -86,7 +88,9 @@ if(state.config.connectionMode==="client"){
  if(route==="message"){
    const base=String(payload.message||"").trim();
    const channel=["local","global","custom"].includes(state.config.chatChannel)?state.config.chatChannel:"local";
-   const message=((state.config.chatUsePrefix===true?(state.config.prefix||"")+" ":"")+base).trim();
+   const label="[Nexus Aterna]";
+   const cleaned=base.replace(/^(?:\[nexus\s+aterna\]\s*)+/i,"");
+   const message=(label+" "+cleaned).trim();
    if(!message||message.length>230)throw Error("A mensagem deve ter entre 1 e 230 caracteres. Reduza o texto ou remova o prefixo.");
    const format=channel==="local"?(state.config.chatFormatting??"&6&l"):"";
    if(!/^(?:&[0-9a-fk-or]){0,8}$/.test(format))throw Error("Código de formatação inválido.");
