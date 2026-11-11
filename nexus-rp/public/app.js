@@ -177,6 +177,7 @@ $("#content").addEventListener("click",async e=>{
 const el=e.target.closest("[data-action]");if(!el)return;
 const action=el.dataset.action;
 if(action.startsWith("go-"))return navigate(action.slice(3));
+if(action==="datapack-preset"){const functions={integrar:"nexus:armadura/integrar",desintegrar:"nexus:armadura/desintegrar",remodelar:"nexus:armadura/remodelar",ritual:"nexus:rituais/ativar"};for(const [key,val] of Object.entries(functions)){const field=document.querySelector('#functionForm [name="'+key+'"]');if(field)field.value=val;}toast("Funções preenchidas. Toque em SALVAR FUNÇÕES.");return;}
 if(action==="test-connection")return testConnection();
 if(action==="template"){
 const v=templates[Number(el.dataset.index)],input=$("#chatMessage");
