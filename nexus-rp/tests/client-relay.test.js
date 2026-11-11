@@ -69,7 +69,8 @@ test("pairing requires user authorization and a one time code",async()=>{
  const olderProfile=await run("POST","/api/client/chat",user,{message:"[NEXUS ATERNA] Integrando armadura",channel:"local"});
  assert.equal(olderProfile.status,200);
  const migrated=await run("GET","/api/client/poll",client);
- assert.equal(migrated.payload.jobs[1].payload.message,"[Nexus Aterna] Integrando armadura");
+ assert.equal(migrated.payload.jobs.length,1);
+ assert.equal(migrated.payload.jobs[0].payload.message,"[Nexus Aterna] Integrando armadura");
  const tooLong=await run("POST","/api/client/chat",user,{message:"a".repeat(225),channel:"local"});
  assert.equal(tooLong.status,422);
 });
