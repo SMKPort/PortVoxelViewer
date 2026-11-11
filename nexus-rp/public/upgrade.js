@@ -213,19 +213,19 @@
         if(next&&part.integrity===0)return rp.toast("A peça está destruída e precisa de reparo.");
         if(S.energy<cost)return rp.toast("Energia narrativa insuficiente.");
         part.integrated=next;
-        msg=part.name+": "+(next?"placa acoplada":"placa desprendida")+" do Nexus.";
+        msg=(next?"Integrando segmento: ":"Desintegrando segmento: ")+part.name;
       }
       else if(action==="segment-damage"){
         part.integrity=clamp(part.integrity-20,0,100);
         if(part.integrity===0)part.integrated=false;
-        msg=part.name+": dano estrutural registrado. Integridade: "+part.integrity+"%.";
+        msg="Dano no segmento: "+part.name+" ("+part.integrity+"% de integridade)";
       }
       else if(action==="segment-fix"){
         cost=8;
         if(part.integrity>=100)return rp.toast("A peça já está íntegra.");
         if(S.energy<cost)return rp.toast("Energia insuficiente para reparar o segmento.");
         part.integrity=clamp(part.integrity+20,0,100);
-        msg=part.name+": reparo concluído. Integridade: "+part.integrity+"%.";
+        msg="Reparando segmento: "+part.name;
       }
       else return;
       S.energy=clamp(S.energy-cost,0,100);
@@ -256,7 +256,8 @@
       const current=clamp(r.stage,0,3),name=r.name;
       if(current<3){
         r.stage=current+1;persist();show();
-        const message="Ritual "+name+": "+STEP_NAMES[current]+" concluída. "+phaseDesc[current];
+        const progress=["Preparando ritual: ","Canalizando ritual: ","Estabilizando ritual: ","Finalizando ritual: "];
+        const message=progress[current]+name;
         if(S.config.autoAnnounce&&connected())await sendText(message,"RITUAL");
         else rp.toast(STEP_NAMES[current]+" concluída.");
         return;
