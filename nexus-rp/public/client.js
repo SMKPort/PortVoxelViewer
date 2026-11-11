@@ -34,6 +34,7 @@ window.NexusRPClientUpgrade=function(rp,views){
    if(html.includes(needle))html=html.replace(needle,'<option value="client" '+(S.config.connectionMode==="client"?"selected":"")+'>NEXUS CLIENT (MOD APENAS NO JOGADOR)</option></select><small>No modo Agente HTTPS');
    else html=html.replace('value="agent"','value="agent"');
    const note='<div class="notice">Sem acesso administrativo ao servidor? Escolha <strong>NEXUS CLIENT</strong>, abra a aba de pareamento e instale o mod NeoForge no seu Minecraft. A porta RCON e a senha não são usadas neste modo.</div>';
+   if(S.config.connectionMode==="client")html=html.replaceAll("TESTAR RCON","TESTAR NEXUS CLIENT").replaceAll("Servidor RCON","Mod Minecraft").replaceAll("NÃO TESTADO","AGUARDANDO PAREAMENTO");
    return html+note+'<div class="buttons">'+button("open","ABRIR NEXUS CLIENT","gold")+'</div>';
  };
  views.cliente=function(){
