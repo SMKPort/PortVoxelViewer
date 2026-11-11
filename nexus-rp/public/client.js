@@ -35,6 +35,7 @@ window.NexusRPClientUpgrade=function(rp,views){
    else html=html.replace('value="agent"','value="agent"');
    if(S.config.connectionMode==="client"){
      const c=S.config;
+     html=html.replace(/(<input id="prefix"[^>]*)(>)/,'$1 readonly aria-readonly="true"$2');
      const selected=["local","global","custom"].includes(c.chatChannel)?c.chatChannel:"local";
      const options=[["local","Local (/l) - padrão"],["global","Global (sem comando)"],["custom","Personalizado (comando de chat)"]]
        .map(item=>'<option value="'+item[0]+'" '+(selected===item[0]?"selected":"")+'>'+item[1]+'</option>').join("");
@@ -47,9 +48,8 @@ window.NexusRPClientUpgrade=function(rp,views){
        '<div class="field"><label for="chatCustomCommand">COMANDO PERSONALIZADO (SOMENTE CANAIS DE CHAT)</label>'+
        '<input name="chatCustomCommand" id="chatCustomCommand" maxlength="24" value="'+E(c.chatCustomCommand||"")+
        '" placeholder="/rp"><small>Exemplos: /rp, /me, /ooc. Comandos administrativos são bloqueados.</small></div>'+
-       '<label class="field inline"><input name="chatUsePrefix" type="checkbox" '+(c.chatUsePrefix===true?"checked":"")+
-       '><span>Acrescentar prefixo do Nexus antes da mensagem</span></label>'+
-       '<div class="notice">Comando padrão: <strong>/l &6&lSua mensagem</strong>. Digite apenas o texto no Comunicador. Cor e negrito serão adicionados automaticamente quando o canal for Local.</div>';
+       '<div class="notice"><strong>EMISSOR: [Nexus Aterna]</strong>. Identificação permanente de todas as mensagens enviadas pelo painel (inclusive em configurações antigas).</div>'+
+       '<div class="notice">Exemplo do comando: <strong>/l &6&l[Nexus Aterna] Desintegrando armadura</strong>. O identificador do Nexus é aplicado mesmo se o perfil antigo tiver desativado o prefixo.</div>';
      html=html.replace('<form id="configForm">','<form id="configForm">'+channelForm);
    }
    const note='<div class="notice">Sem acesso administrativo ao servidor? Escolha <strong>NEXUS CLIENT</strong>, abra a aba de pareamento e instale o mod NeoForge no seu Minecraft. A porta RCON e a senha não são usadas neste modo.</div>';
@@ -64,9 +64,9 @@ window.NexusRPClientUpgrade=function(rp,views){
    const label=channel==="global"?"GLOBAL":channel==="local"?"/l":"/"+String(c.chatCustomCommand||"rp").replace(/^\//,"");
    const displayPrefix=channel==="local"?" "+String(c.chatFormatting??"&6&l"):"";
    const previous='<div class="chat-preview"><strong>'+E(c.prefix)+'</strong>';
-   const preview='<div class="chat-preview"><strong>'+E(label+displayPrefix+(c.chatUsePrefix?" "+c.prefix:""))+'</strong>';
+   const preview='<div class="chat-preview"><strong>'+E(label+displayPrefix+(channel==="local"?"":" ")+(c.prefix||"[Nexus Aterna]"))+'</strong>';
    html=html.replace(previous,preview);
-   const info='<div class="notice">CANAL CONFIGURADO: <strong>'+E(label)+'</strong>. Mensagens saem pelo seu próprio jogador, respeitando as regras do servidor.</div>';
+   const info='<div class="notice">CANAL CONFIGURADO: <strong>'+E(label)+'</strong> · EMISSOR: <strong>[Nexus Aterna]</strong>. O servidor ainda identifica sua conta como origem técnica do envio.</div>';
    return info+html;
  };
  const oldLive=views.ao_vivo;
@@ -74,7 +74,7 @@ window.NexusRPClientUpgrade=function(rp,views){
    const html=oldLive();
    if(S.config.connectionMode!=="client")return html;
    const label=S.config.chatChannel==="global"?"GLOBAL":S.config.chatChannel==="custom"?"/"+String(S.config.chatCustomCommand||"rp"):"/l "+String(S.config.chatFormatting??"&6&l");
-   return '<div class="notice">Chat do Nexus Client: <strong>'+E(label)+'</strong> · envie só o texto, sem digitar o comando.</div>'+html;
+   return '<div class="notice">Chat do Nexus Client: <strong>'+E(label)+'</strong> · identidade <strong>[Nexus Aterna]</strong> aplicada automaticamente. Envie apenas o texto.</div>'+html;
  };
  views.cliente=function(){
    const on=lastStatus?.online,player=lastStatus?.player||"Não identificado";
