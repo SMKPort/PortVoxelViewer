@@ -11,7 +11,8 @@ const relay = createClientRelay({
 async function run(method,path,headers={},data=null){
  const req=Readable.from(data===null?[]:[Buffer.from(JSON.stringify(data))]);
  req.method=method;req.headers=headers;const res={status:0,payload:null,end(){}};
- await relay.handle(req,res,new URL(path,"https://example.test").pathname,new URL(path,"https://example.test"));
+ const handled=await relay.handle(req,res,new URL(path,"https://example.test").pathname,new URL(path,"https://example.test"));
+ assert.equal(handled,true,"Rotas /api/client devem ser tratadas uma única vez pelo backend");
  return res;
 }
 test("pairing requires user authorization and a one time code",async()=>{
