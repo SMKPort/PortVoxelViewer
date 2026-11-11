@@ -3,7 +3,30 @@
 window.NexusRPClientUpgrade=function(rp,views){
  const S=rp.state,E=rp.escape,apiRoot="/api/client";
  const button=(action,label,cls="alt")=>'<button type="button" class="btn '+cls+'" data-nexus-client="'+action+'">'+label+'</button>';
- let lastStatus=null,lastPair=null;
+ let lastStatus=null,lastPair=null,diagnostics=null;
+ async function runDiagnostics(){
+   const origin=location.origin;
+   const inspect=async(path,key)=>{
+     try{
+       const response=await fetch(path,{method:"GET",cache:"no-store",
+         headers:{"Accept":"application/json",...(key?{"X-Nexus-Key":key}:{})},
+         signal:AbortSignal.timeout(10000)});
+       const type=String(response.headers.get("content-type")||"").toLowerCase();
+       if(!type.includes("application/json"))
+         return path+": HTTP "+response.status+" · resposta HTML/não JSON ("+(type||"sem Content-Type")+")";
+       const data=await response.json();
+       if(response.status===401)return path+": HTTP 401 · código HTTPS incorreto ou expirado nesta aba";
+       if(!response.ok)return path+": HTTP "+response.status+" · "+String(data.error||"falha da API").slice(0,120);
+       return path+": HTTP "+response.status+" · JSON OK · "+(data.version?"versão "+data.version+" · ":"")+
+         (data.status||"")+(path.includes("/status")?(data.online?" · MOD ONLINE":" · aguardando mod"):"");
+     }catch(e){return path+": ERRO · "+(e?.name==="TimeoutError"?"tempo esgotado":String(e?.message||e)).slice(0,140);}
+   };
+   const health=await inspect("/api/health","");
+   const key=rp.getAccess?.()||"";
+   const status=key?await inspect("/api/client/status",key):"/api/client/status: não testado (informe a chave HTTPS)";
+   diagnostics={origin,health,status};
+   rp.rerender();
+ }
  const backend=async(route,options={})=>{
    const key=rp.getAccess?.()||"";
    if(!key)throw Error("Informe a NEXUS_RP_ACCESS_KEY em Configurações, toque em SALVAR CÓDIGO e volte ao Nexus Client. Nenhuma senha RCON é necessária.");
@@ -91,7 +114,7 @@ window.NexusRPClientUpgrade=function(rp,views){
  };
  views.cliente=function(){
    const on=lastStatus?.online,player=lastStatus?.player||"Não identificado";
-   return '<div class="eyebrow">NEOFORGE 1.21.1 · CLIENT SIDE</div><h1 class="heading">Nexus Aterna Client</h1>'+
+   return '<div class="eyebrow">NEOFORGE 1.21.1 · CLIENT SIDE · PAINEL 2.0</div><h1 class="heading">Nexus Aterna Client</h1>'+
    '<p class="subheading">Conecte o Nexus ao seu Minecraft sem acesso ao servidor. O mod roda somente no seu cliente e envia telemetria e mensagens pela conta do seu jogador.</p>'+
    '<div class="grid two">'+
    '<section class="card"><div class="card-header"><h2>VINCULAÇÃO SEGURA</h2></div>'+
@@ -111,7 +134,13 @@ window.NexusRPClientUpgrade=function(rp,views){
    '<div class="kv"><span>Armadura / rituais</span><span class="value">Avisos e UI local</span></div>'+
    '<div class="kv"><span>Emotes reais</span><span class="value">Exigem integração com o mod de emotes</span></div>'+
    '<div class="divider"></div><div class="notice">Mensagens enviadas pelo painel são transmitidas como mensagens normais do personagem e ficam sujeitas às regras, filtros e limites do servidor. Não é possível executar comandos de administrador ou modificar outros jogadores.</div>'+
-   '<div class="buttons">'+button("open-events","MONITORAR EVENTOS","alt")+button("open-chat","ABRIR COMUNICADOR","gold")+'</div></section></div>';
+   '<div class="buttons">'+button("open-events","MONITORAR EVENTOS","alt")+button("open-chat","ABRIR COMUNICADOR","gold")+'</div></section></div>'+
+   '<section class="card" style="margin-top:16px"><div class="card-header"><h2>DIAGNÓSTICO DA API</h2></div>'+
+   '<p class="hint">Verifica se seu navegador consegue acessar a Render e se as rotas estão respondendo JSON. Não exibe sua senha nem o código de acesso.</p>'+
+   button("diagnostic","TESTAR API E MOSTRAR DETALHES","gold")+
+   (diagnostics?'<div class="notice" style="margin-top:12px;overflow-wrap:anywhere">'+
+     '<strong>Origem:</strong> '+E(diagnostics.origin)+'<p>'+E(diagnostics.health)+'</p><p>'+E(diagnostics.status)+'</p></div>':
+     '<p class="hint">Nenhum diagnóstico executado nesta aba.</p>')+'</section>';
  };
  const nav=document.querySelector('#nav');
  const cfg=nav?.querySelector('[data-page="config"]');
@@ -133,6 +162,7 @@ window.NexusRPClientUpgrade=function(rp,views){
      if(b.dataset.nexusClient==="open-events")return rp.navigate("eventos");
      if(b.dataset.nexusClient==="pair"){lastPair=await backend("/pair/new",{method:"POST",body:"{}"});rp.toast("Código criado. Insira-o no comando do Minecraft.");}
      if(b.dataset.nexusClient==="status"){await getStatus();rp.toast(lastStatus.online?"Nexus Client conectado!":"Minecraft ainda não pareado ou offline.");}
+     if(b.dataset.nexusClient==="diagnostic"){await runDiagnostics();rp.toast("Diagnóstico exibido no rodapé da aba Nexus Client.");}
      rp.rerender();
    }catch(err){rp.toast(err.message);}
  },true);
