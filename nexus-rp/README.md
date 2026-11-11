@@ -175,3 +175,10 @@ Por padrão, o painel começa em **Nexus Client**. Ao entrar na aba Nexus Client
 Procedimento: na Render, encontre o valor configurado em `NEXUS_RP_ACCESS_KEY` (não confunda com `NEXUS_RP_AGENT_KEY`), entre em **Configurações**, informe em **Código de acesso HTTPS do painel**, clique em **Salvar código e configurações**, abra a aba **Nexus Client** e toque em **Gerar código de pareamento**. No Minecraft instalado com Nexus Client 1.2.0, use `/nexusclient pair CODIGO` e autorize chat e telemetria separadamente. O código HTTPS fica só em memória na aba, não na biblioteca/localStorage. Não é necessário senha RCON nem acesso ao servidor Minecraft. O teste de conexão apenas confirma se o Minecraft já está pareado e online.
 
 O painel agora inclui teste de regressão para impedir que o modo Client volte a exigir RCON. Os scripts possuem marcação de versão na URL para atualizar corretamente em navegadores de celular.
+
+
+## RP 2.1 · lembrar chave HTTPS apenas no dispositivo
+
+No modo Nexus Client, a chave `NEXUS_RP_ACCESS_KEY` da Render continua privada e **nunca é enviada embutida no HTML nem no código-fonte público**. Para evitar ter de digitá-la em cada visita, marque **Lembrar a chave HTTPS apenas neste dispositivo** ao informá-la pela primeira vez. A partir da próxima visita, ela é recuperada do armazenamento local desse navegador para autorizar as ações da ponte. O campo de senha fica vazio para não exibir o segredo no HTML. O status **Chave lembrada neste navegador** informa que está pronta. É possível revogar o armazenamento pelo botão **Esquecer chave salva**. Em um dispositivo compartilhado, mantenha a opção desmarcada.
+
+Isso não dispensa a autenticação inicial: um website público não pode preencher de maneira segura o valor secreto da variável de ambiente da Render para qualquer visitante. A chave também continua separada do código de pareamento de dez caracteres usado dentro do Minecraft. Nenhuma modificação do JAR NeoForge foi necessária.
