@@ -73,7 +73,10 @@ function createClientRelay({send,verifyUser,limit}){
         const root=channel==="local"?"l":channel==="custom"?(custom.startsWith("/")?custom.slice(1):custom):"";
         const allowed=new Set(["l","local","g","global","rp","me","ooc","chat","ch","yell","shout","action"]);
         if(channel==="custom"&&!allowed.has(root))return err(res,422,"Canal personalizado invalido. Escolha um comando de chat permitido.");
-        return void send(res,200,enqueue("chat",{message,channel,command:root}));
+        const format=channel==="local"?(data.format===undefined?"&6&l":String(data.format||"").trim().toLowerCase()):"";
+        if(!/^(?:&[0-9a-fk-or]){0,8}$/.test(format))return err(res,422,"Código de formatação inválido. Use códigos como &6&l.");
+        // Raw formatting is passed only to the chat command; no arbitrary commands.
+        return void send(res,200,enqueue("chat",{message,channel,command:root,format}));
       }catch(e){return err(res,422,String(e.message));}
     }
     if(route==="/api/client/action"&&req.method==="POST"){
