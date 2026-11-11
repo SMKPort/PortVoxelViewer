@@ -180,7 +180,7 @@ final class ClientLink {
         String text=switch(kind){
             case "integrar" -> "As placas do Nexus se integram ao braço direito.";
             case "desintegrar" -> "As placas arcanas se dispersam.";
-            case "remodelar" -> "Armadura remodelada: "+form.replaceAll("[^\\p{L}\\p{N} _-]","").substring(0,Math.min(form.length(),28));
+            case "remodelar" -> "Armadura remodelada: "+form.replaceAll("[^\\p{L}\\p{N} _-]","");
             case "reparar" -> "Pulso restaurador liberado.";
             case "ritual" -> "Canalização ritualística iniciada.";
             case "emote" -> "Emote solicitado. Vincule seu mod de emotes para uma animação real.";
