@@ -9,6 +9,7 @@ const path=require("node:path");
 const net=require("node:net");
 const dns=require("node:dns/promises");
 const crypto=require("node:crypto");
+const {createBridge}=require("./bridge.js");
 
 const ROOT=path.join(__dirname,"public");
 const PORT=Number(process.env.PORT)||10000;
@@ -121,9 +122,10 @@ async function parseRequest(req){
   if(!body.server||typeof body.server!=="object")throw Error("Configuração do servidor ausente.");
   return body;
 }
+const bridge=createBridge({send:json,verifyUser:req=>checkToken(req.headers["x-nexus-key"])});
 async function serve(req,res,route){
   const requested=route==="/"?"index.html":decodeURIComponent(route).slice(1);
-  if(!/^(index\.html|styles\.css|upgrade\.css|views\.js|upgrade\.js|app\.js|icon\.svg|manifest\.webmanifest)$/.test(requested))return json(res,404,{error:"Arquivo não encontrado."});
+  if(!/^(index\.html|styles\.css|upgrade\.css|evolution\.css|views\.js|upgrade\.js|evolution\.js|app\.js|icon\.svg|manifest\.webmanifest)$/.test(requested))return json(res,404,{error:"Arquivo não encontrado."});
   try{
     const file=await fs.readFile(path.join(ROOT,requested));
     res.writeHead(200,{...security,"Content-Type":types[path.extname(requested)]||"application/octet-stream","Cache-Control":requested==="index.html"?"no-cache":"public, max-age=300"});
@@ -131,8 +133,9 @@ async function serve(req,res,route){
   }catch(e){json(res,500,{error:"Falha ao carregar a interface."});}
 }
 const server=http.createServer(async(req,res)=>{
-  let route;try{route=new URL(req.url||"/","http://localhost").pathname;}catch(e){return json(res,400,{error:"URL inválida."});}
-  if(req.method==="GET"&&route==="/api/health")return json(res,200,{status:"online",name:"Nexus Aterna RP",version:"1.0",bridgeReady:ACCESS.length>=20,adapter:"Minecraft Java RCON",configuredOnBrowser:true});
+  let route,url;try{url=new URL(req.url||"/","http://localhost");route=url.pathname;}catch(e){return json(res,400,{error:"URL inválida."});}
+  if(req.method==="GET"&&route==="/api/health")return json(res,200,{status:"online",name:"Nexus Aterna RP",version:"1.2",bridgeReady:ACCESS.length>=20,agent:bridge.status(),adapter:"Minecraft Java RCON + HTTPS agent",configuredOnBrowser:true});
+  if(await bridge.handle(req,res,route,url))return;
   if(req.method==="GET")return serve(req,res,route);
   if(req.method!=="POST"||!["/api/rcon/test","/api/rcon/message","/api/rcon/function"].includes(route))return json(res,404,{error:"Rota inexistente."});
   if(!rateLimit(req))return json(res,429,{error:"Limite de requisições. Aguarde um minuto."});
@@ -142,9 +145,9 @@ const server=http.createServer(async(req,res)=>{
   if(!checkToken(req.headers["x-nexus-key"]))return json(res,401,{error:"Código de acesso do Nexus inválido."});
   try{
     const data=await parseRequest(req);
-    if(route==="/api/rcon/test"){const response=await rcon(data.server,"list");return json(res,200,{ok:true,response,adapter:"RCON"});}
-    if(route==="/api/rcon/message"){const payload=buildTellraw(data);const response=await rcon(data.server,payload.command);return json(res,200,{ok:true,target:payload.target,response});}
-    if(route==="/api/rcon/function"){const command=validFunction(data.functionId);const response=await rcon(data.server,command);return json(res,200,{ok:true,response});}
+    if(route==="/api/rcon/test"){if(data.server.mode==="agent")return json(res,200,bridge.enqueue("list"));const response=await rcon(data.server,"list");return json(res,200,{ok:true,response,adapter:"RCON"});}
+    if(route==="/api/rcon/message"){const payload=buildTellraw(data);if(data.server.mode==="agent")return json(res,200,bridge.enqueue(payload.command));const response=await rcon(data.server,payload.command);return json(res,200,{ok:true,target:payload.target,response});}
+    if(route==="/api/rcon/function"){const command=validFunction(data.functionId);if(data.server.mode==="agent")return json(res,200,bridge.enqueue(command));const response=await rcon(data.server,command);return json(res,200,{ok:true,response});}
   }catch(e){return json(res,400,replyError(e));}
 });
 server.listen(PORT,"0.0.0.0",()=>console.log("Nexus Aterna RP listening on port "+PORT));
