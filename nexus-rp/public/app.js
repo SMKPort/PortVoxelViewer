@@ -13,7 +13,7 @@ const DEFAULT=()=>({
 integrity:100,energy:85,armor:"integrada",form:"Celestial",selectedRitual:"bencao",
 logs:[{id:"origin",at:new Date().toISOString(),kind:"SISTEMA",text:"Nexus Aterna RP inicializado. Aguardando instruções do Port."}],
 chat:[],rituals:[],
-config:{connectionMode:"public",chatChannel:"local",chatCustomCommand:"rp",chatFormatting:"&6&l",chatUsePrefix:true,host:"",port:25575,player:"Port",prefix:"[Nexus Aterna]",target:"global",recipient:"",color:"white",autoAnnounce:true,functions:{integrar:"",desintegrar:"",remodelar:"",ritual:""}}
+config:{connectionMode:"client",chatChannel:"local",chatCustomCommand:"rp",chatFormatting:"&6&l",chatUsePrefix:true,host:"",port:25575,player:"Port",prefix:"[Nexus Aterna]",target:"global",recipient:"",color:"white",autoAnnounce:true,functions:{integrar:"",desintegrar:"",remodelar:"",ritual:""}}
 });
 const state=DEFAULT();
 try{
@@ -34,6 +34,7 @@ const uid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36);
 const secrets={access:"",password:""};
 let connected=false,healthy=false,busy=false;
 let page=PAGES[location.hash.slice(1)]?location.hash.slice(1):"painel";
+if(page==="cliente"){state.config.connectionMode="client";save();}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast("Não foi possível salvar os registros locais.");}}
 function log(text,kind="RP"){state.logs.unshift({id:uid(),at:new Date().toISOString(),kind,text});state.logs=state.logs.slice(0,140);save();}
 function toast(text){const el=document.createElement("div");el.className="toast";el.textContent=text;$("#toasts").appendChild(el);setTimeout(()=>el.remove(),4600);}
@@ -48,11 +49,11 @@ $("#content").innerHTML=views[page]?.()||views.painel();
 $("#pageLabel").textContent=PAGES[page]||"NÚCLEO";
 document.querySelectorAll("[data-page]").forEach(el=>{const yes=el.dataset.page===page;el.classList.toggle("active",yes);el.setAttribute("aria-current",yes?"page":"false");});
 $("#sideConnection").textContent=connected?"MINECRAFT CONECTADO":"NARRATIVA LOCAL";
-$("#topStatus").innerHTML='<span class="light '+(connected?"connected":"")+'"></span> '+(connected?"RCON CONECTADO":"MODO LOCAL");
+$("#topStatus").innerHTML='<span class="light '+(connected?"connected":"")+'"></span> '+(connected?(state.config.connectionMode==="client"?"NEXUS CLIENT CONECTADO":"MINECRAFT CONECTADO"):"MODO LOCAL");
 const feed=$("#chatFeed");if(feed)feed.scrollTop=feed.scrollHeight;
 }
 function setMenu(open){$("#sidebar").classList.toggle("open",open);$("#overlay").hidden=!open;}
-function navigate(next){if(!PAGES[next])return;page=next;if(location.hash!=="#"+page)location.hash="#"+page;render();setMenu(false);window.scrollTo({top:0,behavior:"instant"});}
+function navigate(next){if(!PAGES[next])return;page=next;if(next==="cliente"){state.config.connectionMode="client";connected=false;save();}if(location.hash!=="#"+page)location.hash="#"+page;render();setMenu(false);window.scrollTo({top:0,behavior:"instant"});}
 function readConfig(){
 const form=$("#configForm");if(!form)return;
 const d=new FormData(form),c=state.config;
@@ -119,7 +120,7 @@ return out;
 finally{clearTimeout(timer);}
 }
 async function testConnection(){
-if(busy)return;readConfig();busy=true;toast("Verificando acesso ao servidor...");
+if(busy)return;try{readConfig();}catch(e){return toast(e.message);}busy=true;toast(state.config.connectionMode==="client"?"Verificando se o mod está pareado...":"Verificando acesso ao servidor...");
 try{const out=await api("test");connected=true;log("Conexão Minecraft confirmada: "+String(out.response||"").slice(0,150),"MINECRAFT");toast("Minecraft conectado com sucesso!");}
 catch(e){connected=false;log("Falha de conexão: "+e.message,"CONEXÃO");toast(e.message);}
 finally{busy=false;render();}
@@ -195,7 +196,7 @@ $("#nav").addEventListener("click",e=>{const el=e.target.closest("[data-page]");
 $("#menuToggle").addEventListener("click",()=>setMenu(true));
 $("#overlay").addEventListener("click",()=>setMenu(false));
 $("#openSettings").addEventListener("click",()=>navigate("config"));
-window.addEventListener("hashchange",()=>{const next=location.hash.slice(1);if(PAGES[next]&&next!==page){page=next;render();}});
+window.addEventListener("hashchange",()=>{const next=location.hash.slice(1);if(PAGES[next]&&next!==page){page=next;if(next==="cliente"){state.config.connectionMode="client";connected=false;save();}render();}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")setMenu(false);});
 $("#content").addEventListener("input",e=>{
 if(e.target.id==="chatMessage"&&$("#chatPreview"))$("#chatPreview").textContent=e.target.value.trim()||"Sua mensagem aparecerá aqui.";
@@ -205,6 +206,7 @@ if(e.target.id==="energySlider"&&$("#energyLabel"))$("#energyLabel").textContent
 $("#content").addEventListener("change",e=>{
 if(e.target.id==="integritySlider"){state.integrity=clamp(Number(e.target.value),0,100);rp.adjustIntegrity?.(state.integrity);log("Integridade ajustada para "+state.integrity+"%.","NÚCLEO");render();}
 if(e.target.id==="energySlider"){state.energy=clamp(Number(e.target.value),0,100);rp.checkAlerts?.();log("Energia ajustada para "+state.energy+"%.","NÚCLEO");render();}
+if(e.target.id==="connectionMode"){try{readConfig();connected=false;render();toast(state.config.connectionMode==="client"?"Modo Nexus Client selecionado. Nenhuma senha RCON é necessária.":"Modo de conexão alterado.");}catch(err){toast(err.message);}}
 });
 $("#content").addEventListener("submit",async e=>{
 e.preventDefault();const f=e.target;try{
