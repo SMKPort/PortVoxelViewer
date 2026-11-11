@@ -36,7 +36,7 @@ if(my!==session||!host.isConnected)return;
 V.three={T,GLTF:GLTF.GLTFLoader};scene=new T.Scene();scene.background=new T.Color("#0b1017");
 camera=new T.PerspectiveCamera(45,1,.01,100);camera.position.set(4,2,6.2);
 renderer=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.outputColorSpace=T.SRGBColorSpace;
-host.replaceChildren(renderer.domElement);renderer.domElement.style.cssText="width:100%;height:100%;display:block";
+host.replaceChildren(renderer.domElement);renderer.domElement.style.cssText="width:100%;height:100%;display:block";renderer.setSize(Math.max(10,host.clientWidth),Math.max(10,host.clientHeight),false);camera.aspect=Math.max(10,host.clientWidth)/Math.max(10,host.clientHeight);camera.updateProjectionMatrix();
 controls=new Orbit.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.target.set(0,.25,0);controls.minDistance=2;controls.maxDistance=14;
 scene.add(new T.AmbientLight("#cad5e4",1.2));
 const direct=new T.DirectionalLight("#ffd8a3",2.4);direct.position.set(4,5,6);scene.add(direct);
@@ -47,7 +47,7 @@ function loop(now){
 if(session!==my)return;frame=requestAnimationFrame(loop);if(moving&&elbow){elbow.rotation.z=(35+Math.sin(now*.002)*45)*Math.PI/180;const label=q("#nexusAngleText");if(label)label.textContent=Math.round(elbow.rotation.z*180/Math.PI)+"°";}
 if(mixer)mixer.update(Math.min((now-last)/1000,.05));last=now;
 const w=Math.round(host.clientWidth)||550,h=Math.round(host.clientHeight)||430;
-if(renderer.domElement.clientWidth!==w||renderer.domElement.clientHeight!==h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+if(renderer.domElement.width!==Math.round(w*renderer.getPixelRatio())||renderer.domElement.height!==Math.round(h*renderer.getPixelRatio())){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 controls.update();renderer.render(scene,camera);
 }loop(0);
 }catch(err){if(my===session)host.innerHTML='<div class="v2-load-msg">Visualizador indisponível: '+V.esc(err.message)+'. Verifique WebGL e o carregamento de Three.js.</div>';}
@@ -66,6 +66,6 @@ if(ext==="bbmodel"){const json=JSON.parse(await file.text());if(!Array.isArray(j
 model=new T.Group();let count=0;for(const e of json.elements.slice(0,3000)){if(!Array.isArray(e.from)||!Array.isArray(e.to))continue;const f=e.from,t=e.to;const dims=f.map((v,i)=>Math.abs(t[i]-v)/16);if(dims.some(v=>v<=0))continue;const c=new T.Mesh(new T.BoxGeometry(...dims),material(T,"#bf975f"));c.position.set((f[0]+t[0])/32,(f[1]+t[1])/32,(f[2]+t[2])/32);c.name=e.name||"Cubo";if(Array.isArray(e.rotation))c.rotation.set(...e.rotation.map(v=>v*Math.PI/180));model.add(c);count++;}if(!count)throw Error("Sem cubos válidos para reconstrução.");}
 else if(ext==="glb"||ext==="gltf"){const url=URL.createObjectURL(file);try{const data=await new Promise((resolve,reject)=>new V.three.GLTF().load(url,resolve,undefined,reject));model=data.scene;if(data.animations?.length){mixer=new T.AnimationMixer(model);data.animations.forEach(clip=>mixer.clipAction(clip).play());}}finally{URL.revokeObjectURL(url);}}
 else throw Error("Use .glb, .gltf ou .bbmodel.");
-const bounds=new T.Box3().setFromObject(model);const size=bounds.getSize(new T.Vector3()),center=bounds.getCenter(new T.Vector3());model.position.sub(center);model.scale.setScalar(3.5/Math.max(.1,size.x,size.y,size.z));if(root)scene.remove(root);root=model;scene.add(root);elbow=null;plates=[];S.blueprint.parts=[{name:file.name,objects:model.children.length}];V.save();V.toast("Modelo "+file.name+" carregado. Geometria: "+model.children.length+" objetos.");
+const bounds=new T.Box3().setFromObject(model);const size=bounds.getSize(new T.Vector3()),center=bounds.getCenter(new T.Vector3());const factor=3.5/Math.max(.1,size.x,size.y,size.z);model.position.copy(center).multiplyScalar(-factor);model.scale.setScalar(factor);if(root)scene.remove(root);root=model;scene.add(root);elbow=null;plates=[];S.blueprint.parts=[{name:file.name,objects:model.children.length}];V.save();V.toast("Modelo "+file.name+" carregado. Geometria: "+model.children.length+" objetos.");
 };
 })();
