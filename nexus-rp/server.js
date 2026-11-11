@@ -130,13 +130,15 @@ async function serve(req,res,route){
   if(!/^(index\.html|styles\.css|upgrade\.css|evolution\.css|views\.js|upgrade\.js|evolution\.js|client\.js|app\.js|icon\.svg|manifest\.webmanifest)$/.test(requested))return json(res,404,{error:"Arquivo não encontrado."});
   try{
     const file=await fs.readFile(path.join(ROOT,requested));
-    res.writeHead(200,{...security,"Content-Type":types[path.extname(requested)]||"application/octet-stream","Cache-Control":requested==="index.html"?"no-cache":"public, max-age=300"});
+    res.writeHead(200,{...security,"Content-Type":types[path.extname(requested)]||"application/octet-stream","Cache-Control":requested.endsWith(".js")||requested==="index.html"?"no-store":"public, max-age=300"});
     res.end(file);
   }catch(e){json(res,500,{error:"Falha ao carregar a interface."});}
 }
 const server=http.createServer(async(req,res)=>{
   let route,url;try{url=new URL(req.url||"/","http://localhost");route=url.pathname;}catch(e){return json(res,400,{error:"URL inválida."});}
-  if(req.method==="GET"&&route==="/api/health")return json(res,200,{status:"online",name:"Nexus Aterna RP",version:"1.9",bridgeReady:ACCESS.length>=20,client:nexusClient.status(),agent:bridge.status(),adapter:"Minecraft Java RCON + HTTPS agent",configuredOnBrowser:true});
+  // Log only route and status, never tokens, content, query parameters or player messages.
+  if(route.startsWith("/api/client/"))res.once("finish",()=>console.log("NexusAPI "+req.method+" "+route+" HTTP "+res.statusCode));
+  if(req.method==="GET"&&route==="/api/health")return json(res,200,{status:"online",name:"Nexus Aterna RP",version:"2.0",bridgeReady:ACCESS.length>=20,client:nexusClient.status(),agent:bridge.status(),adapter:"Minecraft Java RCON + HTTPS agent",configuredOnBrowser:true});
   // Every /api/client/ request belongs exclusively to the client relay.
   // Never fall through after a response: writing headers twice can crash the service.
   if(route.startsWith("/api/client/")){await nexusClient.handle(req,res,route,url);return;}
