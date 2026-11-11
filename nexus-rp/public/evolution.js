@@ -163,7 +163,7 @@ window.NexusRPEvolution=function(rp,views){
   views.config=()=>{
     let html=originalConfig();
     const selector='<div class="field"><label for="connectionMode">MODO DE CONEXÃO DO MINECRAFT</label>'+
-      '<select id="connectionMode" name="connectionMode"><option value="public" '+(S.config.connectionMode!=="agent"?"selected":"")+'>RCON DIRETO (PORTA PÚBLICA)</option>'+
+      '<select id="connectionMode" name="connectionMode"><option value="public" '+(S.config.connectionMode==="public"?"selected":"")+'>RCON DIRETO (PORTA PÚBLICA)</option>'+
       '<option value="agent" '+(S.config.connectionMode==="agent"?"selected":"")+'>AGENTE HTTPS LOCAL (RECOMENDADO)</option></select>'+
       '<small>No modo Agente HTTPS, host e senha RCON permanecem no computador do servidor. No painel, apenas o código da ponte é necessário.</small></div>';
     html=html.replace('<form id="configForm">','<form id="configForm">'+selector);
