@@ -98,3 +98,29 @@ Existe um **datapack opcional 1.1** para Minecraft Java 1.21.1, com as 20 funç�
 ### Código HTTPS e segurança
 
 O código de acesso anteriormente compartilhado foi rotacionado. Ele **não funciona mais**. Abra o serviço `nexus-aterna-rp` na Render, vá em Environment, configure um valor forte de sua preferência em `NEXUS_RP_ACCESS_KEY` e use exatamente esse mesmo código em Configurações do Nexus RP. Não compartilhe o código nem a senha RCON no chat. A senha RCON não deve ser exposta publicamente. Use firewall e túnel privado sempre que possível.
+
+---
+
+## Atualização 1.2: configuração de armaduras e eventos
+
+A versão RP 1.2 mantém todas as telas anteriores e adiciona:
+
+- **Perfis personalizados:** Celestial, Combate, Ritual e Repouso, além de perfis novos criados pelo operador. Cada um tem custo de remodelagem, bônus narrativo de Holy Spellpower, estilo e cor.
+- **Sequenciador:** etapas de desintegração, remodelagem, integração, reparo, recuperação de energia, emote ou espera, com tempos editáveis. Só começa quando o operador clicar em Executar, com cancelamento manual.
+- **Emergência:** limiar configurável de integridade, bloqueio temporário de integrações/remodelagens, recuperação e liberação manual.
+- **Emotes:** mapeamento opcional para funções namespaced de um datapack/mod. O painel solicita a execução no servidor, mas não garante animações nativas do Armourer's Workshop sem adaptador.
+- **Eventos Minecraft:** dano, cura, morte, renascimento e efeitos aproximados pelo agente RCON local. A aplicação reage a eventos do personagem e atualiza os segmentos/indicadores narrativos. O usuário precisa habilitar a função, que fica desligada por padrão.
+
+### Agente HTTPS local (recomendado)
+
+O novo módulo `nexus-rp/agent/bridge_agent.py` resolve o problema de expor uma porta RCON pública. Ele consulta o RCON em `localhost` e faz apenas requisições **de saída** ao serviço Render. O site disponibiliza a opção `AGENTE HTTPS LOCAL` em Configurações. As mensagens e funções são enfileiradas até o agente confirmar a execução. Para instruções completas, consulte [agent/README.md](agent/README.md).
+
+Na Render, a variável privada `NEXUS_RP_AGENT_KEY` foi configurada para autenticar o agente e é diferente de `NEXUS_RP_ACCESS_KEY`, usada no painel. O segredo do agente não deve ser colocado no JavaScript público nem no GitHub.
+
+### Eventos, limites e segurança
+
+O agente RCON consulta periodicamente a vida do jogador para inferir dano e cura. Essas estimativas não são equivalentes a eventos NeoForge de baixo nível e podem perder oscilações rápidas, especialmente entre duas leituras. Detectores de efeitos dependem do NBT exposto pelo servidor. Para cobertura exata seria necessário um mod NeoForge específico.
+
+O bônus de Holy Spellpower, a energia arcana e a integridade do Nexus são **atributos narrativos**, não medições do Minecraft. O usuário pode personalizá-los conforme as regras do RPG. Registros ficam no navegador; o histórico de eventos da ponte é temporário e pode ser perdido quando a Render reiniciar.
+
+Para animações reais com Blockbench ou Armourer's Workshop, instale/implemente o datapack ou mod que responda aos comandos configurados. A interface não altera automaticamente a malha 3D no cliente Minecraft.
