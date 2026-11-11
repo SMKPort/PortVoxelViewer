@@ -81,3 +81,20 @@ Os registros narrativos são locais ao navegador e podem ser exportados via JSON
 ## Verificações
 
 Os scripts JavaScript passam por validação sintática. O deployment é confirmado pela Render após o build. A conexão efetiva RCON, os datapacks e as funções do servidor exigem testes no mundo do usuário depois de fornecer as credenciais e instalar os componentes correspondentes.
+
+## Novidades da versão RP 1.1
+
+A nova atualização mantém todas as funcionalidades e cinco abas originais. Acrescenta **RP ao Vivo** e **Protocolo TS** no menu, além de novos recursos integrados às abas existentes. Não há Narrador Arcano automático.
+
+- **Armadura por segmentos:** ombreira, braço superior, articulação do cotovelo, antebraço e manopla com integridade individual, dano, reparo e acoplamento. A integridade geral é recalculada pela média. As placas desprendidas aparecem separadas na representação visual.
+- **Energia dinâmica e alertas:** ações consomem ou restauram energia narrativa, e o sistema registra avisos em níveis críticos de energia e integridade. O modo Ao Vivo inclui recuperação de energia.
+- **Ritual em quatro fases:** preparação, canalização, estabilização e conclusão. O custo é aplicado na conclusão. Ações podem anunciar cada etapa via chat se a conexão RCON e os anúncios automáticos estiverem ativos. Cancelar antes da conclusão não consome energia.
+- **RP ao Vivo:** tela compacta para celular com envio direto ao chat, botões de armadura, energia, status e acesso rápido aos rituais.
+- **Eventos TS:** uma campanha de cinco fragmentos narrativos controlados pelo operador. Desativada automaticamente por padrão. Quando o aviso por ações é habilitado, a cada quatro ações relevantes surge um fragmento *pendente*, que só é revelado ao entrar na tela e autorizar.
+- **Funções de segmento opcionais:** em Configurações > Integração de segmentos, habilite e defina um prefixo como `nexus:segmentos`. O Nexus tenta executar `function nexus:segmentos/<segmento>/<acao>`, para `ombreira`, `braco`, `cotovelo`, `antebraco` ou `manopla`, com `integrar`, `desintegrar`, `danificar` e `reparar`. Isso só tem efeito no jogo se o datapack ou mod implementar as funções.
+
+Existe um **datapack opcional 1.1** para Minecraft Java 1.21.1, com as 20 funções segmentadas e as quatro funções globais originais. Os efeitos vanilla são partículas, sons e mensagens. A movimentação real de modelos Blockbench / Armourer's Workshop exige mod específico.
+
+### Código HTTPS e segurança
+
+O código de acesso anteriormente compartilhado foi rotacionado. Ele **não funciona mais**. Abra o serviço `nexus-aterna-rp` na Render, vá em Environment, configure um valor forte de sua preferência em `NEXUS_RP_ACCESS_KEY` e use exatamente esse mesmo código em Configurações do Nexus RP. Não compartilhe o código nem a senha RCON no chat. A senha RCON não deve ser exposta publicamente. Use firewall e túnel privado sempre que possível.
