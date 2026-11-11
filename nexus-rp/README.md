@@ -159,3 +159,10 @@ Por padrão, o canal **Local (/l)** acrescenta `&6&l` imediatamente antes da men
 ## Comunicador automático em modo técnico (RP 1.6)
 
 As ações do Nexus enviam agora **somente mensagens curtas de sistema**, sem descrições em terceira pessoa: `Desintegrando armadura`, `Integrando armadura`, `Remodelando armadura: Celestial`, `Reparando armadura` e `Executando ritual: Bênção Divina`. Os segmentos individuais e as fases dos rituais também usam estados objetivos como `Reparando segmento: Ombreira` e `Canalizando ritual: ...`. Mensagens escritas manualmente pelo operador não são alteradas. O chat continua usando `/l &6&l` como canal/estilo padrão no **Nexus Client 1.2.0**. Não é preciso gerar um novo JAR: esta alteração é exclusivamente do painel web.
+
+
+## Mensagens com identificação do Nexus (RP 1.7)
+
+Todas as mensagens que saem do painel pelo modo Nexus Client são identificadas com **`[Nexus Aterna]`**, mesmo se o navegador tiver salvo a configuração antiga com prefixo desligado. Exemplo de comando transmitido: `/l &6&l[Nexus Aterna] Desintegrando armadura`. A identificação é aplicada uma única vez, incluindo mensagens digitadas manualmente. O servidor Minecraft ainda identifica tecnicamente a conta do jogador que envia a mensagem, pois o Nexus Client usa a conexão do próprio jogador.
+
+A opção de ocultar a identificação foi desativada apenas no modo Nexus Client para evitar mensagens confundidas com falas do Port. O campo do prefixo aparece somente para consulta. Os avisos de armadura e rituais permanecem objetivos, no estilo de sistema. **Nenhum JAR novo é necessário:** a mudança foi implementada exclusivamente no painel e na ponte HTTPS, compatíveis com Nexus Client 1.2.0.
