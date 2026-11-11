@@ -163,9 +163,10 @@ window.NexusRPEvolution=function(rp,views){
   views.config=()=>{
     let html=originalConfig();
     const selector='<div class="field"><label for="connectionMode">MODO DE CONEXÃO DO MINECRAFT</label>'+
-      '<select id="connectionMode" name="connectionMode"><option value="public" '+(S.config.connectionMode==="public"?"selected":"")+'>RCON DIRETO (PORTA PÚBLICA)</option>'+
-      '<option value="agent" '+(S.config.connectionMode==="agent"?"selected":"")+'>AGENTE HTTPS LOCAL (RECOMENDADO)</option></select>'+
-      '<small>No modo Agente HTTPS, host e senha RCON permanecem no computador do servidor. No painel, apenas o código da ponte é necessário.</small></div>';
+      '<select id="connectionMode" name="connectionMode"><option value="client" '+(S.config.connectionMode==="client"?"selected":"")+'>NEXUS CLIENT (SEM ACESSO AO SERVIDOR)</option>'+
+      '<option value="public" '+(S.config.connectionMode==="public"?"selected":"")+'>RCON DIRETO (REQUER ACESSO ADMINISTRATIVO)</option>'+
+      '<option value="agent" '+(S.config.connectionMode==="agent"?"selected":"")+'>AGENTE HTTPS (REQUER ACESSO AO SERVIDOR)</option></select>'+
+      '<small>Modo recomendado: Nexus Client. Você instala o mod apenas no seu Minecraft. Não precisa da senha RCON nem de acesso aos arquivos do servidor.</small></div>';
     html=html.replace('<form id="configForm">','<form id="configForm">'+selector);
     return html+'<h2 class="section-title">Integração avançada</h2>'+
       block("AGENTE E EVENTOS",'<p class="hint">A ponte segura recebe comandos e eventos por HTTPS. Instale o agente Python na máquina do servidor Minecraft, configure NEXUS_RP_AGENT_KEY e sua senha RCON localmente.</p>'+
