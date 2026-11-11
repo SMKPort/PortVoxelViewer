@@ -213,7 +213,7 @@ window.NexusRPEvolution=function(rp,views){
   }
   async function refreshEvents(force=false){
     if(pollBusy||!G.enabled&&!force)return;
-    if(S.config.connectionMode!=="agent"){if(force)toast("Selecione Agente HTTPS nas Configurações.");return;}
+    if(!["agent","client"].includes(S.config.connectionMode)){if(force)toast("Selecione Agente HTTPS ou Nexus Client nas Configurações.");return;}
     pollBusy=true;
     try{
       const result=await rp.requestEvents(G.lastId,S.config.player);
