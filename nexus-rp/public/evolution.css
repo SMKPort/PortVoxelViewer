@@ -1,0 +1,35 @@
+/* NEXUS ATERNA RP 1.2 · engenharia e telemetria */
+.rp-evo-forms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 17px}
+.rp-evo-form{background:linear-gradient(135deg,#221820,#13121a);border:1px solid #60464b;border-left:3px solid var(--form-accent,#ddb776);padding:16px;border-radius:11px;min-width:0;display:grid;gap:12px}
+.rp-evo-form-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.rp-evo-form-head strong{font-size:16px;color:var(--form-accent,#e0bd7c);font-family:Georgia,serif}
+.rp-evo-form-head span{font-size:10px;color:#af9ca8}
+.rp-evo-form p{font-size:12px;color:#c2aeb1;line-height:1.6;margin:0}
+.rp-evo-values{display:flex;gap:7px;flex-wrap:wrap}
+.rp-evo-values span{background:#211721;border:1px solid #49323f;padding:8px;border-radius:8px;font-size:10px;color:#a99499}
+.rp-evo-values b{color:#f0d7a6}
+.rp-new-sequence{display:flex;align-items:end;gap:9px;flex-wrap:wrap}
+.rp-new-sequence .field{flex:1;min-width:180px;margin:0}
+.rp-evo-status{border:1px solid #684a3e;background:#2b2025;border-radius:9px;padding:13px;color:#f0d4ab;font-size:11px;margin:16px 0;letter-spacing:.6px}
+.rp-evo-step{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #49343f}
+.rp-evo-step>div:first-child{display:grid;gap:6px;min-width:0}
+.rp-evo-step strong{color:#ebd2b3;font-size:11px}
+.rp-evo-step small{color:#9a8594;font-size:10px}
+.rp-evo-step .btn{min-height:30px;padding:6px 10px;font-size:11px}
+.rp-evo-step-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;border-top:1px solid #44313b;margin-top:16px;padding-top:17px}
+.rp-evo-step-form .field{min-width:0;margin:0}
+.rp-evo-step-form .field:first-child{grid-column:1/-1}
+.rp-evo-step-form button{grid-column:1/-1}
+.rp-evo-emergency{border:1px solid #6b5448;background:#211e24;border-radius:12px;padding:24px;display:grid;gap:10px;margin-bottom:15px;text-align:center}
+.rp-evo-emergency strong{font:normal 23px Georgia,serif;color:#e6c28d}
+.rp-evo-emergency span{font-size:11px;color:#b9a5aa}
+.rp-evo-emergency.active{background:radial-gradient(circle,#51202c,#1b111a);border-color:#c74b5b;box-shadow:inset 0 0 40px #ba3d4b23}
+.rp-evo-emergency.active strong{color:#f07d88;letter-spacing:1.8px}
+.rp-evo-emergency.online{border-color:#598c69;background:#17251d}
+.rp-evo-emergency.online strong{color:#9bd9b1}
+.rp-evo-event{padding:12px;background:#18151f;border-left:2px solid #ce9e6a;border-radius:5px;display:grid;gap:7px;margin-bottom:8px}
+.rp-evo-event span{color:#e7c78b;font-size:12px;font-weight:700}
+.rp-evo-event small{color:#aba0a4;font-size:10px;line-height:1.5}
+.rp-detached{opacity:.15!important;filter:blur(3px)!important;transform:translateX(80px) rotate(30deg)!important}
+@media(max-width:880px){.rp-evo-forms{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.rp-evo-forms{grid-template-columns:1fr}.rp-evo-step{flex-direction:column;align-items:flex-start}.rp-evo-step-form{grid-template-columns:1fr}.rp-evo-step-form .field:first-child,.rp-evo-step-form button{grid-column:auto}.rp-evo-values span{flex:1}}
