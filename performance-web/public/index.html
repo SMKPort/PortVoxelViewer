@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d0d12"><meta name="description" content="Port Performance Monitor, painel de FPS, ping e uso de memória do Minecraft.">
+<title>PORT // PERFORMANCE MONITOR</title>
+<link rel="stylesheet" href="/style.css">
+<script src="/app.js" defer></script>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="brand"><span class="sigil">P<span>✦</span></span><div><strong>PORT<span>PERFORMANCE</span></strong><small>NEOFORGE · 1.21.1 · CLIENT-SIDE</small></div></div>
+  <div id="badge" class="badge"><span class="dot"></span><span id="connection">AGUARDANDO CONEXÃO</span></div>
+</header>
+<main>
+<div class="hero"><div class="eyebrow"><span class="line"></span> TELEMETRIA EM TEMPO REAL <span class="line"></span></div>
+<h1>Performance, <em>sob controle.</em></h1>
+<p>Monitore seu Minecraft de qualquer dispositivo. O mod funciona somente no seu cliente, sem precisar acessar o servidor.</p>
+</div>
+<section class="connect panel" aria-label="Conexão com o Minecraft">
+  <div class="heading"><div><small>LINK SEGURO</small><h2>Conectar meu Minecraft</h2></div><span class="number">01 / CONEXÃO</span></div>
+  <p>No jogo, digite <code>/portperf key</code> e copie a chave que aparecerá apenas para você. Cole aqui para visualizar sua telemetria.</p>
+  <form id="connectForm" autocomplete="off"><label for="token">CHAVE DE PAREAMENTO</label>
+    <div class="tokenrow"><input type="password" id="token" placeholder="32 caracteres gerados no Minecraft" maxlength="32" minlength="32" spellcheck="false" autocapitalize="off" required><button type="button" id="reveal" class="secondary">MOSTRAR</button></div>
+    <div class="actions"><label class="remember"><input type="checkbox" id="remember"><span>Lembrar a chave neste navegador</span></label><button type="submit" class="primary">CONECTAR <span>↗</span></button></div>
+  </form>
+  <div class="inline-status"><span id="notice">Aguardando chave de pareamento.</span><button id="disconnect" type="button" class="linklike" hidden>DESVINCULAR</button></div>
+</section>
+<section class="dashboard" aria-label="Métricas do Minecraft">
+  <div class="section-title"><div><small>VISÃO GERAL</small><h2>Estado do cliente</h2></div><span id="lastUpdate" class="muted">Ainda sem dados</span></div>
+  <div class="metricgrid">
+    <article class="metric"><div class="metric-top"><span>01 / FRAMES</span><span class="metric-icon">◈</span></div><div class="value"><strong id="fps">--</strong><small>FPS</small></div><div class="meter"><span id="fpsBar"></span></div><p id="fpsNote">Aguardando o Minecraft</p></article>
+    <article class="metric"><div class="metric-top"><span>02 / REDE</span><span class="metric-icon">⌁</span></div><div class="value"><strong id="ping">--</strong><small>MS</small></div><div class="meter"><span id="pingBar"></span></div><p id="pingNote">Latência com o servidor</p></article>
+    <article class="metric"><div class="metric-top"><span>03 / MEMÓRIA JAVA</span><span class="metric-icon">▥</span></div><div class="value"><strong id="memory">--</strong><small>MB</small></div><div class="meter"><span id="memoryBar"></span></div><p id="memoryNote">Heap utilizada pela JVM</p></article>
+    <article class="metric"><div class="metric-top"><span>04 / FRAME ESTIMADO</span><span class="metric-icon">⌇</span></div><div class="value"><strong id="frametime">--</strong><small>MS</small></div><div class="meter"><span id="frameBar"></span></div><p>1000 ÷ FPS (não é medida de frametime)</p></article>
+  </div>
+  <div class="charts">
+    <article class="panel graphpanel"><div class="heading"><div><small>HISTÓRICO</small><h2>Variação de FPS</h2></div><span class="plot-range">ÚLTIMAS 60 AMOSTRAS</span></div><div class="canvaswrap"><canvas id="fpsChart" aria-label="Gráfico de FPS"></canvas></div><div class="chartfoot"><span id="avgFps">Média: --</span><span id="minFps">Mínimo: --</span><span id="maxFps">Máximo: --</span></div></article>
+    <article class="panel graphpanel"><div class="heading"><div><small>HISTÓRICO</small><h2>Latência do servidor</h2></div><span class="plot-range">ÚLTIMAS 60 AMOSTRAS</span></div><div class="canvaswrap"><canvas id="pingChart" aria-label="Gráfico de ping"></canvas></div><div class="chartfoot"><span id="avgPing">Ping médio: --</span><span id="player">Jogador: --</span></div></article>
+  </div>
+</section>
+<section class="info panel"><div class="heading"><div><small>COMANDOS</small><h2>Controle pelo Minecraft</h2></div><span class="number">02 / MOD</span></div>
+<div class="commands"><div><code>/portperf key</code><span>Exibe a chave privada para ligar mod e site</span></div><div><code>/portperf stream on</code><span>Autoriza a transmissão HTTPS dos indicadores</span></div><div><code>/portperf stream off</code><span>Para a transmissão imediatamente</span></div><div><code>/portperf hud on</code><span>Ativa o HUD de desempenho no jogo</span></div><div><code>/portperf hud off</code><span>Desativa o HUD</span></div><div><code>/portperf status</code><span>Mostra o estado do mod e o endereço HTTPS</span></div><div><code>/portperf resetkey</code><span>Revoga a chave e cria outra</span></div></div>
+<p class="footnote">Os dados são armazenados temporariamente na memória do servidor do site. Uma reinicialização da hospedagem apaga o histórico. Não há coleta de TPS real, CPU ou GPU nesta versão. O ping exibido é o reportado pelo cliente Minecraft e pode ficar indisponível em singleplayer.</p>
+</section>
+</main>
+<footer><span>PORT PERFORMANCE MONITOR // V1.0</span><span>CLIENT-SIDE MONITORING · PRIVATE BY TOKEN</span></footer>
+</div>
+</body></html>
