@@ -10,8 +10,16 @@ window.NexusRPClientUpgrade=function(rp,views){
    const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),13000);
    try{
      const response=await fetch(apiRoot+route,{...options,headers:{"X-Nexus-Key":key,...(options.body?{"Content-Type":"application/json"}:{}),...(options.headers||{})},signal:ctrl.signal});
-     const data=await response.json();
-     if(!response.ok||data.ok===false)throw Error(data.error||"Falha do Nexus Client.");
+     const type=response.headers.get("content-type")||"";
+     if(!type.toLowerCase().includes("application/json")){
+       const hint=response.status===502||response.status===503||response.status===504
+         ?"O servidor da Render está indisponível ou reiniciando."
+         :"A API respondeu com uma página HTML em vez de JSON.";
+       throw Error(hint+" Verifique o endereço do Nexus RP e atualize a página. HTTP "+response.status+".");
+     }
+     let data;
+     try{data=await response.json();}catch(error){throw Error("Resposta JSON incompleta da Render. Atualize a página e tente novamente.");}
+     if(!response.ok||data.ok===false)throw Error(data.error||"Falha do Nexus Client (HTTP "+response.status+").");
      return data;
    }finally{clearTimeout(timer);}
  };
