@@ -110,6 +110,9 @@ window.NexusRPEvolution=function(rp,views){
       '<p class="hint">As etapas só executam quando você toca em Executar. Não alteram o Minecraft sem a ponte configurada e os comandos correspondentes.</p>')+'</div>';
   }
   views.sequencias=sequenceView;
+  const originalLive=views.ao_vivo;
+  views.ao_vivo=()=>originalLive()+block("CONTROLES AVANÇADOS RP 1.2",
+    '<div class="buttons">'+button("open-sequences","SEQUENCIADOR","gold")+button("open-emergency","EMERGÊNCIA","alt")+button("open-events","EVENTOS DO JOGO","ghost")+"</div>");
   function emergencyView(){
     return intro("PROTEÇÃO DO NÚCLEO / CONTENÇÃO","Protocolo de Emergência","Bloqueia transformações quando a integridade está crítica e permite uma intervenção manual durante o RP.")+
     '<div class="grid two">'+block("ESTADO DE CONTENÇÃO",
@@ -215,6 +218,7 @@ window.NexusRPEvolution=function(rp,views){
     try{
       const result=await rp.requestEvents(G.lastId,S.config.player);
       lastStatus=result.bridge||{};
+      if(Number(result.lastId)<G.lastId){G.lastId=0;G.bootstrapped=false;}
       G.error="";G.lastSync=new Date().toISOString();
       if(!G.bootstrapped){
         G.bootstrapped=true;G.lastId=result.lastId||0;
