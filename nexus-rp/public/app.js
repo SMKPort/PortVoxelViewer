@@ -86,7 +86,17 @@ if(!["agent","client"].includes(state.config.connectionMode)&&!state.config.host
 if(state.config.connectionMode==="client"){
  const run=rp.clientQueue;
  if(!run)throw Error("Nexus Client não carregado.");
- if(route==="test"){const res=await fetch("/api/client/status",{headers:{"X-Nexus-Key":secrets.access}});const result=await res.json();if(!res.ok||!result.online)throw Error("Mod Nexus Client offline. Pareie no Minecraft.");return {ok:true,response:"Nexus Client conectado: "+result.player};}
+ if(route==="test"){
+   const res=await fetch("/api/client/status",{headers:{"X-Nexus-Key":secrets.access,"Accept":"application/json"},cache:"no-store"});
+   const contentType=String(res.headers.get("content-type")||"").toLowerCase();
+   if(!contentType.includes("application/json"))
+     throw Error("A API do Nexus devolveu uma página em vez de JSON (HTTP "+res.status+"). Verifique em Nexus Client > DIAGNÓSTICO DA API.");
+   let result;
+   try{result=await res.json();}catch(err){throw Error("Resposta JSON inválida da Render (HTTP "+res.status+"). Use Diagnóstico da API.");}
+   if(!res.ok||result.ok===false)throw Error(result.error||"Erro HTTP "+res.status+" na API do Nexus.");
+   if(!result.online)throw Error("A API respondeu corretamente, mas o mod está offline. Faça o pareamento no Minecraft.");
+   return {ok:true,response:"Nexus Client conectado: "+result.player};
+ }
  if(route==="message"){
    const base=String(payload.message||"").trim();
    const channel=["local","global","custom"].includes(state.config.chatChannel)?state.config.chatChannel:"local";
