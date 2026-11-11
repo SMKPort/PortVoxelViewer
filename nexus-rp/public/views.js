@@ -26,7 +26,7 @@ function settingsFunctions(){
 const f=S.config.functions;
 return '<form id="functionForm">'+[
 ["integrar","INTEGRAR ARMADURA"],["desintegrar","DESINTEGRAR ARMADURA"],["remodelar","REMODELAR ARMADURA"],["ritual","EXECUTAR RITUAL"]
-].map(([key,label])=>field(key,label,f[key]||"","text","placeholder='nexus:armadura/"+key+"'")).join("")+'<button class="btn gold" type="submit">SALVAR FUNÇÕES</button></form>';
+].map(([key,label])=>field(key,label,f[key]||"","text","placeholder='nexus:armadura/"+key+"'")).join("")+'<div class="buttons"><button class="btn gold" type="submit">SALVAR FUNÇÕES</button>'+b("datapack-preset","USAR FUNÇÕES DO DATAPACK","ghost")+'</div></form>';
 }
 return {
 painel(){return h("INTERFACE DE ROLEPLAY / NÚCLEO","Nexus Aterna","O sistema narrativo do braço direito de Port. Energia, integridade e comandos que podem ser transmitidos ao Minecraft.")+
