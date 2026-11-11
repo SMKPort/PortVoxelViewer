@@ -8,7 +8,7 @@ const PRESETS=[
 {id:"renovar",name:"Renovação do Núcleo",school:"Híbrida",cost:32,description:"O núcleo é recalibrado e a energia se redistribui entre as placas."},
 {id:"custom",name:"Personalizado",school:"Personalizado",cost:20,description:"O Port executa uma sequência de símbolos e componentes escolhidos."}
 ];
-const PAGES={painel:"NÚCLEO",chat:"COMUNICADOR",armadura:"ARMADURA ARCANA",rituais:"RITUAIS",config:"CONFIGURAÇÕES"};
+const PAGES={painel:"NÚCLEO",chat:"COMUNICADOR",armadura:"ARMADURA ARCANA",rituais:"RITUAIS",ao_vivo:"RP AO VIVO",ts:"PROTOCOLO TS",config:"CONFIGURAÇÕES"};
 const DEFAULT=()=>({
 integrity:100,energy:85,armor:"integrada",form:"Celestial",selectedRitual:"bencao",
 logs:[{id:"origin",at:new Date().toISOString(),kind:"SISTEMA",text:"Nexus Aterna RP inicializado. Aguardando instruções do Port."}],
@@ -36,8 +36,9 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){to
 function log(text,kind="RP"){state.logs.unshift({id:uid(),at:new Date().toISOString(),kind,text});state.logs=state.logs.slice(0,140);save();}
 function toast(text){const el=document.createElement("div");el.className="toast";el.textContent=text;$("#toasts").appendChild(el);setTimeout(()=>el.remove(),4600);}
 function addChat(text,status){state.chat.push({id:uid(),at:new Date().toISOString(),text,status});state.chat=state.chat.slice(-100);save();}
-const rp={state,escape:esc,date,presets:PRESETS,isConnected:()=>connected,isHealthy:()=>healthy};
-const views=window.NexusRPViews(rp);
+const rp={state,escape:esc,date,presets:PRESETS,isConnected:()=>connected,isHealthy:()=>healthy,save,log,toast,navigate,rerender:render,sendToChat:messageToMinecraft,armorAction,performRitual};
+let views=window.NexusRPViews(rp);
+if(window.NexusRPUpgrade)views=window.NexusRPUpgrade(rp,views);
 function render(){
 $("#content").innerHTML=views[page]?.()||views.painel();
 $("#pageLabel").textContent=PAGES[page]||"NÚCLEO";
@@ -121,7 +122,7 @@ cost=14;state.integrity=clamp(state.integrity+18,0,100);
 text="O núcleo dourado libera um pulso restaurador que recompõe as fissuras da armadura.";
 }else return;
 if(state.energy<cost){toast("Energia narrativa insuficiente.");return;}
-state.energy-=cost;log(text,"ARMADURA");save();render();toast("Estado narrativo atualizado.");
+state.energy-=cost;rp.afterArmor?.(type);log(text,"ARMADURA");save();render();toast("Estado narrativo atualizado.");
 await perform(type==="reparar"?"":type,text);
 }
 async function performRitual(form){
@@ -153,8 +154,8 @@ if(e.target.id==="integritySlider"&&$("#integrityLabel"))$("#integrityLabel").te
 if(e.target.id==="energySlider"&&$("#energyLabel"))$("#energyLabel").textContent=e.target.value+"%";
 });
 $("#content").addEventListener("change",e=>{
-if(e.target.id==="integritySlider"){state.integrity=clamp(Number(e.target.value),0,100);log("Integridade ajustada para "+state.integrity+"%.","NÚCLEO");render();}
-if(e.target.id==="energySlider"){state.energy=clamp(Number(e.target.value),0,100);log("Energia ajustada para "+state.energy+"%.","NÚCLEO");render();}
+if(e.target.id==="integritySlider"){state.integrity=clamp(Number(e.target.value),0,100);rp.adjustIntegrity?.(state.integrity);log("Integridade ajustada para "+state.integrity+"%.","NÚCLEO");render();}
+if(e.target.id==="energySlider"){state.energy=clamp(Number(e.target.value),0,100);rp.checkAlerts?.();log("Energia ajustada para "+state.energy+"%.","NÚCLEO");render();}
 });
 $("#content").addEventListener("submit",async e=>{
 e.preventDefault();const f=e.target;try{
