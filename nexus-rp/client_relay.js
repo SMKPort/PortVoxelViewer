@@ -80,14 +80,14 @@ function createClientRelay({send,verifyUser,limit}){
         const format=channel==="local"?(data.format===undefined?"&6&l":String(data.format||"").trim().toLowerCase()):"";
         if(!/^(?:&[0-9a-fk-or]){0,8}$/.test(format))return err(res,422,"Código de formatação inválido. Use códigos como &6&l.");
         // Raw formatting is passed only to the chat command; no arbitrary commands.
-        return void send(res,200,enqueue("chat",{message,channel,command:root,format}));
+        send(res,200,enqueue("chat",{message,channel,command:root,format}));return true;
       }catch(e){return err(res,422,String(e.message));}
     }
     if(route==="/api/client/action"&&req.method==="POST"){
       try{
         const data=await body(req),action=String(data.action||"");
         if(!["integrar","desintegrar","remodelar","reparar","ritual","emote","emergencia"].includes(action))return err(res,422,"Ação não autorizada.");
-        return void send(res,200,enqueue("action",{action,form:String(data.form||"").slice(0,28)}));
+        send(res,200,enqueue("action",{action,form:String(data.form||"").slice(0,28)}));return true;
       }catch(e){return err(res,422,String(e.message));}
     }
     if(!guardClient(req,res))return true;
