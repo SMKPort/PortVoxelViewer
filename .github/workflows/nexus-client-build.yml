@@ -1,0 +1,31 @@
+name: Nexus Aterna Client NeoForge 1.21.1
+on:
+  push:
+    branches: [nexus-aterna-rp]
+    paths:
+      - 'nexus-client/**'
+      - '.github/workflows/nexus-client-build.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    name: Build client-only mod (Java 21)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Compile mod
+        run: gradle -p nexus-client build --no-daemon --stacktrace
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nexus-Aterna-Client-1.21.1-NeoForge
+          path: nexus-client/build/libs/*.jar
+          if-no-files-found: error
