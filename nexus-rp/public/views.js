@@ -12,12 +12,22 @@ const core='<div class="nexus-stage"><div class="stage-grid"></div><svg viewBox=
 const armorView=()=>'<div class="armor-stage"><div class="armor-visual '+(S.armor==="desintegrada"?"desintegrada ":"")+E(S.form.toLowerCase())+'"><div class="armor-core"></div><div class="armor-piece shoulder"></div><div class="armor-piece upper"></div><div class="armor-piece joint"></div><div class="armor-piece lower"></div><div class="armor-piece hand"></div></div><div class="armor-status">'+E(S.armor==="integrada"?"PLACAS INTEGRADAS":"PLACAS DESINTEGRADAS")+' · '+E(S.form.toUpperCase())+'</div></div>';
 const field=(id,title,value="",type="text",attr="")=>'<div class="field"><label for="'+id+'">'+E(title)+'</label><input id="'+id+'" name="'+id+'" type="'+type+'" value="'+E(value)+'" '+attr+'></div>';
 const form=function(){
-const c=S.config,f=c.functions;
-return '<form id="configForm"><div class="form-grid">'+field("host","HOST PÚBLICO MINECRAFT",c.host,"text","placeholder='mc.exemplo.com'")+field("port","PORTA RCON",c.port,"number","min='1024' max='65535' required")+field("player","SEU NOME NO MINECRAFT",c.player,"text","maxlength='16'")+field("prefix","PREFIXO NO CHAT",c.prefix,"text","maxlength='38'")+'</div>'+
-field("password","SENHA RCON (NÃO É SALVA)","","password","placeholder='Informe a senha RCON' autocomplete='off'")+
-field("access","CÓDIGO DE ACESSO HTTPS (NÃO É SALVO)","","password","placeholder='Código da ponte Render' autocomplete='off'")+
+const c=S.config;
+if(c.connectionMode==="client"){
+ return '<form id="configForm">'+
+ '<div class="notice"><strong>MODO NEXUS CLIENT:</strong> não precisa de senha RCON, host, porta nem acesso aos arquivos do servidor Minecraft.</div>'+
+ '<div class="form-grid">'+field("player","SEU NOME NO MINECRAFT",c.player,"text","maxlength=\'16\'")+
+ field("prefix","EMISSOR DAS MENSAGENS","[Nexus Aterna]","text","readonly aria-readonly=\'true\' maxlength=\'38\'")+'</div>'+
+ field("access","CÓDIGO DE ACESSO HTTPS DO PAINEL","","password","placeholder=\'NEXUS_RP_ACCESS_KEY da Render\' autocomplete=\'off\'")+
+ '<div class="notice">Esse código é a chave de acesso ao painel configurada na Render. Depois de salvá-lo, abra Nexus Client e gere o código temporário de pareamento. Nenhum deles é a senha RCON.</div>'+
+ '<label class="field inline"><input type="checkbox" name="autoAnnounce" '+(c.autoAnnounce?"checked":"")+'><span>Enviar avisos automáticos do Nexus pelo chat local</span></label>'+
+ '<div class="buttons"><button class="btn gold" type="submit">SALVAR CÓDIGO E CONFIGURAÇÕES</button>'+b("test-connection","◉ TESTAR NEXUS CLIENT","gold")+'</div></form>';
+}
+return '<form id="configForm"><div class="form-grid">'+field("host","HOST PÚBLICO MINECRAFT",c.host,"text","placeholder=\'mc.exemplo.com\'")+field("port","PORTA RCON",c.port,"number","min=\'1024\' max=\'65535\' required")+field("player","SEU NOME NO MINECRAFT",c.player,"text","maxlength=\'16\'")+field("prefix","PREFIXO NO CHAT",c.prefix,"text","maxlength=\'38\'")+'</div>'+
+field("password","SENHA RCON (NÃO É SALVA)","","password","placeholder=\'Informe a senha RCON\' autocomplete=\'off\'")+
+field("access","CÓDIGO DE ACESSO HTTPS (NÃO É SALVO)","","password","placeholder=\'Código da ponte Render\' autocomplete=\'off\'")+
 '<div class="form-grid"><div class="field"><label for="target">DESTINO</label><select name="target" id="target"><option value="global" '+(c.target==="global"?"selected":"")+'>Todos os jogadores</option><option value="player" '+(c.target==="player"?"selected":"")+'>Jogador específico</option></select></div>'+
-field("recipient","JOGADOR DE DESTINO",c.recipient,"text","maxlength='16'")+
+field("recipient","JOGADOR DE DESTINO",c.recipient,"text","maxlength=\'16\'")+
 '<div class="field"><label for="color">COR DA MENSAGEM</label><select name="color" id="color">'+["white","gold","red","dark_red","aqua","light_purple","green","yellow","gray"].map(x=>'<option '+(c.color===x?"selected":"")+'>'+x+'</option>').join("")+'</select></div>'+
 '<div class="field"><span class="field-label">ANÚNCIOS AUTOMÁTICOS</span><label class="field inline"><input type="checkbox" name="autoAnnounce" '+(c.autoAnnounce?"checked":"")+'><span>Transmitir ações quando conectado</span></label></div></div>'+
 '<div class="buttons"><button class="btn" type="submit">SALVAR CONFIGURAÇÕES</button>'+b("test-connection","◉ TESTAR RCON","gold")+'</div></form>';
@@ -62,10 +72,16 @@ return h("MÓDULO 03 / MAGIA ARCANA","Rituais e Bênçãos","Execute rituais do 
 '<div class="grid two">'+card("CÍRCULOS RITUALÍSTICOS",'<div class="ritual-preset">'+P.map(p=>'<button data-action="ritual-preset" data-id="'+E(p.id)+'" class="'+(p.id===preset.id?"active":"")+'">'+E(p.name)+'<small>'+E(p.school)+' · '+p.cost+' energia</small></button>').join("")+'</div><div class="divider"></div>'+kv("Selecionado",preset.name)+kv("Energia atual",S.energy+" / 100")+meter(S.energy)+'<div class="notice">Os rituais são fictícios, para uso no roleplay. Nenhuma ação sobrenatural real é executada.</div>')+
 card("CONJURAÇÃO",'<form id="ritualForm"><div class="field"><label for="ritualName">NOME DO RITUAL</label><input id="ritualName" name="name" maxlength="100" required value="'+E(preset.name)+'"></div><div class="field"><label for="ritualDescription">DESCRIÇÃO</label><textarea name="description" id="ritualDescription" maxlength="600" required>'+E(preset.description)+'</textarea></div><div class="field"><label for="ritualCost">CUSTO DE ENERGIA (0–100)</label><input type="number" name="cost" id="ritualCost" min="0" max="100" value="'+preset.cost+'" required></div><button type="submit" class="btn gold">✧ EXECUTAR RITUAL</button></form>'+(last?'<div class="divider"></div><div class="ritual-result"><strong>'+E(last.name)+'</strong><p>'+E(last.description)+'</p><p>Estabilidade narrativa '+last.score+'% · Energia consumida '+last.cost+'</p><small class="hint">'+rp.date(last.at)+'</small></div>':'<div class="empty" style="margin-top:16px">Nenhum ritual realizado ainda.</div>'))+'</div>';}
 ,
-config(){return h("MÓDULO 04 / CONEXÕES","Configurar Minecraft","Defina o servidor, como as mensagens aparecem e quais funções do datapack comandam efeitos opcionais.")+
-'<div class="grid two">'+card("PONTE MINECRAFT JAVA RCON",form()+'<p class="input-note">Host, porta e preferências são salvos neste navegador. Senha RCON e código de acesso ficam somente na memória da aba, sem entrar no backup.</p><div class="divider"></div>'+kv("Ponte HTTPS",rp.isHealthy()?"ONLINE":"VERIFICANDO")+kv("Servidor RCON",rp.isConnected()?"AUTENTICADO":"NÃO TESTADO"))+
-card("FUNÇÕES DO SERVIDOR",'<p class="hint">Opcional: configure funções de um datapack ou mod. Exemplo: <code>nexus:armadura/integrar</code>. O servidor executará a função correspondente somente se ela existir.</p>'+settingsFunctions()+
-'<div class="notice warn"><strong>Segurança:</strong> RCON não cifra o tráfego TCP por conta própria. Evite expor a porta diretamente à internet. Proteja-a com firewall e, idealmente, um túnel privado. A ponte HTTPS usa código de acesso. Servidores Minecraft Java compatíveis precisam de <code>enable-rcon=true</code>.</div>')+'</div>'+
+config(){const client=S.config.connectionMode==="client";
+return h("MÓDULO 04 / CONEXÕES","Configurar Minecraft",client?"Conecte o mod Nexus Client sem RCON usando apenas o código de acesso do painel.":"Defina as configurações de conexão do Minecraft e seus recursos opcionais.")+
+'<div class="grid two">'+
+card(client?"NEXUS CLIENT · PAREAMENTO":"PONTE MINECRAFT JAVA RCON",form()+
+ '<p class="input-note">'+(client?"O código de acesso HTTPS fica somente na memória desta aba. Para gerar outro código após recarregar a página, informe-o novamente.":"Host, porta e preferências são salvos neste navegador. Senha RCON e código de acesso ficam somente na memória da aba.")+'</p>'+
+ '<div class="divider"></div>'+kv("Ponte HTTPS",rp.isHealthy()?"ONLINE":"VERIFICANDO")+
+ kv(client?"Nexus Client":"Servidor RCON",rp.isConnected()?"CONECTADO":"AGUARDANDO CONEXÃO"))+
+ (client?card("COMO CONECTAR",'<p class="hint">1. Salve o código HTTPS acima. 2. Entre na aba Nexus Client e toque em GERAR CÓDIGO DE PAREAMENTO. 3. No Minecraft, execute <code>/nexusclient pair CODIGO</code>. 4. Ative <code>/nexusclient chat on</code> e <code>/nexusclient telemetry on</code>.</p><div class="notice">O mod funciona na sua conta, sem permissões de administrador do servidor. O botão Testar Nexus Client só confirma a conexão depois do pareamento.</div>'):
+ card("FUNÇÕES DO SERVIDOR",'<p class="hint">Opcional: configure funções de um datapack ou mod. Exemplo: <code>nexus:armadura/integrar</code>. O servidor executará a função correspondente somente se ela existir.</p>'+settingsFunctions()+
+ '<div class="notice warn"><strong>Segurança:</strong> RCON não cifra o tráfego TCP por conta própria. Evite expor a porta diretamente à internet. Proteja-a com firewall e, idealmente, um túnel privado. A ponte HTTPS usa código de acesso. Servidores Minecraft Java compatíveis precisam de <code>enable-rcon=true</code>.</div>'))+'</div>'+
 '<h2 class="section-title">Registros locais</h2>'+card("DIÁRIO E BACKUP",'<div class="buttons">'+b("export","↓ EXPORTAR JSON","gold")+b("clear","REINICIAR REGISTROS","ghost")+'</div><div class="divider"></div>'+logView(12));}
 };
 };
