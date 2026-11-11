@@ -31,6 +31,7 @@ test("pairing requires user authorization and a one time code",async()=>{
  assert.equal(polled.payload.jobs[0].payload.channel,"local");
  assert.equal(polled.payload.jobs[0].payload.command,"l");
  assert.equal(polled.payload.jobs[0].payload.format,"&6&l");
+ assert.equal(polled.payload.jobs[0].payload.message,"[Nexus Aterna] O Nexus esta online.");
  assert.equal((await run("POST","/api/client/ack",client,{id:job.payload.jobId,success:true,output:"ok"})).status,200);
  assert.equal((await run("GET","/api/client/job?id="+job.payload.jobId,user)).payload.success,true);
  const global=await run("POST","/api/client/chat",user,{message:"Ola, geral!",channel:"global"});
@@ -44,6 +45,7 @@ test("pairing requires user authorization and a one time code",async()=>{
  assert.equal(pending.payload.jobs[0].payload.channel,"global");
  assert.equal(pending.payload.jobs[0].payload.command,"");
  assert.equal(pending.payload.jobs[0].payload.format,"");
+ assert.equal(pending.payload.jobs[0].payload.message,"[Nexus Aterna] Ola, geral!");
  assert.equal(pending.payload.jobs[1].payload.channel,"custom");
  assert.equal(pending.payload.jobs[1].payload.command,"rp");
  assert.equal(pending.payload.jobs[1].payload.format,"");
@@ -52,10 +54,22 @@ test("pairing requires user authorization and a one time code",async()=>{
  const changedPoll=await run("GET","/api/client/poll",client);
  assert.equal(changedPoll.payload.jobs.length,1);
  assert.equal(changedPoll.payload.jobs[0].payload.format,"&a&l");
+ assert.equal(changedPoll.payload.jobs[0].payload.message,"[Nexus Aterna] Teste de cor");
  const invalidFormat=await run("POST","/api/client/chat",user,{message:"Texto",channel:"local",format:"&6/kill"});
  assert.equal(invalidFormat.status,422);
  const noStyle=await run("POST","/api/client/chat",user,{message:"Sem estilo",channel:"local",format:""});
  assert.equal(noStyle.status,200);
  const noStylePoll=await run("GET","/api/client/poll",client);
  assert.equal(noStylePoll.payload.jobs[0].payload.format,"");
+ assert.equal(noStylePoll.payload.jobs[0].payload.message,"[Nexus Aterna] Sem estilo");
+ const alreadyTagged=await run("POST","/api/client/chat",user,{message:"[Nexus Aterna] Desintegrando armadura",channel:"local"});
+ assert.equal(alreadyTagged.status,200);
+ const once=await run("GET","/api/client/poll",client);
+ assert.equal(once.payload.jobs[0].payload.message,"[Nexus Aterna] Desintegrando armadura");
+ const olderProfile=await run("POST","/api/client/chat",user,{message:"[NEXUS ATERNA] Integrando armadura",channel:"local"});
+ assert.equal(olderProfile.status,200);
+ const migrated=await run("GET","/api/client/poll",client);
+ assert.equal(migrated.payload.jobs[1].payload.message,"[Nexus Aterna] Integrando armadura");
+ const tooLong=await run("POST","/api/client/chat",user,{message:"a".repeat(225),channel:"local"});
+ assert.equal(tooLong.status,422);
 });
