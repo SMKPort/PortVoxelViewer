@@ -1,0 +1,31 @@
+name: Nexus Aterna RP checks
+on:
+  push:
+    branches: [nexus-aterna-rp]
+    paths:
+      - 'nexus-rp/**'
+      - '.github/workflows/nexus-rp-check.yml'
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check server scripts
+        run: |
+          node --check nexus-rp/server.js
+          node --check nexus-rp/bridge.js
+          node --check nexus-rp/public/views.js
+          node --check nexus-rp/public/upgrade.js
+          node --check nexus-rp/public/evolution.js
+          node --check nexus-rp/public/app.js
+      - name: Check Python agent
+        run: python -m py_compile nexus-rp/agent/bridge_agent.py
+      - name: Run bridge integration tests
+        run: node --test nexus-rp/tests/bridge.test.js
