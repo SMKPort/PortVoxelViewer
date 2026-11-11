@@ -45,12 +45,14 @@ window.NexusRPEvolution=function(rp,views){
   }
   const oldAlert=rp.checkAlerts||(()=>{});
   rp.checkAlerts=()=>{oldAlert();checkEmergency();};
+  const oldAdjust=rp.adjustIntegrity||(()=>{});
+  rp.adjustIntegrity=value=>{oldAdjust(value);checkEmergency();};
   const oldAfterArmor=rp.afterArmor||(()=>{});
   rp.afterArmor=kind=>{oldAfterArmor(kind);triggerEmote(kind);rp.checkAlerts();};
   const oldAfterRitual=rp.afterRitual||(()=>{});
   rp.afterRitual=()=>{oldAfterRitual();triggerEmote("ritual");rp.checkAlerts();};
   const oldReset=rp.resetUpgrade||(()=>{});
-  rp.resetUpgrade=()=>{oldReset();S.armorProfiles=profiles.map(x=>({...x}));S.sequences=[];S.emergency={enabled:true,active:false,threshold:25,lastAt:""};S.emotes={integrar:"",desintegrar:"",remodelar:"",reparar:"",ritual:"",emergencia:""};S.gameEvents={enabled:false,lastId:0,bootstrapped:false,damageFactor:5,healEnergy:3,cursor:0,feed:[],lastSync:"",error:""};seqToken++;save();};
+  rp.resetUpgrade=()=>{oldReset();S.armorProfiles=profiles.map(x=>({...x}));S.sequences=[];Object.assign(EM,{enabled:true,active:false,threshold:25,lastAt:""});S.emergency=EM;S.emotes={integrar:"",desintegrar:"",remodelar:"",reparar:"",ritual:"",emergencia:""};Object.assign(G,{enabled:false,lastId:0,bootstrapped:false,damageFactor:5,healEnergy:3,cursor:0,feed:[],lastSync:"",error:""});S.gameEvents=G;seqToken++;save();};
   function triggerEmote(kind){
     const functionId=K(S.emotes?.[kind]);
     if(!rp.isConnected()||!functionId)return;
@@ -233,7 +235,8 @@ window.NexusRPEvolution=function(rp,views){
   function executeSequenceStep(step){
     const kind=step.action;
     if(["integrar","desintegrar","remodelar","reparar"].includes(kind)){
-      if(kind==="remodelar"&&step.form)S.form=step.form;
+      if(EM.active&&["integrar","remodelar"].includes(kind))throw Error("Transformação bloqueada pelo protocolo de emergência.");
+      if(kind==="remodelar"&&step.form){if(S.energy<rp.formCost(step.form))throw Error("Energia insuficiente para remodelar.");S.form=step.form;}
       return rp.armorAction(kind);
     }
     if(kind==="recuperar"){
@@ -305,6 +308,7 @@ window.NexusRPEvolution=function(rp,views){
     if(action==="form-use"){
       const name=target.dataset.name;if(!S.armorProfiles.some(p=>p.name===name))return;
       if(EM.active)return toast("Protocolo de emergência ativo: remodelagem bloqueada.");
+      const select=document.querySelector("#armorForm");if(select)select.value=name;
       S.form=name;save();return rp.armorAction("remodelar");
     }
     if(action==="form-delete"){
