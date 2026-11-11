@@ -2,6 +2,7 @@
 (() => {
 const STORAGE="nexus-aterna-v1";
 const PAGES={nucleo:"NÚCLEO CENTRAL",tecnologia:"LINK TECNOLÓGICO",arcano:"VISÃO ARCANA",rituais:"LABORATÓRIO RITUALÍSTICO",energia:"MAPA ENERGÉTICO",engenharia:"ENGENHARIA ARCANA",diagnostico:"DIAGNÓSTICO",registros:"ARQUIVOS E SEGURANÇA"};
+Object.assign(PAGES,window.NexusV2?.PAGE_LABELS||{});
 const defaults=()=>({
   isolated:true,
   devices:[],signatures:[],rituals:[],reports:[],
@@ -104,8 +105,11 @@ panel("BACKUP E RECUPERAÇÃO",'<div class="stack"><p class="panel-caption">Expo
 '<h2 class="section-heading">Diário de operações</h2>'+panel("EVENTOS REGISTRADOS",state.logs.length?state.logs.slice(0,100).map(timeItem).join(""):empty("Nenhum evento salvo."))+
 '<h2 class="section-heading">Memória Arcana</h2>'+note("Dados de lore, rituais, assinaturas, projetos e relatórios permanecem neste navegador, mesmo após fechar a página (salvo se os dados do navegador forem apagados). Não há banco compartilhado entre dispositivos nesta versão.")}
 function render(){
-$("#content").innerHTML=({nucleo:renderNucleo,tecnologia:renderTecnologia,arcano:renderArcano,rituais:renderRituais,energia:renderEnergia,engenharia:renderEngenharia,diagnostico:renderDiagnostico,registros:renderRegistros}[page]||renderNucleo)();
+window.NexusV2?.beforeRender?.(page);
+$("#content").innerHTML=window.NexusV2?.hasPage?.(page)?window.NexusV2.renderPage(page):({nucleo:renderNucleo,tecnologia:renderTecnologia,arcano:renderArcano,rituais:renderRituais,energia:renderEnergia,engenharia:renderEngenharia,diagnostico:renderDiagnostico,registros:renderRegistros}[page]||renderNucleo)();
+window.NexusV2?.afterRender?.(page);
 $("#breadcrumb").textContent=PAGES[page];
+document.querySelectorAll("[data-v2-page]").forEach(x=>{const isActive=x.dataset.v2Page===page;x.classList.toggle("active",isActive);x.setAttribute("aria-current",isActive?"page":"false");});
 document.querySelectorAll("[data-page]").forEach(x=>{x.classList.toggle("active",x.dataset.page===page);x.setAttribute("aria-current",x.dataset.page===page?"page":"false");});
 $("#isolationSide").textContent=state.isolated?"ATIVO":"INATIVO";
 }
@@ -154,6 +158,7 @@ try{const obj=JSON.parse(await file.text());const data=obj.format==="nexus-atern
 }
 function commandLine(text,css){const el=document.createElement("div");el.className=css;el.textContent=text;$("#terminalOutput").appendChild(el);$("#terminalOutput").scrollTop=$("#terminalOutput").scrollHeight;}
 function assistant(command){
+const nexus2=window.NexusV2?.command?.(command);if(nexus2)return nexus2;
 let c=command.toUpperCase().replace(/^NEXUS\s+/,"").trim();
 if(!c)return "Aguardando parâmetros, Port. Digite AJUDA.";
 if(/^(AJUDA|HELP|COMANDOS)$/.test(c))return "COMANDOS:\nSTATUS · ANALISAR RITUAL · LINK TECNOLÓGICO · VISÃO ARCANA\nMAPA ENERGÉTICO · ENGENHARIA · DIAGNÓSTICO · REGISTROS\nISOLAR TS · LIBERAR TS · EXPORTAR · HOLOGRAMA\nPergunte também sobre braço, grimório, ritual ou energia.";
@@ -202,6 +207,8 @@ if(e.target.id==="sigImage"){if(previewUrl)URL.revokeObjectURL(previewUrl);const
 });
 window.addEventListener("hashchange",()=>{const target=location.hash.slice(1);if(PAGES[target]&&target!==page){page=target;render();}});
 const tick=()=>$("#clock").textContent=new Date().toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"medium"});
+window.NexusV2?.init?.({getState:()=>state,log,toast,navigate,render,persistOld:persist,terminalOpen});
+if(window.NexusV2)window.NexusV2.persistOld=persist;
 tick();setInterval(tick,1000);render();
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
 })();
