@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c090e"><meta name="description" content="Nexus Aterna RP, terminal narrativo e comunicador Minecraft de Port Morningstar.">
+<title>NEXUS ATERNA | Roleplay Console</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.webmanifest"><link rel="stylesheet" href="/styles.css">
+<script src="/app.js" defer></script>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar" id="sidebar" aria-label="Navegação">
+ <a class="brand" href="#painel"><span class="brand-symbol">✦</span><span><strong>NEXUS <i>ATERNA</i></strong><small>ROLEPLAY CONSOLE · MINECRAFT</small></span></a>
+ <div class="navigation-title">INTERFACE DO PORT</div>
+ <nav id="nav">
+  <button class="nav-button active" data-page="painel"><span>◈</span> Núcleo do Nexus</button>
+  <button class="nav-button" data-page="chat"><span>▣</span> Comunicador</button>
+  <button class="nav-button" data-page="armadura"><span>⚙</span> Armadura Arcana</button>
+  <button class="nav-button" data-page="rituais"><span>✧</span> Rituais</button>
+  <button class="nav-button" data-page="config"><span>⛭</span> Configurações</button>
+ </nav>
+ <div class="sidebar-bottom"><div class="oper-status"><span class="light"></span><span id="sideConnection">NARRATIVA LOCAL</span></div><div class="line-mini"><span>IDENTIDADE</span><strong>PORT MORNINGSTAR</strong></div><div class="line-mini"><span>MODO</span><strong>ROLEPLAY</strong></div><div class="sidebar-version">ATERNA RP / BUILD 01</div></div>
+</aside>
+<div class="screen">
+ <header class="topbar">
+  <button id="menuToggle" class="icon-btn menu-toggle" aria-label="Abrir menu">☰</button>
+  <div class="crumb">ATERNA <span>/</span> <strong id="pageLabel">NÚCLEO</strong></div>
+  <div class="top-right"><span class="top-status" id="topStatus"><span class="light"></span> MODO LOCAL</span><button class="top-gear" id="openSettings" title="Configurações" aria-label="Abrir configurações">⚙</button></div>
+ </header>
+ <main id="content" class="main" aria-live="polite"></main>
+ <footer class="footer"><span>✦ PORT MORNINGSTAR HERNANDES</span><span id="time">NEXUS ATERNA</span><span>ARCANE ENGINEERING DIVISION</span></footer>
+</div>
+</div>
+<div id="overlay" class="mobile-overlay" hidden></div>
+<div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+</body></html>
