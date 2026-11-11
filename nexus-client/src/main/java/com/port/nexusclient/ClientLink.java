@@ -147,7 +147,8 @@ final class ClientLink {
             if("chat".equals(kind)){
                 output=chat(payload.get("message").getAsString(),
                     payload.has("channel")?payload.get("channel").getAsString():"local",
-                    payload.has("command")?payload.get("command").getAsString():"");success=true;
+                    payload.has("command")?payload.get("command").getAsString():"",
+                    payload.has("format")?payload.get("format").getAsString():"&6&l");success=true;
             }else if("action".equals(kind)){
                 output=action(payload.get("action").getAsString(),
                     payload.has("form")?payload.get("form").getAsString():"");success=true;
@@ -159,7 +160,7 @@ final class ClientLink {
         post("/api/client/ack",ack,true).exceptionally(err -> null);
     }
 
-    private static String chat(String message,String channel,String command){
+    private static String chat(String message,String channel,String command,String format){
         Minecraft mc=Minecraft.getInstance();
         if(!ClientConfig.allowChat)
             throw new IllegalStateException("Chat remoto não autorizado. Use /nexusclient chat on.");
@@ -186,13 +187,20 @@ final class ClientLink {
         }else{
             throw new IllegalArgumentException("Canal de chat inválido.");
         }
+        // Format codes belong only to local chat, directly after "/l ".
+        // They are inserted before the message, not interpreted by this client.
+        if(format==null)format="";
+        format=format.toLowerCase(java.util.Locale.ROOT);
+        if(!format.matches("(?:&[0-9a-fk-or]){0,8}"))
+            throw new IllegalArgumentException("Código de cor inválido.");
+        String transmittedMessage=("local".equals(channel)?format:"")+message;
         lastChatAt=now;
         if(root.isEmpty()){
             mc.getConnection().sendChat(message);
         }else{
             // Use Minecraft's own client command API. Never fake T or keyboard input.
             // sendCommand takes the command without the leading slash.
-            mc.getConnection().sendCommand(root+" "+message);
+            mc.getConnection().sendCommand(root+" "+transmittedMessage);
         }
         NexusClientMod.notifyPlayer(root.isEmpty()?
             "Mensagem enviada no chat global.":
