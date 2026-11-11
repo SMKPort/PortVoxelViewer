@@ -154,3 +154,8 @@ A opção **Local (/l)** é o padrão para o servidor de roleplay. O Comunicador
 ## Formatação local automática (RP 1.5)
 
 Por padrão, o canal **Local (/l)** acrescenta `&6&l` imediatamente antes da mensagem para solicitar **dourado e negrito** ao plugin de chat do servidor. O mod passa o comando ao Minecraft como `/l &6&lMensagem`, sem emular teclas. No painel, Configurações > Comunicador do Jogador, você pode editar os códigos ou deixá-los vazios. O recurso exige o JAR Nexus Client **1.2.0**. Se o plugin de chat não interpretar códigos `&`, a formatação pode não aparecer.
+
+
+## Comunicador automático em modo técnico (RP 1.6)
+
+As ações do Nexus enviam agora **somente mensagens curtas de sistema**, sem descrições em terceira pessoa: `Desintegrando armadura`, `Integrando armadura`, `Remodelando armadura: Celestial`, `Reparando armadura` e `Executando ritual: Bênção Divina`. Os segmentos individuais e as fases dos rituais também usam estados objetivos como `Reparando segmento: Ombreira` e `Canalizando ritual: ...`. Mensagens escritas manualmente pelo operador não são alteradas. O chat continua usando `/l &6&l` como canal/estilo padrão no **Nexus Client 1.2.0**. Não é preciso gerar um novo JAR: esta alteração é exclusivamente do painel web.
