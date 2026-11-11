@@ -13,7 +13,7 @@ const DEFAULT=()=>({
 integrity:100,energy:85,armor:"integrada",form:"Celestial",selectedRitual:"bencao",
 logs:[{id:"origin",at:new Date().toISOString(),kind:"SISTEMA",text:"Nexus Aterna RP inicializado. Aguardando instruções do Port."}],
 chat:[],rituals:[],
-config:{host:"",port:25575,player:"Port",prefix:"[NEXUS ATERNA]",target:"global",recipient:"",color:"white",autoAnnounce:true,functions:{integrar:"",desintegrar:"",remodelar:"",ritual:""}}
+config:{connectionMode:"public",host:"",port:25575,player:"Port",prefix:"[NEXUS ATERNA]",target:"global",recipient:"",color:"white",autoAnnounce:true,functions:{integrar:"",desintegrar:"",remodelar:"",ritual:""}}
 });
 const state=DEFAULT();
 try{
@@ -36,7 +36,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){to
 function log(text,kind="RP"){state.logs.unshift({id:uid(),at:new Date().toISOString(),kind,text});state.logs=state.logs.slice(0,140);save();}
 function toast(text){const el=document.createElement("div");el.className="toast";el.textContent=text;$("#toasts").appendChild(el);setTimeout(()=>el.remove(),4600);}
 function addChat(text,status){state.chat.push({id:uid(),at:new Date().toISOString(),text,status});state.chat=state.chat.slice(-100);save();}
-const rp={state,escape:esc,date,presets:PRESETS,isConnected:()=>connected,isHealthy:()=>healthy,save,log,toast,navigate,rerender:render,sendToChat:messageToMinecraft,armorAction,performRitual,runFunctionId:async function(functionId){return api("function",{functionId});}};
+const rp={state,escape:esc,date,presets:PRESETS,isConnected:()=>connected,isHealthy:()=>healthy,save,log,toast,navigate,rerender:render,sendToChat:messageToMinecraft,armorAction,performRitual,runFunctionId:async function(functionId){return api("function",{functionId});},getAccess:()=>secrets.access,requestEvents:async function(since,player){if(!secrets.access)throw Error("Informe o código de acesso no menu Configurações.");const url="/api/game/events?since="+encodeURIComponent(since)+"&player="+encodeURIComponent(player||"");const response=await fetch(url,{headers:{"X-Nexus-Key":secrets.access}});const result=await response.json();if(!response.ok)throw Error(result.error||"Falha na consulta de eventos.");return result;},requestBridgeStatus:async function(){if(!secrets.access)throw Error("Informe código da ponte no painel.");const response=await fetch("/api/bridge/status",{headers:{"X-Nexus-Key":secrets.access}});const result=await response.json();if(!response.ok)throw Error(result.error||"Agente inacessível.");return result;}};
 let views=window.NexusRPViews(rp);
 if(window.NexusRPUpgrade)views=window.NexusRPUpgrade(rp,views);
 function render(){
@@ -52,6 +52,7 @@ function navigate(next){if(!PAGES[next])return;page=next;if(location.hash!=="#"+
 function readConfig(){
 const form=$("#configForm");if(!form)return;
 const d=new FormData(form),c=state.config;
+c.connectionMode=d.get("connectionMode")==="agent"?"agent":"public";
 c.host=String(d.get("host")||"").trim().slice(0,253);
 c.port=clamp(Number(d.get("port"))||25575,1024,65535);
 c.player=String(d.get("player")||"Port").trim().replace(/[^a-z0-9_]/ig,"").slice(0,16)||"Port";
@@ -66,13 +67,23 @@ save();
 }
 async function api(route,payload={}){
 if(!secrets.access)throw Error("Digite o código de acesso em Configurações.");
-if(!secrets.password)throw Error("Digite a senha RCON em Configurações.");
-if(!state.config.host)throw Error("Informe o host público do seu Minecraft.");
+if(state.config.connectionMode!=="agent"&&!secrets.password)throw Error("Digite a senha RCON em Configurações.");
+if(state.config.connectionMode!=="agent"&&!state.config.host)throw Error("Informe o host público do seu Minecraft.");
 const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),14500);
 try{
-const res=await fetch("/api/rcon/"+route,{method:"POST",headers:{"Content-Type":"application/json","X-Nexus-Key":secrets.access},body:JSON.stringify({server:{host:state.config.host,port:state.config.port,password:secrets.password},...payload}),signal:ctrl.signal});
+const res=await fetch("/api/rcon/"+route,{method:"POST",headers:{"Content-Type":"application/json","X-Nexus-Key":secrets.access},body:JSON.stringify({server:{mode:state.config.connectionMode||"public",host:state.config.host,port:state.config.port,password:secrets.password},...payload}),signal:ctrl.signal});
 const out=await res.json().catch(()=>({}));
 if(!res.ok||!out.ok)throw Error(out.error||"Erro HTTP "+res.status);
+if(out.queued&&out.jobId){
+  for(let i=0;i<17;i++){
+    await new Promise(resolve=>setTimeout(resolve,900));
+    const statusRes=await fetch("/api/bridge/result?id="+encodeURIComponent(out.jobId),{headers:{"X-Nexus-Key":secrets.access},signal:ctrl.signal});
+    const job=await statusRes.json();
+    if(!statusRes.ok)throw Error(job.error||"Comando desconhecido.");
+    if(job.done){if(!job.success)throw Error(job.error||"Agente não executou o comando.");return {ok:true,response:job.output,bridge:"agent"};}
+  }
+  throw Error("Agente não confirmou o comando. Verifique se está online.");
+}
 return out;
 }catch(e){if(e.name==="AbortError")throw Error("O Minecraft não respondeu. Confira a porta, o firewall e a conectividade da Render.");throw e;}
 finally{clearTimeout(timer);}
@@ -105,7 +116,10 @@ catch(e){toast("Narração não enviada: "+e.message);}
 await gameFunction(kind);
 }
 async function armorAction(type){
-const required=type==="integrar"?12:type==="remodelar"?9:type==="reparar"?14:0;
+if(rp.canArmorAction&&!rp.canArmorAction(type))return toast("Protocolo de emergência: transformação temporariamente bloqueada.");
+const selectedForm=$("#armorForm")?.value||state.form;
+const remodelCost=rp.formCost?.(selectedForm)??9;
+const required=type==="integrar"?12:type==="remodelar"?remodelCost:type==="reparar"?14:0;
 if(state.energy<required)return toast("Energia narrativa insuficiente.");
 let text="",cost=0;
 if(type==="integrar"){
@@ -115,7 +129,7 @@ cost=12;state.armor="integrada";text="As placas do Nexus Aterna se atraem e se e
 if(state.armor==="desintegrada")return toast("As placas já estão dispersas.");
 state.armor="desintegrada";state.energy=clamp(state.energy+5,0,100);text="A armadura do Nexus se fragmenta, revelando o braço fantasma dourado.";
 }else if(type==="remodelar"){
-cost=9;const form=$("#armorForm")?.value||state.form;state.form=["Celestial","Combate","Ritual","Repouso"].includes(form)?form:"Celestial";
+cost=remodelCost;const form=$("#armorForm")?.value||state.form;state.form=(rp.allowedForms?.()||["Celestial","Combate","Ritual","Repouso"]).includes(form)?form:"Celestial";
 text="As placas do Nexus se remodelam, assumindo a configuração "+state.form.toUpperCase()+".";
 }else if(type==="reparar"){
 cost=14;state.integrity=clamp(state.integrity+18,0,100);
@@ -133,7 +147,7 @@ if(state.energy<cost)throw Error("Energia narrativa insuficiente.");
 const score=clamp(Math.round(38+state.integrity*.38+state.energy*.2-cost*.27),0,99);
 state.energy-=cost;
 state.rituals.unshift({id:uid(),at:new Date().toISOString(),name,description,cost,score});state.rituals=state.rituals.slice(0,80);
-log("Ritual "+name+" realizado: "+description+" (estabilidade "+score+"%).","RITUAL");save();render();toast("Ritual narrativo concluído.");
+log("Ritual "+name+" realizado: "+description+" (estabilidade "+score+"%).","RITUAL");rp.afterRitual?.();save();render();toast("Ritual narrativo concluído.");
 await perform("ritual","Ritual "+name+": "+description);
 }
 const templates=[
