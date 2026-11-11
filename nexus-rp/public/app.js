@@ -98,12 +98,14 @@ catch(e){log("Erro ao executar "+fn+": "+e.message,"CONEXÃO");toast("Falha na f
 async function perform(kind,message){
 if(!connected)return;
 if(state.config.autoAnnounce){
-try{await messageToMinecraft(message,kind.toUpperCase());toast("Narração publicada no Minecraft.");}
+try{await messageToMinecraft(message.slice(0,280),kind.toUpperCase());toast("Narração publicada no Minecraft.");}
 catch(e){toast("Narração não enviada: "+e.message);}
 }
 await gameFunction(kind);
 }
 async function armorAction(type){
+const required=type==="integrar"?12:type==="remodelar"?9:type==="reparar"?14:0;
+if(state.energy<required)return toast("Energia narrativa insuficiente.");
 let text="",cost=0;
 if(type==="integrar"){
 if(state.armor==="integrada")return toast("A armadura já está integrada.");
