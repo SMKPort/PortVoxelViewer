@@ -32,7 +32,7 @@ function createClientRelay({send,verifyUser,limit}){
   async function handle(req,res,route,url){
     if(!route.startsWith("/api/client/"))return false;
     cleanup();
-    if(!limit(req))return err(res,429,"Limite de requisições. Reduza a frequência.");
+    if(["/api/client/pair/new","/api/client/pair/exchange","/api/client/chat","/api/client/action"].includes(route)&&!limit(req))return err(res,429,"Limite de requisições. Reduza a frequência.");
     const userPaths=new Set(["/api/client/pair/new","/api/client/status","/api/client/events","/api/client/chat","/api/client/action","/api/client/job"]);
     const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/ack"]);
     if(!userPaths.has(route)&&!clientPaths.has(route))return err(res,404,"Rota desconhecida.");
