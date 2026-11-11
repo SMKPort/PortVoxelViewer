@@ -136,7 +136,7 @@ async function serve(req,res,route){
 }
 const server=http.createServer(async(req,res)=>{
   let route,url;try{url=new URL(req.url||"/","http://localhost");route=url.pathname;}catch(e){return json(res,400,{error:"URL inválida."});}
-  if(req.method==="GET"&&route==="/api/health")return json(res,200,{status:"online",name:"Nexus Aterna RP",version:"1.3",bridgeReady:ACCESS.length>=20,client:nexusClient.status(),agent:bridge.status(),adapter:"Minecraft Java RCON + HTTPS agent",configuredOnBrowser:true});
+  if(req.method==="GET"&&route==="/api/health")return json(res,200,{status:"online",name:"Nexus Aterna RP",version:"1.4",bridgeReady:ACCESS.length>=20,client:nexusClient.status(),agent:bridge.status(),adapter:"Minecraft Java RCON + HTTPS agent",configuredOnBrowser:true});
   if(await nexusClient.handle(req,res,route,url))return;
   if(await bridge.handle(req,res,route,url))return;
   if(req.method==="GET")return serve(req,res,route);
