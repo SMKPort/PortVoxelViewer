@@ -34,6 +34,7 @@
     if (!Array.isArray(TS.journal)) TS.journal=[];
     if (!Object.prototype.hasOwnProperty.call(S,"stagedRitual")) S.stagedRitual=null;
     if (!S.statusFlags || typeof S.statusFlags!=="object") S.statusFlags={};
+    if(!S.segmentBridge || typeof S.segmentBridge!=="object")S.segmentBridge={enabled:false,prefix:"nexus:segmentos"};
     const phaseDesc=[
       "Reconhecendo runas e ancorando o círculo no ambiente.",
       "O núcleo canaliza energia para os símbolos da matriz ritualística.",
@@ -182,6 +183,8 @@
       card("DIÁRIO DOS FRAGMENTOS",events||'<div class="empty">Nenhum fragmento analisado ainda.</div>')+'</div>';
     }
     views.ts=tsView;
+    const oldConfig=views.config;
+    views.config=function(){return oldConfig()+'<h2 class="section-title">Integração de segmentos (opcional)</h2>'+card("FUNÇÕES INDIVIDUAIS DO MINECRAFT",'<p class="hint">Se o seu datapack ou mod já tiver funções individuais, o Nexus pode chamar <code>function prefixo/segmento/acao</code>. Exemplo: <code>nexus:segmentos/ombreira/integrar</code>. Por padrão fica desligado, evitando comandos inexistentes.</p><form id="rpSegmentConfig" class="rp-ext-settings"><label class="field inline"><input type="checkbox" name="enabled" '+(S.segmentBridge.enabled?"checked":"")+'> <span>Ativar chamadas por segmento</span></label><label class="field">PREFIXO DAS FUNÇÕES (namespace:caminho)<input name="prefix" maxlength="75" required value="'+E(S.segmentBridge.prefix||"nexus:segmentos") +'" placeholder="nexus:segmentos"></label><div class="buttons"><button class="btn gold" type="submit">SALVAR FUNÇÕES DAS PLACAS</button></div></form>');};
 
     const nav=document.querySelector("#nav");
     const config=nav?.querySelector('[data-page="config"]');
@@ -230,6 +233,12 @@
       recomputeIntegrity();log(msg,"SEGMENTO");noteAction(msg);show();
       if(connected()&&S.config.autoAnnounce)await sendText(msg,"SEGMENTO");
       else rp.toast("Segmento atualizado no Nexus.");
+      if(connected()&&S.segmentBridge.enabled){
+        const suffix=action==="segment-toggle"?(part.integrated?"integrar":"desintegrar"):action==="segment-damage"?"danificar":"reparar";
+        const functionId=S.segmentBridge.prefix+"/"+part.key+"/"+suffix;
+        try{await rp.runFunctionId(functionId);log("Função de segmento solicitada: "+functionId,"MINECRAFT");}
+        catch(err){rp.toast("Função de segmento não executada: "+err.message);}
+      }
     }
 
     async function tsChoice(choiceIndex){
@@ -267,6 +276,11 @@
     rp.resetUpgrade=()=>{S.segments=DEFAULT_SEGMENTS.map(x=>({...x}));S.tsEvents={enabled:false,chapter:0,pending:false,actions:0,threat:15,journal:[]};Object.assign(TS,S.tsEvents);S.tsEvents=TS;S.stagedRitual=null;S.statusFlags={};persist();};
     const container=document.querySelector("#content");
     container.addEventListener("submit",async e=>{
+      if(e.target.id==="rpSegmentConfig"){
+        e.preventDefault();e.stopImmediatePropagation();const d=new FormData(e.target);const prefix=String(d.get("prefix")||"").trim();
+        if(!/^[a-z0-9_.-]{1,32}:[a-z0-9_./-]{1,75}$/.test(prefix))return rp.toast("Prefixo inválido. Use algo como nexus:segmentos.");
+        S.segmentBridge={enabled:d.has("enabled"),prefix};persist();show();return rp.toast("Integração de placas configurada.");
+      }
       if(e.target.id!=="ritualForm"&&e.target.id!=="rpLiveMessage")return;
       e.preventDefault();e.stopImmediatePropagation();
       const f=e.target, data=new FormData(f);
