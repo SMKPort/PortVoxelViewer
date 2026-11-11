@@ -6,10 +6,12 @@
   <meta name="theme-color" content="#0b0a0d">
   <meta name="description" content="Nexus Aterna, console de engenharia arcana e tecnologia de Port Morningstar.">
   <meta name="color-scheme" content="dark">
-  <title>NEXUS ATERNA | Arcane Operating System</title>
+  <title>NEXUS ATERNA 2.0 | Arcane Operating System</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./v2.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head>
 <body>
   <div id="app" class="app">
@@ -64,6 +66,10 @@
     <div class="toast-area" id="toasts" aria-live="polite"></div>
     <div class="overlay" id="overlay" hidden></div>
   </div>
+  <script src="./v2-base.js" defer></script>
+  <script src="./v2-3d.js" defer></script>
+  <script src="./v2-ritual.js" defer></script>
+  <script src="./v2-spectrum.js" defer></script>
   <script src="./app.js" defer></script>
 </body>
 </html>
