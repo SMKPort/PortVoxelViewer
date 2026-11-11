@@ -19,7 +19,7 @@ const types={".html":"text/html; charset=utf-8",".css":"text/css; charset=utf-8"
 const security={
   "X-Content-Type-Options":"nosniff","Referrer-Policy":"no-referrer","X-Frame-Options":"DENY",
   "Permissions-Policy":"camera=(), microphone=(), geolocation=()",
-  "Content-Security-Policy":"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+  "Content-Security-Policy":"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 };
 function json(res,status,data){res.writeHead(status,{...security,"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"});res.end(JSON.stringify(data));}
 function replyError(err){const message=String(err?.message||"Erro de conexão.");return {error:message.slice(0,350)};}
@@ -123,7 +123,7 @@ async function parseRequest(req){
 }
 async function serve(req,res,route){
   const requested=route==="/"?"index.html":decodeURIComponent(route).slice(1);
-  if(!/^(index\.html|styles\.css|app\.js|icon\.svg|manifest\.webmanifest)$/.test(requested))return json(res,404,{error:"Arquivo não encontrado."});
+  if(!/^(index\.html|styles\.css|views\.js|app\.js|icon\.svg|manifest\.webmanifest)$/.test(requested))return json(res,404,{error:"Arquivo não encontrado."});
   try{
     const file=await fs.readFile(path.join(ROOT,requested));
     res.writeHead(200,{...security,"Content-Type":types[path.extname(requested)]||"application/octet-stream","Cache-Control":requested==="index.html"?"no-cache":"public, max-age=300"});
