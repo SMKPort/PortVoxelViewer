@@ -6,7 +6,7 @@ const vm=require("node:vm");
 const path=require("node:path");
 const root=path.join(__dirname,"../public");
 const pageScript=file=>fs.readFileSync(path.join(root,file),"utf8");
-function boot(mode){
+function boot(mode,remembered=false){
  const window={};
  const document={
    querySelector:selector=>selector==="#nav"?{querySelector:()=>({before(){}})}:
@@ -31,7 +31,7 @@ function boot(mode){
    state,escape,date:v=>String(v),presets:[{id:"bencao",name:"Bênção",cost:16,description:"Teste"}],
    isConnected:()=>false,isHealthy:()=>true,save(){},log(){},toast(){},
    navigate(){},rerender(){},sendToChat(){},armorAction(){},performRitual(){},
-   getAccess:()=>"",requestEvents:async()=>({events:[],lastId:0})
+   getAccess:()=>remembered?"SENSITIVE_TEST_SECRET_NOT_FOR_HTML":"",isAccessRemembered:()=>remembered,requestEvents:async()=>({events:[],lastId:0})
  };
  let views=window.NexusRPViews(rp);
  views=window.NexusRPUpgrade(rp,views);
@@ -66,4 +66,19 @@ test("app defaults new users to client-only mode and enters client when selected
  assert.ok(s.includes('config:{connectionMode:"client"'));
  assert.ok(s.includes('if(next==="cliente"){state.config.connectionMode="client"'));
  assert.ok(s.includes('if(state.config.connectionMode==="public"&&!state.config.host)'));
+});
+
+test("remembered key is recognized without injecting it into HTML",()=>{
+ const empty=boot("client").config();
+ const remembered=boot("client",true).config();
+ assert.ok(empty.includes('name="rememberAccess"'));
+ assert.ok(!empty.includes('name="rememberAccess" checked'));
+ assert.ok(remembered.includes('name="rememberAccess" checked'));
+ assert.ok(remembered.includes("Chave lembrada neste navegador"));
+ assert.ok(remembered.includes("ESQUECER CHAVE SALVA"));
+ assert.ok(!remembered.includes("SENSITIVE_TEST_SECRET_NOT_FOR_HTML"));
+ const js=pageScript("app.js");
+ assert.ok(js.includes("ACCESS_REMEMBER_KEY"));
+ assert.ok(js.includes("localStorage.setItem(ACCESS_REMEMBER_KEY,secrets.access)"));
+ assert.ok(js.includes("localStorage.removeItem(ACCESS_REMEMBER_KEY)"));
 });
