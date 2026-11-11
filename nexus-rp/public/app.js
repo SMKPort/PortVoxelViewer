@@ -13,7 +13,7 @@ const DEFAULT=()=>({
 integrity:100,energy:85,armor:"integrada",form:"Celestial",selectedRitual:"bencao",
 logs:[{id:"origin",at:new Date().toISOString(),kind:"SISTEMA",text:"Nexus Aterna RP inicializado. Aguardando instruções do Port."}],
 chat:[],rituals:[],
-config:{connectionMode:"public",host:"",port:25575,player:"Port",prefix:"[NEXUS ATERNA]",target:"global",recipient:"",color:"white",autoAnnounce:true,functions:{integrar:"",desintegrar:"",remodelar:"",ritual:""}}
+config:{connectionMode:"public",chatChannel:"local",chatCustomCommand:"rp",chatUsePrefix:false,host:"",port:25575,player:"Port",prefix:"[NEXUS ATERNA]",target:"global",recipient:"",color:"white",autoAnnounce:true,functions:{integrar:"",desintegrar:"",remodelar:"",ritual:""}}
 });
 const state=DEFAULT();
 try{
