@@ -1,0 +1,50 @@
+name: Port Studio Suite - NeoForge 1.21.1
+on:
+  push:
+    branches: [port-studio-suite]
+    paths:
+      - 'port-cinematic-studio/**'
+      - 'port-hud-studio/**'
+      - '.github/workflows/port-studio-suite-build.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cinematic:
+    name: Build Port Cinematic Studio (Java 21)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Compile cinematic camera mod
+        run: gradle -p port-cinematic-studio build --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Port-Cinematic-Studio-NeoForge-1.21.1
+          path: port-cinematic-studio/build/libs/portcinema-1.0.0.jar
+          if-no-files-found: error
+  hud:
+    name: Build Port HUD Studio (Java 21)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Compile visual HUD editor mod
+        run: gradle -p port-hud-studio build --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Port-HUD-Studio-NeoForge-1.21.1
+          path: port-hud-studio/build/libs/porthud-1.0.0.jar
+          if-no-files-found: error
