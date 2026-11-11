@@ -70,7 +70,7 @@ async function api(route,payload={}){
 if(!secrets.access)throw Error("Digite o código de acesso em Configurações.");
 if(state.config.connectionMode!=="agent"&&!secrets.password)throw Error("Digite a senha RCON em Configurações.");
 if(state.config.connectionMode!=="agent"&&!state.config.host)throw Error("Informe o host público do seu Minecraft.");
-const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),14500);
+const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),state.config.connectionMode==="agent"?25000:14500);
 try{
 const res=await fetch("/api/rcon/"+route,{method:"POST",headers:{"Content-Type":"application/json","X-Nexus-Key":secrets.access},body:JSON.stringify({server:{mode:state.config.connectionMode||"public",host:state.config.host,port:state.config.port,password:secrets.password},...payload}),signal:ctrl.signal});
 const out=await res.json().catch(()=>({}));
