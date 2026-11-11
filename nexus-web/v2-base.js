@@ -2,7 +2,7 @@
 (function(){
 const KEY="nexus-aterna-v2";
 const LABELS={aterna:"ATERNA AI",gemeo:"GÊMEO DIGITAL 3D",rituais2:"RITUAIS AVANÇADOS",tecnologia2:"TECNOLOGIA REAL",ts:"PROTOCOLO TS",espectrometro:"ESPECTRÔMETRO"};
-const initial=()=>({chat:[{who:"assistant",text:"Saudações, Port. Núcleo ATERNA 2.0 iniciado. Tenho acesso aos registros deste navegador. Digite uma pergunta, cadastre uma memória ou ative a voz.",at:Date.now(),mode:"local"}],memories:[{id:"canon",title:"Cânone da oficina",text:"Port Morningstar: braço direito Nexus Aterna, braço fantasma dourado, placas retráteis, bengala-grimório e proteção narrativa contra os TS."}],ts:{chapter:0,integrity:100,choices:[],journal:[],unlocked:false},blueprint:{parts:[],selected:-1,hinge:25},ritualCanvas:{runes:[],name:"Novo círculo",complexity:50},spectro:{mode:"simulado",frequency:12,amplitude:65,noise:12,live:true,samples:[],imports:[]},deviceHistory:[],settings:{endpoint:"https://nexus-aterna-api.onrender.com",speak:false}});
+const initial=()=>({chat:[{who:"assistant",text:"Saudações, Port. Núcleo ATERNA 2.0 iniciado. Tenho acesso aos registros deste navegador. Digite uma pergunta, cadastre uma memória ou ative a voz.",at:Date.now(),mode:"local"}],memories:[{id:"canon",title:"Cânone da oficina",text:"Port Morningstar: braço direito Nexus Aterna, braço fantasma dourado, placas retráteis, bengala-grimório e proteção narrativa contra os TS."}],ts:{chapter:0,integrity:100,choices:[],journal:[],unlocked:false},blueprint:{parts:[],selected:-1,hinge:25},ritualCanvas:{runes:[],name:"Novo círculo",complexity:50},spectro:{mode:"simulado",frequency:12,amplitude:65,noise:12,live:true,samples:[],imports:[]},deviceHistory:[],settings:{endpoint:"",speak:false}});
 let S=initial();try{const old=JSON.parse(localStorage.getItem(KEY)||"null");if(old&&typeof old==="object"){S={...S,...old,ts:{...initial().ts,...old.ts},blueprint:{...initial().blueprint,...old.blueprint},ritualCanvas:{...initial().ritualCanvas,...old.ritualCanvas},spectro:{...initial().spectro,...old.spectro},settings:{...initial().settings,...old.settings}};}}catch(e){}
 const q=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -57,7 +57,7 @@ V.forms.chat=async f=>{
 const message=String(new FormData(f).get("message")||"").trim();if(!message)return;
 S.chat.push({who:"user",text:message,at:Date.now()});keep();V.rerender();
 let response="",mode="local";const endpoint=(S.settings.endpoint||"").replace(/\/+$/,"");
-try{
+if(/^https:\/\//i.test(endpoint))try{
 const ctl=new AbortController();const timer=setTimeout(()=>ctl.abort(),14000);
 try{const res=await fetch(endpoint+"/api/chat",{method:"POST",headers:{"Content-Type":"application/json",...(authSession?{"X-Aterna-Access":authSession}:{})},body:JSON.stringify({message,context:contextFacts(),history:S.chat.slice(-13,-1).map(m=>({role:m.who==="user"?"user":"model",text:m.text}))}),signal:ctl.signal});if(res.ok){const out=await res.json();if(typeof out.reply==="string"&&out.reply.trim()){response=out.reply.slice(0,5000);mode="ia";}}}finally{clearTimeout(timer);}
 }catch(e){}
