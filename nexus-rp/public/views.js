@@ -18,8 +18,13 @@ if(c.connectionMode==="client"){
  '<div class="notice"><strong>MODO NEXUS CLIENT:</strong> não precisa de senha RCON, host, porta nem acesso aos arquivos do servidor Minecraft.</div>'+
  '<div class="form-grid">'+field("player","SEU NOME NO MINECRAFT",c.player,"text","maxlength=\'16\'")+
  field("prefix","EMISSOR DAS MENSAGENS","[Nexus Aterna]","text","readonly aria-readonly=\'true\' maxlength=\'38\'")+'</div>'+
- field("access","CÓDIGO DE ACESSO HTTPS DO PAINEL","","password","placeholder=\'NEXUS_RP_ACCESS_KEY da Render\' autocomplete=\'off\'")+
- '<div class="notice">Esse código é a chave de acesso ao painel configurada na Render. Depois de salvá-lo, abra Nexus Client e gere o código temporário de pareamento. Nenhum deles é a senha RCON.</div>'+
+ field("access","CÓDIGO DE ACESSO HTTPS DO PAINEL","","password","placeholder=\'Chave HTTPS da Render (somente na primeira vez)\' autocomplete=\'new-password\'")+
+ '<div class="notice">'+(rp.isAccessRemembered?.()
+  ?'<strong>Chave lembrada neste navegador.</strong> Não precisa digitá-la novamente. Ela não é exibida nesta página.'
+  :'<strong>Primeiro acesso:</strong> informe a chave NEXUS_RP_ACCESS_KEY da Render uma vez. O endereço do serviço já está configurado.')+'</div>'+
+ '<label class="field inline"><input type="checkbox" name="rememberAccess" '+(rp.isAccessRemembered?.()?"checked":"")+'><span>Lembrar a chave HTTPS apenas neste dispositivo</span></label>'+
+ '<p class="hint">Opcional. O navegador guarda a chave localmente caso você marque a opção. Não use em dispositivo compartilhado. Ela não é gravada no repositório ou no HTML público.</p>'+
+ (rp.isAccessRemembered?.()?'<div class="buttons">'+b("forget-access","ESQUECER CHAVE SALVA","ghost")+'</div>':"")+
  '<label class="field inline"><input type="checkbox" name="autoAnnounce" '+(c.autoAnnounce?"checked":"")+'><span>Enviar avisos automáticos do Nexus pelo chat local</span></label>'+
  '<div class="buttons"><button class="btn gold" type="submit">SALVAR CÓDIGO E CONFIGURAÇÕES</button>'+b("test-connection","◉ TESTAR NEXUS CLIENT","gold")+'</div></form>';
 }
