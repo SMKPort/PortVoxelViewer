@@ -33,9 +33,44 @@ window.NexusRPClientUpgrade=function(rp,views){
    const needle='</select><small>No modo Agente HTTPS';
    if(html.includes(needle))html=html.replace(needle,'<option value="client" '+(S.config.connectionMode==="client"?"selected":"")+'>NEXUS CLIENT (MOD APENAS NO JOGADOR)</option></select><small>No modo Agente HTTPS');
    else html=html.replace('value="agent"','value="agent"');
+   if(S.config.connectionMode==="client"){
+     const c=S.config;
+     const selected=["local","global","custom"].includes(c.chatChannel)?c.chatChannel:"local";
+     const options=[["local","Local (/l) - padrão"],["global","Global (sem comando)"],["custom","Personalizado (comando de chat)"]]
+       .map(item=>'<option value="'+item[0]+'" '+(selected===item[0]?"selected":"")+'>'+item[1]+'</option>').join("");
+     const channelForm='<div class="divider"></div><div class="eyebrow">COMUNICADOR DO JOGADOR</div>'+
+       '<div class="field"><label for="chatChannel">CANAL DAS MENSAGENS</label><select name="chatChannel" id="chatChannel">'+options+'</select>'+
+       '<small>Local envia /l seguido da sua mensagem. O mod usa a conexão normal do Minecraft, sem simular teclado.</small></div>'+
+       '<div class="field"><label for="chatCustomCommand">COMANDO PERSONALIZADO (SOMENTE CANAIS DE CHAT)</label>'+
+       '<input name="chatCustomCommand" id="chatCustomCommand" maxlength="24" value="'+E(c.chatCustomCommand||"")+
+       '" placeholder="/rp"><small>Exemplos: /rp, /me, /ooc. Comandos administrativos são bloqueados.</small></div>'+
+       '<label class="field inline"><input name="chatUsePrefix" type="checkbox" '+(c.chatUsePrefix===true?"checked":"")+
+       '><span>Acrescentar prefixo do Nexus antes da mensagem</span></label>'+
+       '<div class="notice">Canal padrão: <strong>/l</strong>. Você digita apenas a mensagem no Comunicador, sem escrever /l. Salve as configurações para aplicar.</div>';
+     html=html.replace('<form id="configForm">','<form id="configForm">'+channelForm);
+   }
    const note='<div class="notice">Sem acesso administrativo ao servidor? Escolha <strong>NEXUS CLIENT</strong>, abra a aba de pareamento e instale o mod NeoForge no seu Minecraft. A porta RCON e a senha não são usadas neste modo.</div>';
    if(S.config.connectionMode==="client")html=html.replaceAll("TESTAR RCON","TESTAR NEXUS CLIENT").replaceAll("Servidor RCON","Mod Minecraft").replaceAll("NÃO TESTADO","AGUARDANDO PAREAMENTO");
    return html+note+'<div class="buttons">'+button("open","ABRIR NEXUS CLIENT","gold")+'</div>';
+ };
+ const oldChat=views.chat;
+ views.chat=function(){
+   let html=oldChat();
+   if(S.config.connectionMode!=="client")return html;
+   const c=S.config,channel=["global","local","custom"].includes(c.chatChannel)?c.chatChannel:"local";
+   const label=channel==="global"?"GLOBAL":channel==="local"?"/l":"/"+String(c.chatCustomCommand||"rp").replace(/^\//,"");
+   const previous='<div class="chat-preview"><strong>'+E(c.prefix)+'</strong>';
+   const preview='<div class="chat-preview"><strong>'+E(label+(c.chatUsePrefix?" "+c.prefix:""))+'</strong>';
+   html=html.replace(previous,preview);
+   const info='<div class="notice">CANAL CONFIGURADO: <strong>'+E(label)+'</strong>. Mensagens saem pelo seu próprio jogador, respeitando as regras do servidor.</div>';
+   return info+html;
+ };
+ const oldLive=views.ao_vivo;
+ if(oldLive)views.ao_vivo=function(){
+   const html=oldLive();
+   if(S.config.connectionMode!=="client")return html;
+   const label=S.config.chatChannel==="global"?"GLOBAL":S.config.chatChannel==="custom"?"/"+E(S.config.chatCustomCommand||"rp"):"/l";
+   return '<div class="notice">Chat do Nexus Client: <strong>'+label+'</strong> · envie só o texto, sem digitar o comando.</div>'+html;
  };
  views.cliente=function(){
    const on=lastStatus?.online,player=lastStatus?.player||"Não identificado";
