@@ -67,8 +67,13 @@ function createClientRelay({send,verifyUser,limit}){
       try{
         const data=await body(req),message=String(data.message||"").replace(/[\u0000-\u001f\u007f]/g," ").trim();
         if(!message||message.length>230||message.startsWith("/"))return err(res,422,"Mensagem deve ter 1 a 230 caracteres, sem comandos.");
-        // Message will be transmitted by player's own account, not as server console.
-        return void send(res,200,enqueue("chat",{message}));
+        // Restrict commands to configured chat channels; messages cannot contain slash commands.
+        const channel=["global","local","custom"].includes(data.channel)?data.channel:"local";
+        const custom=String(data.command||"").trim().toLowerCase();
+        const root=channel==="local"?"l":channel==="custom"?(custom.startsWith("/")?custom.slice(1):custom):"";
+        const allowed=new Set(["l","local","g","global","rp","me","ooc","chat","ch","yell","shout","action"]);
+        if(channel==="custom"&&!allowed.has(root))return err(res,422,"Canal personalizado invalido. Escolha um comando de chat permitido.");
+        return void send(res,200,enqueue("chat",{message,channel,command:root}));
       }catch(e){return err(res,422,String(e.message));}
     }
     if(route==="/api/client/action"&&req.method==="POST"){
