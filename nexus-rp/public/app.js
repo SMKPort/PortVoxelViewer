@@ -141,8 +141,8 @@ catch(e){log("Erro ao executar "+fn+": "+e.message,"CONEXÃO");toast("Falha na f
 async function perform(kind,message){
 if(!connected)return;
 if(state.config.autoAnnounce){
-try{await messageToMinecraft(message.slice(0,280),kind.toUpperCase());toast("Narração publicada no Minecraft.");}
-catch(e){toast("Narração não enviada: "+e.message);}
+try{await messageToMinecraft(message.slice(0,280),kind.toUpperCase());toast("Status enviado ao Minecraft.");}
+catch(e){toast("Status não enviado: "+e.message);}
 }
 await gameFunction(kind);
 }
@@ -155,20 +155,20 @@ if(state.energy<required)return toast("Energia narrativa insuficiente.");
 let text="",cost=0;
 if(type==="integrar"){
 if(state.armor==="integrada")return toast("A armadura já está integrada.");
-cost=12;state.armor="integrada";text="As placas do Nexus Aterna se atraem e se encaixam no braço direito de Port.";
+cost=12;state.armor="integrada";text="Integrando armadura";
 }else if(type==="desintegrar"){
 if(state.armor==="desintegrada")return toast("As placas já estão dispersas.");
-state.armor="desintegrada";state.energy=clamp(state.energy+5,0,100);text="A armadura do Nexus se fragmenta, revelando o braço fantasma dourado.";
+state.armor="desintegrada";state.energy=clamp(state.energy+5,0,100);text="Desintegrando armadura";
 }else if(type==="remodelar"){
 cost=remodelCost;const form=$("#armorForm")?.value||state.form;state.form=(rp.allowedForms?.()||["Celestial","Combate","Ritual","Repouso"]).includes(form)?form:"Celestial";
-text="As placas do Nexus se remodelam, assumindo a configuração "+state.form.toUpperCase()+".";
+text="Remodelando armadura: "+state.form;
 }else if(type==="reparar"){
 cost=14;state.integrity=clamp(state.integrity+18,0,100);
-text="O núcleo dourado libera um pulso restaurador que recompõe as fissuras da armadura.";
+text="Reparando armadura";
 }else return;
 if(state.energy<cost){toast("Energia narrativa insuficiente.");return;}
 state.energy-=cost;rp.afterArmor?.(type);log(text,"ARMADURA");save();render();toast("Estado narrativo atualizado.");
-await perform(type==="reparar"?"":type,text);
+await perform(type,text);
 }
 async function performRitual(form){
 const data=new FormData(form),name=String(data.get("name")||"").trim().slice(0,100),
@@ -179,13 +179,13 @@ const score=clamp(Math.round(38+state.integrity*.38+state.energy*.2-cost*.27),0,
 state.energy-=cost;
 state.rituals.unshift({id:uid(),at:new Date().toISOString(),name,description,cost,score});state.rituals=state.rituals.slice(0,80);
 log("Ritual "+name+" realizado: "+description+" (estabilidade "+score+"%).","RITUAL");rp.afterRitual?.();save();render();toast("Ritual narrativo concluído.");
-await perform("ritual","Ritual "+name+": "+description);
+await perform("ritual","Executando ritual: "+name);
 }
 const templates=[
-"Núcleo Aterna sincronizado. Prótese pronta para operação.",
-"Oscilação identificada na integridade do braço direito.",
-"Iniciando reorganização das placas arcanas do Nexus.",
-"Canalização ritualística autorizada. Núcleo ativo."
+"Núcleo sincronizado",
+"Oscilação de integridade detectada",
+"Remodelando armadura",
+"Iniciando canalização ritualística"
 ];
 $("#nav").addEventListener("click",e=>{const el=e.target.closest("[data-page]");if(el)navigate(el.dataset.page);});
 $("#menuToggle").addEventListener("click",()=>setMenu(true));
