@@ -87,7 +87,7 @@ window.NexusRPClientUpgrade=function(rp,views){
    }
    const keyReady=!!rp.getAccess?.();
    const note=S.config.connectionMode==="client"
-     ?'<div class="notice">'+(keyReady?'<strong>Código HTTPS carregado nesta aba.</strong> Você já pode gerar um código temporário na aba Nexus Client.':'<strong>Falta o código HTTPS.</strong> Insira o valor de NEXUS_RP_ACCESS_KEY da Render, salve e depois gere o código temporário de pareamento.')+' Nenhuma senha RCON é necessária.</div>'
+     ?'<div class="notice">'+(keyReady?'<strong>Código HTTPS pronto.</strong> '+(rp.isAccessRemembered?.()?'A chave foi lembrada neste dispositivo. ':'')+'Você já pode gerar o código temporário na aba Nexus Client.':'<strong>Falta o código HTTPS.</strong> Insira o valor de NEXUS_RP_ACCESS_KEY da Render, salve e depois gere o código temporário de pareamento.')+' Nenhuma senha RCON é necessária.</div>'
      :'<div class="notice">Não tem acesso ao servidor Minecraft? Escolha <strong>NEXUS CLIENT</strong>. O modo funciona sem RCON.</div>';
    if(S.config.connectionMode==="client")html=html.replaceAll("TESTAR RCON","TESTAR NEXUS CLIENT").replaceAll("Servidor RCON","Mod Minecraft").replaceAll("NÃO TESTADO","AGUARDANDO PAREAMENTO");
    return html+note+'<div class="buttons">'+button("open","ABRIR NEXUS CLIENT","gold")+'</div>';
@@ -121,7 +121,7 @@ window.NexusRPClientUpgrade=function(rp,views){
    '<div class="rp-evo-emergency '+(on?"online":"")+'"><strong>'+(on?"MINECRAFT CONECTADO":"AGUARDANDO MINECRAFT")+'</strong><span>Jogador: '+E(player)+'</span></div>'+
    '<p class="hint">1. Instale o mod Nexus Aterna Client na pasta mods do Minecraft 1.21.1 com NeoForge.</p>'+ 
    '<p><a href="https://github.com/SMKPort/PortVoxelViewer/actions/runs/43080065875" target="_blank" rel="noopener noreferrer">Baixar Nexus Aterna Client 1.2.0 (GitHub Actions)</a></p>'+
-   '<p class="hint">2. Em Configurações, informe e salve o código de acesso HTTPS (NEXUS_RP_ACCESS_KEY da Render). Não precisa de senha RCON.</p>'+
+   '<p class="hint">2. Nas Configurações, informe a chave HTTPS da Render uma vez. Marque <strong>Lembrar neste dispositivo</strong> para não precisar digitá-la novamente. Não precisa de senha RCON.</p>'+
    '<p class="hint">3. No jogo, execute <code>/nexusclient pair SEU_CODIGO</code>. Este comando é executado no cliente, não no servidor.</p>'+
    '<p class="hint">4. Autorize mensagens com <code>/nexusclient chat on</code> e telemetria com <code>/nexusclient telemetry on</code>.</p>'+
    '<div class="buttons">'+button("settings","CONFIGURAR CÓDIGO HTTPS","alt")+button("pair","GERAR CÓDIGO DE PAREAMENTO","gold")+button("status","VERIFICAR CONEXÃO","ghost")+'</div>'+
