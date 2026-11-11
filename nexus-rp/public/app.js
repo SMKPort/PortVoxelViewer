@@ -56,6 +56,11 @@ function readConfig(){
 const form=$("#configForm");if(!form)return;
 const d=new FormData(form),c=state.config;
 c.connectionMode=["agent","client"].includes(d.get("connectionMode"))?String(d.get("connectionMode")):"public";
+if(d.has("chatChannel")){
+ c.chatChannel=["global","local","custom"].includes(d.get("chatChannel"))?String(d.get("chatChannel")):"local";
+ c.chatCustomCommand=String(d.get("chatCustomCommand")||"").trim().replace(/^\//,"").toLowerCase().slice(0,24);
+ c.chatUsePrefix=d.has("chatUsePrefix");
+}
 c.host=String(d.get("host")||"").trim().slice(0,253);
 c.port=clamp(Number(d.get("port"))||25575,1024,65535);
 c.player=String(d.get("player")||"Port").trim().replace(/[^a-z0-9_]/ig,"").slice(0,16)||"Port";
@@ -76,7 +81,13 @@ if(state.config.connectionMode==="client"){
  const run=rp.clientQueue;
  if(!run)throw Error("Nexus Client não carregado.");
  if(route==="test"){const res=await fetch("/api/client/status",{headers:{"X-Nexus-Key":secrets.access}});const result=await res.json();if(!res.ok||!result.online)throw Error("Mod Nexus Client offline. Pareie no Minecraft.");return {ok:true,response:"Nexus Client conectado: "+result.player};}
- if(route==="message")return run("/chat",{message:((state.config.prefix||"")+" "+String(payload.message||"")).trim().slice(0,230)});
+ if(route==="message"){
+   const base=String(payload.message||"").trim();
+   const channel=["local","global","custom"].includes(state.config.chatChannel)?state.config.chatChannel:"local";
+   const message=((state.config.chatUsePrefix===true?(state.config.prefix||"")+" ":"")+base).trim();
+   if(!message||message.length>230)throw Error("A mensagem deve ter entre 1 e 230 caracteres. Reduza o texto ou remova o prefixo.");
+   return run("/chat",{message,channel,command:state.config.chatCustomCommand||""});
+ }
  if(route==="action")return run("/action",payload);
  throw Error("O Nexus Client não pode executar funções administrativas do servidor.");
 }
