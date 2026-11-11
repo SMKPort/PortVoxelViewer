@@ -6,7 +6,7 @@ window.NexusRPClientUpgrade=function(rp,views){
  let lastStatus=null,lastPair=null;
  const backend=async(route,options={})=>{
    const key=rp.getAccess?.()||"";
-   if(!key)throw Error("Informe e salve o código do painel na aba Configurações.");
+   if(!key)throw Error("Informe a NEXUS_RP_ACCESS_KEY em Configurações, toque em SALVAR CÓDIGO e volte ao Nexus Client. Nenhuma senha RCON é necessária.");
    const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),13000);
    try{
      const response=await fetch(apiRoot+route,{...options,headers:{"X-Nexus-Key":key,...(options.body?{"Content-Type":"application/json"}:{}),...(options.headers||{})},signal:ctrl.signal});
@@ -30,9 +30,11 @@ window.NexusRPClientUpgrade=function(rp,views){
  const oldConfig=views.config;
  views.config=function(){
    let html=oldConfig();
-   const needle='</select><small>No modo Agente HTTPS';
-   if(html.includes(needle))html=html.replace(needle,'<option value="client" '+(S.config.connectionMode==="client"?"selected":"")+'>NEXUS CLIENT (MOD APENAS NO JOGADOR)</option></select><small>No modo Agente HTTPS');
-   else html=html.replace('value="agent"','value="agent"');
+   // Client mode is now a first-class option in Evolution's connection selector.
+   // Keep fallback for older cached assets without duplicating the option.
+   if(!html.includes('value="client"')){
+     html=html.replace('<select id="connectionMode" name="connectionMode">','<select id="connectionMode" name="connectionMode"><option value="client" '+(S.config.connectionMode==="client"?"selected":"")+'>NEXUS CLIENT (SEM RCON)</option>');
+   }
    if(S.config.connectionMode==="client"){
      const c=S.config;
      html=html.replace(/(<input id="prefix"[^>]*)(>)/,'$1 readonly aria-readonly="true"$2');
@@ -84,11 +86,11 @@ window.NexusRPClientUpgrade=function(rp,views){
    '<section class="card"><div class="card-header"><h2>VINCULAÇÃO SEGURA</h2></div>'+
    '<div class="rp-evo-emergency '+(on?"online":"")+'"><strong>'+(on?"MINECRAFT CONECTADO":"AGUARDANDO MINECRAFT")+'</strong><span>Jogador: '+E(player)+'</span></div>'+
    '<p class="hint">1. Instale o mod Nexus Aterna Client na pasta mods do Minecraft 1.21.1 com NeoForge.</p>'+ 
-   '<p><a href="https://github.com/SMKPort/PortVoxelViewer/actions/runs/43069905931" target="_blank" rel="noopener noreferrer">Baixar JAR compilado pelo GitHub Actions</a></p>'+
-   '<p class="hint">2. Selecione o modo Nexus Client em Configurações e gere um código temporário.</p>'+
+   '<p><a href="https://github.com/SMKPort/PortVoxelViewer/actions/runs/43080065875" target="_blank" rel="noopener noreferrer">Baixar Nexus Aterna Client 1.2.0 (GitHub Actions)</a></p>'+
+   '<p class="hint">2. Em Configurações, informe e salve o código de acesso HTTPS (NEXUS_RP_ACCESS_KEY da Render). Não precisa de senha RCON.</p>'+
    '<p class="hint">3. No jogo, execute <code>/nexusclient pair SEU_CODIGO</code>. Este comando é executado no cliente, não no servidor.</p>'+
    '<p class="hint">4. Autorize mensagens com <code>/nexusclient chat on</code> e telemetria com <code>/nexusclient telemetry on</code>.</p>'+
-   '<div class="buttons">'+button("pair","GERAR CÓDIGO DE PAREAMENTO","gold")+button("status","VERIFICAR CONEXÃO","ghost")+'</div>'+
+   '<div class="buttons">'+button("settings","CONFIGURAR CÓDIGO HTTPS","alt")+button("pair","GERAR CÓDIGO DE PAREAMENTO","gold")+button("status","VERIFICAR CONEXÃO","ghost")+'</div>'+
    (lastPair?'<div class="rp-pair-code"><small>CÓDIGO TEMPORÁRIO (10 MIN)</small><strong>'+E(lastPair.code)+'</strong><p>Digite no chat do Minecraft:</p><code>/nexusclient pair '+E(lastPair.code)+'</code></div>':'<div class="empty" style="margin-top:15px">Nenhum código pendente. Use Gerar Código para vincular seu Minecraft.</div>')+
    '<p class="hint">A sessão pode precisar ser pareada novamente depois que o serviço da Render reiniciar.</p></section>'+
    '<section class="card"><div class="card-header"><h2>CAPACIDADES DO CLIENTE</h2></div>'+
@@ -115,6 +117,7 @@ window.NexusRPClientUpgrade=function(rp,views){
    e.preventDefault();e.stopImmediatePropagation();
    try{
      if(b.dataset.nexusClient==="open")return rp.navigate("cliente");
+     if(b.dataset.nexusClient==="settings")return rp.navigate("config");
      if(b.dataset.nexusClient==="open-chat")return rp.navigate("chat");
      if(b.dataset.nexusClient==="open-events")return rp.navigate("eventos");
      if(b.dataset.nexusClient==="pair"){lastPair=await backend("/pair/new",{method:"POST",body:"{}"});rp.toast("Código criado. Insira-o no comando do Minecraft.");}
