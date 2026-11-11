@@ -83,6 +83,7 @@
     // Exposed callbacks let the original RP implementation keep acting as the source
     // of truth for armoring, ritual energy costs, Minecraft RCON and logs.
     rp.afterArmor=(kind)=>{
+      if(kind==="reparar"){S.segments.forEach(p=>{p.integrity=clamp(p.integrity+18,0,100);});recomputeIntegrity();}
       if(kind==="integrar"||kind==="desintegrar"){
         const yes=kind==="integrar";
         S.segments.forEach(p=>{p.integrated=yes && p.integrity>0;});
@@ -90,6 +91,7 @@
       noteAction("armadura "+kind);
     };
     rp.afterRitual=()=>noteAction("ritual");
+    rp.checkAlerts=alertState;
     rp.adjustIntegrity=value=>{
       S.segments.forEach(p=>{p.integrity=clamp(value,0,100);});
       alertState();
@@ -105,7 +107,10 @@
     }
     const oldArmor=views.armadura;
     views.armadura=function(){
-      return oldArmor()+'<h2 class="section-title">Controle individual das placas</h2>'+
+      let armorHTML=oldArmor();
+      const mapping={ombreira:"shoulder",braco:"upper",cotovelo:"joint",antebraco:"lower",manopla:"hand"};
+      S.segments.forEach(p=>{if(!p.integrated){const needle='class="armor-piece '+mapping[p.key]+'"';armorHTML=armorHTML.replace(needle,'class="armor-piece '+mapping[p.key]+' rp-detached"');}});
+      return armorHTML+'<h2 class="section-title">Controle individual das placas</h2>'+
       card("SEGMENTOS DO BRAÇO",' <p class="hint">Cada peça tem sua própria integridade e estado de acoplamento. Os comandos são narrativos. Caso o servidor esteja conectado e os anúncios estejam ligados, cada alteração é relatada no chat.</p>'+
       segmentCards()+'<div class="rp-status-line"><span>Integridade média</span><strong>'+S.integrity+'%</strong></div>');
     };
@@ -221,6 +226,7 @@
       }
       else return;
       S.energy=clamp(S.energy-cost,0,100);
+      S.armor=S.segments.some(p=>p.integrated)?"integrada":"desintegrada";
       recomputeIntegrity();log(msg,"SEGMENTO");noteAction(msg);show();
       if(connected()&&S.config.autoAnnounce)await sendText(msg,"SEGMENTO");
       else rp.toast("Segmento atualizado no Nexus.");
@@ -258,6 +264,7 @@
       catch(err){S.stagedRitual=r;persist();rp.toast(err.message);}
       show();
     }
+    rp.resetUpgrade=()=>{S.segments=DEFAULT_SEGMENTS.map(x=>({...x}));S.tsEvents={enabled:false,chapter:0,pending:false,actions:0,threat:15,journal:[]};Object.assign(TS,S.tsEvents);S.tsEvents=TS;S.stagedRitual=null;S.statusFlags={};persist();};
     const container=document.querySelector("#content");
     container.addEventListener("submit",async e=>{
       if(e.target.id!=="ritualForm"&&e.target.id!=="rpLiveMessage")return;
