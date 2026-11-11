@@ -138,7 +138,7 @@ const server=http.createServer(async(req,res)=>{
   let route,url;try{url=new URL(req.url||"/","http://localhost");route=url.pathname;}catch(e){return json(res,400,{error:"URL inválida."});}
   // Log only route and status, never tokens, content, query parameters or player messages.
   if(route.startsWith("/api/client/"))res.once("finish",()=>console.log("NexusAPI "+req.method+" "+route+" HTTP "+res.statusCode));
-  if(req.method==="GET"&&route==="/api/health")return json(res,200,{status:"online",name:"Nexus Aterna RP",version:"2.0",bridgeReady:ACCESS.length>=20,client:nexusClient.status(),agent:bridge.status(),adapter:"Minecraft Java RCON + HTTPS agent",configuredOnBrowser:true});
+  if(req.method==="GET"&&route==="/api/health")return json(res,200,{status:"online",name:"Nexus Aterna RP",version:"2.1",bridgeReady:ACCESS.length>=20,client:nexusClient.status(),agent:bridge.status(),adapter:"Minecraft Java RCON + HTTPS agent",configuredOnBrowser:true});
   // Every /api/client/ request belongs exclusively to the client relay.
   // Never fall through after a response: writing headers twice can crash the service.
   if(route.startsWith("/api/client/")){await nexusClient.handle(req,res,route,url);return;}
