@@ -79,7 +79,7 @@ final class PerformanceStats {
                                         if(PerformanceConfig.webControlEnabled)BoosterEngine.webAction(action,target);
                                     });
                                 }
-                            }catch(Exception error){lastResult="Resposta de controle inválida. Métricas enviadas.";}
+                            }catch(Exception parseError){lastResult="Resposta de controle inválida. Métricas enviadas.";}
                         }
                     }
                     SENDING.set(false);
