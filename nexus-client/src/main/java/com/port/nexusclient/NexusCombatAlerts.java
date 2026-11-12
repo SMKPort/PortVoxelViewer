@@ -6,7 +6,6 @@ package com.port.nexusclient;
  * a mensagem ser efetivamente enviada. Um único alerta por janela de tempo.
  */
 final class NexusCombatAlerts {
-    private static final long MIN_INTERVAL_MS=45000L;
     private static final long HIT_WINDOW_MS=14000L;
     private static final long HEAL_WINDOW_MS=25000L;
 
@@ -31,6 +30,13 @@ final class NexusCombatAlerts {
     Decision observe(String type,float amount,float health,float maxHealth,
                      double beforeIntegrity,double afterIntegrity,
                      int stage,boolean structuralMonitoring,long now) {
+        return observe(type,amount,health,maxHealth,beforeIntegrity,afterIntegrity,
+            stage,structuralMonitoring,now,kind->true);
+    }
+    Decision observe(String type,float amount,float health,float maxHealth,
+                     double beforeIntegrity,double afterIntegrity,
+                     int stage,boolean structuralMonitoring,long now,
+                     java.util.function.Predicate<String> allow) {
         stage=Math.max(0,Math.min(stage,4));
         double ratio=Math.max(0,health)/Math.max(1,maxHealth);
         if("death".equals(type)||"respawn".equals(type)){
@@ -47,7 +53,7 @@ final class NexusCombatAlerts {
             accumulatedRecovery+=restored;
             if(structuralMonitoring&&afterIntegrity>=45)warnedStructural=false;
             if(now<nextAllowedAt)return null;
-            if(accumulatedRecovery>=5)
+            if(accumulatedRecovery>=5&&allow.test("recovery"))
                 return new Decision("recovery",phrase("recovery",stage));
             return null;
         }
@@ -58,18 +64,19 @@ final class NexusCombatAlerts {
         lastHitAt=now;
 
         if(now<nextAllowedAt)return null;
-        if(structuralMonitoring&&beforeIntegrity>25&&afterIntegrity<=25&&!warnedStructural)
+        if(structuralMonitoring&&beforeIntegrity>25&&afterIntegrity<=25&&!warnedStructural&&allow.test("structure"))
             return new Decision("structure",phrase("structure",stage));
-        if(structuralMonitoring&&ratio<=.40&&afterIntegrity<=45&&ratio>.30)
+        if(structuralMonitoring&&ratio<=.40&&afterIntegrity<=45&&ratio>.30&&allow.test("risk"))
             return new Decision("risk",phrase("risk",stage));
-        if(amount>=Math.max(4f,maxHealth*.20f))
+        if(amount>=Math.max(4f,maxHealth*.20f)&&allow.test("heavy"))
             return new Decision("heavy",phrase("heavy",stage));
-        if(hitStreak>=3)return new Decision("streak",phrase("streak",stage));
+        if(hitStreak>=3&&allow.test("streak"))return new Decision("streak",phrase("streak",stage));
         return null;
     }
 
-    void delivered(Decision alert,long now){
-        nextAllowedAt=now+MIN_INTERVAL_MS;
+    void delivered(Decision alert,long now){delivered(alert,now,45000L);}
+    void delivered(Decision alert,long now,long cooldownMillis){
+        nextAllowedAt=now+Math.max(15000L,Math.min(180000L,cooldownMillis));
         if("structure".equals(alert.kind))warnedStructural=true;
         if("streak".equals(alert.kind))hitStreak=0;
         if("recovery".equals(alert.kind))accumulatedRecovery=0;

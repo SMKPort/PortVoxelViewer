@@ -175,6 +175,7 @@ final class NexusMind {
             lastHealth=health;lastX=x;lastZ=z;return;
         }
         String speech=null;
+        String speechKind="mind";
         if(lastHealth>0&&health<=0){
             state.deaths++;
             speech=remember("death",14,"Port caiu em combate.",8,7,0);
@@ -187,6 +188,7 @@ final class NexusMind {
             if(health/max<=0.30f&&!warnedCritical) {
                 warnedCritical=true;
                 speech=warning();
+                speechKind="critical";
             }
         } else if(health>lastHealth+0.1f){
             speech=remember("heal",2,"Recuperação detectada.",0,1,1);
@@ -204,6 +206,6 @@ final class NexusMind {
             }
         }
         lastHealth=health;lastX=x;lastZ=z;
-        if(speech!=null)ClientLink.speak(speech);
+        if(speech!=null)ClientLink.speak(speech,speechKind);
     }
 }

@@ -95,6 +95,7 @@ final class ClientLink {
         NexusMind.sample(mc.player);
         if(ClientConfig.allowTelemetry)sendTelemetry(mc.player);
         if(ClientConfig.token.isEmpty())return;
+        if(ticks%180==0)sendAlertState();
         if(POLLING.compareAndSet(false,true)){
             get("/api/client/poll",true).thenAccept(reply -> {
                 if(reply!=null && reply.has("jobs")){
@@ -164,8 +165,10 @@ final class ClientLink {
         long now=System.currentTimeMillis();
         NexusCombatAlerts.Decision alert=COMBAT_ALERTS.observe(
             type,amount,hp,player.getMaxHealth(),before,after,
-            NexusMind.stageIndex(),NexusVitals.isEnabled(),now);
-        if(alert!=null&&speak(alert.message))COMBAT_ALERTS.delivered(alert,now);
+            NexusMind.stageIndex(),NexusVitals.isEnabled(),now,
+            NexusAlertSettings::allows);
+        if(alert!=null&&speak(alert.message,alert.kind))
+            COMBAT_ALERTS.delivered(alert,now,NexusAlertSettings.cooldownMillis());
     }
 
     private static void event(String type,String name,float amount,float health,String note){
@@ -175,6 +178,13 @@ final class ClientLink {
         data.addProperty("note",note.substring(0,Math.min(note.length(),140)));
         if(!ClientConfig.token.isEmpty())
             post("/api/client/telemetry",data,true).exceptionally(err -> null);
+    }
+
+    private static void sendAlertState(){
+        if(ClientConfig.token.isEmpty())return;
+        JsonObject data=NexusAlertSettings.snapshot();
+        data.add("history",NexusAlertHistory.snapshot());
+        post("/api/client/alerts/state",data,true).exceptionally(err -> null);
     }
 
     private static void execute(JsonObject job){
@@ -187,6 +197,11 @@ final class ClientLink {
                     payload.has("channel")?payload.get("channel").getAsString():"local",
                     payload.has("command")?payload.get("command").getAsString():"",
                     payload.has("format")?payload.get("format").getAsString():"&6&l");success=true;
+            }else if("alerts_settings".equals(kind)){
+                NexusAlertSettings.configure(payload);
+                sendAlertState();
+                output="Alertas atualizados e salvos no Nexus Client.";
+                success=true;
             }else if("monitor_settings".equals(kind)){
                 Minecraft mc=Minecraft.getInstance();
                 if(mc.player==null)throw new IllegalStateException("Entre no mundo para configurar o monitor.");
@@ -203,11 +218,18 @@ final class ClientLink {
         post("/api/client/ack",ack,true).exceptionally(err -> null);
     }
 
-    static boolean speak(String text) {
-        if(!ClientConfig.allowMind || !ClientConfig.allowAutonomy || !ClientConfig.allowChat)return false;
+    static boolean speak(String text){return speak(text,"mind");}
+    static boolean speak(String text,String kind) {
+        if(!ClientConfig.allowMind || !ClientConfig.allowAutonomy || !ClientConfig.allowChat ||
+            !NexusAlertSettings.allows(kind))return false;
         String safe=text.replaceAll("[\\p{Cntrl}]", " ").trim();
         if(safe.isEmpty())return false;
-        try { chat("[Nexus Aterna] "+safe,"local","l","&6&l",false);return true; }
+        try {
+            chat("[Nexus Aterna] "+safe,"local","l","&6&l",false);
+            NexusAlertHistory.record(kind,safe);
+            if(!ClientConfig.token.isEmpty())sendAlertState();
+            return true;
+        }
         catch(IllegalArgumentException | IllegalStateException ignored) { return false; }
     }
 
