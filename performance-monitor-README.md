@@ -8,7 +8,7 @@ Projeto totalmente separado do Nexus Aterna: um mod integrado client-side NeoFor
 
 ## Instalação
 
-1. Baixe o JAR `portperf-2.0.0.jar` no artefato da compilação do GitHub Actions: https://github.com/SMKPort/PortVoxelViewer/actions/runs/43111169682
+1. Baixe o JAR `portperf-2.1.0.jar` no artefato da compilação do GitHub Actions: https://github.com/SMKPort/PortVoxelViewer/actions/runs/43111169682
 2. Coloque na pasta `mods` de Minecraft Java **1.21.1 com NeoForge 21.1.x**.
 3. Inicie o jogo. O HUD exibirá FPS, ping e memória Java.
 4. Digite `/portperf key`. Uma chave privada será mostrada somente no seu Minecraft.
@@ -44,6 +44,20 @@ O experimento **não altera distância de renderização de chunks, partículas,
 
 A comparação **não é um benchmark controlado**: mudanças de cenário, quantidade de entidades e atividade do servidor podem influenciar os resultados. Para comparar corretamente, faça as medições em condições semelhantes. O `1% low estimado` utiliza FPS coletados uma vez por segundo, e **não substitui uma medição de frametimes reais**.
 
+## Editor do HUD (v2.1.0)
+
+O painel de FPS, ping, memória e Booster agora é **reposicionável por arrastar e soltar**, diretamente dentro do Minecraft. Nenhum mod adicional é necessário.
+
+1. Entre em um mundo e digite `/portperf hud edit` (ou somente `/portperf hud`).
+2. Clique e segure o quadro do HUD com o mouse; arraste até a posição desejada.
+3. Solte o mouse para salvar. Clique em **Concluir** ou pressione **ESC** para fechar.
+
+O editor também aceita as teclas direcionais (um passo por tecla), **Shift + setas** para deslocamentos maiores e os botões **Centralizar** e **Resetar**. O comando `/portperf hud reset` também restaura o canto superior esquerdo, sem precisar abrir o editor.
+
+A posição é armazenada em `config/port-performance-monitor.properties` pelos campos `hudX` e `hudY`. Ela fica entre 0 e 1 em coordenadas normalizadas, acompanha mudanças na escala de GUI e na resolução, e é limitada para manter o painel visível.
+
+O mod mantém os comandos `/portperf hud on` e `/portperf hud off`. A mudança de posição funciona mesmo quando o HUD está oculto, usando a prévia na tela de edição.
+
 ## Métricas
 
 O mod lê FPS do Minecraft, latência (ping da lista de jogadores), e heap usada, alocada e máxima da JVM. O site mostra dados atuais e histórico com gráficos, além da fase e do resultado da otimização.
@@ -70,7 +84,7 @@ Use Java 21 e Gradle 9.2.1. O comando é:
 
 `gradle -p performance-mod build --no-daemon`
 
-O JAR fica em `performance-mod/build/libs/portperf-2.0.0.jar`.
+O JAR fica em `performance-mod/build/libs/portperf-2.1.0.jar`.
 
 O site é executado com `node performance-web/server.js`. Foi criado um serviço próprio na Render, com branch `port-performance-monitor` e domínio https://port-performance-monitor.onrender.com. Nenhum serviço do Nexus foi modificado.
 
