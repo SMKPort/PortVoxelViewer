@@ -195,3 +195,12 @@ A nova aba **Voz do Nexus** usa `SpeechRecognition` (Web Speech API) no navegado
 5. A resposta textual é colocada na fila e transmitida pelo mod via `/l &6&l[Nexus Aterna] ...`. O envio aparece como seu jogador, não como mensagem do servidor.
 
 O microfone é desligado pelo botão **DESLIGAR** e ao fechar a aba. A página deve permanecer aberta; navegadores podem interromper reconhecimento em segundo plano. As respostas desta primeira etapa são **contextuais por regras**, não conversa aberta via IA. Vida recente só aparece se `/nexusclient telemetry on` estiver ativado e o mod enviar os eventos. Se o reconhecimento não estiver disponível, o botão de teste textual permite verificar a fila. O endpoint `/api/client/voice` exige a chave privada do painel, limita comprimento, exige a palavra de ativação e preserva o cooldown de chat do mod. Por segurança, o microfone só é habilitado para a própria origem HTTPS do painel.
+
+
+## Nexus Aterna RP 2.3: conversação fluida com IA
+
+A aba **Voz do Nexus** agora conversa livremente por Gemini, com contexto das últimas 16 falas, continuação automática por até 2 minutos depois de chamar **Nexus** (quando o modo contínuo está marcado) e respostas em até duas mensagens pelo chat local. O formato continua `/l &6&l[Nexus Aterna]`. Não são acionados comandos de servidor por fala. O Microfone depende da Web Speech API e pode ter interrupções por navegador, permissões ou segundo plano.
+
+Na **Render > nexus-aterna-rp > Environment**, configure **NEXUS_GEMINI_API_KEY** como variável privada com sua chave do Google AI Studio. Opcionalmente ajuste **NEXUS_GEMINI_MODEL**, cujo padrão é `gemini-3.5-flash-lite`. O backend chama o endpoint fixo Gemini `generateContent`. Não coloque a chave no navegador, código-fonte, configuração do mod ou chat.
+
+A memória da conversa é mantida na página enquanto ela estiver aberta. Para persistir entre visitas, marque **Lembrar conversa neste navegador** na aba Voz. O botão **Limpar conversa** apaga esse histórico local. O servidor do Nexus não mantém a transcrição persistentemente, mas envia à API do Gemini a pergunta e o histórico recente para gerar resposta. A telemetria só entra quando o usuário autoriza os comandos apropriados. Se o Gemini não estiver configurado ou retornar erro, o backend informa o problema, sem fingir que a resposta veio de IA.

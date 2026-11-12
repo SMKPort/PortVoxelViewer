@@ -72,7 +72,7 @@ function systemPrompt(context){
 }
 function fitResponse(text){
   let cleaned=sanitizeText(text,520)
-    .replace(/^\[nexus\s+a[eé]terna\]\s*/i,"")
+    .replace(/^\[nexus\s+a[eé]?terna\]\s*/i,"")
     .replace(/^["'“”]+|["'“”]+$/g,"").replace(/\*\*/g,"").trim();
   if(!cleaned)throw new ConversationError("A IA não retornou uma resposta em texto.");
   if(cleaned.length>380){

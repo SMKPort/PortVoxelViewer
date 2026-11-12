@@ -30,7 +30,7 @@ window.NexusRPClientUpgrade=function(rp,views){
  const backend=async(route,options={})=>{
    const key=rp.getAccess?.()||"";
    if(!key)throw Error("Informe a NEXUS_RP_ACCESS_KEY em Configurações, toque em SALVAR CÓDIGO e volte ao Nexus Client. Nenhuma senha RCON é necessária.");
-   const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),13000);
+   const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),route==="/voice"?34000:13000);
    try{
      const response=await fetch(apiRoot+route,{...options,headers:{"X-Nexus-Key":key,...(options.body?{"Content-Type":"application/json"}:{}),...(options.headers||{})},signal:ctrl.signal});
      const type=response.headers.get("content-type")||"";
@@ -50,12 +50,21 @@ window.NexusRPClientUpgrade=function(rp,views){
  async function queue(route,payload){
    const data=await backend(route,{method:"POST",body:JSON.stringify(payload)});
    if(!data.queued||!data.jobId)return data;
-   for(let i=0;i<17;i++){
-     await new Promise(r=>setTimeout(r,900));
-     const job=await backend("/job?id="+encodeURIComponent(data.jobId));
-     if(job.done){if(!job.success)throw Error(job.error||"O mod não concluiu esta ação.");return {ok:true,response:job.output,...(data.reply?{reply:data.reply}:{})};}
+   const ids=Array.isArray(data.jobIds)&&data.jobIds.length?data.jobIds.slice(0,3):[data.jobId];
+   let output="";
+   for(const id of ids){
+     let done=false;
+     for(let i=0;i<30;i++){
+       await new Promise(r=>setTimeout(r,800));
+       const job=await backend("/job?id="+encodeURIComponent(id));
+       if(job.done){
+         if(!job.success)throw Error(job.error||"O mod não concluiu esta mensagem.");
+         output=job.output;done=true;break;
+       }
+     }
+     if(!done)throw Error("O Minecraft não confirmou a mensagem. Verifique o mod e o chat local.");
    }
-   throw Error("O Minecraft não confirmou o comando. Abra o jogo e verifique o mod.");
+   return {ok:true,response:output,...(data.reply?{reply:data.reply}:{}),model:data.model};
  }
  rp.clientQueue=queue;
  const oldConfig=views.config;
