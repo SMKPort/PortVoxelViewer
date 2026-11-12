@@ -56,7 +56,8 @@ function createClientRelay({send,verifyUser,limit}){
     if(route==="/api/client/status"&&req.method==="GET"){send(res,200,{ok:true,...health()});return true;}
     if(route==="/api/client/events"&&req.method==="GET"){
       const since=Math.max(0,Number(url.searchParams.get("since")||0)||0);
-      send(res,200,{ok:true,events:events.filter(x=>x.id>since).slice(-80),lastId:eventId,...health()});return true;
+      // Keep events as an array: health().events is a numeric event counter.
+      send(res,200,{ok:true,...health(),events:events.filter(x=>x.id>since).slice(-80),lastId:eventId});return true;
     }
     if(route==="/api/client/job"&&req.method==="GET"){
       const j=jobs.get(String(url.searchParams.get("id")||""));
