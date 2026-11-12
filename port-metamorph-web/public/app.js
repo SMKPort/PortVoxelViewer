@@ -142,6 +142,57 @@ function renderParts(){
   card.append(grid);list.append(card);
  });
 }
+$('bbFile').addEventListener('change',async event=>{
+ const file=event.target.files?.[0];
+ if(!file)return;
+ try{
+  if(file.size>3_000_000)throw new Error('Arquivo muito grande. Limite de 3 MB.');
+  const source=JSON.parse(await file.text());
+  const list=Array.isArray(source.elements)?source.elements:[];
+  const cubes=list.filter(e=>(!e.type||e.type==='cube')&&Array.isArray(e.from)&&
+   Array.isArray(e.to)&&e.from.length===3&&e.to.length===3&&
+   [...e.from,...e.to].every(v=>typeof v==='number'&&Number.isFinite(v)))
+   .map(e=>({
+    from:e.from,to:e.to,
+    volume:Math.abs(e.to[0]-e.from[0])*Math.abs(e.to[1]-e.from[1])*Math.abs(e.to[2]-e.from[2]),
+    rotated:Array.isArray(e.rotation)&&e.rotation.some(n=>Number(n)!==0)
+   }))
+   .filter(e=>e.volume>0);
+  if(!cubes.length)throw new Error('Nenhum cubo compatível em elements[]. Confira a exportação do Blockbench.');
+  const boundMin=[0,1,2].map(a=>Math.min(...cubes.map(c=>Math.min(c.from[a],c.to[a]))));
+  const boundMax=[0,1,2].map(a=>Math.max(...cubes.map(c=>Math.max(c.from[a],c.to[a]))));
+  const span=Math.max(...boundMax.map((a,i)=>a-boundMin[i]));
+  const scale=Math.min(1,22/Math.max(1,span));
+  const center=boundMax.map((v,i)=>(v+boundMin[i])/2);
+  const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+  const selected=[...cubes].sort((a,b)=>b.volume-a.volume).slice(0,24);
+  state.cubes=selected.map(c=>{
+   const centerAt=[0,1,2].map(i=>(c.from[i]+c.to[i])/2);
+   const size=[0,1,2].map(i=>clamp(Math.abs(c.to[i]-c.from[i])/16*scale,.02,.9));
+   return {
+    anchor:'body',material:state.material,
+    x:clamp((centerAt[0]-center[0])/16*scale,-1.7,1.7),
+    y:clamp(1.32+(centerAt[1]-center[1])/16*scale,0,2.8),
+    z:clamp((centerAt[2]-center[2])/16*scale,-1.7,1.7),
+    sx:size[0],sy:size[1],sz:size[2]
+   };
+  });
+  state.profile='custom';state.name=String(file.name).replace(/\.bbmodel$|\.json$/i,'').slice(0,40)||'Modelo importado';
+  state.enabled=true;draftDirty=true;
+  renderControls();
+  const truncated=cubes.length>24?' Foram utilizados os 24 cubos de maior volume.':'';
+  const rotations=cubes.some(c=>c.rotated)?' Rotações internas foram ignoradas.':'';
+  const detail=cubes.length+' cubos detectados.'+truncated+rotations+' Texturas e bones não são preservados.';
+  $('importNote').textContent=detail;
+  msg('Geometria carregada localmente. Revise peças e clique em Aplicar no Minecraft.');
+ }catch(error){
+  $('importNote').textContent=error.message;
+  msg('Falha ao importar: '+error.message);
+ }finally{
+  event.target.value='';
+ }
+});
+
 $('addPart').addEventListener('click',()=>{
  if(state.cubes.length>=24){msg('Limite de 24 peças atingido.');return;}
  state.cubes.push({anchor:'body',material:state.material,x:0,y:1.4,z:.32,sx:.15,sy:.15,sz:.15});
