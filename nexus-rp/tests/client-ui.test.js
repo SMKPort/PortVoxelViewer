@@ -85,7 +85,7 @@ test("remembered key is recognized without injecting it into HTML",()=>{
 
 test("compact navigation keeps core pages visible and advanced pages accessible",()=>{
  const index=pageScript("index.html");
- const mainNav=index.match(/<nav id="nav">([\\s\\S]*?)<details id="advancedNav"/);
+ const mainNav=index.match(/<nav id="nav">([\s\S]*?)<details id="advancedNav"/);
  assert.ok(mainNav,"Navigation needs a collapsible advanced group");
  for(const page of ["painel","voz","chat","cliente","config"])
    assert.ok(mainNav[1].includes('data-page="'+page+'"'),"Core navigation missing "+page);
