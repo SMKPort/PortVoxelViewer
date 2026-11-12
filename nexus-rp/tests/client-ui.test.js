@@ -82,3 +82,17 @@ test("remembered key is recognized without injecting it into HTML",()=>{
  assert.ok(js.includes("localStorage.setItem(ACCESS_REMEMBER_KEY,secrets.access)"));
  assert.ok(js.includes("localStorage.removeItem(ACCESS_REMEMBER_KEY)"));
 });
+
+test("compact navigation keeps core pages visible and advanced pages accessible",()=>{
+ const index=pageScript("index.html");
+ const mainNav=index.match(/<nav id="nav">([\\s\\S]*?)<details id="advancedNav"/);
+ assert.ok(mainNav,"Navigation needs a collapsible advanced group");
+ for(const page of ["painel","voz","chat","cliente","config"])
+   assert.ok(mainNav[1].includes('data-page="'+page+'"'),"Core navigation missing "+page);
+ for(const page of ["armadura","rituais"])
+   assert.ok(index.includes('data-page="'+page+'"'),"Advanced tool lost "+page);
+ assert.ok(index.includes('href="#voz"'),"Voice must be directly accessible from mobile topbar");
+ assert.ok(index.includes('app.js?v=2.4'),"Bump app cache to make voice visible after deployment");
+ assert.ok(pageScript("app.js").includes("advancedItems.appendChild(item)"));
+ assert.ok(pageScript("client.js").includes('!nav.querySelector(\'[data-page="cliente"]\')'));
+});

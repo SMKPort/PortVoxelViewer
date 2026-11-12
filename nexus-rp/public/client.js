@@ -153,7 +153,7 @@ window.NexusRPClientUpgrade=function(rp,views){
  };
  const nav=document.querySelector('#nav');
  const cfg=nav?.querySelector('[data-page="config"]');
- if(cfg){const b=document.createElement("button");b.className="nav-button";b.dataset.page="cliente";b.innerHTML='<span>⬡</span> Nexus Client';cfg.before(b);}
+ if(cfg&&!nav.querySelector('[data-page="cliente"]')){const b=document.createElement("button");b.className="nav-button";b.dataset.page="cliente";b.innerHTML='<span>⬡</span> Nexus Client';cfg.before(b);}
  const oldEvents=views.eventos;
  if(oldEvents)views.eventos=function(){
    let html=oldEvents();

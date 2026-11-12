@@ -8,3 +8,30 @@
 .voice-history-line.port{background:#18181e;border-color:#3d414a}
 .voice-history-line.port strong{color:#a3b9d2}
 .voice-error:not(:empty){color:#e8a09b}
+
+/* Navegação compacta com atalhos principais; os módulos avançados continuam disponíveis. */
+.sidebar{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#50323b transparent}
+.sidebar nav{display:grid;gap:5px;align-content:start}
+.sidebar nav>.nav-button{width:100%;min-height:43px;padding:10px 12px}
+.nav-primary-voice{background:linear-gradient(95deg,#3a2425,#25202a);border-color:#79573e!important;color:#f6d79b}
+.nav-primary-voice span{font-size:17px}
+.advanced-nav{border-top:1px solid #3d2e37;margin:8px 2px 0;padding-top:11px}
+.advanced-nav>summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;color:#ac9da3;font-size:11px;letter-spacing:.02em;padding:9px 10px;border-radius:8px;list-style:none}
+.advanced-nav>summary::-webkit-details-marker{display:none}
+.advanced-nav>summary:hover,.advanced-nav[open]>summary{color:#ebd1b1;background:#261b23}
+.advanced-arrow{font-size:13px;transition:transform .15s}
+.advanced-nav[open] .advanced-arrow{transform:rotate(180deg)}
+.advanced-items{display:grid;gap:3px;padding:6px 0 10px 10px;border-left:1px solid #573a44;margin-left:13px}
+.advanced-items .nav-button{width:100%;min-height:36px;font-size:11px;padding:9px 10px}
+.advanced-items .nav-button span{font-size:16px;width:20px}
+.sidebar-bottom{flex-shrink:0}
+.voice-top-link{display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border:1px solid #98703c;border-radius:9px;color:#f2ce93;background:#302025;white-space:nowrap;text-decoration:none;font-size:11px;font-weight:700;letter-spacing:.02em}
+.voice-top-link:hover{background:#4b2e31;color:#fff2d9}
+@media(max-width:600px){
+  .top-status{display:none!important}
+  .top-right{gap:9px}
+  .voice-top-link{padding:9px 10px;font-size:11px}
+  .voice-top-link span{display:inline}
+  .sidebar{padding-top:20px;padding-bottom:14px}
+  .sidebar-bottom{padding-top:12px}
+}

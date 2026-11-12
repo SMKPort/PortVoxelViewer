@@ -64,8 +64,20 @@ if(window.NexusRPUpgrade)views=window.NexusRPUpgrade(rp,views);
 if(window.NexusRPEvolution)views=window.NexusRPEvolution(rp,views);
 if(window.NexusRPClientUpgrade)views=window.NexusRPClientUpgrade(rp,views);
 if(window.NexusRPVoiceUpgrade)views=window.NexusRPVoiceUpgrade(rp,views);
+
+// Preserve advanced pages, but group their menu entries instead of showing a
+// dozen primary buttons. All module scripts run before this app initializer.
+const PRIMARY_PAGES=new Set(["painel","voz","chat","cliente","config"]);
+const advancedItems=document.querySelector("#advancedItems");
+if(advancedItems){
+  document.querySelectorAll("#nav .nav-button[data-page]").forEach(item=>{
+    if(!PRIMARY_PAGES.has(item.dataset.page))advancedItems.appendChild(item);
+  });
+}
 function render(){
 $("#content").innerHTML=views[page]?.()||views.painel();
+const advancedNav=document.querySelector("#advancedNav");
+if(advancedNav&&!PRIMARY_PAGES.has(page))advancedNav.open=true;
 $("#pageLabel").textContent=PAGES[page]||"NÚCLEO";
 document.querySelectorAll("[data-page]").forEach(el=>{const yes=el.dataset.page===page;el.classList.toggle("active",yes);el.setAttribute("aria-current",yes?"page":"false");});
 $("#sideConnection").textContent=connected?"MINECRAFT CONECTADO":"NARRATIVA LOCAL";

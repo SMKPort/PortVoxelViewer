@@ -3,38 +3,45 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c090e"><meta name="description" content="Nexus Aterna RP, terminal narrativo e comunicador Minecraft de Port Morningstar.">
-<title>NEXUS ATERNA | Roleplay Console 2.1</title>
+<title>NEXUS ATERNA | Roleplay Console 2.4</title>
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
-<link rel="manifest" href="/manifest.webmanifest"><link rel="stylesheet" href="/styles.css">
-<link rel="stylesheet" href="/upgrade.css">
-<link rel="stylesheet" href="/evolution.css">
-<link rel="stylesheet" href="/voice.css?v=2.3">
-<script src="/views.js?v=2.1" defer></script>
-<script src="/upgrade.js?v=2.1" defer></script>
-<script src="/evolution.js?v=2.1" defer></script>
-<script src="/client.js?v=2.1" defer></script>
-<script src="/voice.js?v=2.3" defer></script>
-<script src="/app.js?v=2.1" defer></script>
+<link rel="manifest" href="/manifest.webmanifest"><link rel="stylesheet" href="/styles.css?v=2.4">
+<link rel="stylesheet" href="/upgrade.css?v=2.4">
+<link rel="stylesheet" href="/evolution.css?v=2.4">
+<link rel="stylesheet" href="/voice.css?v=2.4">
+<script src="/views.js?v=2.4" defer></script>
+<script src="/upgrade.js?v=2.4" defer></script>
+<script src="/evolution.js?v=2.4" defer></script>
+<script src="/client.js?v=2.4" defer></script>
+<script src="/voice.js?v=2.4" defer></script>
+<script src="/app.js?v=2.4" defer></script>
 </head>
 <body>
 <div class="layout">
 <aside class="sidebar" id="sidebar" aria-label="Navegação">
- <a class="brand" href="#painel"><span class="brand-symbol">✦</span><span><strong>NEXUS <i>ATERNA</i></strong><small>ROLEPLAY CONSOLE 2.1 · MINECRAFT</small></span></a>
+ <a class="brand" href="#painel"><span class="brand-symbol">✦</span><span><strong>NEXUS <i>ATERNA</i></strong><small>ROLEPLAY CONSOLE 2.4 · MINECRAFT</small></span></a>
  <div class="navigation-title">INTERFACE DO PORT</div>
  <nav id="nav">
-  <button class="nav-button active" data-page="painel"><span>◈</span> Núcleo do Nexus</button>
+  <button class="nav-button active" data-page="painel"><span>◈</span> Visão geral</button>
+  <button class="nav-button nav-primary-voice" data-page="voz"><span>🎙</span> Voz do Nexus</button>
   <button class="nav-button" data-page="chat"><span>▣</span> Comunicador</button>
-  <button class="nav-button" data-page="armadura"><span>⚙</span> Armadura Arcana</button>
-  <button class="nav-button" data-page="rituais"><span>✧</span> Rituais</button>
+  <button class="nav-button" data-page="cliente"><span>⬡</span> Nexus Client</button>
   <button class="nav-button" data-page="config"><span>⛭</span> Configurações</button>
+  <details id="advancedNav" class="advanced-nav">
+    <summary>Outras ferramentas <span class="advanced-arrow">▾</span></summary>
+    <div id="advancedItems" class="advanced-items">
+      <button class="nav-button" data-page="armadura"><span>⚙</span> Armadura arcana</button>
+      <button class="nav-button" data-page="rituais"><span>✧</span> Rituais</button>
+    </div>
+  </details>
  </nav>
- <div class="sidebar-bottom"><div class="oper-status"><span class="light"></span><span id="sideConnection">NARRATIVA LOCAL</span></div><div class="line-mini"><span>IDENTIDADE</span><strong>PORT MORNINGSTAR</strong></div><div class="line-mini"><span>MODO</span><strong>ROLEPLAY</strong></div><div class="sidebar-version">ATERNA RP / 1.3</div></div>
+ <div class="sidebar-bottom"><div class="oper-status"><span class="light"></span><span id="sideConnection">NARRATIVA LOCAL</span></div><div class="line-mini"><span>IDENTIDADE</span><strong>PORT MORNINGSTAR</strong></div><div class="line-mini"><span>MODO</span><strong>ROLEPLAY</strong></div><div class="sidebar-version">ATERNA RP / 2.4</div></div>
 </aside>
 <div class="screen">
  <header class="topbar">
   <button id="menuToggle" class="icon-btn menu-toggle" aria-label="Abrir menu">☰</button>
   <div class="crumb">ATERNA <span>/</span> <strong id="pageLabel">NÚCLEO</strong></div>
-  <div class="top-right"><span class="top-status" id="topStatus"><span class="light"></span> MODO LOCAL</span><button class="top-gear" id="openSettings" title="Configurações" aria-label="Abrir configurações">⚙</button></div>
+  <div class="top-right"><a class="voice-top-link" href="#voz" aria-label="Ir para Voz do Nexus">🎙 <span>Voz do Nexus</span></a><span class="top-status" id="topStatus"><span class="light"></span> MODO LOCAL</span><button class="top-gear" id="openSettings" title="Configurações" aria-label="Abrir configurações">⚙</button></div>
  </header>
  <main id="content" class="main" aria-live="polite"></main>
  <footer class="footer"><span>✦ PORT MORNINGSTAR HERNANDES</span><span id="time">NEXUS ATERNA</span><span>ARCANE ENGINEERING DIVISION</span></footer>

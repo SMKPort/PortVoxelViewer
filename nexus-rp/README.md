@@ -204,3 +204,7 @@ A aba **Voz do Nexus** agora conversa livremente por Gemini, com contexto das ú
 Na **Render > nexus-aterna-rp > Environment**, configure **NEXUS_GEMINI_API_KEY** como variável privada com sua chave do Google AI Studio. Opcionalmente ajuste **NEXUS_GEMINI_MODEL**, cujo padrão é `gemini-3.5-flash-lite`. O backend chama o endpoint fixo Gemini `generateContent`. Não coloque a chave no navegador, código-fonte, configuração do mod ou chat.
 
 A memória da conversa é mantida na página enquanto ela estiver aberta. Para persistir entre visitas, marque **Lembrar conversa neste navegador** na aba Voz. O botão **Limpar conversa** apaga esse histórico local. O servidor do Nexus não mantém a transcrição persistentemente, mas envia à API do Gemini a pergunta e o histórico recente para gerar resposta. A telemetria só entra quando o usuário autoriza os comandos apropriados. Se o Gemini não estiver configurado ou retornar erro, o backend informa o problema, sem fingir que a resposta veio de IA.
+
+
+## Interface Nexus RP 2.4: barra compacta
+A navegação principal foi reduzida a **Visão geral**, **Voz do Nexus**, **Comunicador**, **Nexus Client** e **Configurações**. Todas as abas avançadas anteriores, incluindo armadura, rituais, eventos, sequenciador, protocolo TS, emotes e emergência, continuam disponíveis dentro de **Outras ferramentas**. O topo da página ganhou um atalho fixo para `#voz`, inclusive em telas estreitas. O menu lateral permite rolagem no celular. Assets do painel usam versão de cache `2.4` para invalidar scripts antigos.
