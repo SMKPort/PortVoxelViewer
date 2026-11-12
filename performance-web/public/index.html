@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0d0d12"><meta name="description" content="Port Performance Monitor, painel de FPS, ping e uso de memória do Minecraft.">
-<title>PORT // PERFORMANCE MONITOR</title>
+<meta name="theme-color" content="#0d0d12"><meta name="description" content="Port Performance Monitor + Booster: FPS, memória e experimentos de otimização reversíveis do Minecraft.">
+<title>PORT // PERFORMANCE + BOOSTER</title>
 <link rel="stylesheet" href="/style.css">
 <script src="/app.js" defer></script>
 </head>
@@ -16,7 +16,7 @@
 <main>
 <div class="hero"><div class="eyebrow"><span class="line"></span> TELEMETRIA EM TEMPO REAL <span class="line"></span></div>
 <h1>Performance, <em>sob controle.</em></h1>
-<p>Monitore seu Minecraft de qualquer dispositivo. O mod funciona somente no seu cliente, sem precisar acessar o servidor.</p>
+<p>Monitore seu Minecraft e avalie otimizações experimentais com comparações antes/depois. Tudo no cliente, sem acesso administrativo ao servidor.</p>
 </div>
 <section class="connect panel" aria-label="Conexão com o Minecraft">
   <div class="heading"><div><small>LINK SEGURO</small><h2>Conectar meu Minecraft</h2></div><span class="number">01 / CONEXÃO</span></div>
@@ -40,11 +40,49 @@
     <article class="panel graphpanel"><div class="heading"><div><small>HISTÓRICO</small><h2>Latência do servidor</h2></div><span class="plot-range">ÚLTIMAS 60 AMOSTRAS</span></div><div class="canvaswrap"><canvas id="pingChart" aria-label="Gráfico de ping"></canvas></div><div class="chartfoot"><span id="avgPing">Ping médio: --</span><span id="player">Jogador: --</span></div></article>
   </div>
 </section>
+<section class="booster panel" aria-label="Integração com Port Client Booster">
+ <div class="heading"><div><small>PORT PERFORMANCE + BOOSTER</small><h2>Laboratório de otimização</h2></div><span class="number" id="boostMode">MODO: --</span></div>
+ <p class="booster-intro">Teste um ajuste reversível na distância de visualização das entidades. O sistema mede FPS antes e depois, preserva partículas e distância de chunks. Alterações automáticas ficam desligadas por padrão.</p>
+ <div class="boost-stats">
+  <article><small>BASELINE</small><strong id="baselineFps">--</strong><span>FPS médio antes</span></article>
+  <article><small>TESTE</small><strong id="trialFps">--</strong><span>FPS médio durante</span></article>
+  <article><small>RESULTADO</small><strong id="boosterDiff">--</strong><span>Variação observada</span></article>
+  <article><small>1% LOW (EST.)</small><strong id="lowOne">--</strong><span>Por amostras FPS de 1 s</span></article>
+ </div>
+ <div class="booster-layout">
+  <div class="booster-data">
+   <div class="boost-line"><span>Estado atual</span><strong id="boostPhase">Aguardando o mod integrado</strong></div>
+   <div class="boost-line"><span>Meta</span><strong id="boostTarget">-- FPS</strong></div>
+   <div class="boost-line"><span>Ajuste aplicado</span><strong id="boostScaling">Nenhum</strong></div>
+   <div class="boost-line"><span>Controle web</span><strong id="boostAccess">Não autorizado</strong></div>
+   <p id="boostAction" class="booster-action">Ainda sem dados do booster.</p>
+  </div>
+  <div class="booster-controls">
+   <label for="boostTargetInput">META DE FPS</label>
+   <select id="boostTargetInput"><option value="30">30 FPS</option><option value="45">45 FPS</option><option value="60" selected>60 FPS</option><option value="75">75 FPS</option><option value="90">90 FPS</option><option value="120">120 FPS</option><option value="144">144 FPS</option><option value="165">165 FPS</option><option value="240">240 FPS</option></select>
+   <div class="boost-buttons">
+    <button type="button" data-boost="observe" disabled>OBSERVAR</button>
+    <button type="button" data-boost="auto" class="primary" disabled>TESTE AUTOMÁTICO</button>
+    <button type="button" data-boost="off" disabled>DESATIVAR</button>
+    <button type="button" data-boost="reset" disabled>RESTAURAR / ZERAR</button>
+   </div>
+   <p id="boostNotice" aria-live="polite" class="footnote">Para permitir comandos pelo navegador: <code>/portperf stream on</code> e <code>/portperf webcontrol on</code>.</p>
+  </div>
+ </div>
+ <div class="heading booster-history-title"><div><small>HISTÓRICO LOCAL DA SESSÃO</small><h2>Etapas do experimento</h2></div></div>
+ <div id="boostEvents" class="booster-history"><p>Sem eventos de otimização registrados.</p></div>
+ <p class="footnote">A comparação é exploratória. Mudanças de cena, chunks e carga de mods podem afetar o resultado. O 1% low é apenas uma estimativa calculada a partir de leituras de FPS por segundo, não um percentil preciso de frametimes.</p>
+</section>
 <section class="info panel"><div class="heading"><div><small>COMANDOS</small><h2>Controle pelo Minecraft</h2></div><span class="number">02 / MOD</span></div>
-<div class="commands"><div><code>/portperf key</code><span>Exibe a chave privada para ligar mod e site</span></div><div><code>/portperf stream on</code><span>Autoriza a transmissão HTTPS dos indicadores</span></div><div><code>/portperf stream off</code><span>Para a transmissão imediatamente</span></div><div><code>/portperf hud on</code><span>Ativa o HUD de desempenho no jogo</span></div><div><code>/portperf hud off</code><span>Desativa o HUD</span></div><div><code>/portperf status</code><span>Mostra o estado do mod e o endereço HTTPS</span></div><div><code>/portperf resetkey</code><span>Revoga a chave e cria outra</span></div></div>
-<p class="footnote">Os dados são armazenados temporariamente na memória do servidor do site. Uma reinicialização da hospedagem apaga o histórico. Não há coleta de TPS real, CPU ou GPU nesta versão. O ping exibido é o reportado pelo cliente Minecraft e pode ficar indisponível em singleplayer.</p>
+<div class="commands"><div><code>/portperf key</code><span>Exibe a chave privada para ligar mod e site</span></div><div><code>/portperf stream on</code><span>Autoriza a transmissão HTTPS dos indicadores</span></div><div><code>/portperf stream off</code><span>Para a transmissão imediatamente</span></div><div><code>/portperf hud on</code><span>Ativa o HUD de desempenho no jogo</span></div><div><code>/portperf hud off</code><span>Desativa o HUD</span></div><div><code>/portperf status</code><span>Mostra o estado do mod e o endereço HTTPS</span></div><div><code>/portperf resetkey</code><span>Revoga a chave e cria outra</span></div>
+<div><code>/portperf boost observe</code><span>Monitorar FPS sem alterar opções do jogo</span></div>
+<div><code>/portperf boost auto</code><span>Iniciar experimento de otimização reversível (30 s + 30 s)</span></div>
+<div><code>/portperf boost off</code><span>Cancelar e restaurar ajustes originais</span></div>
+<div><code>/portperf boost target 60</code><span>Definir meta desejada de FPS</span></div>
+<div><code>/portperf webcontrol on</code><span>Autorizar comandos do painel nesta sessão</span></div></div>
+<p class="footnote">Os dados são armazenados temporariamente na memória do servidor do site. Uma reinicialização da hospedagem apaga o histórico. Não há coleta de TPS real, CPU ou GPU nesta versão. O teste de otimização é opt-in e pode afetar a distância visível de entidades. O ping exibido é o reportado pelo cliente Minecraft e pode ficar indisponível em singleplayer.</p>
 </section>
 </main>
-<footer><span>PORT PERFORMANCE MONITOR // V1.0</span><span>CLIENT-SIDE MONITORING · PRIVATE BY TOKEN</span></footer>
+<footer><span>PORT PERFORMANCE + BOOSTER // V2.0</span><span>CLIENT-SIDE MONITORING · PRIVATE BY TOKEN</span></footer>
 </div>
 </body></html>
