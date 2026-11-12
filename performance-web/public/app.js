@@ -3,6 +3,7 @@
  const $=id=>document.getElementById(id);
  const STORAGE="port-performance-token-v1";
  let token="",online=false,series=[],lastSeen=0,refreshing=false;
+ let boosterCanControl=false;
  try{token=localStorage.getItem(STORAGE)||sessionStorage.getItem(STORAGE)||"";}catch(e){}
  const notify=(message)=>{$("notice").textContent=message;};
  function updateConnection(){
@@ -19,6 +20,7 @@
    online=!!data.online;series=Array.isArray(data.series)?data.series.slice(-720):[];
    lastSeen=data.lastSeen||0;updateConnection();
    const v=data.latest;
+   updateBooster(v?.booster,Array.isArray(data.events)?data.events:[]);
    if(!v){
      for(const n of ["fps","ping","memory","frametime"])metricText(n,null);
      for(const n of ["fpsBar","pingBar","memoryBar","frameBar"])fillMeter(n,0);
@@ -49,6 +51,70 @@
    $("avgPing").textContent="Ping médio: "+(pings.length?Math.round(avg(pings))+" ms":"--");
    plot("fpsChart",fpsPoints,"#dfb56d","FPS");
    plot("pingChart",pings,"#bc6e75","ms");
+ }
+ const phases={
+  idle:"Desligado",observing:"Somente observação",baseline:"Coletando referência",
+  trial:"Testando ajuste", "target-met":"Meta de FPS alcançada",
+  "no-change":"Sem alteração necessária",kept:"Ajuste mantido",reverted:"Ajuste revertido"
+ };
+ function updateBooster(booster,events){
+   boosterCanControl=!!token&&online&&booster?.webControlEnabled===true;
+   for(const button of document.querySelectorAll("[data-boost]"))button.disabled=!boosterCanControl;
+   $("boostMode").textContent="MODO: "+(booster?.mode||"--").toUpperCase();
+   $("boostPhase").textContent=phases[booster?.phase]||"Aguardando mod v2.0";
+   $("baselineFps").textContent=booster?.baselineAvgFps>0?booster.baselineAvgFps.toFixed(1):"--";
+   $("trialFps").textContent=booster?.trialAvgFps>0?booster.trialAvgFps.toFixed(1):"--";
+   $("boosterDiff").textContent=booster?.trialAvgFps>0?(booster.differencePct>0?"+":"")+booster.differencePct.toFixed(1)+"%":"--";
+   $("lowOne").textContent=booster?.low1SampledFps>0?booster.low1SampledFps.toFixed(1):"--";
+   $("boostTarget").textContent=(booster?.targetFps??"--")+" FPS";
+   $("boostScaling").textContent=booster?.changedOption?
+     Math.round(booster.appliedEntityScale*100)+"% (entidades)":"Nenhum";
+   $("boostAccess").textContent=!booster?"Mod antigo / indisponível":
+      !booster.webControlEnabled?"Bloqueado pelo jogo":"Autorizado nesta sessão";
+   $("boostAction").textContent=booster?.lastAction||"Instale o mod Port Performance + Booster v2.0 para habilitar esta seção.";
+   const target=$("boostTargetInput");
+   if(booster&&document.activeElement!==target&&
+      [...target.options].some(x=>Number(x.value)===booster.targetFps))
+      target.value=String(booster.targetFps);
+   const container=$("boostEvents");
+   container.replaceChildren();
+   if(!events.length){
+     const para=document.createElement("p");para.textContent="Sem eventos de otimização registrados.";container.append(para);
+   }else{
+     for(const ev of events.slice(-8).reverse()){
+       const item=document.createElement("div");item.className="boost-event";
+       const head=document.createElement("strong");
+       head.textContent=(phases[ev.phase]||ev.phase||"Evento")+
+         " · "+(Number.isFinite(ev.t)?new Date(ev.t).toLocaleTimeString("pt-BR"):"--");
+       const info=document.createElement("span");info.textContent=ev.description||"Estado atualizado.";
+       item.append(head,info);container.append(item);
+     }
+   }
+ }
+ async function commandBooster(action){
+   if(!boosterCanControl){
+     $("boostNotice").textContent="Controle não autorizado. No Minecraft, ative /portperf stream on e /portperf webcontrol on.";
+     return;
+   }
+   const targetFps=Number($("boostTargetInput").value);
+   const buttons=[...document.querySelectorAll("[data-boost]")];
+   buttons.forEach(b=>b.disabled=true);
+   try{
+     const response=await fetch("/api/booster/control",{
+       method:"POST",cache:"no-store",
+       headers:{"Accept":"application/json","Content-Type":"application/json","X-Port-Perf-Key":token},
+       body:JSON.stringify({action,targetFps}),
+       signal:AbortSignal.timeout(8500)
+     });
+     const result=await response.json();
+     if(!response.ok||!result.ok)throw Error(result.error||"HTTP "+response.status);
+     $("boostNotice").textContent="Ação enviada. O jogo receberá o comando no próximo ciclo de telemetria.";
+   }catch(e){
+     $("boostNotice").textContent="Falha ao controlar o booster: "+(e.message||e);
+   }finally{buttons.forEach(b=>b.disabled=!boosterCanControl);}
+ }
+ for(const b of document.querySelectorAll("[data-boost]")){
+   b.addEventListener("click",()=>commandBooster(b.dataset.boost));
  }
  function plot(id,data,color,unit){
    const canvas=$(id);if(!canvas)return;
@@ -101,7 +167,7 @@
    updateConnection();poll();
  });
  $("disconnect").addEventListener("click",()=>{
-   token="";online=false;series=[];
+   token="";online=false;series=[];boosterCanControl=false;
    try{localStorage.removeItem(STORAGE);sessionStorage.removeItem(STORAGE);}catch(e){}
    $("remember").checked=false;$("token").value="";updateDashboard({online:false,series:[],latest:null,lastSeen:null});notify("Pareamento removido deste navegador. A transmissão do mod continua até usar /portperf stream off.");
  });
