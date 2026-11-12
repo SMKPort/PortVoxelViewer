@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111015">
+<meta name="description" content="Port Metamorph: controle suas formas, asas, placas e acessórios do Minecraft pelo navegador.">
+<title>Port Metamorph | Control Studio</title>
+<link rel="stylesheet" href="/styles.css">
+<script defer src="/app.js"></script>
+</head>
+<body>
+<div class="shell">
+ <aside class="sidebar">
+  <div class="brandmark"><span class="brand-icon">◈</span><div><small>PORT SYSTEMS</small><strong>METAMORPH</strong></div></div>
+  <div class="side-label">PAINEL DE CONTROLE</div>
+  <nav>
+   <a class="nav active" href="#studio"><span>◉</span> Studio de formas</a>
+   <a class="nav" href="#modules"><span>⬡</span> Módulos</a>
+   <a class="nav" href="#connection"><span>⛓</span> Vinculação</a>
+  </nav>
+  <div class="sidebar-info"><div class="dot"></div><div><strong>NEOFORGE 1.21.1</strong><small>Cliente / Transformações locais</small></div></div>
+  <p class="sidebar-footer">PORT METAMORPH 0.1.0<br>Protótipo modular de acessórios corporais</p>
+ </aside>
+ <main class="main">
+  <header class="topbar">
+   <div><span class="breadcrumb">PORT SYSTEMS / CONTROL STUDIO</span><h1>Metamorph Studio <em>01</em></h1><p>Construa formas. Combine peças. Controle seu personagem.</p></div>
+   <div class="connection-chip" id="connectionChip"><span class="dot"></span><span id="connectionLabel">Não vinculado</span></div>
+  </header>
+  <section id="connection" class="connection-panel" aria-labelledby="pairTitle">
+   <div class="section-heading"><div><small>01 / CONEXÃO SEGURA</small><h2 id="pairTitle">Vincular Minecraft</h2></div><span class="tag">Código temporário</span></div>
+   <p>Dentro do Minecraft com o mod instalado, use <code>/metamorph pair</code>. Copie o código de oito caracteres exibido no chat e digite abaixo.</p>
+   <div class="pair-row"><label class="sr-only" for="pairCode">Código de pareamento</label><input id="pairCode" type="text" inputmode="text" maxlength="8" pattern="[0-9A-Fa-f]{8}" autocomplete="off" placeholder="00000000" spellcheck="false"><button id="pairButton" class="gold-button">Vincular dispositivo</button></div>
+   <div class="small-muted" id="pairStatus" role="status" aria-live="polite">Nenhum dispositivo conectado. O editor pode ser explorado em modo de demonstração.</div>
+   <div class="paired-actions" id="pairedActions" hidden><button class="subtle-button" id="refreshButton">Atualizar estado</button><button class="subtle-button danger" id="unpairButton">Desvincular</button></div>
+  </section>
+  <section id="studio" class="workspace">
+   <div class="left-panel">
+    <div class="section-heading"><div><small>02 / ESTÚDIO</small><h2>Formas corporais</h2></div></div>
+    <div class="preset-grid" role="group" aria-label="Formas predefinidas">
+      <button class="preset current" data-preset="normal"><span>◇</span><strong>Normal</strong><small>Sem acessórios</small></button>
+      <button class="preset" data-preset="nexus"><span>⚙</span><strong>Nexus</strong><small>Braço mecânico</small></button>
+      <button class="preset" data-preset="angel"><span>✧</span><strong>Angelical</strong><small>Asas articuladas</small></button>
+      <button class="preset" data-preset="hybrid"><span>✺</span><strong>Híbrida</strong><small>Combinação completa</small></button>
+    </div>
+    <div class="fieldset">
+      <label class="field-label" for="formName">Nome da forma</label>
+      <input id="formName" maxlength="40" value="Normal" placeholder="Nome da forma">
+    </div>
+    <div class="section-subhead"><h3>Módulos corporais</h3><small>Ativação individual</small></div>
+    <div class="toggle-line"><span><strong>Asas</strong><small>Painéis articulados dorsais</small></span><label class="switch"><input type="checkbox" id="wings"><span></span></label></div>
+    <div class="toggle-line"><span><strong>Nexus</strong><small>Placas mecânicas no braço direito</small></span><label class="switch"><input type="checkbox" id="nexus"><span></span></label></div>
+    <div class="toggle-line"><span><strong>Chifres</strong><small>Projeções na cabeça</small></span><label class="switch"><input type="checkbox" id="horns"><span></span></label></div>
+    <div class="fieldset">
+      <label class="field-label" for="material">Material visual</label>
+      <select id="material">
+        <option value="gold">Ouro</option><option value="iron">Ferro</option>
+        <option value="netherite">Netherita</option><option value="amethyst">Ametista</option>
+        <option value="redstone">Redstone</option><option value="copper">Cobre</option>
+      </select>
+    </div>
+   </div>
+   <div class="right-panel">
+    <div class="preview-top"><span>VISUALIZADOR CONCEITUAL</span><span class="live-indicator">● CLIENT VISUAL</span></div>
+    <div class="preview-stage">
+      <svg id="avatarPreview" viewBox="0 0 380 430" role="img" aria-label="Prévia ilustrativa de uma figura com asas e prótese" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="bodyGrad" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#4b424b"/><stop offset="1" stop-color="#1e1b25"/></linearGradient><linearGradient id="metalGrad" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0ae"/><stop offset=".42" stop-color="#c79a5e"/><stop offset="1" stop-color="#6e402b"/></linearGradient><pattern id="lines" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M30 0H0V30" fill="none" stroke="#a7927d" opacity=".08"/></pattern></defs>
+        <rect width="380" height="430" fill="#17161d"/>
+        <rect width="380" height="430" fill="url(#lines)"/>
+        <circle cx="190" cy="196" r="141" fill="#9b6550" opacity=".045"/>
+        <g stroke="#d1b381" opacity=".35" fill="none"><path d="M30 216H350 M190 28V402"/><circle cx="190" cy="216" r="138" stroke-dasharray="3 10"/></g>
+        <g id="wingPreview" class="preview-part">
+          <path d="M158 150 L76 78 53 126 76 153 19 176 55 217 147 193Z" fill="url(#metalGrad)" stroke="#ecbf82" stroke-width="2"/>
+          <path d="M222 150 L304 78 327 126 304 153 361 176 325 217 233 193Z" fill="url(#metalGrad)" stroke="#ecbf82" stroke-width="2"/>
+          <path d="M151 161L51 173 M149 178L56 209 M229 161L329 173 M231 178L324 209" stroke="#6c402e" stroke-width="3"/>
+        </g>
+        <g class="avatar-body">
+          <rect x="161" y="81" width="58" height="65" rx="8" fill="url(#bodyGrad)" stroke="#74646a" stroke-width="2"/>
+          <path d="M165 110L176 116 189 112 204 118 217 109" stroke="#d1a467" stroke-width="3" fill="none"/>
+          <rect x="137" y="152" width="106" height="123" rx="9" fill="url(#bodyGrad)" stroke="#75626e" stroke-width="2"/>
+          <path d="M148 175L191 194 231 175 M151 209L190 229 229 209" fill="none" stroke="#bd9865" stroke-width="4"/>
+          <rect x="104" y="158" width="32" height="118" rx="6" fill="#312b35" stroke="#6f626a" stroke-width="2"/>
+          <rect x="243" y="158" width="32" height="118" rx="6" fill="#312b35" stroke="#6f626a" stroke-width="2"/>
+          <rect x="149" y="278" width="35" height="112" rx="5" fill="#322e36" stroke="#75626e" stroke-width="2"/>
+          <rect x="196" y="278" width="35" height="112" rx="5" fill="#322e36" stroke="#75626e" stroke-width="2"/>
+          <rect x="145" y="386" width="42" height="13" rx="3" fill="#1f1b22"/>
+          <rect x="193" y="386" width="42" height="13" rx="3" fill="#1f1b22"/>
+        </g>
+        <g id="nexusPreview" class="preview-part">
+          <path d="M243 160H275V202H243Z M244 210H275V252H244Z M246 258H273V284H246Z" fill="url(#metalGrad)" stroke="#f1ce8c" stroke-width="2"/>
+          <path d="M246 201H272M247 252H271" stroke="#6e2937" stroke-width="5"/>
+          <circle cx="260" cy="231" r="9" fill="#af332f" stroke="#ffbb79" stroke-width="2"/>
+        </g>
+        <g id="hornPreview" class="preview-part"><path d="M165 84L151 44 173 61 177 82 M215 84L229 44 207 61 203 82" fill="url(#metalGrad)" stroke="#f1ce8c" stroke-width="2"/></g>
+        <text x="18" y="406" font-size="10" fill="#ad9baa" font-family="monospace">SIMULAÇÃO 2D / NÃO É RENDER IN-GAME</text>
+      </svg>
+    </div>
+    <div class="preview-footer"><div><small>FORMA ATIVA</small><strong id="previewName">Normal</strong></div><span id="previewModules">0 MÓDULOS</span></div>
+    <p class="preview-note">A imagem é uma representação ilustrativa. O mod usa peças voxel renderizadas no personagem dentro do Minecraft.</p>
+   </div>
+  </section>
+
+  <section class="details">
+   <div class="section-heading"><div><small>03 / AJUSTES AVANÇADOS</small><h2>Movimento e transição</h2></div></div>
+   <div class="sliders">
+    <label><span>Escala das asas <output id="wingScaleOut">1,00×</output></span><input id="wingScale" type="range" min=".3" max="2.2" step=".05" value="1"></label>
+    <label><span>Velocidade do movimento <output id="wingSpeedOut">2,0</output></span><input id="wingSpeed" type="range" min="0" max="8" step=".2" value="2"></label>
+    <label><span>Amplitude das asas <output id="wingMotionOut">25°</output></span><input id="wingMotion" type="range" min="0" max="70" step="1" value="25"></label>
+    <label><span>Escala do Nexus <output id="armScaleOut">1,00×</output></span><input id="armScale" type="range" min=".4" max="1.8" step=".05" value="1"></label>
+    <label><span>Duração da transformação <output id="transitionSecondsOut">1,0 s</output></span><input id="transitionSeconds" type="range" min=".2" max="6" step=".1" value="1"></label>
+   </div>
+  </section>
+
+  <section id="modules" class="details">
+   <div class="section-heading"><div><small>04 / MODULARIDADE</small><h2>Peças voxel adicionais</h2></div><span class="tag">Até 24</span></div>
+   <p class="small-muted">Adicione cubos renderizados sobre seu personagem. Posições são relativas ao corpo, em blocos. Este editor ainda não importa arquivos Blockbench.</p>
+   <div class="parts-toolbar"><button id="addPart" class="subtle-button">+ Adicionar peça</button><span id="partCount" class="small-muted">0 / 24 peças</span></div>
+   <div id="partsList" class="parts-list"></div>
+  </section>
+  <section class="action-strip">
+    <div><strong id="modeTitle">Modo demonstração</strong><small id="modeCaption">Vincule o mod para aplicar essas configurações no jogo.</small></div>
+    <div class="action-buttons"><button id="offButton" class="subtle-button">Desativar forma</button><button id="applyButton" class="gold-button" disabled>Aplicar no Minecraft</button></div>
+  </section>
+  <p class="end-note">Suas configurações são aplicadas apenas ao cliente vinculado. O servidor Minecraft não recebe comandos, alterações de hitbox ou de atributos.</p>
+ </main>
+</div>
+</body>
+</html>
