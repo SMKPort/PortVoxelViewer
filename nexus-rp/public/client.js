@@ -143,7 +143,7 @@ window.NexusRPClientUpgrade=function(rp,views){
    '<div class="kv"><span>Armadura / rituais</span><span class="value">Avisos e UI local</span></div>'+
    '<div class="kv"><span>Emotes reais</span><span class="value">Exigem integração com o mod de emotes</span></div>'+
    '<div class="divider"></div><div class="notice">Mensagens enviadas pelo painel são transmitidas como mensagens normais do personagem e ficam sujeitas às regras, filtros e limites do servidor. Não é possível executar comandos de administrador ou modificar outros jogadores.</div>'+
-   '<div class="buttons">'+button("open-events","MONITORAR EVENTOS","alt")+button("open-chat","ABRIR COMUNICADOR","gold")+'</div></section></div>'+
+   '<div class="buttons">'+button("open-events","MONITORAR EVENTOS","alt")+button("open-alerts","ALERTAS DO NEXUS","gold")+button("open-chat","ABRIR COMUNICADOR","alt")+'</div></section></div>'+
    '<section class="card" style="margin-top:16px"><div class="card-header"><h2>DIAGNÓSTICO DA API</h2></div>'+
    '<p class="hint">Verifica se seu navegador consegue acessar a Render e se as rotas estão respondendo JSON. Não exibe sua senha nem o código de acesso.</p>'+
    button("diagnostic","TESTAR API E MOSTRAR DETALHES","gold")+
@@ -169,6 +169,7 @@ window.NexusRPClientUpgrade=function(rp,views){
      if(b.dataset.nexusClient==="settings")return rp.navigate("config");
      if(b.dataset.nexusClient==="open-chat")return rp.navigate("chat");
      if(b.dataset.nexusClient==="open-events")return rp.navigate("eventos");
+      if(b.dataset.nexusClient==="open-alerts")return rp.navigate("alertas");
      if(b.dataset.nexusClient==="pair"){lastPair=await backend("/pair/new",{method:"POST",body:"{}"});rp.toast("Código criado. Insira-o no comando do Minecraft.");}
      if(b.dataset.nexusClient==="status"){await getStatus();rp.toast(lastStatus.online?"Nexus Client conectado!":"Minecraft ainda não pareado ou offline.");}
      if(b.dataset.nexusClient==="diagnostic"){await runDiagnostics();rp.toast("Diagnóstico exibido no rodapé da aba Nexus Client.");}

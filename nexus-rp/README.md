@@ -218,3 +218,8 @@ Com a opção **Permitir que eventos alterem a integridade e energia narrativas*
 ## Monitoramento independente do painel, cliente 1.4
 
 Com o Nexus Client 1.4 instalado e o Minecraft aberto, vá em **Eventos do Jogo**, marque **Permitir que eventos alterem a integridade e energia narrativas** e clique **Salvar preferências**. O navegador envia os fatores e, na primeira sincronização, a integridade/energia iniciais e o estado das placas ao mod. O cliente persiste tudo em `.minecraft/config/nexus-vitals.json` e aplica dano, cura e morte mesmo com o navegador fechado. Nas sincronizações posteriores, o painel trata o estado do mod como autoridade e não aplica novamente os eventos vistos no histórico. Se o mod não confirmar a configuração, a interface informa que somente o navegador foi salvo. Telemetria deve permanecer ligada com `/nexusclient telemetry on`. O Render mantém apenas uma cópia efêmera do estado, publicada regularmente pelo mod.
+
+
+## Alertas do Nexus no site (painel 2.8)
+
+Nova opção em Outras ferramentas > Alertas do Nexus, com seis chaves independentes (dano elevado, ataques consecutivos, integridade crítica, risco combinado, cura estrutural e vida crítica), intervalo mínimo entre falas de combate de 15 a 180 segundos, histórico sincronizado de até 30 mensagens realmente enviadas. O painel só aceita salvar com o mod 1.6 conectado e com sua configuração recebida. A atualização dos registros acontece automaticamente enquanto a aba está visível. O mod salva o histórico completo de até 80 falas e as preferências localmente. Não grava tokens nem falas em HTML. O backend da Render mantém somente cópia temporária.

@@ -89,7 +89,7 @@ test("compact navigation keeps core pages visible and advanced pages accessible"
  assert.ok(mainNav,"Navigation needs a collapsible advanced group");
  for(const page of ["painel","voz","chat","cliente","config"])
    assert.ok(mainNav[1].includes('data-page="'+page+'"'),"Core navigation missing "+page);
- for(const page of ["armadura","rituais"])
+ for(const page of ["armadura","rituais","alertas"])
    assert.ok(index.includes('data-page="'+page+'"'),"Advanced tool lost "+page);
  assert.ok(index.includes('href="#voz"'),"Voice must be directly accessible from mobile topbar");
  assert.ok(/app\.js\?v=2\.[4-9]/.test(index),"Bump app cache to make voice visible after deployment");
