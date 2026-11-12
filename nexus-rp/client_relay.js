@@ -5,7 +5,7 @@ const {getQuestion}=require("./voice_reply.js");
 const {askGemini,aiStatus}=require("./ai_conversation.js");
 const JOB_MAX_AGE=120000;
 function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=aiStatus}){
-  let pair=null,session=null,eventId=0,mind=null,monitor=null;
+  let pair=null,session=null,eventId=0,mind=null,monitor=null,alertsState=null;
   const jobs=new Map(),events=[];
   const err=(res,code,message)=>{send(res,code,{ok:false,error:message});return true;};
   const hash=s=>crypto.createHash("sha256").update(String(s||"")).digest("hex");
@@ -36,6 +36,33 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
     const n=Number(value);
     return Number.isFinite(n)?Math.max(min,Math.min(max,n)):fallback;
   }
+  const ALERT_KINDS=new Set(["heavy","streak","structure","risk","recovery","critical","mind"]);
+  const ALERT_FLAGS=["heavy","streak","structure","risk","recovery","critical"];
+  function alertSettings(data){
+    const settings={};
+    for(const kind of ALERT_FLAGS){
+      if(typeof data[kind]!=="boolean")throw Error("Configuração inválida para "+kind+".");
+      settings[kind]=data[kind];
+    }
+    if(!Number.isInteger(data.cooldownSeconds)||data.cooldownSeconds<15||data.cooldownSeconds>180)
+      throw Error("O intervalo entre avisos deve estar entre 15 e 180 segundos.");
+    settings.cooldownSeconds=data.cooldownSeconds;
+    return settings;
+  }
+  function alertHistory(data){
+    if(!Array.isArray(data))throw Error("Histórico de alertas inválido.");
+    return data.slice(-30).map(item=>{
+      if(!item||!ALERT_KINDS.has(item.kind)||typeof item.text!=="string"||
+        item.text.length>210||item.text.length<1||
+        typeof item.at!=="string"||Number.isNaN(Date.parse(item.at)))
+        throw Error("Entrada inválida no histórico de alertas.");
+      return {
+        kind:item.kind,
+        text:item.text.replace(/[\u0000-\u001f\u007f]/g," ").slice(0,210),
+        at:new Date(item.at).toISOString()
+      };
+    });
+  }
   function splitChatReply(text){
     let remaining=String(text).replace(/[\u0000-\u001f\u007f]/g," ").replace(/\s+/g," ").trim();
     const chunks=[];
@@ -51,9 +78,9 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
   async function handle(req,res,route,url){
     if(!route.startsWith("/api/client/"))return false;
     cleanup();
-    if(["/api/client/pair/new","/api/client/pair/exchange","/api/client/chat","/api/client/voice","/api/client/action","/api/client/monitor/settings"].includes(route)&&!limit(req))return err(res,429,"Limite de requisições. Reduza a frequência.");
-    const userPaths=new Set(["/api/client/pair/new","/api/client/status","/api/client/events","/api/client/chat","/api/client/voice","/api/client/ai/status","/api/client/action","/api/client/job","/api/client/monitor/settings"]);
-    const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/mind","/api/client/ack","/api/client/monitor/state"]);
+    if(["/api/client/pair/new","/api/client/pair/exchange","/api/client/chat","/api/client/voice","/api/client/action","/api/client/monitor/settings","/api/client/alerts/settings"].includes(route)&&!limit(req))return err(res,429,"Limite de requisições. Reduza a frequência.");
+    const userPaths=new Set(["/api/client/pair/new","/api/client/status","/api/client/events","/api/client/chat","/api/client/voice","/api/client/ai/status","/api/client/action","/api/client/job","/api/client/monitor/settings","/api/client/alerts","/api/client/alerts/settings"]);
+    const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/mind","/api/client/ack","/api/client/monitor/state","/api/client/alerts/state"]);
     if(!userPaths.has(route)&&!clientPaths.has(route))return err(res,404,"Rota desconhecida.");
     if(userPaths.has(route)&&!guardUser(req,res))return true;
     if(route==="/api/client/pair/new"&&req.method==="POST"){
@@ -68,12 +95,18 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         const token=crypto.randomBytes(32).toString("hex");pair=null;
         const player=String(data.player||"").slice(0,16);
         session={tokenHash:hash(token),player:/^[A-Za-z0-9_]{3,16}$/.test(player)?player:"",lastSeen:Date.now()};
-        jobs.clear();events.splice(0,events.length);eventId=0;mind=null;monitor=null;
+        jobs.clear();events.splice(0,events.length);eventId=0;mind=null;monitor=null;alertsState=null;
         send(res,200,{ok:true,token,player:session.player,ttl:"until-service-restart-or-repair"});return true;
       }catch(e){return err(res,400,String(e.message));}
     }
     if(route==="/api/client/ai/status"&&req.method==="GET"){send(res,200,{ok:true,...getAIStatus()});return true;}
     if(route==="/api/client/status"&&req.method==="GET"){send(res,200,{ok:true,...health()});return true;}
+    if(route==="/api/client/alerts"&&req.method==="GET"){
+      send(res,200,{ok:true,...health(),source:alertsState?"minecraft-client":"none",
+        settings:alertsState?.settings||null,history:alertsState?.history||[],
+        syncedAt:alertsState?.syncedAt||null});
+      return true;
+    }
     if(route==="/api/client/events"&&req.method==="GET"){
       const since=Math.max(0,Number(url.searchParams.get("since")||0)||0);
       // Keep events as an array: health().events is a numeric event counter.
@@ -132,6 +165,12 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
           e.publicStatus?String(e.message).slice(0,250):"Falha ao preparar resposta. "+String(e.message||"").slice(0,180));
       }
     }
+    if(route==="/api/client/alerts/settings"&&req.method==="POST"){
+      try{
+        const settings=alertSettings(await body(req,1500));
+        send(res,200,enqueue("alerts_settings",settings));return true;
+      }catch(e){return err(res,422,String(e.message));}
+    }
     if(route==="/api/client/monitor/settings"&&req.method==="POST"){
       try{
         const data=await body(req,8000);
@@ -181,6 +220,16 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         if(!job.done){job.done=true;job.success=data.success===true;job.error=String(data.error||"").slice(0,250);job.output=String(data.output||"").slice(0,250);}
         send(res,200,{ok:true});return true;
       }catch(e){return err(res,400,String(e.message));}
+    }
+    if(route==="/api/client/alerts/state"&&req.method==="POST"){
+      try{
+        const data=await body(req,24000);
+        alertsState={
+          settings:alertSettings(data),history:alertHistory(data.history),
+          syncedAt:new Date().toISOString()
+        };
+        send(res,200,{ok:true,historyCount:alertsState.history.length});return true;
+      }catch(e){return err(res,422,String(e.message));}
     }
     if(route==="/api/client/monitor/state"&&req.method==="POST"){
       try{
