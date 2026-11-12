@@ -29,6 +29,7 @@ final class ClientLink {
     private static final HttpClient HTTP = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(8)).build();
     private static final AtomicBoolean POLLING = new AtomicBoolean(false);
+    private static final NexusCombatAlerts COMBAT_ALERTS = new NexusCombatAlerts();
     private static int ticks;
     private static float previousHealth = Float.NaN;
     private static String previousEffects = "";
@@ -40,12 +41,12 @@ final class ClientLink {
 
     static void reset() {
         ticks=0;previousHealth=Float.NaN;previousEffects="";previousPlayer="";
-        NexusMind.resetSession();
+        NexusMind.resetSession();COMBAT_ALERTS.reset();
         invalidTokenNotice=false;POLLING.set(false);
     }
 
     static void resetTelemetryBaseline(){
-        previousHealth=Float.NaN;previousEffects="";previousPlayer="";
+        previousHealth=Float.NaN;previousEffects="";previousPlayer="";COMBAT_ALERTS.reset();
     }
     static String status() {
         return (ClientConfig.token.isEmpty()?"SEM PAREAMENTO":"PAREADO")
@@ -88,7 +89,7 @@ final class ClientLink {
         Minecraft mc=Minecraft.getInstance();
         if(mc.player==null || mc.getConnection()==null){
             previousHealth=Float.NaN;previousPlayer="";previousEffects="";
-            NexusMind.resetSession();return;
+            NexusMind.resetSession();COMBAT_ALERTS.reset();return;
         }
         if(++ticks%60!=0)return;
         NexusMind.sample(mc.player);
@@ -130,27 +131,41 @@ final class ClientLink {
             .map(MobEffectInstance::getDescriptionId)
             .sorted().collect(Collectors.joining(","));
         if(!name.equals(previousPlayer)){
-            previousPlayer=name;previousHealth=Float.NaN;previousEffects="";
+            previousPlayer=name;previousHealth=Float.NaN;previousEffects="";COMBAT_ALERTS.reset();
         }
         if(Float.isNaN(previousHealth)){
             event("health",name,0,hp,"Primeira leitura do cliente");
         }else if(previousHealth>0 && hp<=0){
-            NexusVitals.record("death",0,name);
+            observeCombat("death",0,hp,player,name);
             event("death",name,0,0,"Morte detectada no cliente");
         }else if(previousHealth<=0 && hp>0){
-            NexusVitals.record("respawn",0,name);
+            observeCombat("respawn",0,hp,player,name);
             event("respawn",name,0,hp,"Renascimento detectado no cliente");
         }else if(hp<previousHealth-.1f){
-            NexusVitals.record("damage",previousHealth-hp,name);
-            event("damage",name,previousHealth-hp,hp,"Dano observado no cliente");
+            float damage=previousHealth-hp;
+            observeCombat("damage",damage,hp,player,name);
+            event("damage",name,damage,hp,"Dano observado no cliente");
         }else if(hp>previousHealth+.1f){
-            NexusVitals.record("heal",hp-previousHealth,name);
-            event("heal",name,hp-previousHealth,hp,"Regeneração observada no cliente");
+            float healed=hp-previousHealth;
+            observeCombat("heal",healed,hp,player,name);
+            event("heal",name,healed,hp,"Regeneração observada no cliente");
         }
         if(!effects.equals(previousEffects)){
             event("effect",name,0,hp,effects.isEmpty()?"Nenhum efeito ativo":effects);
         }
         previousHealth=hp;previousEffects=effects;
+    }
+
+    private static void observeCombat(String type,float amount,float hp,Player player,String name){
+        double before=NexusVitals.integrity();
+        NexusVitals.record(type,amount,name);
+        double after=NexusVitals.integrity();
+        if(!ClientConfig.allowMind||!ClientConfig.allowAutonomy||!ClientConfig.allowChat)return;
+        long now=System.currentTimeMillis();
+        NexusCombatAlerts.Decision alert=COMBAT_ALERTS.observe(
+            type,amount,hp,player.getMaxHealth(),before,after,
+            NexusMind.stageIndex(),NexusVitals.isEnabled(),now);
+        if(alert!=null&&speak(alert.message))COMBAT_ALERTS.delivered(alert,now);
     }
 
     private static void event(String type,String name,float amount,float health,String note){
@@ -188,12 +203,12 @@ final class ClientLink {
         post("/api/client/ack",ack,true).exceptionally(err -> null);
     }
 
-    static void speak(String text) {
-        if(!ClientConfig.allowMind || !ClientConfig.allowAutonomy || !ClientConfig.allowChat)return;
+    static boolean speak(String text) {
+        if(!ClientConfig.allowMind || !ClientConfig.allowAutonomy || !ClientConfig.allowChat)return false;
         String safe=text.replaceAll("[\\p{Cntrl}]", " ").trim();
-        if(safe.isEmpty())return;
-        try { chat("[Nexus Aterna] "+safe,"local","l","&6&l",false); }
-        catch(IllegalArgumentException | IllegalStateException ignored) { /* Cooldown ou sessão desconectada. */ }
+        if(safe.isEmpty())return false;
+        try { chat("[Nexus Aterna] "+safe,"local","l","&6&l",false);return true; }
+        catch(IllegalArgumentException | IllegalStateException ignored) { return false; }
     }
 
     private static String chat(String message,String channel,String command,String format){

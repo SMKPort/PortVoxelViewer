@@ -83,6 +83,7 @@ final class NexusMind {
             System.err.println("Nexus Mind: não foi possível salvar a memória local: "+ex.getMessage());
         }
     }
+    static int stageIndex(){return stage();}
     private static int stage() {
         load();
         for(int i=REQUIREMENTS.length-1;i>=0;i--)

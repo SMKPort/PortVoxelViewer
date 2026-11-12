@@ -98,6 +98,7 @@ final class NexusVitals {
     }
     static boolean isConfigured(){load();return state.configured;}
     static boolean isEnabled(){load();return state.enabled;}
+    static double integrity(){load();return state.integrity;}
     static String status(){
         load();
         return "Integridade RP local: "+Math.round(state.integrity)+"% | energia "+
