@@ -29,7 +29,7 @@ public final class MacroStudioScreen extends Screen {
         super.init();
         left=Math.max(6,width/2-198);
         screenWidth=Math.min(396,width-12);
-        visibleRows=Math.max(1,Math.min(12,(height-238)/21));
+        visibleRows=Math.max(1,Math.min(12,(height-268)/21));
         int buttonWidth=(screenWidth-18)/4;
         for(int slot=0;slot<MacroLibrary.MACROS;slot++){
             final int index=slot;
