@@ -114,7 +114,8 @@
   <section id="modules" class="details">
    <div class="section-heading"><div><small>04 / MODULARIDADE</small><h2>Peças voxel adicionais</h2></div><span class="tag">Até 24</span></div>
    <p class="small-muted">Adicione cubos renderizados sobre seu personagem. Posições são relativas ao corpo, em blocos. Este editor ainda não importa arquivos Blockbench.</p>
-   <div class="parts-toolbar"><button id="addPart" class="subtle-button">+ Adicionar peça</button><span id="partCount" class="small-muted">0 / 24 peças</span></div>
+   <div class="parts-toolbar"><button id="addPart" class="subtle-button">+ Adicionar peça</button><label class="upload-button" for="bbFile">Importar cubos .bbmodel</label><input type="file" id="bbFile" accept=".bbmodel,.json,application/json" hidden><span id="partCount" class="small-muted">0 / 24 peças</span></div>
+   <p id="importNote" class="small-muted" aria-live="polite">Importação experimental: converte até 24 cubos. Não preserva texturas, rotação dos cubos, grupos nem animações.</p>
    <div id="partsList" class="parts-list"></div>
   </section>
   <section class="action-strip">
