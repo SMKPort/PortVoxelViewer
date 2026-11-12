@@ -1,0 +1,29 @@
+name: Port Metamorph - NeoForge 1.21.1
+on:
+  push:
+    branches: [port-metamorph]
+    paths:
+      - 'port-metamorph-mod/**'
+      - '.github/workflows/port-metamorph-build.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Build Metamorph mod
+        run: gradle -p port-metamorph-mod build --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Port-Metamorph-NeoForge-1.21.1
+          path: port-metamorph-mod/build/libs/portmetamorph-0.1.0.jar
+          if-no-files-found: error
