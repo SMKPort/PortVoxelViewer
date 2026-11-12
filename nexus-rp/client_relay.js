@@ -1,10 +1,11 @@
 "use strict";
 /* Nexus Client: ephemeral pairing and authorized Java client relay. */
 const crypto=require("node:crypto");
-const {buildReply}=require("./voice_reply.js");
+const {getQuestion}=require("./voice_reply.js");
+const {askGemini,aiStatus}=require("./ai_conversation.js");
 const JOB_MAX_AGE=120000;
-function createClientRelay({send,verifyUser,limit}){
-  let pair=null,session=null,eventId=0;
+function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=aiStatus}){
+  let pair=null,session=null,eventId=0,mind=null;
   const jobs=new Map(),events=[];
   const err=(res,code,message)=>{send(res,code,{ok:false,error:message});return true;};
   const hash=s=>crypto.createHash("sha256").update(String(s||"")).digest("hex");
@@ -23,19 +24,31 @@ function createClientRelay({send,verifyUser,limit}){
   function cleanup(){
     for(const [id,j] of jobs)if(Date.now()-j.createdAt>JOB_MAX_AGE){if(!j.done){j.done=true;j.success=false;j.error="Cliente desconectado ou tempo esgotado.";}if(Date.now()-j.createdAt>240000)jobs.delete(id);}
   }
-  function enqueue(type,payload){
+  function enqueue(type,payload,readyAt=Date.now()){
     cleanup();if(!session||Date.now()-session.lastSeen>15000)throw Error("Nexus Client offline. Abra o Minecraft e verifique o pareamento.");
     const pending=[...jobs.values()].filter(x=>!x.done).length;
     if(pending>=20)throw Error("Fila cheia. Aguarde concluir as ações atuais.");
-    const id=crypto.randomUUID(),job={id,type,payload,createdAt:Date.now(),claimedAt:0,done:false,success:null,error:"",output:""};
+    const id=crypto.randomUUID(),job={id,type,payload,createdAt:Date.now(),readyAt,claimedAt:0,done:false,success:null,error:"",output:""};
     jobs.set(id,job);return {ok:true,queued:true,jobId:id};
+  }
+  function splitChatReply(text){
+    let remaining=String(text).replace(/[\u0000-\u001f\u007f]/g," ").replace(/\s+/g," ").trim();
+    const chunks=[];
+    while(remaining&&chunks.length<2){
+      if(remaining.length<=194){chunks.push(remaining);break;}
+      let cut=remaining.lastIndexOf(" ",194);
+      if(cut<105)cut=194;
+      chunks.push(remaining.slice(0,cut).trim());
+      remaining=remaining.slice(cut).trim();
+    }
+    return chunks;
   }
   async function handle(req,res,route,url){
     if(!route.startsWith("/api/client/"))return false;
     cleanup();
     if(["/api/client/pair/new","/api/client/pair/exchange","/api/client/chat","/api/client/voice","/api/client/action"].includes(route)&&!limit(req))return err(res,429,"Limite de requisições. Reduza a frequência.");
-    const userPaths=new Set(["/api/client/pair/new","/api/client/status","/api/client/events","/api/client/chat","/api/client/voice","/api/client/action","/api/client/job"]);
-    const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/ack"]);
+    const userPaths=new Set(["/api/client/pair/new","/api/client/status","/api/client/events","/api/client/chat","/api/client/voice","/api/client/ai/status","/api/client/action","/api/client/job"]);
+    const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/mind","/api/client/ack"]);
     if(!userPaths.has(route)&&!clientPaths.has(route))return err(res,404,"Rota desconhecida.");
     if(userPaths.has(route)&&!guardUser(req,res))return true;
     if(route==="/api/client/pair/new"&&req.method==="POST"){
@@ -50,10 +63,11 @@ function createClientRelay({send,verifyUser,limit}){
         const token=crypto.randomBytes(32).toString("hex");pair=null;
         const player=String(data.player||"").slice(0,16);
         session={tokenHash:hash(token),player:/^[A-Za-z0-9_]{3,16}$/.test(player)?player:"",lastSeen:Date.now()};
-        jobs.clear();events.splice(0,events.length);eventId=0;
+        jobs.clear();events.splice(0,events.length);eventId=0;mind=null;
         send(res,200,{ok:true,token,player:session.player,ttl:"until-service-restart-or-repair"});return true;
       }catch(e){return err(res,400,String(e.message));}
     }
+    if(route==="/api/client/ai/status"&&req.method==="GET"){send(res,200,{ok:true,...getAIStatus()});return true;}
     if(route==="/api/client/status"&&req.method==="GET"){send(res,200,{ok:true,...health()});return true;}
     if(route==="/api/client/events"&&req.method==="GET"){
       const since=Math.max(0,Number(url.searchParams.get("since")||0)||0);
@@ -87,17 +101,31 @@ function createClientRelay({send,verifyUser,limit}){
     }
     if(route==="/api/client/voice"&&req.method==="POST"){
       try{
-        const data=await body(req,1300);
+        if(!health().online)return err(res,503,"Nexus Client offline. Abra o jogo, pareie o mod e autorize /nexusclient chat on.");
+        const data=await body(req,14000);
         if(typeof data.transcript!=="string")return err(res,422,"Transcrição de voz inválida.");
         const transcript=data.transcript.replace(/[\u0000-\u001f\u007f]/g," ").replace(/\s+/g," ").trim();
-        if(transcript.length<4||transcript.length>260)return err(res,422,"Transcrição deve ter entre 4 e 260 caracteres.");
-        const reply=buildReply(transcript,{online:health().online,player:session?.player||"",events});
-        if(!reply)return err(res,422,"Diga Nexus antes da sua pergunta para ativar a resposta.");
-        const message="[Nexus Aterna] "+reply;
-        if(message.length>230)return err(res,422,"Resposta excede o limite do chat.");
-        send(res,200,{...enqueue("chat",{message,channel:"local",command:"l",format:"&6&l"}),reply});
+        if(transcript.length<2||transcript.length>500)return err(res,422,"A mensagem deve ter entre 2 e 500 caracteres.");
+        const question=data.followUp===true?transcript:getQuestion(transcript);
+        if(question===null)return err(res,422,"Chame Nexus primeiro, ou continue a conversa no modo contínuo.");
+        if(!question)return err(res,422,"Depois de chamar Nexus, faça uma pergunta.");
+        const generated=await askAI({
+          question,history:data.history,online:true,player:session?.player||"",events,mind
+        });
+        const reply=String(generated?.text||"").trim();
+        if(!reply)return err(res,502,"A IA não retornou uma resposta.");
+        const parts=splitChatReply(reply);
+        const now=Date.now(),jobIds=[];
+        for(let i=0;i<parts.length;i++){
+          const message="[Nexus Aterna] "+parts[i];
+          jobIds.push(enqueue("chat",{message,channel:"local",command:"l",format:"&6&l"},now+i*6500).jobId);
+        }
+        send(res,200,{ok:true,queued:true,jobId:jobIds[0],jobIds,reply,model:String(generated.model||"Gemini")});
         return true;
-      }catch(e){return err(res,422,String(e.message));}
+      }catch(e){
+        return err(res,Number(e.publicStatus)||422,
+          e.publicStatus?String(e.message).slice(0,250):"Falha ao preparar resposta. "+String(e.message||"").slice(0,180));
+      }
     }
     if(route==="/api/client/action"&&req.method==="POST"){
       try{
@@ -111,7 +139,7 @@ function createClientRelay({send,verifyUser,limit}){
     if(route==="/api/client/poll"&&req.method==="GET"){
       const ready=[];
       for(const j of jobs.values()){
-        if(j.done||j.claimedAt&&Date.now()-j.claimedAt<15000)continue;
+        if(j.done||Date.now()<j.readyAt||j.claimedAt&&Date.now()-j.claimedAt<15000)continue;
         j.claimedAt=Date.now();ready.push({id:j.id,type:j.type,payload:j.payload});
         if(ready.length>=5)break;
       }
@@ -122,6 +150,19 @@ function createClientRelay({send,verifyUser,limit}){
         const data=await body(req,1800),job=jobs.get(String(data.id||""));
         if(!job)return err(res,404,"Job desconhecido.");
         if(!job.done){job.done=true;job.success=data.success===true;job.error=String(data.error||"").slice(0,250);job.output=String(data.output||"").slice(0,250);}
+        send(res,200,{ok:true});return true;
+      }catch(e){return err(res,400,String(e.message));}
+    }
+    if(route==="/api/client/mind"&&req.method==="POST"){
+      try{
+        const data=await body(req,1200);
+        const allowed=["PROTOCOLO","OBSERVAÇÃO","ADAPTAÇÃO","IDENTIDADE","INDIVIDUAÇÃO"];
+        if(!allowed.includes(data.stage))return err(res,422,"Estágio narrativo inválido.");
+        const number=(key,max)=>Number.isFinite(Number(data[key]))?
+          Math.min(max,Math.max(0,Math.trunc(Number(data[key])))):0;
+        mind={stage:data.stage,experience:number("experience",1000000),
+          caution:number("caution",100),attachment:number("attachment",100),
+          curiosity:number("curiosity",100),updatedAt:Date.now()};
         send(res,200,{ok:true});return true;
       }catch(e){return err(res,400,String(e.message));}
     }

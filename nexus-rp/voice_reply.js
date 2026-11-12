@@ -61,4 +61,4 @@ function buildReply(transcript,{online=false,player="",events=[]}={}){
   const topic=q.replace(/[\r\n]/g," ").slice(0,85);
   return "Ouvi sua pergunta sobre "+topic+". Ainda estou aprendendo a responder a esse assunto, Port.";
 }
-module.exports={buildReply,getQuestion};
+module.exports={buildReply,getQuestion,latestVital};
