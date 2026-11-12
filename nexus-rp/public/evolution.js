@@ -131,20 +131,45 @@ window.NexusRPEvolution=function(rp,views){
   }
   views.emergencia=emergencyView;
   const AGENT_TYPE={damage:"Dano recebido",heal:"Regeneração",death:"Morte do personagem",respawn:"Renascimento",effect:"Efeito ativo modificado",effect_end:"Efeito removido",health:"Leitura de vida",armor:"Armadura",energy:"Energia",join:"Entrou no servidor",leave:"Saiu do servidor"};
+  function feedMarkup(){
+    return G.feed.slice(-30).reverse().map(x=>'<div class="rp-evo-event"><span>'+E(AGENT_TYPE[x.type]||x.type)+' · '+E(x.player||"Port")+'</span><small>'+E(x.at||"")+' · '+E(x.note||x.amount||"")+'</small></div>').join("")||
+      '<div class="empty">Aguardando eventos. Eles aparecerão automaticamente quando o Minecraft enviar telemetria.</div>';
+  }
+  function statusMarkup(){
+    return '<div class="rp-evo-emergency '+(lastStatus.online?"online":"")+'"><strong>'+
+      (G.error?"FALHA DE CONEXÃO":lastStatus.online?"MINECRAFT CONECTADO":"AGUARDANDO MINECRAFT")+
+      '</strong><span>'+E(G.error||lastStatus.lastSeen||"Sem comunicação recente")+'</span></div>';
+  }
+  function refreshDisplay(){
+    // Only update telemetry fragments, preserving settings form inputs and focus.
+    const feed=document.querySelector("#rpEventsFeed");
+    if(feed){const html=feedMarkup();if(feed.innerHTML!==html)feed.innerHTML=html;}
+    const state=document.querySelector("#rpEventsStatus");
+    if(state){const html=statusMarkup();if(state.innerHTML!==html)state.innerHTML=html;}
+    const sync=document.querySelector("#rpEventsSync");
+    if(sync)sync.textContent=G.lastSync?"Sincronização: "+rp.date(G.lastSync)+" · automática a cada 2 segundos":
+      "Aguardando primeira sincronização automática...";
+  }
   function eventView(){
-    const feed=G.feed.slice(-20).reverse().map(x=>'<div class="rp-evo-event"><span>'+E(AGENT_TYPE[x.type]||x.type)+' · '+E(x.player)+'</span><small>'+E(x.at)+' · '+E(x.note||x.amount||"")+'</small></div>').join("");
-    return intro("TELEMETRIA / MINECRAFT 1.21.1","Eventos do Minecraft","O agente opcional observa seu personagem, aproxima eventos de dano/regeneração e envia os dados ao Nexus pela ponte HTTPS.")+
-    '<div class="grid two">'+block("MONITORAMENTO DO PERSONAGEM",
-      '<div class="rp-evo-emergency '+(lastStatus.online?"online":"")+'"><strong>'+(lastStatus.online?"AGENTE CONECTADO":"AGENTE NÃO CONFIRMADO")+'</strong><span>'+E(lastStatus.lastSeen||"Sem comunicação recente")+'</span></div>'+
-      '<form id="rpEventSettings"><label class="field inline"><input name="enabled" type="checkbox" '+(G.enabled?"checked":"")+'><span>Usar eventos do Minecraft para atualizar o Nexus</span></label>'+
-      '<label class="field"><span class="field-label">DANO ESTRUTURAL POR PONTO DE DANO (1 A 10)</span><input name="damageFactor" type="number" min="1" max="10" value="'+G.damageFactor+'"></label>'+
-      '<label class="field"><span class="field-label">ENERGIA RECUPERADA POR CURA (0 A 15)</span><input name="healEnergy" type="number" min="0" max="15" value="'+G.healEnergy+'"></label>'+
-      '<button class="btn gold" type="submit">SALVAR MONITORAMENTO</button></form>'+
-      '<div class="buttons">'+button("events-refresh","↻ ATUALIZAR EVENTOS","gold")+
-      button("events-test","SIMULAR DANO LOCAL","ghost")+'</div>'+
-      '<p class="hint">Requer agente de servidor em execução e o código de acesso ao Nexus informado no painel. Eventos de dano/cura vêm de leituras periódicas da vida do jogador e podem não registrar impactos muito rápidos.</p>')+
-    block("REGISTRO DE TELEMETRIA",feed||'<div class="empty">Nenhum evento recebido. O aplicativo não pode observar o Minecraft diretamente sem uma integração.</div>'+
-      '<div class="notice">Para não expor a porta RCON, prefira o modo Agente HTTPS, disponível em Configurações. O processo Python roda junto ao servidor Minecraft.</div>')+'</div>';
+    const client=S.config.connectionMode==="client";
+    return intro("TELEMETRIA / MINECRAFT 1.21.1","Eventos do Jogo",
+      "Os acontecimentos do Minecraft aparecem automaticamente nesta aba, sem clicar em Atualizar.")+
+      '<div class="grid two">'+block("MONITORAMENTO DO PERSONAGEM",
+      '<div id="rpEventsStatus">'+statusMarkup()+'</div>'+
+      '<p class="hint" id="rpEventsSync" aria-live="polite">'+E(G.lastSync?"Sincronização: "+rp.date(G.lastSync)+" · automática a cada 2 segundos":"Aguardando primeira sincronização automática...")+'</p>'+
+      '<form id="rpEventSettings"><label class="field inline"><input name="enabled" type="checkbox" '+(G.enabled?"checked":"")+
+      '><span>Permitir que eventos alterem a integridade e energia narrativas</span></label>'+
+      '<label class="field"><span class="field-label">DANO ESTRUTURAL POR PONTO DE DANO (1 A 10)</span>'+
+      '<input name="damageFactor" type="number" min="1" max="10" value="'+G.damageFactor+'"></label>'+
+      '<label class="field"><span class="field-label">ENERGIA RECUPERADA POR CURA (0 A 15)</span>'+
+      '<input name="healEnergy" type="number" min="0" max="15" value="'+G.healEnergy+'"></label>'+
+      '<button class="btn gold" type="submit">SALVAR PREFERÊNCIAS</button></form>'+
+      '<div class="buttons">'+button("events-test","SIMULAR DANO LOCAL (TESTE)","ghost")+'</div>'+
+      '<p class="hint">O registro é automático, mesmo se as alterações narrativas estiverem desativadas. '+
+      (client?'No Minecraft, ative /nexusclient telemetry on e mantenha o mod pareado.':
+      'O Agente HTTPS deve estar ativo no servidor Minecraft.')+
+      ' O envio da telemetria pode levar alguns segundos.</p>')+
+      block("REGISTRO DE TELEMETRIA",'<div id="rpEventsFeed" aria-live="polite">'+feedMarkup()+'</div>')+'</div>';
   }
   views.eventos=eventView;
   function emoteView(){
@@ -201,49 +226,58 @@ window.NexusRPEvolution=function(rp,views){
     S.armor=S.segments.some(p=>p.integrated)?"integrada":"desintegrada";
     rp.checkAlerts?.();
   }
-  function gameEvent(item,simulate=false){
+  function gameEvent(item,simulate=false,applyNarrative=G.enabled){
     const label=AGENT_TYPE[item.type]||item.type;
     const value=clamp(item.amount,0,40);
-    if(item.type==="damage")adjustSegmentDamage(value);
-    else if(item.type==="death"){S.segments.forEach(p=>{p.integrity=0;p.integrated=false;});S.integrity=0;S.armor="desintegrada";rp.checkAlerts?.();}
-    else if(item.type==="heal"||item.type==="respawn"){S.energy=clamp(S.energy+G.healEnergy,0,100);rp.checkAlerts?.();}
-    const name=simulate?"SIMULAÇÃO LOCAL":"MINECRAFT";
-    const msg=label+": "+(value?value.toFixed(1)+" ponto(s) · ":"")+item.player;
-    log(msg,name);
-    G.feed.push({...item,simulated:simulate});G.feed=G.feed.slice(-80);save();
+    if(applyNarrative){
+      if(item.type==="damage")adjustSegmentDamage(value);
+      else if(item.type==="death"){S.segments.forEach(p=>{p.integrity=0;p.integrated=false;});S.integrity=0;S.armor="desintegrada";rp.checkAlerts?.();}
+      else if(item.type==="heal"||item.type==="respawn"){S.energy=clamp(S.energy+G.healEnergy,0,100);rp.checkAlerts?.();}
+      log(label+": "+(value?value.toFixed(1)+" ponto(s) · ":"")+item.player,
+        simulate?"SIMULAÇÃO LOCAL":"MINECRAFT");
+    }
+    G.feed.push({...item,simulated:simulate});G.feed=G.feed.slice(-80);
   }
-  async function refreshEvents(force=false){
-    if(pollBusy||!G.enabled&&!force)return;
-    if(!["agent","client"].includes(S.config.connectionMode)){if(force)toast("Selecione Agente HTTPS ou Nexus Client nas Configurações.");return;}
+  function onEventsPage(){return window.location?.hash==="#eventos";}
+  function shouldPoll(){return document.visibilityState!=="hidden"&&(onEventsPage()||G.enabled);}
+  async function refreshEvents(){
+    if(pollBusy||!shouldPoll())return;
+    if(!["agent","client"].includes(S.config.connectionMode)){
+      G.error="Selecione Nexus Client ou Agente HTTPS nas Configurações.";refreshDisplay();return;
+    }
+    if(!rp.getAccess?.()){
+      G.error="Informe o código HTTPS em Configurações.";refreshDisplay();return;
+    }
     pollBusy=true;
     try{
-      const result=await rp.requestEvents(G.lastId,S.config.player);
-      // The event stream must be an array. A malformed API response should
-      // produce an actionable error instead of trying to iterate a number.
-      if(!Array.isArray(result.events)){
-        throw Error("A API retornou eventos em formato inválido. Atualize o painel e tente novamente.");
+      let result=await rp.requestEvents(G.lastId,S.config.player);
+      if(!Array.isArray(result.events))throw Error("A API retornou eventos em formato inválido.");
+      if(Number(result.lastId)<G.lastId){
+        G.lastId=0;G.bootstrapped=false;
+        result=await rp.requestEvents(0,S.config.player);
+        if(!Array.isArray(result.events))throw Error("Eventos inválidos após reconexão.");
       }
-      lastStatus=result.bridge||(S.config.connectionMode==="client"?{
-        online:result.online===true,lastSeen:result.lastSeen,mode:"client"
-      }:{});
-      if(Number(result.lastId)<G.lastId){G.lastId=0;G.bootstrapped=false;}
+      lastStatus=result.bridge||(S.config.connectionMode==="client"?
+        {online:result.online===true,lastSeen:result.lastSeen,mode:"client"}:{});
       G.error="";G.lastSync=new Date().toISOString();
-      if(!G.bootstrapped){
-        G.bootstrapped=true;G.lastId=result.lastId||0;
-        if(force)toast("Monitor sincronizado. Os próximos eventos atualizarão o Nexus.");
-      }else{
-        for(const ev of result.events){if(!ev||typeof ev!=="object"||Number(ev.id)<=G.lastId)continue;gameEvent(ev);}
-        G.lastId=Math.max(G.lastId,Number(result.lastId)||0);
+      const first=!G.bootstrapped;
+      for(const e of result.events){
+        if(!e||typeof e!=="object"||!Number.isInteger(Number(e.id))||Number(e.id)<=G.lastId)continue;
+        // The initial backlog is visible, but it never damages RP retroactively.
+        gameEvent(e,false,!first&&G.enabled);
       }
-      save();
-      if(force)rp.rerender();
-    }catch(err){
-      G.error=err.message||String(err);
-      if(force)toast("Monitor não sincronizado: "+G.error);
-    }finally{pollBusy=false;}
+      G.lastId=Math.max(G.lastId,Number(result.lastId)||0);
+      G.bootstrapped=true;save();
+    }catch(error){G.error=error.message||String(error);}
+    finally{pollBusy=false;refreshDisplay();}
   }
-  // Updates are explicitly enabled by the operator. Background polling stops on tab close.
-  const interval=setInterval(()=>{if(G.enabled&&document.visibilityState!=="hidden")refreshEvents();},5000);
+  // 2-second automatic synchronization. Hidden tabs pause network activity.
+  setInterval(()=>{if(shouldPoll())refreshEvents();},2000);
+  if(typeof window.addEventListener==="function")
+    window.addEventListener("hashchange",()=>{if(onEventsPage())refreshEvents();});
+  if(typeof document.addEventListener==="function")
+    document.addEventListener("visibilitychange",()=>{if(shouldPoll())refreshEvents();});
+  if(onEventsPage())setTimeout(()=>refreshEvents(),0);
   function executeSequenceStep(step){
     const kind=step.action;
     if(["integrar","desintegrar","remodelar","reparar"].includes(kind)){
@@ -300,8 +334,8 @@ window.NexusRPEvolution=function(rp,views){
       EM.enabled=d.has("enabled");EM.threshold=clamp(d.get("threshold"),5,80);checkEmergency();log("Protocolo de emergência configurado.","SISTEMA");
     }else if(form==="rpEventSettings"){
       G.enabled=d.has("enabled");G.damageFactor=clamp(d.get("damageFactor"),1,10);G.healEnergy=clamp(d.get("healEnergy"),0,15);
-      G.bootstrapped=false;G.lastId=0;log("Monitoramento de eventos "+(G.enabled?"ativado":"desativado")+".","TELEMETRIA");
-      if(G.enabled)refreshEvents(true);
+      log("Integração narrativa "+(G.enabled?"ativada":"desativada")+".","TELEMETRIA");
+      if(shouldPoll())refreshEvents();
     }else if(form==="rpEmotesForm"){
       const saved={};for(const key of ["integrar","desintegrar","remodelar","reparar","ritual","emergencia"]){
         const fn=K(d.get(key));if(!validFn(fn))return toast("Função inválida: "+key);saved[key]=fn;
@@ -346,9 +380,8 @@ window.NexusRPEvolution=function(rp,views){
     }
     if(action==="emergency-repair")return rp.armorAction("reparar");
     if(action==="emergency-rest"){S.energy=clamp(S.energy+15,0,100);rp.checkAlerts?.();save();rp.rerender();return;}
-    if(action==="events-refresh")return refreshEvents(true);
     if(action==="events-test"){
-      const player=S.config.player||"Port";gameEvent({id:uid(),type:"damage",player,amount:3.5,health:13,at:new Date().toISOString(),note:"Teste manual, sem evento real"},true);rp.rerender();return;
+      const player=S.config.player||"Port";gameEvent({id:uid(),type:"damage",player,amount:3.5,health:13,at:new Date().toISOString(),note:"Teste manual, sem evento real"},true,true);save();rp.rerender();return;
     }
     if(action==="bridge-status"){
       try{lastStatus=await rp.requestBridgeStatus();toast(lastStatus.online?"Agente HTTPS conectado.":"Agente HTTPS sem contato recente.");}
