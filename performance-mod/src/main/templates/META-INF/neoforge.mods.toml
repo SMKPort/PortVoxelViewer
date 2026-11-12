@@ -7,7 +7,7 @@ version="${mod_version}"
 displayName="${mod_name}"
 authors="Port"
 description='''
-Mod client-side independente para medir FPS, ping e memoria Java no Minecraft 1.21.1.
+Mod client-side de desempenho com FPS, ping, memoria Java, booster e HUD reposicionavel no Minecraft 1.21.1.
 Inclui HUD local e transmissao HTTPS opcional para o site Port Performance Monitor.
 '''
 [[dependencies.${mod_id}]]
