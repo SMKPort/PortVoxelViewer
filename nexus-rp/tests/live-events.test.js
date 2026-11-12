@@ -42,7 +42,7 @@ test("Events auto-refresh without buttons, preserving RP changes opt-in",async()
  assert.equal(state.integrity,64);
  assert.equal(state.energy,37);
  assert.equal(state.gameEvents.remoteManaged,true);
- assert.match(nodes["#rpEventsOwner"]?.textContent||"","Processamento no Nexus Client");
+ assert.match(nodes["#rpEventsOwner"]?.textContent||"",/Processamento no Nexus Client/);
  document.visibilityState="hidden";await tick();assert.equal(state.gameEvents.feed.length,2);
 });
 
