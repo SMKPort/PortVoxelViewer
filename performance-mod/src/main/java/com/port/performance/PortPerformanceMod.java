@@ -26,19 +26,18 @@ public final class PortPerformanceMod {
 
     private void renderHud(RenderGuiEvent.Post event){
         Minecraft mc=Minecraft.getInstance();
-        if(!PerformanceConfig.hudEnabled||mc.player==null||mc.options.hideGui)return;
-        var graphics=event.getGuiGraphics();
-        int x=7,y=8,w=210,h=84;
-        graphics.fill(x,y,x+w,y+h,0xD20F0C14);
-        graphics.fill(x,y,x+w,y+2,0xFFE0B568);
-        graphics.drawString(mc.font,"PORT  /  PERFORMANCE",x+9,y+8,0xFFEAC082,true);
-        graphics.drawString(mc.font,"FPS: "+PerformanceStats.fps(),x+9,y+24,0xFFFAF7F1,true);
-        graphics.drawString(mc.font,"PING: "+(PerformanceStats.ping()<0?"N/D":PerformanceStats.ping()+" ms"),x+92,y+24,0xFFFAF7F1,true);
-        graphics.drawString(mc.font,"RAM: "+PerformanceStats.used()+" / "+PerformanceStats.max()+" MB",x+9,y+39,0xFFC6B5C1,true);
-        graphics.drawString(mc.font,PerformanceConfig.streamEnabled?"WEB: TRANSMITINDO":"WEB: OFF",x+9,y+53,
-          PerformanceConfig.streamEnabled?0xFF8BDDAF:0xFFBCA3A8,true);
-        graphics.drawString(mc.font,"BOOSTER: "+BoosterEngine.status().split(" \\| ")[0].replace("Modo ","").toUpperCase()+
-          " / META "+PerformanceConfig.boosterTargetFps, x+9,y+67,0xFFE5B571,true);
+        if(!PerformanceConfig.hudEnabled||mc.player==null||mc.options.hideGui
+            ||mc.screen instanceof HudPositionScreen)return;
+        PerformanceHud.draw(event.getGuiGraphics(),mc,false);
+    }
+
+    private static void openHudEditor(){
+        Minecraft mc=Minecraft.getInstance();
+        if(mc.player==null){
+            local("Entre em um mundo para editar o HUD.");
+            return;
+        }
+        mc.setScreen(new HudPositionScreen());
     }
 
     private void commands(RegisterClientCommandsEvent event){
@@ -56,6 +55,8 @@ public final class PortPerformanceMod {
                 local("Site: "+PerformanceConfig.url+" | "+PerformanceStats.lastResult());
                 local("BOOSTER: "+BoosterEngine.status());
                 local("Controle web: "+(PerformanceConfig.webControlEnabled?"autorizado":"bloqueado"));
+                local("HUD posição: "+Math.round(PerformanceConfig.hudX*100)+"% / "+
+                    Math.round(PerformanceConfig.hudY*100)+"%. Use /portperf hud edit para mover.");
                 return 1;
             }))
             .then(Commands.literal("stream")
@@ -71,6 +72,11 @@ public final class PortPerformanceMod {
                     return 1;
                 })))
             .then(Commands.literal("hud")
+                .executes(ctx->{openHudEditor();return 1;})
+                .then(Commands.literal("edit").executes(ctx->{openHudEditor();return 1;}))
+                .then(Commands.literal("reset").executes(ctx->{
+                    PerformanceHud.reset();local("Posição do HUD restaurada.");return 1;
+                }))
                 .then(Commands.literal("on").executes(ctx->{
                     PerformanceConfig.hudEnabled=true;PerformanceConfig.save();
                     local("HUD ativado.");return 1;
