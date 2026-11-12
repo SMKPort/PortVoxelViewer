@@ -1,0 +1,26 @@
+name: Port Metamorph - Web
+on:
+  push:
+    branches: [port-metamorph]
+    paths:
+      - 'port-metamorph-web/**'
+      - '.github/workflows/port-metamorph-web.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    name: Test secure web relay (Node 22)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check
+        run: |
+          node --check port-metamorph-web/server.js
+          node --check port-metamorph-web/public/app.js
+          node --check port-metamorph-web/test.js
+      - name: Full pairing and command flow
+        run: node --test port-metamorph-web/test.js
