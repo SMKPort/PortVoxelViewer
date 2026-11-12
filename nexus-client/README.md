@@ -107,3 +107,12 @@ Memórias persistem no arquivo local `.minecraft/config/nexus-consciousness.json
 A interface do Nexus no Render recebe **somente** o estágio da personalidade (`PROTOCOLO`, `OBSERVAÇÃO`, `ADAPTAÇÃO`, `IDENTIDADE`, `INDIVIDUAÇÃO`) e os valores agregados de experiência, cautela, vínculo e curiosidade. O envio ocorre aproximadamente a cada 30 segundos **apenas quando ambos** `/nexusclient mind on` e `/nexusclient telemetry on` estão ativos, além do pareamento HTTPS.
 
 As memórias narrativas locais permanecem em `nexus-consciousness.json`; o conteúdo completo delas não é enviado. Para conversar livremente pelo microfone, abra a aba **Voz do Nexus** no painel Render e configure uma chave Gemini no backend. O formato de chat `/l &6&l[Nexus Aterna]` e a necessidade de `/nexusclient chat on` permanecem os mesmos. Substitua o JAR antigo pelo **1.3.1** para disponibilizar contexto evolutivo na IA.
+
+
+## Nexus Client 1.4.0: telemetria independente do navegador
+
+O Nexus processa localmente dano, regeneração e morte mesmo quando nenhuma página do painel está aberta. O novo arquivo `.minecraft/config/nexus-vitals.json` persiste integridade média, integridade e integração de cada placa, energia, parâmetros de dano/cura e cursor de placas. O cálculo local não depende de conexão com o Render e **nunca modifica vida real do jogador nem o mundo do servidor**. Ao reabrir o painel, os valores locais são transmitidos pelo HTTPS e atualizados na interface.
+
+**Instalação e ativação:** substitua o JAR do Nexus Client pela versão 1.4.0, tenha `/nexusclient telemetry on`, mantenha o Minecraft aberto e vinculado. Na aba **Eventos do Jogo**, marque as alterações narrativas e clique **Salvar preferências** com o cliente conectado. Essa configuração é enviada uma vez ao mod, que a guarda no arquivo local mesmo após fechar a aba. A configuração inicial copia os valores do painel apenas uma vez; nos salvamentos seguintes, muda apenas fatores e autorização para evitar substituir o progresso obtido enquanto o painel esteve fechado. O estado local continua sendo o mesmo ao reiniciar a Render. O painel vê o estado mais recente quando há conexão.
+
+O reconhecimento do Minecraft ocorre a cada aproximadamente 3 segundos. Eventos de vida muito rápidos entre amostras podem não ser observados. Fechar o Minecraft interrompe novas leituras. `telemetry off` também interrompe a coleta; não há leitura à distância do jogo fechado. A sincronização da interface usa os dados enviados pelo mod e não reaplica dano e cura já processados por ele.

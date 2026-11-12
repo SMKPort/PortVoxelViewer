@@ -49,11 +49,13 @@ public class NexusClientMod {
             .then(Commands.literal("telemetry")
                 .then(Commands.literal("on").executes(context -> {
                     ClientConfig.allowTelemetry = true; ClientConfig.save();
+                    ClientLink.resetTelemetryBaseline();
                     notifyPlayer("Telemetria de vida e efeitos ativada.");
                     return 1;
                 }))
                 .then(Commands.literal("off").executes(context -> {
                     ClientConfig.allowTelemetry = false; ClientConfig.save();
+                    ClientLink.resetTelemetryBaseline();
                     notifyPlayer("Telemetria desativada.");
                     return 1;
                 })))

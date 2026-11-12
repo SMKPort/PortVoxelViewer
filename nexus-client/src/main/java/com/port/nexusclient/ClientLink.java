@@ -44,13 +44,16 @@ final class ClientLink {
         invalidTokenNotice=false;POLLING.set(false);
     }
 
+    static void resetTelemetryBaseline(){
+        previousHealth=Float.NaN;previousEffects="";previousPlayer="";
+    }
     static String status() {
         return (ClientConfig.token.isEmpty()?"SEM PAREAMENTO":"PAREADO")
             +" | Chat remoto: "+(ClientConfig.allowChat?"AUTORIZADO":"BLOQUEADO")
             +" | Telemetria: "+(ClientConfig.allowTelemetry?"ATIVA":"DESATIVADA")
             +" | Consciência: "+(ClientConfig.allowMind?"ATIVA":"DESATIVADA")
             +" | Autonomia RP: "+(ClientConfig.allowAutonomy?"AUTORIZADA":"BLOQUEADA")
-            +" | Serviço: "+ClientConfig.url;
+            +" | Serviço: "+ClientConfig.url+" | "+NexusVitals.status();
     }
 
     static void pair(String code) {
@@ -89,6 +92,7 @@ final class ClientLink {
         }
         if(++ticks%60!=0)return;
         NexusMind.sample(mc.player);
+        if(ClientConfig.allowTelemetry)sendTelemetry(mc.player);
         if(ClientConfig.token.isEmpty())return;
         if(POLLING.compareAndSet(false,true)){
             get("/api/client/poll",true).thenAccept(reply -> {
@@ -108,7 +112,9 @@ final class ClientLink {
             }).exceptionally(err -> null).whenComplete((value,err) -> POLLING.set(false));
         }
         if(ClientConfig.allowTelemetry){
-            sendTelemetry(mc.player);
+            if(NexusVitals.isConfigured()){
+                post("/api/client/monitor/state",NexusVitals.snapshot(),true).exceptionally(err -> null);
+            }
             // Envio de contexto de personagem somente quando observação E
             // telemetria foram autorizadas pelo jogador, a cada ~30 segundos.
             if(ClientConfig.allowMind && ticks%600==0){
@@ -129,12 +135,16 @@ final class ClientLink {
         if(Float.isNaN(previousHealth)){
             event("health",name,0,hp,"Primeira leitura do cliente");
         }else if(previousHealth>0 && hp<=0){
+            NexusVitals.record("death",0,name);
             event("death",name,0,0,"Morte detectada no cliente");
         }else if(previousHealth<=0 && hp>0){
+            NexusVitals.record("respawn",0,name);
             event("respawn",name,0,hp,"Renascimento detectado no cliente");
         }else if(hp<previousHealth-.1f){
+            NexusVitals.record("damage",previousHealth-hp,name);
             event("damage",name,previousHealth-hp,hp,"Dano observado no cliente");
         }else if(hp>previousHealth+.1f){
+            NexusVitals.record("heal",hp-previousHealth,name);
             event("heal",name,hp-previousHealth,hp,"Regeneração observada no cliente");
         }
         if(!effects.equals(previousEffects)){
@@ -148,7 +158,8 @@ final class ClientLink {
         data.addProperty("type",type);data.addProperty("player",name);
         data.addProperty("health",health);data.addProperty("amount",amount);
         data.addProperty("note",note.substring(0,Math.min(note.length(),140)));
-        post("/api/client/telemetry",data,true).exceptionally(err -> null);
+        if(!ClientConfig.token.isEmpty())
+            post("/api/client/telemetry",data,true).exceptionally(err -> null);
     }
 
     private static void execute(JsonObject job){
@@ -161,6 +172,11 @@ final class ClientLink {
                     payload.has("channel")?payload.get("channel").getAsString():"local",
                     payload.has("command")?payload.get("command").getAsString():"",
                     payload.has("format")?payload.get("format").getAsString():"&6&l");success=true;
+            }else if("monitor_settings".equals(kind)){
+                Minecraft mc=Minecraft.getInstance();
+                if(mc.player==null)throw new IllegalStateException("Entre no mundo para configurar o monitor.");
+                output=NexusVitals.configure(payload,mc.player.getGameProfile().getName());
+                success=true;
             }else if("action".equals(kind)){
                 output=action(payload.get("action").getAsString(),
                     payload.has("form")?payload.get("form").getAsString():"");success=true;
