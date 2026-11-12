@@ -16,6 +16,9 @@ final class PerformanceConfig {
     static String token="";
     static boolean hudEnabled=true;
     static boolean streamEnabled=false;
+    static boolean webControlEnabled=false;
+    static int boosterTargetFps=60;
+    static double pendingRestoreOriginal=-1,pendingRestoreApplied=-1;
 
     static void load(){
         Properties values=new Properties();
@@ -28,8 +31,18 @@ final class PerformanceConfig {
         token=values.getProperty("token","").trim().toLowerCase();
         if(!token.matches("[a-f0-9]{32}"))regenerateKey();
         hudEnabled=Boolean.parseBoolean(values.getProperty("hudEnabled","true"));
+        try{
+            boosterTargetFps=Math.max(30,Math.min(240,Integer.parseInt(values.getProperty("boosterTargetFps","60"))));
+            pendingRestoreOriginal=Double.parseDouble(values.getProperty("pendingRestoreOriginal","-1"));
+            pendingRestoreApplied=Double.parseDouble(values.getProperty("pendingRestoreApplied","-1"));
+            if(!Double.isFinite(pendingRestoreOriginal)||pendingRestoreOriginal<=0)pendingRestoreOriginal=-1;
+            if(!Double.isFinite(pendingRestoreApplied)||pendingRestoreApplied<=0)pendingRestoreApplied=-1;
+        }catch(Exception ignore){
+            boosterTargetFps=60;pendingRestoreOriginal=-1;pendingRestoreApplied=-1;
+        }
         // Always require active permission after launching Minecraft.
         streamEnabled=false;
+        webControlEnabled=false;
         save();
     }
 
@@ -41,11 +54,24 @@ final class PerformanceConfig {
         save();
     }
 
+    static void notePendingRestore(double original,double applied){
+        pendingRestoreOriginal=original;pendingRestoreApplied=applied;save();
+    }
+    static void clearPendingRestore(){
+        if(pendingRestoreOriginal<0&&pendingRestoreApplied<0)return;
+        pendingRestoreOriginal=-1;pendingRestoreApplied=-1;save();
+    }
+
     static void save(){
         Properties values=new Properties();
         values.setProperty("url",url);
         values.setProperty("token",token);
         values.setProperty("hudEnabled",Boolean.toString(hudEnabled));
+        values.setProperty("boosterTargetFps",Integer.toString(boosterTargetFps));
+        if(pendingRestoreOriginal>0&&pendingRestoreApplied>0){
+            values.setProperty("pendingRestoreOriginal",Double.toString(pendingRestoreOriginal));
+            values.setProperty("pendingRestoreApplied",Double.toString(pendingRestoreApplied));
+        }
         // Intentionally never persist streaming authorization across restarts.
         try{
             Files.createDirectories(FILE.getParent());
