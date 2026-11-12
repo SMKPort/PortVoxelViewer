@@ -74,4 +74,22 @@ test("pairing requires user authorization and a one time code",async()=>{
  assert.equal(migrated.payload.jobs[0].payload.message,"[Nexus Aterna] Integrando armadura");
  const tooLong=await run("POST","/api/client/chat",user,{message:"a".repeat(225),channel:"local"});
  assert.equal(tooLong.status,422);
+
+ // Regressão: health().events é o contador; /events deve retornar lista.
+ // Antes da correção, o spread ...health() sobrescrevia a lista com o número 4.
+ for(let i=1;i<=4;i++){
+   const sent=await run("POST","/api/client/telemetry",client,{type:"damage",player:"Port",amount:i});
+   assert.equal(sent.status,200);
+   assert.equal(sent.payload.id,i);
+ }
+ const allEvents=await run("GET","/api/client/events?since=0",user);
+ assert.equal(allEvents.status,200);
+ assert.equal(allEvents.payload.lastId,4);
+ assert.ok(Array.isArray(allEvents.payload.events),"Eventos precisam ser um array, nunca o contador numérico.");
+ assert.deepEqual(allEvents.payload.events.map(ev=>ev.amount),[1,2,3,4]);
+ const incremental=await run("GET","/api/client/events?since=2",user);
+ assert.ok(Array.isArray(incremental.payload.events));
+ assert.deepEqual(incremental.payload.events.map(ev=>ev.id),[3,4]);
+ const status=await run("GET","/api/client/status",user);
+ assert.equal(status.payload.events,4,"O status mantém o contador de eventos.");
 });
