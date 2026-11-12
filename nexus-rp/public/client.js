@@ -53,7 +53,7 @@ window.NexusRPClientUpgrade=function(rp,views){
    for(let i=0;i<17;i++){
      await new Promise(r=>setTimeout(r,900));
      const job=await backend("/job?id="+encodeURIComponent(data.jobId));
-     if(job.done){if(!job.success)throw Error(job.error||"O mod não concluiu esta ação.");return {ok:true,response:job.output};}
+     if(job.done){if(!job.success)throw Error(job.error||"O mod não concluiu esta ação.");return {ok:true,response:job.output,...(data.reply?{reply:data.reply}:{})};}
    }
    throw Error("O Minecraft não confirmou o comando. Abra o jogo e verifique o mod.");
  }

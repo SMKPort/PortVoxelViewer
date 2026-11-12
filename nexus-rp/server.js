@@ -20,7 +20,7 @@ const limits=new Map();
 const types={".html":"text/html; charset=utf-8",".css":"text/css; charset=utf-8",".js":"text/javascript; charset=utf-8",".svg":"image/svg+xml",".json":"application/json; charset=utf-8",".webmanifest":"application/manifest+json"};
 const security={
   "X-Content-Type-Options":"nosniff","Referrer-Policy":"no-referrer","X-Frame-Options":"DENY",
-  "Permissions-Policy":"camera=(), microphone=(), geolocation=()",
+  "Permissions-Policy":"camera=(), microphone=(self), geolocation=()",
   "Content-Security-Policy":"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 };
 function json(res,status,data){res.writeHead(status,{...security,"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"});res.end(JSON.stringify(data));}
@@ -127,7 +127,7 @@ const bridge=createBridge({send:json,verifyUser:req=>checkToken(req.headers["x-n
 const nexusClient=createClientRelay({send:json,verifyUser:req=>checkToken(req.headers["x-nexus-key"]),limit:rateLimit});
 async function serve(req,res,route){
   const requested=route==="/"?"index.html":decodeURIComponent(route).slice(1);
-  if(!/^(index\.html|styles\.css|upgrade\.css|evolution\.css|views\.js|upgrade\.js|evolution\.js|client\.js|app\.js|icon\.svg|manifest\.webmanifest)$/.test(requested))return json(res,404,{error:"Arquivo não encontrado."});
+  if(!/^(index\.html|styles\.css|upgrade\.css|evolution\.css|voice\.css|views\.js|upgrade\.js|evolution\.js|voice\.js|client\.js|app\.js|icon\.svg|manifest\.webmanifest)$/.test(requested))return json(res,404,{error:"Arquivo não encontrado."});
   try{
     const file=await fs.readFile(path.join(ROOT,requested));
     res.writeHead(200,{...security,"Content-Type":types[path.extname(requested)]||"application/octet-stream","Cache-Control":requested.endsWith(".js")||requested==="index.html"?"no-store":"public, max-age=300"});

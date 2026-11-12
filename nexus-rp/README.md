@@ -182,3 +182,16 @@ O painel agora inclui teste de regressão para impedir que o modo Client volte a
 No modo Nexus Client, a chave `NEXUS_RP_ACCESS_KEY` da Render continua privada e **nunca é enviada embutida no HTML nem no código-fonte público**. Para evitar ter de digitá-la em cada visita, marque **Lembrar a chave HTTPS apenas neste dispositivo** ao informá-la pela primeira vez. A partir da próxima visita, ela é recuperada do armazenamento local desse navegador para autorizar as ações da ponte. O campo de senha fica vazio para não exibir o segredo no HTML. O status **Chave lembrada neste navegador** informa que está pronta. É possível revogar o armazenamento pelo botão **Esquecer chave salva**. Em um dispositivo compartilhado, mantenha a opção desmarcada.
 
 Isso não dispensa a autenticação inicial: um website público não pode preencher de maneira segura o valor secreto da variável de ambiente da Render para qualquer visitante. A chave também continua separada do código de pareamento de dez caracteres usado dentro do Minecraft. Nenhuma modificação do JAR NeoForge foi necessária.
+
+
+## Microfone para chat (Nexus RP 2.2)
+
+A nova aba **Voz do Nexus** usa `SpeechRecognition` (Web Speech API) no navegador. Funciona sem reinstalar o mod cliente 1.3.0, pois usa a fila HTTPS existente. Em alguns navegadores, como Chrome, o processamento de áudio ocorre no serviço de reconhecimento do próprio navegador, portanto requer conexão com a internet e **não é reconhecimento offline privado**. O painel não armazena gravações nem grava arquivos de áudio.
+
+1. Instale e pareie o Nexus Client. Execute `/nexusclient chat on` no Minecraft.
+2. Abra o painel HTTPS no Chrome ou Edge em um computador com microfone, informe a chave em Configurações e acesse **Voz do Nexus**.
+3. Clique em **ATIVAR MICROFONE** e permita o acesso ao microfone solicitado pelo navegador.
+4. Diga **Nexus, como estamos?** ou apenas **Nexus**, seguido de uma pergunta em até dez segundos.
+5. A resposta textual é colocada na fila e transmitida pelo mod via `/l &6&l[Nexus Aterna] ...`. O envio aparece como seu jogador, não como mensagem do servidor.
+
+O microfone é desligado pelo botão **DESLIGAR** e ao fechar a aba. A página deve permanecer aberta; navegadores podem interromper reconhecimento em segundo plano. As respostas desta primeira etapa são **contextuais por regras**, não conversa aberta via IA. Vida recente só aparece se `/nexusclient telemetry on` estiver ativado e o mod enviar os eventos. Se o reconhecimento não estiver disponível, o botão de teste textual permite verificar a fila. O endpoint `/api/client/voice` exige a chave privada do painel, limita comprimento, exige a palavra de ativação e preserva o cooldown de chat do mod. Por segurança, o microfone só é habilitado para a própria origem HTTPS do painel.

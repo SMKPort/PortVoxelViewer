@@ -22,6 +22,8 @@ jobs:
           node --check nexus-rp/server.js
           node --check nexus-rp/bridge.js
           node --check nexus-rp/client_relay.js
+          node --check nexus-rp/voice_reply.js
+          node --check nexus-rp/public/voice.js
           node --check nexus-rp/public/views.js
           node --check nexus-rp/public/upgrade.js
           node --check nexus-rp/public/evolution.js
@@ -30,4 +32,4 @@ jobs:
       - name: Check Python agent
         run: python -m py_compile nexus-rp/agent/bridge_agent.py
       - name: Run bridge integration tests
-        run: node --test nexus-rp/tests/bridge.test.js nexus-rp/tests/client-relay.test.js nexus-rp/tests/client-ui.test.js nexus-rp/tests/http-routes.test.js
+        run: node --test nexus-rp/tests/bridge.test.js nexus-rp/tests/client-relay.test.js nexus-rp/tests/client-ui.test.js nexus-rp/tests/http-routes.test.js nexus-rp/tests/voice.test.js

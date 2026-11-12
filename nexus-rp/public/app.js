@@ -9,7 +9,7 @@ const PRESETS=[
 {id:"renovar",name:"Renovação do Núcleo",school:"Híbrida",cost:32,description:"O núcleo é recalibrado e a energia se redistribui entre as placas."},
 {id:"custom",name:"Personalizado",school:"Personalizado",cost:20,description:"O Port executa uma sequência de símbolos e componentes escolhidos."}
 ];
-const PAGES={painel:"NÚCLEO",chat:"COMUNICADOR",armadura:"ARMADURA ARCANA",rituais:"RITUAIS",ao_vivo:"RP AO VIVO",ts:"PROTOCOLO TS",sequencias:"SEQUENCIADOR",eventos:"EVENTOS DO JOGO",emergencia:"EMERGÊNCIA",emotes:"EMOTES",cliente:"NEXUS CLIENT",config:"CONFIGURAÇÕES"};
+const PAGES={painel:"NÚCLEO",chat:"COMUNICADOR",armadura:"ARMADURA ARCANA",rituais:"RITUAIS",ao_vivo:"RP AO VIVO",ts:"PROTOCOLO TS",sequencias:"SEQUENCIADOR",eventos:"EVENTOS DO JOGO",emergencia:"EMERGÊNCIA",emotes:"EMOTES",cliente:"NEXUS CLIENT",voz:"VOZ DO NEXUS",config:"CONFIGURAÇÕES"};
 const DEFAULT=()=>({
 integrity:100,energy:85,armor:"integrada",form:"Celestial",selectedRitual:"bencao",
 logs:[{id:"origin",at:new Date().toISOString(),kind:"SISTEMA",text:"Nexus Aterna RP inicializado. Aguardando instruções do Port."}],
@@ -63,6 +63,7 @@ let views=window.NexusRPViews(rp);
 if(window.NexusRPUpgrade)views=window.NexusRPUpgrade(rp,views);
 if(window.NexusRPEvolution)views=window.NexusRPEvolution(rp,views);
 if(window.NexusRPClientUpgrade)views=window.NexusRPClientUpgrade(rp,views);
+if(window.NexusRPVoiceUpgrade)views=window.NexusRPVoiceUpgrade(rp,views);
 function render(){
 $("#content").innerHTML=views[page]?.()||views.painel();
 $("#pageLabel").textContent=PAGES[page]||"NÚCLEO";

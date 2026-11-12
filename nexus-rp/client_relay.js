@@ -1,6 +1,7 @@
 "use strict";
 /* Nexus Client: ephemeral pairing and authorized Java client relay. */
 const crypto=require("node:crypto");
+const {buildReply}=require("./voice_reply.js");
 const JOB_MAX_AGE=120000;
 function createClientRelay({send,verifyUser,limit}){
   let pair=null,session=null,eventId=0;
@@ -32,8 +33,8 @@ function createClientRelay({send,verifyUser,limit}){
   async function handle(req,res,route,url){
     if(!route.startsWith("/api/client/"))return false;
     cleanup();
-    if(["/api/client/pair/new","/api/client/pair/exchange","/api/client/chat","/api/client/action"].includes(route)&&!limit(req))return err(res,429,"Limite de requisições. Reduza a frequência.");
-    const userPaths=new Set(["/api/client/pair/new","/api/client/status","/api/client/events","/api/client/chat","/api/client/action","/api/client/job"]);
+    if(["/api/client/pair/new","/api/client/pair/exchange","/api/client/chat","/api/client/voice","/api/client/action"].includes(route)&&!limit(req))return err(res,429,"Limite de requisições. Reduza a frequência.");
+    const userPaths=new Set(["/api/client/pair/new","/api/client/status","/api/client/events","/api/client/chat","/api/client/voice","/api/client/action","/api/client/job"]);
     const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/ack"]);
     if(!userPaths.has(route)&&!clientPaths.has(route))return err(res,404,"Rota desconhecida.");
     if(userPaths.has(route)&&!guardUser(req,res))return true;
@@ -82,6 +83,20 @@ function createClientRelay({send,verifyUser,limit}){
         if(!/^(?:&[0-9a-fk-or]){0,8}$/.test(format))return err(res,422,"Código de formatação inválido. Use códigos como &6&l.");
         // Raw formatting is passed only to the chat command; no arbitrary commands.
         send(res,200,enqueue("chat",{message,channel,command:root,format}));return true;
+      }catch(e){return err(res,422,String(e.message));}
+    }
+    if(route==="/api/client/voice"&&req.method==="POST"){
+      try{
+        const data=await body(req,1300);
+        if(typeof data.transcript!=="string")return err(res,422,"Transcrição de voz inválida.");
+        const transcript=data.transcript.replace(/[\\u0000-\\u001f\\u007f]/g," ").replace(/\\s+/g," ").trim();
+        if(transcript.length<4||transcript.length>260)return err(res,422,"Transcrição deve ter entre 4 e 260 caracteres.");
+        const reply=buildReply(transcript,{online:health().online,player:session?.player||"",events});
+        if(!reply)return err(res,422,"Diga Nexus antes da sua pergunta para ativar a resposta.");
+        const message="[Nexus Aterna] "+reply;
+        if(message.length>230)return err(res,422,"Resposta excede o limite do chat.");
+        send(res,200,{...enqueue("chat",{message,channel:"local",command:"l",format:"&6&l"}),reply});
+        return true;
       }catch(e){return err(res,422,String(e.message));}
     }
     if(route==="/api/client/action"&&req.method==="POST"){
