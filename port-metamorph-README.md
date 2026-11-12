@@ -35,11 +35,12 @@ Comandos:
 - Possui presets Normal, Nexus, Angelical, Híbrido e forma Custom.
 - Modificações de escala e movimento de asas, escala do braço e tempo de ativação.
 - Aceita até **24 cubos extras** com posição e tamanho em coordenadas relativas ao personagem.
+- O site inclui importação **experimental de cubos .bbmodel** feita no próprio navegador: lê `elements[].from/to`, seleciona até 24 cubos (por volume) e os traduz para os materiais voxel existentes, sem enviar o arquivo original ao servidor. A geometria pode exigir reposicionamento manual.
 - Salva as configurações em **config/port-metamorph.json**.
 - Oferece uma interface básica no jogo e um painel web em preto/vermelho/dourado.
 - A visualização no site é **conceitual em 2D**, não reflete a renderização exata no Minecraft.
 
-**Ainda não implementado:** importação direta de modelos do Blockbench (**.bbmodel**), texturas personalizadas, rigs arbitrários, troca integral do corpo base do jogador, física de hitbox, sincronização visual automática com outros jogadores, integração com Armourer's Workshop ou animações complexas. O mod é um **protótipo funcional de acessórios**, não o sistema Metamorph completo.
+**Ainda não implementado:** importação fiel de modelos do Blockbench (**.bbmodel** com texturas, rotação interna, hierarquia de bones ou animações), texturas personalizadas, rigs arbitrários, troca integral do corpo base do jogador, física de hitbox, sincronização visual automática com outros jogadores, integração com Armourer's Workshop ou animações complexas. O mod é um **protótipo funcional de acessórios**, não o sistema Metamorph completo.
 
 O renderizador atual usa blocos vanilla para as peças. Não é aconselhável tratar essas peças como modelos finais do Nexus. Os modelos verdadeiros virão após o pipeline de importação e bones.
 
