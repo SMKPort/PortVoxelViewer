@@ -1,6 +1,6 @@
 {
   "name": "port-performance-monitor-web",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "description": "Painel exclusivo Port Performance Monitor",
   "scripts": {
