@@ -21,7 +21,7 @@ window.NexusRPEvolution=function(rp,views){
   if(!S.emotes||typeof S.emotes!=="object")S.emotes={integrar:"",desintegrar:"",remodelar:"",reparar:"",ritual:"",emergencia:""};
   if(!S.gameEvents||typeof S.gameEvents!=="object")S.gameEvents={enabled:false,lastId:0,bootstrapped:false,damageFactor:5,healIntegrity:5,healEnergy:3,cursor:0,feed:[],lastSync:"",error:""};
   const G=S.gameEvents,EM=S.emergency;
-  G.enabled=Boolean(G.enabled);G.lastId=Number(G.lastId)||0;G.damageFactor=clamp(G.damageFactor,1,10);G.healIntegrity=clamp(G.healIntegrity??5,0,10);G.healEnergy=clamp(G.healEnergy,0,15);if(!Array.isArray(G.feed))G.feed=[];
+  G.enabled=Boolean(G.enabled);G.remoteManaged=G.remoteManaged===true;G.lastId=Number(G.lastId)||0;G.damageFactor=clamp(G.damageFactor,1,10);G.healIntegrity=clamp(G.healIntegrity??5,0,10);G.healEnergy=clamp(G.healEnergy,0,15);if(!Array.isArray(G.feed))G.feed=[];
   let chosenSequence=S.sequences[0]?.id||"", seqToken=0, seqStatus="",seqIndex=-1,pollBusy=false,lastStatus={},activeRefresh=null;
   const button=(act,title,style="alt",attrs="")=>'<button type="button" class="btn '+style+'" data-evo="'+E(act)+'" '+attrs+'>'+title+'</button>';
   const block=(label,contents)=>'<section class="card"><div class="card-header"><h2>'+E(label)+'</h2></div>'+contents+'</section>';
@@ -151,6 +151,10 @@ window.NexusRPEvolution=function(rp,views){
       "Aguardando primeira sincronização automática...";
     const integrity=document.querySelector("#rpEventsIntegrity");
     if(integrity)integrity.textContent=S.integrity+"%";
+    const monitor=document.querySelector("#rpEventsOwner");
+    if(monitor)monitor.textContent=G.remoteManaged?
+      "Processamento no Nexus Client: continua com a página fechada.":
+      "Processamento no painel (legado): configure o Nexus Client 1.4 para funcionar sem esta página.";
   }
   function eventView(){
     const client=S.config.connectionMode==="client";
@@ -159,6 +163,9 @@ window.NexusRPEvolution=function(rp,views){
       '<div class="grid two">'+block("MONITORAMENTO DO PERSONAGEM",
       '<div id="rpEventsStatus">'+statusMarkup()+'</div>'+
       '<p class="hint" id="rpEventsSync" aria-live="polite">'+E(G.lastSync?"Sincronização: "+rp.date(G.lastSync)+" · automática a cada 2 segundos":"Aguardando primeira sincronização automática...")+'</p>'+
+      '<p class="hint" id="rpEventsOwner">'+(G.remoteManaged?
+        'Processamento no Nexus Client: continua com a página fechada.':
+        'Para acompanhar com o painel fechado, instale o Nexus Client 1.4 e salve estas preferências com o jogo aberto.')+'</p>'+
       '<div class="kv"><span>Integridade do Nexus</span><span class="value" id="rpEventsIntegrity">'+E(S.integrity)+"%"+'</span></div>'+
       '<form id="rpEventSettings"><label class="field inline"><input name="enabled" type="checkbox" '+(G.enabled?"checked":"")+
       '><span>Permitir que eventos alterem a integridade e energia narrativas</span></label>'+
@@ -269,6 +276,24 @@ window.NexusRPEvolution=function(rp,views){
     }
     G.feed.push({...item,simulated:simulate});G.feed=G.feed.slice(-80);
   }
+  function applyClientSnapshot(snapshot){
+    if(!snapshot||snapshot.managed!==true)return false;
+    // The client is authoritative. Never replay its damage and healing here.
+    G.remoteManaged=true;
+    S.integrity=clamp(snapshot.integrity,0,100);
+    S.energy=clamp(snapshot.energy,0,100);
+    if(Array.isArray(snapshot.segments)&&Array.isArray(S.segments)){
+      const segmentMap=new Map(snapshot.segments.map(part=>[String(part.key),part]));
+      for(const part of S.segments){
+        const remote=segmentMap.get(String(part.key));
+        if(!remote)continue;
+        part.integrity=clamp(remote.integrity,0,100);
+        part.integrated=remote.integrated===true;
+      }
+      if(S.segments.length)S.armor=S.segments.some(part=>part.integrated)?"integrada":"desintegrada";
+    }
+    return true;
+  }
   function onEventsPage(){return window.location?.hash==="#eventos";}
   function shouldPoll(){return document.visibilityState!=="hidden"&&(onEventsPage()||G.enabled);}
   async function refreshEvents(){
@@ -291,11 +316,12 @@ window.NexusRPEvolution=function(rp,views){
       lastStatus=result.bridge||(S.config.connectionMode==="client"?
         {online:result.online===true,lastSeen:result.lastSeen,mode:"client"}:{});
       G.error="";G.lastSync=new Date().toISOString();
+      const remoteManaged=S.config.connectionMode==="client"&&applyClientSnapshot(result.monitor);
       const first=!G.bootstrapped;
       for(const e of result.events){
         if(!e||typeof e!=="object"||!Number.isInteger(Number(e.id))||Number(e.id)<=G.lastId)continue;
         // The initial backlog is visible, but it never damages RP retroactively.
-        gameEvent(e,false,!first&&G.enabled);
+        gameEvent(e,false,!first&&G.enabled&&!remoteManaged&&!G.remoteManaged);
       }
       G.lastId=Math.max(G.lastId,Number(result.lastId)||0);
       G.bootstrapped=true;save();
@@ -366,6 +392,23 @@ window.NexusRPEvolution=function(rp,views){
     }else if(form==="rpEventSettings"){
       G.enabled=d.has("enabled");G.damageFactor=clamp(d.get("damageFactor"),1,10);G.healIntegrity=clamp(d.get("healIntegrity"),0,10);G.healEnergy=clamp(d.get("healEnergy"),0,15);
       log("Integração narrativa "+(G.enabled?"ativada":"desativada")+".","TELEMETRIA");
+      if(S.config.connectionMode==="client"){
+        try{
+          if(!rp.clientQueue)throw Error("Instale o Nexus Client atualizado e recarregue o painel.");
+          const copy=Array.isArray(S.segments)?S.segments.slice(0,48).map(p=>({
+            key:String(p.key||"").slice(0,56),integrity:clamp(p.integrity,0,100),integrated:p.integrated===true
+          })):[];
+          await rp.clientQueue("/monitor/settings",{
+            enabled:G.enabled,damageFactor:G.damageFactor,healIntegrity:G.healIntegrity,
+            healEnergy:G.healEnergy,integrity:clamp(S.integrity,0,100),
+            energy:clamp(S.energy,0,100),cursor:G.cursor||0,segments:copy
+          });
+          G.remoteManaged=true;
+          toast("Monitor gravado no Nexus Client. Dano e cura funcionarão com a página fechada.");
+        }catch(error){
+          toast("Configuração salva apenas no painel. O mod não confirmou: "+String(error.message||error));
+        }
+      }
       if(shouldPoll())refreshEvents();
     }else if(form==="rpEmotesForm"){
       const saved={};for(const key of ["integrar","desintegrar","remodelar","reparar","ritual","emergencia"]){

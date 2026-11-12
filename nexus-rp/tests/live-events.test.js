@@ -8,12 +8,12 @@ test("Events auto-refresh without buttons, preserving RP changes opt-in",async()
    addEventListener:(name,fn)=>listeners[name]=fn};
  const window={location:{hash:"#eventos"},addEventListener:(name,fn)=>listeners[name]=fn};
  nodes["#content"]={addEventListener(){}};
- for(const id of ["#rpEventsFeed","#rpEventsStatus","#rpEventsSync"])nodes[id]={innerHTML:"",textContent:""};
- let events=[{id:1,type:"health",player:"Port",amount:0,health:20,note:"Vida",at:"2026-11-12"}],renders=0;
+ for(const id of ["#rpEventsFeed","#rpEventsStatus","#rpEventsSync","#rpEventsOwner"])nodes[id]={innerHTML:"",textContent:""};
+ let events=[{id:1,type:"health",player:"Port",amount:0,health:20,note:"Vida",at:"2026-11-12"}],renders=0,monitor=null;
  const state={config:{connectionMode:"client",player:"Port"},integrity:100,energy:85,
    segments:[{integrity:100,integrated:true}],gameEvents:{enabled:false,lastId:0,bootstrapped:false,damageFactor:5,healEnergy:3,cursor:0,feed:[],lastSync:"",error:""}};
  const rp={state,escape:x=>String(x??""),date:x=>String(x),getAccess:()=>"test-key",
-   requestEvents:async since=>({online:true,lastSeen:"now",lastId:events.at(-1)?.id||0,events:events.filter(e=>e.id>since)}),
+   requestEvents:async since=>({online:true,lastSeen:"now",monitor,lastId:events.at(-1)?.id||0,events:events.filter(e=>e.id>since)}),
    rerender(){renders++;},save(){},log(){},toast(){},navigate(){}};
  const context=vm.createContext({window,document,setInterval:(fn,ms)=>timers.push({fn,ms}),setTimeout(){},console,Date});
  vm.runInContext(code,context);
@@ -33,6 +33,16 @@ test("Events auto-refresh without buttons, preserving RP changes opt-in",async()
  assert.equal(state.integrity,100,"Monitoring alone must not modify the RP");
  assert.match(nodes["#rpEventsFeed"].innerHTML,/Dano recebido/);
  await tick();assert.equal(state.gameEvents.feed.length,2,"No duplicate events");
+ // The new mod reports its own local state. Browser must never apply damage twice.
+ state.gameEvents.enabled=true;
+ monitor={managed:true,enabled:true,integrity:64,energy:37,
+   segments:[{key:"arm",integrity:64,integrated:true}]};
+ events.push({id:3,type:"damage",player:"Port",amount:4,health:14,note:"Dano calculado pelo mod",at:"2026-11-12"});
+ await tick();
+ assert.equal(state.integrity,64);
+ assert.equal(state.energy,37);
+ assert.equal(state.gameEvents.remoteManaged,true);
+ assert.match(nodes["#rpEventsOwner"]?.textContent||"","Processamento no Nexus Client");
  document.visibilityState="hidden";await tick();assert.equal(state.gameEvents.feed.length,2);
 });
 
