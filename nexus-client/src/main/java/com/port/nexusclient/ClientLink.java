@@ -40,6 +40,7 @@ final class ClientLink {
 
     static void reset() {
         ticks=0;previousHealth=Float.NaN;previousEffects="";previousPlayer="";
+        NexusMind.resetSession();
         invalidTokenNotice=false;POLLING.set(false);
     }
 
@@ -47,6 +48,8 @@ final class ClientLink {
         return (ClientConfig.token.isEmpty()?"SEM PAREAMENTO":"PAREADO")
             +" | Chat remoto: "+(ClientConfig.allowChat?"AUTORIZADO":"BLOQUEADO")
             +" | Telemetria: "+(ClientConfig.allowTelemetry?"ATIVA":"DESATIVADA")
+            +" | Consciência: "+(ClientConfig.allowMind?"ATIVA":"DESATIVADA")
+            +" | Autonomia RP: "+(ClientConfig.allowAutonomy?"AUTORIZADA":"BLOQUEADA")
             +" | Serviço: "+ClientConfig.url;
     }
 
@@ -81,10 +84,12 @@ final class ClientLink {
     static void tick() {
         Minecraft mc=Minecraft.getInstance();
         if(mc.player==null || mc.getConnection()==null){
-            previousHealth=Float.NaN;previousPlayer="";previousEffects="";return;
+            previousHealth=Float.NaN;previousPlayer="";previousEffects="";
+            NexusMind.resetSession();return;
         }
-        if(ClientConfig.token.isEmpty())return;
         if(++ticks%60!=0)return;
+        NexusMind.sample(mc.player);
+        if(ClientConfig.token.isEmpty())return;
         if(POLLING.compareAndSet(false,true)){
             get("/api/client/poll",true).thenAccept(reply -> {
                 if(reply!=null && reply.has("jobs")){
@@ -160,7 +165,19 @@ final class ClientLink {
         post("/api/client/ack",ack,true).exceptionally(err -> null);
     }
 
+    static void speak(String text) {
+        if(!ClientConfig.allowMind || !ClientConfig.allowAutonomy || !ClientConfig.allowChat)return;
+        String safe=text.replaceAll("[\\p{Cntrl}]", " ").trim();
+        if(safe.isEmpty())return;
+        try { chat("[Nexus Aterna] "+safe,"local","l","&6&l",false); }
+        catch(IllegalArgumentException | IllegalStateException ignored) { /* Cooldown ou sessão desconectada. */ }
+    }
+
     private static String chat(String message,String channel,String command,String format){
+        return chat(message,channel,command,format,true);
+    }
+
+    private static String chat(String message,String channel,String command,String format,boolean announce){
         Minecraft mc=Minecraft.getInstance();
         if(!ClientConfig.allowChat)
             throw new IllegalStateException("Chat remoto não autorizado. Use /nexusclient chat on.");
@@ -202,7 +219,7 @@ final class ClientLink {
             // sendCommand takes the command without the leading slash.
             mc.getConnection().sendCommand(root+" "+transmittedMessage);
         }
-        NexusClientMod.notifyPlayer(root.isEmpty()?
+        if(announce)NexusClientMod.notifyPlayer(root.isEmpty()?
             "Mensagem enviada no chat global.":
             "Mensagem enviada via /"+root+".");
         return "Mensagem enviada como "+mc.player.getGameProfile().getName()+

@@ -83,3 +83,20 @@ Por padrão, todas as mensagens do canal **Local (/l)** recebem os códigos lite
 No Nexus RP, em Configurações, escolha **Nexus Client** e **Local (/l)**. O campo **Códigos de formatação do chat local** vem preenchido com `&6&l`. É possível alterá-lo para outros códigos da família `&`, ou esvaziá-lo para não aplicar formatação. Não é necessário escrever o código manualmente no Comunicador.
 
 O servidor precisa permitir a interpretação dos códigos `&` no comando `/l`. Se o plugin remover, bloquear ou ignorar essa formatação, as mensagens podem aparecer com o código literal ou sem cor. Os códigos não dão permissões especiais ao jogador.
+
+
+## Consciência evolutiva (Nexus Client 1.3.0)
+
+Esta implementação cria uma **personalidade narrativa simulada**, com progressão por eventos reais do cliente, e não uma IA consciente. Os cinco estágios são: Protocolo, Observação, Adaptação, Identidade e Individuação. O modelo registra experiências de dano, morte, recuperação e exploração, ajustando cautela, vínculo e curiosidade.
+
+- `/nexusclient mind on`: inicia observação **somente local**.
+- `/nexusclient mind status`: mostra estágio, experiência e tendências.
+- `/nexusclient mind memories`: mostra as cinco memórias recentes.
+- `/nexusclient mind off`: para observação e desliga mensagens espontâneas, sem apagar memórias.
+- `/nexusclient mind reset confirm`: apaga a memória narrativa local, mediante comando explícito.
+- `/nexusclient autonomy on`: permite que o Nexus envie frases próprias, apenas se `mind on` e `chat on` já estiverem autorizados.
+- `/nexusclient autonomy off`: interrompe as falas espontâneas.
+
+Memórias persistem no arquivo local `.minecraft/config/nexus-consciousness.json`. Não são enviadas à Render. O arquivo usa gravação atômica quando suportada, mantém até 40 marcos e não guarda coordenadas exatas ou nomes de outros jogadores.
+
+**Segurança:** o Nexus só publica fala espontânea no canal local permitido pelo jogador, usando a mesma rotina protegida de chat (prefixo `[Nexus Aterna]`, código `&6&l`, limite de mensagens e sem comandos administrativos). Se o canal /l não existir no servidor, a mensagem pode falhar. A evolução continua offline, mesmo sem pareamento; a geração de textos nesta fase usa regras de personalidade, não um modelo de IA externo.

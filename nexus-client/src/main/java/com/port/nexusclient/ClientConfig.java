@@ -14,6 +14,8 @@ final class ClientConfig {
     static String token = "";
     static boolean allowChat = false;
     static boolean allowTelemetry = false;
+    static boolean allowMind = false;
+    static boolean allowAutonomy = false;
 
     static void load() {
         if (!Files.isRegularFile(PATH)) return;
@@ -26,6 +28,8 @@ final class ClientConfig {
             token = values.getProperty("token", "").trim();
             allowChat = Boolean.parseBoolean(values.getProperty("allowChat", "false"));
             allowTelemetry = Boolean.parseBoolean(values.getProperty("allowTelemetry", "false"));
+            allowMind = Boolean.parseBoolean(values.getProperty("allowMind", "false"));
+            allowAutonomy = Boolean.parseBoolean(values.getProperty("allowAutonomy", "false"));
         } catch (IOException exception) {
             System.err.println("Nexus Client: não foi possível ler o arquivo de configuração.");
         }
@@ -37,6 +41,8 @@ final class ClientConfig {
         values.setProperty("token", token);
         values.setProperty("allowChat", Boolean.toString(allowChat));
         values.setProperty("allowTelemetry", Boolean.toString(allowTelemetry));
+        values.setProperty("allowMind", Boolean.toString(allowMind));
+        values.setProperty("allowAutonomy", Boolean.toString(allowAutonomy));
         try {
             Files.createDirectories(PATH.getParent());
             try (OutputStream out = Files.newOutputStream(PATH)) {
