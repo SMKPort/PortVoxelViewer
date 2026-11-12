@@ -21,7 +21,7 @@ test("site and health respond",async()=>{
  assert.equal(page.status,200);
  assert.match(await page.text(),/Port Performance Monitor/i);
  const health=await ask("/api/health");
- assert.equal(health.code,200);assert.equal(health.json.version,"1.0.0");
+ assert.equal(health.code,200);assert.equal(health.json.version,"2.0.0");
 });
 test("unknown device has no shared data",async()=>{
  assert.equal((await ask("/api/snapshot")).code,401);
