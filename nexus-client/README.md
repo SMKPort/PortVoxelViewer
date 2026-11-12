@@ -100,3 +100,10 @@ Esta implementação cria uma **personalidade narrativa simulada**, com progress
 Memórias persistem no arquivo local `.minecraft/config/nexus-consciousness.json`. Não são enviadas à Render. O arquivo usa gravação atômica quando suportada, mantém até 40 marcos e não guarda coordenadas exatas ou nomes de outros jogadores.
 
 **Segurança:** o Nexus só publica fala espontânea no canal local permitido pelo jogador, usando a mesma rotina protegida de chat (prefixo `[Nexus Aterna]`, código `&6&l`, limite de mensagens e sem comandos administrativos). Se o canal /l não existir no servidor, a mensagem pode falhar. A evolução continua offline, mesmo sem pareamento; a geração de textos nesta fase usa regras de personalidade, não um modelo de IA externo.
+
+
+## Nexus Client 1.3.1: consciência conectada à conversa livre
+
+A interface do Nexus no Render recebe **somente** o estágio da personalidade (`PROTOCOLO`, `OBSERVAÇÃO`, `ADAPTAÇÃO`, `IDENTIDADE`, `INDIVIDUAÇÃO`) e os valores agregados de experiência, cautela, vínculo e curiosidade. O envio ocorre aproximadamente a cada 30 segundos **apenas quando ambos** `/nexusclient mind on` e `/nexusclient telemetry on` estão ativos, além do pareamento HTTPS.
+
+As memórias narrativas locais permanecem em `nexus-consciousness.json`; o conteúdo completo delas não é enviado. Para conversar livremente pelo microfone, abra a aba **Voz do Nexus** no painel Render e configure uma chave Gemini no backend. O formato de chat `/l &6&l[Nexus Aterna]` e a necessidade de `/nexusclient chat on` permanecem os mesmos. Substitua o JAR antigo pelo **1.3.1** para disponibilizar contexto evolutivo na IA.

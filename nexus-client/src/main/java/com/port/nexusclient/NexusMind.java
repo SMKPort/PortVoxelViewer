@@ -2,6 +2,7 @@ package com.port.nexusclient;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.fml.loading.FMLPaths;
 
@@ -88,6 +89,21 @@ final class NexusMind {
             if(state.experience>=REQUIREMENTS[i])return i;
         return 0;
     }
+    /**
+     * Envia apenas valores agregados da evolução para dar contexto à IA da Render.
+     * Nenhum registro narrativo detalhado, nome ou localização deixa o cliente.
+     */
+    static JsonObject snapshot(){
+        load();
+        JsonObject data=new JsonObject();
+        data.addProperty("stage",STAGES[stage()]);
+        data.addProperty("experience",state.experience);
+        data.addProperty("caution",state.caution);
+        data.addProperty("attachment",state.attachment);
+        data.addProperty("curiosity",state.curiosity);
+        return data;
+    }
+
     static String status(){
         load();
         int s=stage();

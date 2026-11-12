@@ -107,7 +107,14 @@ final class ClientLink {
                 }
             }).exceptionally(err -> null).whenComplete((value,err) -> POLLING.set(false));
         }
-        if(ClientConfig.allowTelemetry)sendTelemetry(mc.player);
+        if(ClientConfig.allowTelemetry){
+            sendTelemetry(mc.player);
+            // Envio de contexto de personagem somente quando observação E
+            // telemetria foram autorizadas pelo jogador, a cada ~30 segundos.
+            if(ClientConfig.allowMind && ticks%600==0){
+                post("/api/client/mind",NexusMind.snapshot(),true).exceptionally(err -> null);
+            }
+        }
     }
 
     private static void sendTelemetry(Player player){
