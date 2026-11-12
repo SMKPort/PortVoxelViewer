@@ -98,7 +98,8 @@ public final class MacroLibrary {
         }
     }
     private static String cleanText(String value,int max){
-        return value.replaceAll("[\r\n\t\\p{Cntrl}]"," ").strip().substring(0,Math.min(max,value.strip().length()));
+        String cleaned=value.replaceAll("[\\r\\n\\t\\p{Cntrl}]"," ").strip();
+        return cleaned.substring(0,Math.min(max,cleaned.length()));
     }
     public static void save(){
         try{
