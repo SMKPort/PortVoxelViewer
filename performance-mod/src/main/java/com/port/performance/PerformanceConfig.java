@@ -15,6 +15,7 @@ final class PerformanceConfig {
     static String url=DEFAULT_URL;
     static String token="";
     static boolean hudEnabled=true;
+    static float hudX=0f,hudY=0f;
     static boolean streamEnabled=false;
     static boolean webControlEnabled=false;
     static int boosterTargetFps=60;
@@ -31,6 +32,8 @@ final class PerformanceConfig {
         token=values.getProperty("token","").trim().toLowerCase();
         if(!token.matches("[a-f0-9]{32}"))regenerateKey();
         hudEnabled=Boolean.parseBoolean(values.getProperty("hudEnabled","true"));
+        hudX=parsePosition(values.getProperty("hudX","0"));
+        hudY=parsePosition(values.getProperty("hudY","0"));
         try{
             boosterTargetFps=Math.max(30,Math.min(240,Integer.parseInt(values.getProperty("boosterTargetFps","60"))));
             pendingRestoreOriginal=Double.parseDouble(values.getProperty("pendingRestoreOriginal","-1"));
@@ -44,6 +47,14 @@ final class PerformanceConfig {
         streamEnabled=false;
         webControlEnabled=false;
         save();
+    }
+
+    private static float parsePosition(String raw){
+        try{
+            float value=Float.parseFloat(raw);
+            if(Float.isFinite(value))return Math.max(0f,Math.min(1f,value));
+        }catch(NumberFormatException ignored){}
+        return 0f;
     }
 
     static void regenerateKey(){
@@ -67,6 +78,8 @@ final class PerformanceConfig {
         values.setProperty("url",url);
         values.setProperty("token",token);
         values.setProperty("hudEnabled",Boolean.toString(hudEnabled));
+        values.setProperty("hudX",Float.toString(hudX));
+        values.setProperty("hudY",Float.toString(hudY));
         values.setProperty("boosterTargetFps",Integer.toString(boosterTargetFps));
         if(pendingRestoreOriginal>0&&pendingRestoreApplied>0){
             values.setProperty("pendingRestoreOriginal",Double.toString(pendingRestoreOriginal));
