@@ -218,14 +218,21 @@ window.NexusRPEvolution=function(rp,views){
     pollBusy=true;
     try{
       const result=await rp.requestEvents(G.lastId,S.config.player);
-      lastStatus=result.bridge||{};
+      // The event stream must be an array. A malformed API response should
+      // produce an actionable error instead of trying to iterate a number.
+      if(!Array.isArray(result.events)){
+        throw Error("A API retornou eventos em formato inválido. Atualize o painel e tente novamente.");
+      }
+      lastStatus=result.bridge||(S.config.connectionMode==="client"?{
+        online:result.online===true,lastSeen:result.lastSeen,mode:"client"
+      }:{});
       if(Number(result.lastId)<G.lastId){G.lastId=0;G.bootstrapped=false;}
       G.error="";G.lastSync=new Date().toISOString();
       if(!G.bootstrapped){
         G.bootstrapped=true;G.lastId=result.lastId||0;
         if(force)toast("Monitor sincronizado. Os próximos eventos atualizarão o Nexus.");
       }else{
-        for(const ev of result.events||[]){if(ev.id<=G.lastId)continue;gameEvent(ev);}
+        for(const ev of result.events){if(!ev||typeof ev!=="object"||Number(ev.id)<=G.lastId)continue;gameEvent(ev);}
         G.lastId=Math.max(G.lastId,Number(result.lastId)||0);
       }
       save();
