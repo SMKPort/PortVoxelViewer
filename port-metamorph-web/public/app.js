@@ -4,6 +4,8 @@ const $=id=>document.getElementById(id);
 const storeKey='port-metamorph-session';
 let token=sessionStorage.getItem(storeKey)||'';
 let lastOnline=false;
+let draftDirty=false;
+let pendingConfig=null;
 let state={
  name:'Normal',profile:'normal',enabled:false,wings:false,nexus:false,horns:false,
  wingScale:1,wingSpeed:2,wingMotion:25,armScale:1,transitionSeconds:1,material:'gold',cubes:[]
@@ -75,6 +77,7 @@ function renderControls(){
  preview();renderParts();
 }
 function modified(){
+ draftDirty=true;
  if(state.profile!=='custom')state.profile='custom';
  if(!state.enabled)state.enabled=true;
  preview();
@@ -83,10 +86,11 @@ for(const b of document.querySelectorAll('[data-preset]')){
  b.addEventListener('click',()=>{
   const name=b.dataset.preset;
   state={...state,...presets[name],profile:name,enabled:true};
+  draftDirty=true;
   renderControls();
  });
 }
-$('formName').addEventListener('input',e=>{state.name=e.target.value.slice(0,40);state.profile='custom';preview()});
+$('formName').addEventListener('input',e=>{state.name=e.target.value.slice(0,40);state.profile='custom';draftDirty=true;preview()});
 for(const key of ['wings','nexus','horns']){
  $(key).addEventListener('change',e=>{state[key]=e.target.checked;modified();});
 }
@@ -145,6 +149,7 @@ $('addPart').addEventListener('click',()=>{
 });
 $('offButton').addEventListener('click',()=>{
  state.enabled=!state.enabled;
+ draftDirty=true;
  renderControls();
  msg(state.enabled?'Forma ativada nesta prévia. Clique em Aplicar para sincronizar.':'Forma desativada nesta prévia. Clique em Aplicar para sincronizar.');
 });
@@ -153,6 +158,8 @@ $('applyButton').addEventListener('click',async()=>{
  const b=$('applyButton');b.disabled=true;b.textContent='Enviando...';
  try{
   await api('/api/control',{config:state},true);
+  pendingConfig=JSON.stringify(state);
+  draftDirty=false;
   msg('Configuração enviada. O mod aplicará na próxima consulta (normalmente em até 4 segundos).');
  }catch(e){
   msg(e.message);
@@ -177,8 +184,11 @@ async function refresh(){
   const data=await api('/api/me',null,true);
   lastOnline=!!data.online;
   if(data.config){
-   state={...state,...data.config,cubes:Array.isArray(data.config.cubes)?data.config.cubes:[]};
-   renderControls();
+   if(pendingConfig&&JSON.stringify(data.config)===pendingConfig)pendingConfig=null;
+   if(!draftDirty&&!pendingConfig){
+    state={...state,...data.config,cubes:Array.isArray(data.config.cubes)?data.config.cubes:[]};
+    renderControls();
+   }
   }
   renderConnection();
   if(lastOnline)msg('Dispositivo online. Última sincronização: '+new Date(data.lastSeen).toLocaleTimeString('pt-BR')+'.');
