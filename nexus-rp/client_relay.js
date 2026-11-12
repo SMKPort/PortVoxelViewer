@@ -89,7 +89,7 @@ function createClientRelay({send,verifyUser,limit}){
       try{
         const data=await body(req,1300);
         if(typeof data.transcript!=="string")return err(res,422,"Transcrição de voz inválida.");
-        const transcript=data.transcript.replace(/[\\u0000-\\u001f\\u007f]/g," ").replace(/\\s+/g," ").trim();
+        const transcript=data.transcript.replace(/[\u0000-\u001f\u007f]/g," ").replace(/\s+/g," ").trim();
         if(transcript.length<4||transcript.length>260)return err(res,422,"Transcrição deve ter entre 4 e 260 caracteres.");
         const reply=buildReply(transcript,{online:health().online,player:session?.player||"",events});
         if(!reply)return err(res,422,"Diga Nexus antes da sua pergunta para ativar a resposta.");

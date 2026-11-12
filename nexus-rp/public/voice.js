@@ -3,7 +3,7 @@
 window.NexusRPVoiceUpgrade=function(rp,views){
   const E=rp.escape,toast=rp.toast;
   const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-  const WAKE=/^(?:(?:ei|ol[aá])\\s+)?(?:nexus|n[eé]xo|nexos)(?:\\s+a[eé]terna|\\s+aterna)?(?=$|[\\s,.!?:;])/i;
+  const WAKE=/^(?:(?:ei|ol[aá])\s+)?(?:nexus|n[eé]xo|nexos)(?:\s+a[eé]terna|\s+aterna)?(?=$|[\s,.!?:;])/i;
   let active=false,recognition=null,busy=false,waitingUntil=0,lastTranscript="",lastReply="",lastError="",lastInterim="",restartTimer=0,lastHandled="",lastHandledAt=0,everStarted=false;
   const btn=(name,label,style)=>'<button type="button" class="btn '+style+'" data-voice="'+name+'">'+label+'</button>';
   const esc=E;
@@ -73,7 +73,7 @@ window.NexusRPVoiceUpgrade=function(rp,views){
     lastHandled=text;lastHandledAt=now;
     const match=text.match(WAKE);
     if(match){
-      const remaining=text.slice(match[0].length).replace(/^[\\s,.!?:;]+/,"").trim();
+      const remaining=text.slice(match[0].length).replace(/^[\s,.!?:;]+/,"").trim();
       if(!remaining){waitingUntil=now+10000;lastTranscript=text;lastReply="Nome reconhecido. Aguardando pergunta.";update();return;}
       waitingUntil=0;
       relay(text);return;

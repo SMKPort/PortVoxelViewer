@@ -1,14 +1,14 @@
 "use strict";
 /** Chat replies are narrative rule-based responses; no audio is stored by this service. */
 function fold(input){
-  return String(input||"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase();
+  return String(input||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 }
-const WAKE=/^(?:(?:ei|ola)\\s+)?(?:nexus|nexo|nexos)(?:\\s+aeterna|\\s+aterna)?(?=$|[\\s,.!?:;])/i;
+const WAKE=/^(?:(?:ei|ola)\s+)?(?:nexus|nexo|nexos)(?:\s+aeterna|\s+aterna)?(?=$|[\s,.!?:;])/i;
 function getQuestion(transcript){
-  const clean=fold(transcript).replace(/^[\\s,.!?:;]+/,"").trim();
+  const clean=fold(transcript).replace(/^[\s,.!?:;]+/,"").trim();
   const match=clean.match(WAKE);
   if(!match)return null;
-  return clean.slice(match[0].length).replace(/^[\\s,.!?:;]+/,"").trim();
+  return clean.slice(match[0].length).replace(/^[\s,.!?:;]+/,"").trim();
 }
 function latestVital(events){
   for(let i=events.length-1;i>=0;i--){
@@ -58,7 +58,7 @@ function buildReply(transcript,{online=false,player="",events=[]}={}){
     return "Entendido, Port. Para interromper o reconhecimento, desligue o microfone no painel Voz.";
   if(/(?:ajud|conselho|o que faco)/.test(q))
     return "Estou aqui, Port. Diga qual problema encontrou e tentarei interpretar os dados disponíveis.";
-  const topic=q.replace(/[\\r\\n]/g," ").slice(0,85);
+  const topic=q.replace(/[\r\n]/g," ").slice(0,85);
   return "Ouvi sua pergunta sobre "+topic+". Ainda estou aprendendo a responder a esse assunto, Port.";
 }
 module.exports={buildReply,getQuestion};
