@@ -19,9 +19,9 @@ window.NexusRPEvolution=function(rp,views){
   ];
   if(!S.emergency||typeof S.emergency!=="object")S.emergency={enabled:true,active:false,threshold:25,lastAt:""};
   if(!S.emotes||typeof S.emotes!=="object")S.emotes={integrar:"",desintegrar:"",remodelar:"",reparar:"",ritual:"",emergencia:""};
-  if(!S.gameEvents||typeof S.gameEvents!=="object")S.gameEvents={enabled:false,lastId:0,bootstrapped:false,damageFactor:5,healEnergy:3,cursor:0,feed:[],lastSync:"",error:""};
+  if(!S.gameEvents||typeof S.gameEvents!=="object")S.gameEvents={enabled:false,lastId:0,bootstrapped:false,damageFactor:5,healIntegrity:5,healEnergy:3,cursor:0,feed:[],lastSync:"",error:""};
   const G=S.gameEvents,EM=S.emergency;
-  G.enabled=Boolean(G.enabled);G.lastId=Number(G.lastId)||0;G.damageFactor=clamp(G.damageFactor,1,10);G.healEnergy=clamp(G.healEnergy,0,15);if(!Array.isArray(G.feed))G.feed=[];
+  G.enabled=Boolean(G.enabled);G.lastId=Number(G.lastId)||0;G.damageFactor=clamp(G.damageFactor,1,10);G.healIntegrity=clamp(G.healIntegrity??5,0,10);G.healEnergy=clamp(G.healEnergy,0,15);if(!Array.isArray(G.feed))G.feed=[];
   let chosenSequence=S.sequences[0]?.id||"", seqToken=0, seqStatus="",seqIndex=-1,pollBusy=false,lastStatus={},activeRefresh=null;
   const button=(act,title,style="alt",attrs="")=>'<button type="button" class="btn '+style+'" data-evo="'+E(act)+'" '+attrs+'>'+title+'</button>';
   const block=(label,contents)=>'<section class="card"><div class="card-header"><h2>'+E(label)+'</h2></div>'+contents+'</section>';
@@ -52,7 +52,7 @@ window.NexusRPEvolution=function(rp,views){
   const oldAfterRitual=rp.afterRitual||(()=>{});
   rp.afterRitual=()=>{oldAfterRitual();triggerEmote("ritual");rp.checkAlerts();};
   const oldReset=rp.resetUpgrade||(()=>{});
-  rp.resetUpgrade=()=>{oldReset();S.armorProfiles=profiles.map(x=>({...x}));S.sequences=[];Object.assign(EM,{enabled:true,active:false,threshold:25,lastAt:""});S.emergency=EM;S.emotes={integrar:"",desintegrar:"",remodelar:"",reparar:"",ritual:"",emergencia:""};Object.assign(G,{enabled:false,lastId:0,bootstrapped:false,damageFactor:5,healEnergy:3,cursor:0,feed:[],lastSync:"",error:""});S.gameEvents=G;seqToken++;save();};
+  rp.resetUpgrade=()=>{oldReset();S.armorProfiles=profiles.map(x=>({...x}));S.sequences=[];Object.assign(EM,{enabled:true,active:false,threshold:25,lastAt:""});S.emergency=EM;S.emotes={integrar:"",desintegrar:"",remodelar:"",reparar:"",ritual:"",emergencia:""};Object.assign(G,{enabled:false,lastId:0,bootstrapped:false,damageFactor:5,healIntegrity:5,healEnergy:3,cursor:0,feed:[],lastSync:"",error:""});S.gameEvents=G;seqToken++;save();};
   function triggerEmote(kind){
     const functionId=K(S.emotes?.[kind]);
     if(!rp.isConnected()||!functionId)return;
@@ -149,6 +149,8 @@ window.NexusRPEvolution=function(rp,views){
     const sync=document.querySelector("#rpEventsSync");
     if(sync)sync.textContent=G.lastSync?"Sincronização: "+rp.date(G.lastSync)+" · automática a cada 2 segundos":
       "Aguardando primeira sincronização automática...";
+    const integrity=document.querySelector("#rpEventsIntegrity");
+    if(integrity)integrity.textContent=S.integrity+"%";
   }
   function eventView(){
     const client=S.config.connectionMode==="client";
@@ -157,10 +159,13 @@ window.NexusRPEvolution=function(rp,views){
       '<div class="grid two">'+block("MONITORAMENTO DO PERSONAGEM",
       '<div id="rpEventsStatus">'+statusMarkup()+'</div>'+
       '<p class="hint" id="rpEventsSync" aria-live="polite">'+E(G.lastSync?"Sincronização: "+rp.date(G.lastSync)+" · automática a cada 2 segundos":"Aguardando primeira sincronização automática...")+'</p>'+
+      '<div class="kv"><span>Integridade do Nexus</span><span class="value" id="rpEventsIntegrity">'+E(S.integrity)+"%"+'</span></div>'+
       '<form id="rpEventSettings"><label class="field inline"><input name="enabled" type="checkbox" '+(G.enabled?"checked":"")+
       '><span>Permitir que eventos alterem a integridade e energia narrativas</span></label>'+
       '<label class="field"><span class="field-label">DANO ESTRUTURAL POR PONTO DE DANO (1 A 10)</span>'+
       '<input name="damageFactor" type="number" min="1" max="10" value="'+G.damageFactor+'"></label>'+
+      '<label class="field"><span class="field-label">INTEGRIDADE RECUPERADA POR PONTO DE CURA (0 A 10)</span>'+
+      '<input name="healIntegrity" type="number" min="0" max="10" step="0.5" value="'+G.healIntegrity+'"></label>'+
       '<label class="field"><span class="field-label">ENERGIA RECUPERADA POR CURA (0 A 15)</span>'+
       '<input name="healEnergy" type="number" min="0" max="15" value="'+G.healEnergy+'"></label>'+
       '<button class="btn gold" type="submit">SALVAR PREFERÊNCIAS</button></form>'+
@@ -226,13 +231,39 @@ window.NexusRPEvolution=function(rp,views){
     S.armor=S.segments.some(p=>p.integrated)?"integrada":"desintegrada";
     rp.checkAlerts?.();
   }
+  function repairIntegrity(amount){
+    const requested=clamp(amount,0,40)*G.healIntegrity;
+    if(requested<=0)return;
+    if(!Array.isArray(S.segments)||!S.segments.length){
+      S.integrity=clamp(S.integrity+requested,0,100);
+      rp.checkAlerts?.();return;
+    }
+    // Restore damaged plates first, using the same scale as structural damage.
+    // Healing never re-integrates plates that were desintegrated by combat/death.
+    let remaining=requested;
+    const damaged=S.segments.filter(part=>Number.isFinite(Number(part.integrity)))
+      .sort((a,b)=>Number(a.integrity)-Number(b.integrity));
+    for(const part of damaged){
+      if(remaining<=0)break;
+      const current=clamp(Number(part.integrity),0,100);
+      const healed=Math.min(remaining,100-current);
+      part.integrity=clamp(current+healed,0,100);
+      remaining-=healed;
+    }
+    S.integrity=clamp(Math.round(S.segments.reduce((sum,part)=>sum+clamp(part.integrity,0,100),0)/S.segments.length),0,100);
+    rp.checkAlerts?.();
+  }
   function gameEvent(item,simulate=false,applyNarrative=G.enabled){
     const label=AGENT_TYPE[item.type]||item.type;
     const value=clamp(item.amount,0,40);
     if(applyNarrative){
       if(item.type==="damage")adjustSegmentDamage(value);
       else if(item.type==="death"){S.segments.forEach(p=>{p.integrity=0;p.integrated=false;});S.integrity=0;S.armor="desintegrada";rp.checkAlerts?.();}
-      else if(item.type==="heal"||item.type==="respawn"){S.energy=clamp(S.energy+G.healEnergy,0,100);rp.checkAlerts?.();}
+      else if(item.type==="heal"||item.type==="respawn"){
+        S.energy=clamp(S.energy+G.healEnergy,0,100);
+        if(item.type==="heal")repairIntegrity(value);
+        rp.checkAlerts?.();
+      }
       log(label+": "+(value?value.toFixed(1)+" ponto(s) · ":"")+item.player,
         simulate?"SIMULAÇÃO LOCAL":"MINECRAFT");
     }
@@ -333,7 +364,7 @@ window.NexusRPEvolution=function(rp,views){
     }else if(form==="rpEmergencySettings"){
       EM.enabled=d.has("enabled");EM.threshold=clamp(d.get("threshold"),5,80);checkEmergency();log("Protocolo de emergência configurado.","SISTEMA");
     }else if(form==="rpEventSettings"){
-      G.enabled=d.has("enabled");G.damageFactor=clamp(d.get("damageFactor"),1,10);G.healEnergy=clamp(d.get("healEnergy"),0,15);
+      G.enabled=d.has("enabled");G.damageFactor=clamp(d.get("damageFactor"),1,10);G.healIntegrity=clamp(d.get("healIntegrity"),0,10);G.healEnergy=clamp(d.get("healEnergy"),0,15);
       log("Integração narrativa "+(G.enabled?"ativada":"desativada")+".","TELEMETRIA");
       if(shouldPoll())refreshEvents();
     }else if(form==="rpEmotesForm"){

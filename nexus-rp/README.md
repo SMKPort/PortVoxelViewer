@@ -208,3 +208,8 @@ A memória da conversa é mantida na página enquanto ela estiver aberta. Para p
 
 ## Interface Nexus RP 2.4: barra compacta
 A navegação principal foi reduzida a **Visão geral**, **Voz do Nexus**, **Comunicador**, **Nexus Client** e **Configurações**. Todas as abas avançadas anteriores, incluindo armadura, rituais, eventos, sequenciador, protocolo TS, emotes e emergência, continuam disponíveis dentro de **Outras ferramentas**. O topo da página ganhou um atalho fixo para `#voz`, inclusive em telas estreitas. O menu lateral permite rolagem no celular. Assets do painel usam versão de cache `2.4` para invalidar scripts antigos.
+
+
+## Recuperação da integridade por cura (Eventos do Jogo 2.6)
+
+Com a opção **Permitir que eventos alterem a integridade e energia narrativas** ativada, cada evento `heal` recebido pelo painel restaura integridade física das placas danificadas em proporção à vida recuperada. O multiplicador `healIntegrity` vem em 5 pontos por ponto de cura (ajustável entre 0 e 10, inclusive 0 para desativar recuperação estrutural). As placas mais danificadas são recuperadas primeiro, respeitando o limite de 100%. A energia do RP continua recuperando o valor configurado por evento, independente do novo reparo. Uma placa previamente desintegrada não se reintegra automaticamente ao curar. Eventos de `respawn` não representam cura convencional e não restauram integridade. O painel agora mostra a integridade atual ao lado dos eventos, atualizada automaticamente.
