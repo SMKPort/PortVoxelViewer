@@ -153,6 +153,29 @@ public class NexusClientMod {
                     notifyPlayer(line);return 1;}))
                 .then(Commands.literal("forget").then(Commands.literal("confirm").executes(ctx -> {
                     NexusHearing.clearMemory();ClientLink.sendHearingState();notifyPlayer("Todas as memórias textuais de voz apagadas.");return 1;}))))
+            .then(Commands.literal("arcane")
+                .then(Commands.literal("status").executes(ctx -> {
+                    notifyPlayer(NexusArcaneSensor.status());return 1;}))
+                .then(Commands.literal("on").executes(ctx -> {
+                    NexusArcaneSensor.enabled(true);ClientLink.sendArcaneState();
+                    notifyPlayer("Núcleo Arcano ativo. Aguardando leitura real do Iron's Spells.");
+                    return 1;}))
+                .then(Commands.literal("off").executes(ctx -> {
+                    NexusArcaneSensor.enabled(false);ClientLink.sendArcaneState();
+                    notifyPlayer("Núcleo Arcano desativado.");return 1;}))
+                .then(Commands.literal("history").executes(ctx -> {
+                    for(String entry:NexusArcaneSensor.history())notifyPlayer(entry);
+                    return 1;}))
+                .then(Commands.literal("reactions")
+                    .then(Commands.literal("on").executes(ctx -> {
+                        try{
+                            NexusArcaneSensor.reactions(true);ClientLink.sendArcaneState();
+                            notifyPlayer("Respostas arcanas autorizadas. Exigem chat, mente e autonomia.");
+                        }catch(Exception error){notifyPlayer(error.getMessage());}return 1;}))
+                    .then(Commands.literal("off").executes(ctx -> {
+                        NexusArcaneSensor.reactions(false);ClientLink.sendArcaneState();
+                        notifyPlayer("Reações arcanas desativadas.");return 1;})))
+            )
             .then(Commands.literal("social")
                 .then(Commands.literal("status").executes(ctx -> {
                     notifyPlayer(NexusSocial.status());return 1;}))

@@ -41,7 +41,7 @@ final class ClientLink {
 
     static void reset() {
         ticks=0;previousHealth=Float.NaN;previousEffects="";previousPlayer="";
-        NexusMind.resetSession();COMBAT_ALERTS.reset();NexusHearing.resetSession();
+        NexusMind.resetSession();COMBAT_ALERTS.reset();NexusHearing.resetSession();NexusArcaneSensor.resetSession();
         invalidTokenNotice=false;POLLING.set(false);
     }
 
@@ -89,17 +89,19 @@ final class ClientLink {
         Minecraft mc=Minecraft.getInstance();
         if(mc.player==null || mc.getConnection()==null){
             previousHealth=Float.NaN;previousPlayer="";previousEffects="";
-            NexusMind.resetSession();COMBAT_ALERTS.reset();NexusHearing.resetSession();return;
+            NexusMind.resetSession();COMBAT_ALERTS.reset();NexusHearing.resetSession();NexusArcaneSensor.resetSession();return;
         }
         NexusHearing.updateOnlinePlayers(mc.getConnection().getOnlinePlayers().stream()
             .map(info->info.getProfile().getName()).toList());
         NexusHearing.tick();
-        if(++ticks%60!=0)return;
+        ++ticks;
+        if(ticks%2==0)NexusArcaneSensor.sample(mc.player);
+        if(ticks%60!=0)return;
         NexusMind.sample(mc.player);
         if(ClientConfig.allowTelemetry)sendTelemetry(mc.player);
         if(ClientConfig.token.isEmpty())return;
         if(ticks%180==0)sendAlertState();
-        if(ticks%120==0)sendHearingState();
+        if(ticks%120==0){sendHearingState();sendArcaneState();}
         if(POLLING.compareAndSet(false,true)){
             get("/api/client/poll",true).thenAccept(reply -> {
                 if(reply!=null && reply.has("jobs")){
@@ -251,6 +253,12 @@ final class ClientLink {
             .exceptionally(error -> {NexusSpeaker.failed("Serviço de voz indisponível.");return null;});
     }
 
+    static void sendArcaneState(){
+        if(ClientConfig.token.isEmpty())return;
+        post("/api/client/arcane/state",NexusArcaneSensor.snapshot(),true)
+            .exceptionally(error->null);
+    }
+
     static void sendHearingState(){
         if(ClientConfig.token.isEmpty())return;
         post("/api/client/hearing/state",NexusHearing.snapshot(),true).exceptionally(err -> null);
@@ -296,6 +304,11 @@ final class ClientLink {
                     output="Todas as memórias sociais e transcrições apagadas.";
                 }else throw new IllegalArgumentException("Comando de memória não autorizado.");
                 sendHearingState();
+                success=true;
+            }else if("arcane_settings".equals(kind)){
+                NexusArcaneSensor.configure(payload);
+                sendArcaneState();
+                output="Núcleo Arcano configurado no cliente.";
                 success=true;
             }else if("hearing_settings".equals(kind)){
                 NexusHearing.configure(payload);
