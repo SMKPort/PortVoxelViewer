@@ -82,6 +82,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusWakeWords.java \
             nexus-client/verification/NexusWakeWordsTest.java
           java -ea -cp /tmp/nexus-wake-tests com.port.nexusclient.NexusWakeWordsTest
+      - name: Test in-game permission dependencies and consent
+        run: |
+          mkdir -p /tmp/nexus-menu-tests
+          javac -encoding UTF-8 -d /tmp/nexus-menu-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusPermissionControls.java \
+            nexus-client/verification/NexusPermissionControlsTest.java
+          java -ea -cp /tmp/nexus-menu-tests com.port.nexusclient.NexusPermissionControlsTest
       - name: Compile mod
         run: gradle -p nexus-client build --no-daemon --stacktrace
       - name: Upload JAR
