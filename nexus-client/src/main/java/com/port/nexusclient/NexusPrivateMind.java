@@ -110,6 +110,8 @@ final class NexusPrivateMind {
         return List.copyOf(lines);
     }
     static synchronized boolean enabled(){load();return state.enabled;}
+    static synchronized boolean memoryEnabled(){load();return state.remember;}
+    static synchronized boolean freedomEnabled(){load();return state.freedom;}
     static synchronized void enable(boolean on){
         load();state.enabled=on;
         if(!on){waiting=false;state.autonomy=false;}
