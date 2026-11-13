@@ -99,7 +99,9 @@ final class NexusPermissionsScreen extends Screen {
                 "Atenção: ativa chat, audição e compartilhamento de memória. Clique novamente."))return;
             try{
                 NexusPermissions.all();
-                open(tab,"Modo TOTAL ativado. Confira o Plasmo e participantes consentidos.");
+                open(tab,NexusHearing.isListening()?
+                    "Modo TOTAL ativado, incluindo audição dos consentidos.":
+                    "Permissões gerais ON. Audição pendente de consentimento ou Plasmo.");
             }catch(Exception error){message="Ativação: "+error.getMessage();}
         }).bounds(x+5,footerY,btnW,20).build());
         addRenderableWidget(Button.builder(Component.literal("§cDESLIGAR TUDO"),b->{
