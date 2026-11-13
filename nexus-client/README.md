@@ -286,3 +286,51 @@ use `/nexusclient hearing off`.
 na branch `nexus-aterna-rp`. Substitua a versão anterior e reinicie
 o Minecraft. As mudanças de diálogo ocorrem no mod cliente, portanto
 não aparecem apenas com um deploy da Render.
+
+
+## Nexus Client 2.4.0: central de permissões no Minecraft
+
+**Abertura:** pressione **F8** (tecla configurável em Controles) ou digite
+`/nexusclient menu` / `/nexusclient permissions menu`.
+Esta tela é nativa do cliente **Minecraft 1.21.1 NeoForge**,
+não necessita de comandos OP nem de acesso aos dados internos do servidor.
+
+Menu escuro com detalhes dourados e quatro páginas:
+
+| Página | Permissões |
+| --- | --- |
+| **Geral** | Chat `/l`, telemetria, Nexus Mind, autonomia RP, canal neural privado, iniciativa privada, voz local TTS |
+| **Audição** | Escutar os nicks consentidos pelo Plasmo Voice, respostas a chamadas, memória textual, `@a` apenas entre consentidos, adicionar/revogar nicks, iniciar diálogo, diagnóstico |
+| **Arcano** | Sensor do Iron's Spells, percepção próxima e reações automáticas |
+| **Memórias** | Memória privada, independência narrativa RP, diário, proteção contextual e compartilhamento com painel privado |
+
+**ATIVAR TUDO** requer dois cliques de confirmação porque também liga
+compartilhamento de memória e publicação pelo chat; **DESLIGAR TUDO**
+interrompe recursos e captura sem apagar memórias antigas. O menu avisa
+quando falta uma dependência, um pareamento ou o Plasmo Voice.
+O botão **ATIVAR DIÁLOGO** habilita audição, resposta, chat, mente e autonomia
+em um clique, mas **somente se já existir participante consentido e Plasmo ativo**.
+As respostas saem como `/l &6&l[Nexus Aterna]` pela conta do jogador.
+
+Adicionar um nick à lista de audição **não é autorização implícita**.
+Somente cadastre quem foi informado e consentiu em enviar sua fala ao Gemini.
+A operação de adicionar exige confirmação no menu. O seletor `@a`
+não autoriza novos jogadores e é apenas um filtro dos já consentidos
+que estão online. Revogar um nick pede segunda confirmação e apaga
+as memórias de voz relacionadas àquele participante.
+
+**Privacidade e persistência:** desligar a permissão de memória privada pelo
+menu interrompe novos registros, mas preserva dados anteriores.
+Os comandos explícitos de exclusão continuam separados. O compartilhamento
+de diário exige confirmação quando ativado pela interface. Nem o botão
+geral nem o menu autorizam microfone do sistema operacional, criam credenciais
+Gemini ou concedem permissões administrativas no servidor.
+O comando `/nexusclient unpair` agora revoga todos os recursos e preserva
+as memórias anteriores, corrigindo a desativação parcial da versão antiga.
+
+**Instalação:** na branch `nexus-aterna-rp`, abra o
+[workflow Nexus Aterna Client NeoForge](https://github.com/SMKPort/PortVoxelViewer/actions/workflows/nexus-client-build.yml),
+baixe o JAR do artefato `Nexus-Aterna-Client-1.21.1-NeoForge` da execução
+concluída com sucesso, substitua o antigo em `.minecraft/mods` e reinicie
+o jogo. A tela é parte do mod e não pode ser entregue apenas atualizando o
+serviço Render. O fluxo CI executa testes das permissões e compila o JAR.
