@@ -11,6 +11,11 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
   let pair=null,session=null,eventId=0,mind=null,monitor=null,alertsState=null,hearingState=null,arcaneState=null;
   let transcribing=0,ttsBusy=false,lastTtsAt=0,privateBusy=false,lastPrivateAt=0;
   const clipTimes=[],replyTimes=new Map();
+  // The Gemini quota is finite (RPM/TPM/RPD). Bound requests independently
+  // of any user-facing permission, and stop provider calls on 429.
+  const maxAudioRpm=Math.max(1,Math.min(30,
+    Number.parseInt(process.env.NEXUS_AUDIO_MAX_RPM||"8",10)||8));
+  let providerQuotaUntil=0,providerQuotaStrikes=0;
   const jobs=new Map(),events=[];
   const err=(res,code,message)=>{send(res,code,{ok:false,error:message});return true;};
   const hash=s=>crypto.createHash("sha256").update(String(s||"")).digest("hex");
@@ -447,27 +452,15 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
           lastSpeaker:safeText(data.lastSpeaker,16),
           lastError:safeText(data.lastError,120),
           speaker:{enabled:voice.enabled===true,
-            voice:["auto","Charon","Orus","Kore","Puck","Algenib","Fenrir"].includes(voice.voice)?
-              voice.voice:"auto",playing:voice.playing===true,
-            lastError:safeText(voice.lastError,100)},
-          social,syncedAt:new Date().toISOString()};
-        send(res,200,{ok:true});return true;
-      }catch(e){return err(res,422,String(e.message));}
-    }
-    if(route==="/api/client/hearing/transcribe"&&req.method==="POST"){
+            voice:["auto","Charon","Orus","Kore","Puck","Algenib","Fen    if(route==="/api/client/hearing/transcribe"&&req.method==="POST"){
       const now=Date.now();
-      while(clipTimes.length&&clipTimes[0]<now-60000)clipTimes.shift();
-      if(transcribing>=3)return err(res,429,"Transcrição ocupada. Reenviar em instantes.");
-      if(clipTimes.length>=90)return err(res,429,"Limite de transcrição por minuto atingido.");
-      transcribing++;
+      // Validate the individual speaker's consent before exposing quota state.
+      let reserved=false;
       try{
         const data=await body(req,1100000);
         const speaker=String(data.speaker||"");
         if(!/^[A-Za-z0-9_]{3,16}$/.test(speaker))
           return err(res,422,"Nick de participante inválido.");
-        // Match Minecraft nicknames as the client does (case-insensitive).
-        // Consent must still be present on this request and, when available,
-        // in the currently synchronized client state. Never trust @a as consent.
         const consented=Array.isArray(data.consentedPlayers)&&data.consentedPlayers.some(
           nick=>typeof nick==="string"&&/^[A-Za-z0-9_]{3,16}$/.test(nick)&&
             nick.toLowerCase()===speaker.toLowerCase());
@@ -476,8 +469,54 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         if(hearingState&&(!hearingState.ready||!hearingState.listening||
           !hearingState.allowedPlayers.some(s=>s.toLowerCase()===speaker.toLowerCase())))
           return err(res,403,"Audição desativada ou participante revogado.");
-        clipTimes.push(now);
+
+        if(now<providerQuotaUntil){
+          const retryAfterSeconds=Math.ceil((providerQuotaUntil-now)/1000);
+          send(res,429,{ok:false,kind:"gemini_quota",
+            error:"Cota do Gemini de áudio atingida. Nova tentativa suspensa para proteger o projeto.",
+            retryAfterSeconds});
+          return true;
+        }
+        while(clipTimes.length&&clipTimes[0]<=now-60000)clipTimes.shift();
+        if(clipTimes.length>=maxAudioRpm){
+          const retryAfterSeconds=Math.max(1,
+            Math.ceil((clipTimes[0]+60000-now)/1000));
+          send(res,429,{ok:false,kind:"local_rate",
+            error:"Nexus em modo econômico: excesso de trechos de voz. Reduza a frequência.",
+            retryAfterSeconds});
+          return true;
+        }
+        if(transcribing>=3){
+          send(res,429,{ok:false,kind:"local_busy",
+            error:"Nexus processando outras falas; trecho descartado sem enviar ao Gemini.",
+            retryAfterSeconds:5});
+          return true;
+        }
+        transcribing++;reserved=true;clipTimes.push(now);
         const result=await transcribe({audio:data.audio,answer:false,history:[],speaker});
+        send(res,200,{ok:true,speaker,transcript:result.transcript,reply:""});
+        return true;
+      }catch(e){
+        if(e.providerQuota===true){
+          providerQuotaStrikes=Math.min(6,providerQuotaStrikes+1);
+          const seconds=Math.max(Number(e.retryAfterSeconds)||180,
+            Math.min(3600,180*2**(providerQuotaStrikes-1)));
+          const retryAfterSeconds=Math.min(3600,Math.ceil(seconds));
+          providerQuotaUntil=Date.now()+retryAfterSeconds*1000;
+          // Log only the category and pause, never audio, transcripts or API keys.
+          console.warn("Nexus hearing: Gemini audio quota exhausted; "+
+            "provider requests paused ("+retryAfterSeconds+"s).");
+          send(res,429,{ok:false,kind:"gemini_quota",
+            error:"Cota do Gemini de áudio atingida. Nova tentativa suspensa para proteger o projeto.",
+            retryAfterSeconds});
+          return true;
+        }
+        return err(res,Number(e.publicStatus)||422,String(e.message||"Falha na transcrição."));
+      }finally{
+        if(reserved)transcribing=Math.max(0,transcribing-1);
+      }
+    }
+r:false,history:[],speaker});
         send(res,200,{ok:true,speaker,transcript:result.transcript,reply:""});
         return true;
       }catch(e){
