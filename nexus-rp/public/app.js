@@ -9,7 +9,7 @@ const PRESETS=[
 {id:"renovar",name:"Renovação do Núcleo",school:"Híbrida",cost:32,description:"O núcleo é recalibrado e a energia se redistribui entre as placas."},
 {id:"custom",name:"Personalizado",school:"Personalizado",cost:20,description:"O Port executa uma sequência de símbolos e componentes escolhidos."}
 ];
-const PAGES={painel:"NÚCLEO",chat:"COMUNICADOR",armadura:"ARMADURA ARCANA",rituais:"RITUAIS",ao_vivo:"RP AO VIVO",ts:"PROTOCOLO TS",sequencias:"SEQUENCIADOR",eventos:"EVENTOS DO JOGO",emergencia:"EMERGÊNCIA",emotes:"EMOTES",cliente:"NEXUS CLIENT",voz:"VOZ DO NEXUS",alertas:"ALERTAS DO NEXUS",audicao:"AUDIÇÃO DO NEXUS",mente:"NEXUS MIND 2.0",config:"CONFIGURAÇÕES"};
+const PAGES={painel:"NÚCLEO",chat:"COMUNICADOR",armadura:"ARMADURA ARCANA",rituais:"RITUAIS",ao_vivo:"RP AO VIVO",ts:"PROTOCOLO TS",sequencias:"SEQUENCIADOR",eventos:"EVENTOS DO JOGO",emergencia:"EMERGÊNCIA",emotes:"EMOTES",cliente:"NEXUS CLIENT",voz:"VOZ DO NEXUS",alertas:"ALERTAS DO NEXUS",audicao:"AUDIÇÃO DO NEXUS",mente:"NEXUS MIND 2.0",arcano:"NÚCLEO ARCANO",config:"CONFIGURAÇÕES"};
 const DEFAULT=()=>({
 integrity:100,energy:85,armor:"integrada",form:"Celestial",selectedRitual:"bencao",
 logs:[{id:"origin",at:new Date().toISOString(),kind:"SISTEMA",text:"Nexus Aterna RP inicializado. Aguardando instruções do Port."}],
@@ -67,6 +67,7 @@ if(window.NexusRPVoiceUpgrade)views=window.NexusRPVoiceUpgrade(rp,views);
 if(window.NexusRPAlertsUpgrade)views=window.NexusRPAlertsUpgrade(rp,views);
 if(window.NexusRPHearingUpgrade)views=window.NexusRPHearingUpgrade(rp,views);
 if(window.NexusRPMind2Upgrade)views=window.NexusRPMind2Upgrade(rp,views);
+if(window.NexusRPArcaneUpgrade)views=window.NexusRPArcaneUpgrade(rp,views);
 
 // Preserve advanced pages, but group their menu entries instead of showing a
 // dozen primary buttons. All module scripts run before this app initializer.
