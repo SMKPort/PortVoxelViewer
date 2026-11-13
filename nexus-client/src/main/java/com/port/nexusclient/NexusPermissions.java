@@ -35,27 +35,13 @@ final class NexusPermissions {
         NexusSocial.setting("share", true);
         NexusSpeaker.enable(true);
 
-        // These options alone cannot collect audio. Actual Plasmo capture must
-        // also pass the existing consent-list, online-roster and availability
-        // checks. @a is the intersection with players already authorized.
-        NexusHearing.remember(true);
-        NexusHearing.answer(true);
-        String hearing;
-        try {
-            int selected = NexusHearing.collectiveOn();
-            NexusHearing.listen(true);
-            hearing = "Audição Plasmo ativa para " + selected
-                + " jogador(es) online previamente consentido(s) (@a).";
-        } catch (IllegalStateException error) {
-            NexusHearing.listen(false);
-            hearing = "Audição pendente: " + error.getMessage();
-        }
-        ClientLink.sendHearingState();
+        // Legacy hearing is retired. Never enable paid audio capture.
+        NexusHearing.listen(false);
+        ClientLink.sendHearingState(); // Keep social/voice preferences in sync.
         ClientLink.sendArcaneState();
 
         NexusClientMod.notifyPlayer("Modo TOTAL ativado: chat, telemetria, mente, autonomia, "
             + "arcano, canal privado, diário, proteção e voz local.");
-        NexusClientMod.notifyPlayer(hearing);
         NexusClientMod.notifyPlayer("As mensagens públicas saem da sua conta. "
             + "O diário pode ser consultado no painel privado; use permissions off para revogar.");
     }
@@ -70,9 +56,7 @@ final class NexusPermissions {
         ClientLink.resetTelemetryBaseline();
         NexusMind.resetSession();
 
-        NexusHearing.listen(false); // Drops buffered audio immediately.
-        NexusHearing.answer(false);
-        NexusHearing.remember(false);
+        NexusHearing.listen(false); // Legacy setting remains safely disabled.
         NexusSpeaker.enable(false);
 
         NexusArcaneSensor.reactions(false);
@@ -92,7 +76,7 @@ final class NexusPermissions {
 
         ClientLink.sendHearingState();
         ClientLink.sendArcaneState();
-        NexusClientMod.notifyPlayer("Modo TOTAL desligado. Captura, publicações e recursos "
+        NexusClientMod.notifyPlayer("Modo TOTAL desligado. Publicações e recursos "
             + "automáticos interrompidos. Memórias antigas preservadas.");
     }
 
