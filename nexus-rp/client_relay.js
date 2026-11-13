@@ -11,8 +11,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
   let pair=null,session=null,eventId=0,mind=null,monitor=null,alertsState=null,hearingState=null,arcaneState=null;
   let transcribing=0,ttsBusy=false,lastTtsAt=0,privateBusy=false,lastPrivateAt=0;
   const clipTimes=[],replyTimes=new Map();
-  // The Gemini quota is finite (RPM/TPM/RPD). Bound requests independently
-  // of any user-facing permission, and stop provider calls on 429.
+  // Conserve Gemini RPM/TPM/RPD quota and prevent retry storms after 429.
   const maxAudioRpm=Math.max(1,Math.min(30,
     Number.parseInt(process.env.NEXUS_AUDIO_MAX_RPM||"8",10)||8));
   let providerQuotaUntil=0,providerQuotaStrikes=0;
@@ -452,9 +451,16 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
           lastSpeaker:safeText(data.lastSpeaker,16),
           lastError:safeText(data.lastError,120),
           speaker:{enabled:voice.enabled===true,
-            voice:["auto","Charon","Orus","Kore","Puck","Algenib","Fen    if(route==="/api/client/hearing/transcribe"&&req.method==="POST"){
+            voice:["auto","Charon","Orus","Kore","Puck","Algenib","Fenrir"].includes(voice.voice)?
+              voice.voice:"auto",playing:voice.playing===true,
+            lastError:safeText(voice.lastError,100)},
+          social,syncedAt:new Date().toISOString()};
+        send(res,200,{ok:true});return true;
+      }catch(e){return err(res,422,String(e.message));}
+    }
+    if(route==="/api/client/hearing/transcribe"&&req.method==="POST"){
+      // Speaker consent is always verified before returning quota diagnostics.
       const now=Date.now();
-      // Validate the individual speaker's consent before exposing quota state.
       let reserved=false;
       try{
         const data=await body(req,1100000);
@@ -463,7 +469,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
           return err(res,422,"Nick de participante inválido.");
         const consented=Array.isArray(data.consentedPlayers)&&data.consentedPlayers.some(
           nick=>typeof nick==="string"&&/^[A-Za-z0-9_]{3,16}$/.test(nick)&&
-            nick.toLowerCase()===speaker.toLowerCase());
+          nick.toLowerCase()===speaker.toLowerCase());
         if(!consented)
           return err(res,403,"Participante não autorizado para transcrição.");
         if(hearingState&&(!hearingState.ready||!hearingState.listening||
@@ -492,6 +498,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
             retryAfterSeconds:5});
           return true;
         }
+
         transcribing++;reserved=true;clipTimes.push(now);
         const result=await transcribe({audio:data.audio,answer:false,history:[],speaker});
         send(res,200,{ok:true,speaker,transcript:result.transcript,reply:""});
@@ -503,9 +510,9 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
             Math.min(3600,180*2**(providerQuotaStrikes-1)));
           const retryAfterSeconds=Math.min(3600,Math.ceil(seconds));
           providerQuotaUntil=Date.now()+retryAfterSeconds*1000;
-          // Log only the category and pause, never audio, transcripts or API keys.
-          console.warn("Nexus hearing: Gemini audio quota exhausted; "+
-            "provider requests paused ("+retryAfterSeconds+"s).");
+          // No raw voice, transcripts, participant IDs or credentials in logs.
+          console.warn("Nexus hearing: Gemini audio quota; provider paused "+
+            retryAfterSeconds+" seconds.");
           send(res,429,{ok:false,kind:"gemini_quota",
             error:"Cota do Gemini de áudio atingida. Nova tentativa suspensa para proteger o projeto.",
             retryAfterSeconds});
@@ -515,13 +522,6 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
       }finally{
         if(reserved)transcribing=Math.max(0,transcribing-1);
       }
-    }
-r:false,history:[],speaker});
-        send(res,200,{ok:true,speaker,transcript:result.transcript,reply:""});
-        return true;
-      }catch(e){
-        return err(res,Number(e.publicStatus)||422,String(e.message||"Falha na transcrição."));
-      }finally{transcribing=Math.max(0,transcribing-1);}
     }
     if(route==="/api/client/hearing/reply"&&req.method==="POST"){
       try{
