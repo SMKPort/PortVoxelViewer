@@ -63,12 +63,23 @@ async function transcribeClip({audio,answer=false,history=[],speaker=""},deps={}
     // errors, invalid audio, or transient server errors against another model.
     if(response.status!==404)break;
   }
-  if(!response.ok)throw Object.assign(Error(response.status===429?
-    "Limite de transcrições atingido.":
-    response.status===404?
+  if(!response.ok){
+    if(response.status===429){
+      // The caller must stop requesting Gemini while this project is over its
+      // provider quota. Retry-After, when present, is advisory and bounded.
+      const header=String(response.headers?.get?.("retry-after")||"");
+      const parsed=Number(header);
+      const retryAfterSeconds=Number.isFinite(parsed)&&parsed>0?
+        Math.min(3600,Math.max(60,Math.ceil(parsed))):180;
+      throw Object.assign(Error("Cota Gemini de áudio atingida. Consulte o uso no Google AI Studio."),{
+        publicStatus:429,providerQuota:true,retryAfterSeconds
+      });
+    }
+    throw Object.assign(Error(response.status===404?
       "Nenhum modelo de transcrição disponível para esta chave Gemini (HTTP 404). Verifique o acesso aos modelos 3.5 no AI Studio.":
       "O Gemini recusou a transcrição (HTTP "+response.status+", modelo "+selectedModel+")."),
-    {publicStatus:response.status===429?429:502});
+      {publicStatus:502});
+  }
   let data;
   try{data=await response.json();}catch(e){throw Object.assign(Error("Resposta de transcrição inválida."),{publicStatus:502});}
   const transcript=String((data.candidates?.[0]?.content?.parts||[]).map(p=>p.text||"").join(" "))
