@@ -374,6 +374,7 @@ final class NexusArcaneSensor {
     private static void addEvent(String type,String spellId,String school,int level,String message,double percent){
         long now=System.currentTimeMillis();
         state.events.add(new Entry(now,type,spellId,school,message,level));
+        NexusPrivateMind.noticeArcane(type,message);
         while(state.events.size()>80)state.events.remove(0);
         if(ClientConfig.allowMind&&(type.equals("cast_start")||type.equals("mana_low")||type.equals("holy_power")))
             NexusSocial.onArcaneEvent(type,message,now);

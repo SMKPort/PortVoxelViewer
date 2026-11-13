@@ -4,6 +4,11 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.KeyMapping;
+import com.mojang.blaze3d.platform.InputConstants;
+import org.lwjgl.glfw.GLFW;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
@@ -15,7 +20,10 @@ import net.neoforged.fml.ModList;
 public class NexusClientMod {
     public static final String MOD_ID = "nexusclient";
 
-    public NexusClientMod() {
+    private static final KeyMapping PRIVATE_KEY=new KeyMapping(
+        "key.nexusclient.private",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_N,"key.categories.misc");
+    public NexusClientMod(IEventBus modBus) {
+        modBus.addListener(this::onRegisterKeys);
         ClientConfig.load();
         if(ModList.get().isLoaded("plasmovoice")){
             try{NexusPlasmoAddon.attach();}
@@ -27,8 +35,17 @@ public class NexusClientMod {
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
     }
 
+    private void onRegisterKeys(RegisterKeyMappingsEvent event){
+        event.register(PRIVATE_KEY);
+    }
+
     private void onTick(ClientTickEvent.Post event) {
         ClientLink.tick();
+        Minecraft mc=Minecraft.getInstance();
+        while(PRIVATE_KEY.consumeClick()){
+            if(mc.player!=null&&mc.screen==null)
+                mc.setScreen(new NexusPrivateScreen());
+        }
     }
 
     private void registerCommands(RegisterClientCommandsEvent event) {
@@ -185,6 +202,56 @@ public class NexusClientMod {
                         NexusArcaneSensor.reactions(false);ClientLink.sendArcaneState();
                         notifyPlayer("Reações arcanas desativadas.");return 1;})))
             )
+            .then(Commands.literal("private")
+                .then(Commands.literal("open").executes(ctx->{
+                    Minecraft mc=Minecraft.getInstance();
+                    if(mc.player!=null)mc.setScreen(new NexusPrivateScreen());
+                    return 1;
+                }))
+                .then(Commands.literal("status").executes(ctx->{
+                    notifyPlayer(NexusPrivateMind.status());return 1;
+                }))
+                .then(Commands.literal("on").executes(ctx->{
+                    NexusPrivateMind.enable(true);
+                    notifyPlayer("Canal neural privado habilitado. Pressione N ou use /nexusclient private open.");
+                    return 1;
+                }))
+                .then(Commands.literal("off").executes(ctx->{
+                    NexusPrivateMind.enable(false);
+                    notifyPlayer("Canal privado desligado. Histórico local preservado.");
+                    return 1;
+                }))
+                .then(Commands.literal("proactive")
+                    .then(Commands.literal("on").executes(ctx->{
+                        try{
+                            NexusPrivateMind.setProactive(true);
+                            notifyPlayer("Iniciativa privada autorizada nesta sessão.");
+                        }catch(Exception e){notifyPlayer(e.getMessage());}
+                        return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx->{
+                        NexusPrivateMind.setProactive(false);
+                        notifyPlayer("Iniciativa privada desativada.");
+                        return 1;
+                    })))
+                .then(Commands.literal("freedom")
+                    .then(Commands.literal("on").executes(ctx->{
+                        NexusPrivateMind.setFreedom(true);
+                        notifyPlayer("Personalidade independente RP ativada.");
+                        return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx->{
+                        NexusPrivateMind.setFreedom(false);
+                        notifyPlayer("Personalidade cooperativa RP ativada.");
+                        return 1;
+                    })))
+                .then(Commands.literal("clear")
+                    .then(Commands.literal("confirm").executes(ctx->{
+                        NexusPrivateMind.clear();
+                        notifyPlayer("Conversas privadas locais apagadas.");
+                        return 1;
+                    })))
+            )
             .then(Commands.literal("social")
                 .then(Commands.literal("status").executes(ctx -> {
                     notifyPlayer(NexusSocial.status());return 1;}))
@@ -221,6 +288,8 @@ public class NexusClientMod {
             .then(Commands.literal("unpair").executes(context -> {
                 NexusHearing.listen(false);
                 NexusSpeaker.stop();
+                NexusPrivateMind.enable(false);
+                NexusPrivateMind.resetSession();
                 ClientConfig.token = "";ClientConfig.allowChat = false;
                 ClientConfig.allowTelemetry = false;ClientConfig.allowAutonomy=false;ClientConfig.save();
                 ClientLink.reset();

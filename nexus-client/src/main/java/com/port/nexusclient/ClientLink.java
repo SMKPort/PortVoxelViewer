@@ -41,7 +41,7 @@ final class ClientLink {
 
     static void reset() {
         ticks=0;previousHealth=Float.NaN;previousEffects="";previousPlayer="";
-        NexusMind.resetSession();COMBAT_ALERTS.reset();NexusHearing.resetSession();NexusArcaneSensor.resetSession();
+        NexusMind.resetSession();COMBAT_ALERTS.reset();NexusHearing.resetSession();NexusArcaneSensor.resetSession();NexusPrivateMind.resetSession();
         invalidTokenNotice=false;POLLING.set(false);
     }
 
@@ -54,6 +54,7 @@ final class ClientLink {
             +" | Telemetria: "+(ClientConfig.allowTelemetry?"ATIVA":"DESATIVADA")
             +" | Consciência: "+(ClientConfig.allowMind?"ATIVA":"DESATIVADA")
             +" | Autonomia RP: "+(ClientConfig.allowAutonomy?"AUTORIZADA":"BLOQUEADA")
+            +" | Privado: "+(NexusPrivateMind.enabled()?"ATIVO":"OFF")
             +" | Serviço: "+ClientConfig.url+" | "+NexusVitals.status()+" | "+NexusHearing.status();
     }
 
@@ -164,6 +165,7 @@ final class ClientLink {
     }
 
     private static void observeCombat(String type,float amount,float hp,Player player,String name){
+        NexusPrivateMind.noticeCombat(type,hp/Math.max(1,player.getMaxHealth()));
         double before=NexusVitals.integrity();
         NexusVitals.record(type,amount,name);
         double after=NexusVitals.integrity();
@@ -251,6 +253,26 @@ final class ClientLink {
         post("/api/client/tts",data,true,Duration.ofSeconds(48))
             .thenAccept(NexusSpeaker::accept)
             .exceptionally(error -> {NexusSpeaker.failed("Serviço de voz indisponível.");return null;});
+    }
+
+    static void askPrivateNexus(String text,JsonArray history,JsonObject traits,String stance){
+        JsonObject request=new JsonObject();
+        request.addProperty("consent",true);
+        request.addProperty("question",text);
+        request.add("history",history);
+        request.add("traits",traits);
+        request.addProperty("stance",stance);
+        Minecraft mc=Minecraft.getInstance();
+        post("/api/client/private/reply",request,true,Duration.ofSeconds(40))
+            .thenAccept(result->mc.execute(()->{
+                if(result!=null&&result.has("ok")&&result.get("ok").getAsBoolean()&&result.has("reply"))
+                    NexusPrivateMind.answered(result.get("reply").getAsString());
+                else NexusPrivateMind.failed(errorText(result));
+            }))
+            .exceptionally(error->{
+                mc.execute(()->NexusPrivateMind.failed("Nexus privado: serviço de IA indisponível."));
+                return null;
+            });
     }
 
     static void sendArcaneState(){
