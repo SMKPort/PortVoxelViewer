@@ -33,7 +33,10 @@ final class NexusHearing {
     private static volatile boolean plasmoReady;
     private static java.util.Set<String> playersOnline=java.util.Set.of();
     private static long nextId=1,queueBytes,processed,dropped,retries,noticeAt,dispatchAfter;
-    private static String lastError="",lastSpeaker="";
+    private static String lastError="",lastSpeaker="",lastDecision="sem teste";
+    private static long emptyTranscripts,notAddressed,replyRequests,replySent,replyBlocked;
+    private static String pendingReply="",pendingSpeaker="";
+    private static long pendingSince,nextReplyTry;
 
     private static class Settings {
         boolean listening=false,memory=false,answer=false;
@@ -147,6 +150,10 @@ final class NexusHearing {
         return "Audição "+(isListening()?"CONTÍNUA":settings.listening?"AGUARDANDO PLASMO":"OFF")+
             " | Plasmo "+(plasmoReady?"OK":"não detectado")+
             " | Memórias "+MEMORIES.count()+(MEMORIES.full()?" (LIMITE DE DISCO)":"")+
+            " | Respostas "+(settings.answer?"ON":"OFF")+
+            " | Chat "+(ClientConfig.allowChat?"ON":"OFF")+
+            " | Mente "+(ClientConfig.allowMind?"ON":"OFF")+
+            " | Autonomia "+(ClientConfig.allowAutonomy?"ON":"OFF")+
             " | Seleção "+(settings.collective?"@a ("+eligibleOnlineCount()+" consentidos online)":"nomes individuais")+
             " | Fila "+queued.size()+" / "+inFlight.size()+" enviando"+
             " | Transcrições "+processed+" | Perdidas "+dropped;
@@ -238,9 +245,22 @@ final class NexusHearing {
     }
     static synchronized void clearMemory(){MEMORIES.clear();NexusSocial.clear();}
     static synchronized List<String> recentMemories(){return MEMORIES.recent(6);}
+    static synchronized String diagnostic(){
+        load();
+        return "Voz: "+(settings.answer?"respostas ON":"respostas OFF")+
+            " | capturas reconhecidas "+processed+" | vazias "+emptyTranscripts+
+            " | sem chamada "+notAddressed+" | pedidos IA "+replyRequests+
+            " | enviados no chat "+replySent+" | bloqueados "+replyBlocked+
+            " | último resultado: "+lastDecision+
+            (lastError.isEmpty()?"":" | erro: "+lastError);
+    }
+    private static void clearPendingReply(){
+        pendingReply="";pendingSpeaker="";pendingSince=0;nextReplyTry=0;
+    }
     static synchronized void resetSession(){dropPending();playersOnline=java.util.Set.of();}
     private static void dropPending(){
         queued.clear();inFlight.clear();streams.clear();queueBytes=0;dispatchAfter=0;
+        clearPendingReply();
     }
     private static void removeSpeaker(String nick){
         if(nick==null)return;
@@ -288,6 +308,19 @@ final class NexusHearing {
             var tail=stream.getValue().flushIdle(now);
             if(tail!=null)enqueue(stream.getKey(),tail);
         }
+        // Retain one short pending reply when another chat message triggered
+        // the existing anti-spam cooldown. Do not retry forever or after revocation.
+        if(!pendingReply.isEmpty()){
+            if(!isAllowed(pendingSpeaker)||now-pendingSince>15000){
+                lastDecision="resposta pendente expirada ou autorização revogada";
+                replyBlocked++;clearPendingReply();
+            }else if(now>=nextReplyTry){
+                if(ClientLink.speak(pendingReply,"hearing")){
+                    replySent++;lastDecision="resposta enviada no chat para "+pendingSpeaker;
+                    clearPendingReply();
+                }else nextReplyTry=now+1200;
+            }
+        }
         if(ClientConfig.token.isBlank()||now<dispatchAfter)return;
         while(inFlight.size()<PARALLEL&&!queued.isEmpty()){
             Clip clip=queued.removeFirst();queueBytes-=clip.pcm.length;
@@ -311,33 +344,66 @@ final class NexusHearing {
         Clip clip=inFlight.remove(clipId);
         if(clip==null||!isListening()||!isAllowed(clip.speaker))return;
         processed++;lastSpeaker=clip.speaker;lastError="";
-        String text=String.valueOf(transcript).replaceAll("[\\p{Cntrl}]"," ").trim();
-        if(text.isEmpty())return;
+        String text=String.valueOf(transcript==null?"":transcript)
+            .replaceAll("[\\p{Cntrl}]"," ").trim();
+        if(text.isEmpty()){
+            emptyTranscripts++;lastDecision="Gemini devolveu transcrição vazia";
+            return;
+        }
         text=text.substring(0,Math.min(400,text.length()));
         if(settings.memory){
             if(MEMORIES.record(clip.speaker,text,clip.capturedAt)){
                 NexusSocial.heard(clip.speaker,text,clip.capturedAt);
             }else lastError=MEMORIES.full()?"Memórias atingiram 24 MiB.":"Falha ao salvar memória.";
         }
-        if(settings.answer&&wake(text)){
-            List<String> context=new ArrayList<>();
-            if(settings.memory){
-                for(String raw:MEMORIES.search(clip.speaker,text,8))
-                    if(!NexusSocial.isObsolete(clip.speaker,raw))context.add(raw);
-                context.addAll(NexusSocial.relevant(clip.speaker,text,4));
-                context.addAll(NexusSocial.recentConversation(clip.capturedAt,5));
-            }
-            ClientLink.replyHearing(clip.speaker,text,context);
+        if(!settings.answer){
+            lastDecision="respostas desligadas (use hearing dialogue on)";
+            return;
         }
+        if(!NexusWakeWords.addressed(text)){
+            notAddressed++;lastDecision="transcrição sem chamada ao Nexus";
+            return;
+        }
+        if(!ClientConfig.allowChat||!ClientConfig.allowMind||!ClientConfig.allowAutonomy){
+            replyBlocked++;lastDecision="chat, mente ou autonomia desligados";
+            NexusClientMod.notifyPlayer("Nexus ouviu "+clip.speaker+
+                ", mas não pode responder. Use /nexusclient hearing dialogue on.");
+            return;
+        }
+        List<String> context=new ArrayList<>();
+        if(settings.memory){
+            for(String raw:MEMORIES.search(clip.speaker,text,8))
+                if(!NexusSocial.isObsolete(clip.speaker,raw))context.add(raw);
+            context.addAll(NexusSocial.relevant(clip.speaker,text,4));
+            context.addAll(NexusSocial.recentConversation(clip.capturedAt,5));
+        }
+        replyRequests++;lastDecision="Nexus chamado por "+clip.speaker+"; solicitando IA";
+        ClientLink.replyHearing(clip.speaker,text,context);
     }
-    private static boolean wake(String text){
-        String normalized=java.text.Normalizer.normalize(text,java.text.Normalizer.Form.NFD)
-            .replaceAll("\\p{M}","").toLowerCase(Locale.ROOT).trim();
-        return normalized.matches("^(?:(?:ei|ola)\\s+)?(?:nexus|nexo|nexos)(?:\\s+aeterna|\\s+aterna)?(?:$|[\\s,.!?:;].*)");
-    }
+
     static synchronized void onReply(String speaker,String text){
-        if(isListening()&&settings.answer&&isAllowed(speaker)&&text!=null&&!text.isBlank())
-            ClientLink.speak(text,"mind");
+        load();
+        if(!isListening()||!settings.answer||!isAllowed(speaker)||
+            text==null||text.isBlank()){
+            replyBlocked++;lastDecision="resposta descartada: audição ou participante indisponível";
+            return;
+        }
+        if(!ClientConfig.allowChat||!ClientConfig.allowMind||!ClientConfig.allowAutonomy){
+            replyBlocked++;lastDecision="IA respondeu, mas faltam permissões para o chat";
+            NexusClientMod.notifyPlayer("A IA respondeu, mas chat/mente/autonomia estão OFF.");
+            return;
+        }
+        // Delivery may fail temporarily when another /l message uses the
+        // 4.5 second chat cooldown. Retry locally without calling Gemini twice.
+        pendingReply=text;pendingSpeaker=speaker;
+        pendingSince=System.currentTimeMillis();nextReplyTry=pendingSince;
+        lastDecision="IA respondeu; aguardando envio no /l";
+    }
+    static synchronized void onReplyError(String message){
+        replyBlocked++;lastDecision="erro ao gerar resposta da IA";
+        String safe=String.valueOf(message).replaceAll("[\\p{Cntrl}]"," ");
+        lastError=safe.substring(0,Math.min(120,safe.length()));
+        NexusClientMod.notifyPlayer("Audição: "+lastError);
     }
     static synchronized void onTranscriptionError(long clipId,String reason,boolean transientFailure){
         Clip clip=inFlight.remove(clipId);
