@@ -79,6 +79,43 @@ final class NexusHearing {
         load();
         return settings.allowedPlayers.stream().anyMatch(s->s.equalsIgnoreCase(nick));
     }
+    static synchronized JsonObject snapshot(){
+        load();loadMemory();
+        JsonObject status=new JsonObject();
+        status.addProperty("ready",plasmoReady);
+        status.addProperty("listening",isListening());
+        status.addProperty("memory",settings.memory);
+        status.addProperty("answer",settings.answer);
+        status.add("allowedPlayers",JSON.toJsonTree(settings.allowedPlayers));
+        status.addProperty("memoryCount",memory.size());
+        return status;
+    }
+    static synchronized void configure(JsonObject data){
+        load();
+        if(!data.has("listening")||!data.get("listening").isJsonPrimitive()||
+            !data.get("listening").getAsJsonPrimitive().isBoolean()||
+            !data.has("memory")||!data.get("memory").getAsJsonPrimitive().isBoolean()||
+            !data.has("answer")||!data.get("answer").getAsJsonPrimitive().isBoolean()||
+            !data.has("allowedPlayers")||!data.get("allowedPlayers").isJsonArray())
+            throw new IllegalArgumentException("Preferências de audição inválidas.");
+        var list=new ArrayList<String>();
+        var original=data.getAsJsonArray("allowedPlayers");
+        if(original.size()>20)throw new IllegalArgumentException("Máximo 20 jogadores.");
+        for(var player:original){
+            String name=player.getAsString();
+            if(!name.matches("[A-Za-z0-9_]{3,16}"))
+                throw new IllegalArgumentException("Nick inválido: "+name);
+            if(list.stream().noneMatch(x->x.equalsIgnoreCase(name)))list.add(name);
+        }
+        boolean enabled=data.get("listening").getAsBoolean();
+        if(enabled&&list.isEmpty())throw new IllegalArgumentException("Permita ao menos um jogador.");
+        if(enabled&&!plasmoReady)throw new IllegalStateException("Plasmo Voice indisponível.");
+        settings.listening=enabled;settings.memory=data.get("memory").getAsBoolean();
+        settings.answer=data.get("answer").getAsBoolean();
+        settings.allowedPlayers=list;
+        pending.clear();saveSettings();
+    }
+    static synchronized void resetSession(){pending.clear();busy=false;}
     static synchronized String status(){
         load();
         return "Audição "+(isListening()?"ON":settings.listening?"AGUARDANDO PLASMO":"OFF")+

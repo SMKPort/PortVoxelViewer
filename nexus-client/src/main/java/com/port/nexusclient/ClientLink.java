@@ -89,7 +89,7 @@ final class ClientLink {
         Minecraft mc=Minecraft.getInstance();
         if(mc.player==null || mc.getConnection()==null){
             previousHealth=Float.NaN;previousPlayer="";previousEffects="";
-            NexusMind.resetSession();COMBAT_ALERTS.reset();return;
+            NexusMind.resetSession();COMBAT_ALERTS.reset();NexusHearing.resetSession();return;
         }
         NexusHearing.tick();
         if(++ticks%60!=0)return;
@@ -97,6 +97,7 @@ final class ClientLink {
         if(ClientConfig.allowTelemetry)sendTelemetry(mc.player);
         if(ClientConfig.token.isEmpty())return;
         if(ticks%180==0)sendAlertState();
+        if(ticks%120==0)sendHearingState();
         if(POLLING.compareAndSet(false,true)){
             get("/api/client/poll",true).thenAccept(reply -> {
                 if(reply!=null && reply.has("jobs")){
@@ -210,6 +211,11 @@ final class ClientLink {
                 return null;});
     }
 
+    private static void sendHearingState(){
+        if(ClientConfig.token.isEmpty())return;
+        post("/api/client/hearing/state",NexusHearing.snapshot(),true).exceptionally(err -> null);
+    }
+
     private static void sendAlertState(){
         if(ClientConfig.token.isEmpty())return;
         JsonObject data=NexusAlertSettings.snapshot();
@@ -227,6 +233,11 @@ final class ClientLink {
                     payload.has("channel")?payload.get("channel").getAsString():"local",
                     payload.has("command")?payload.get("command").getAsString():"",
                     payload.has("format")?payload.get("format").getAsString():"&6&l");success=true;
+            }else if("hearing_settings".equals(kind)){
+                NexusHearing.configure(payload);
+                sendHearingState();
+                output="Audição salva no Minecraft (sem armazenar áudio).";
+                success=true;
             }else if("alerts_settings".equals(kind)){
                 NexusAlertSettings.configure(payload);
                 sendAlertState();
