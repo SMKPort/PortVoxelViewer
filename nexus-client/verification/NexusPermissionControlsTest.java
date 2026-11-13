@@ -37,7 +37,12 @@ public final class NexusPermissionControlsTest {
         check(NexusSpeaker.enabled,"Local TTS permission");
         NexusPermissionControls.set("arcane",true);
         NexusPermissionControls.set("nearby",true);
+        expectedError(()->NexusPermissionControls.set("reactions",true),
+            "Arcane reactions need Mind and Autonomy");
+        NexusPermissionControls.set("mind",true);
+        NexusPermissionControls.set("autonomy",true);
         NexusPermissionControls.set("reactions",true);
+        check(NexusArcaneSensor.reactions,"Arcane reactions enabled with prerequisites");
         NexusPermissionControls.set("arcane",false);
         check(!NexusArcaneSensor.reactions,"Disable arcane reactions with sensor");
 
