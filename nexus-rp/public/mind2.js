@@ -47,7 +47,7 @@ window.NexusRPMind2Upgrade=function(rp,views){
       '<small>'+E(saneDate(item.at))+(item.corrected?" · Corrigida":"")+'</small></div>'+
       '<p>'+E(item.text)+'</p>'+
       '<div class="buttons"><button class="btn ghost" type="button" data-mind-action="correct" data-memory-id="'+Number(item.id)+'">CORRIGIR</button>'+
-      '<button class="btn ghost" type="button" data-mind-action="delete" data-memory-id="'+Number(item.id)+'">ESQUECER</button></div></div>'
+      '<button class="btn ghost" type="button" data-mind-action="delete" data-memory-id="'+Number(item.id)+'">APAGAR LEMBRANÇA DERIVADA</button></div></div>'
     ).join("");
   }
   function diary(){
@@ -93,7 +93,7 @@ window.NexusRPMind2Upgrade=function(rp,views){
     '<section class="card"><div class="card-header"><h2>RELACIONAMENTOS DO RP</h2></div>'+
     '<div id="nexusMindRelationsList">'+relations()+'</div></section></div>'+
     '<section class="card"><div class="card-header"><h2>MEMÓRIA SEMÂNTICA</h2></div>'+
-    '<p class="hint">Lembranças são trechos atribuídos aos participantes, não fatos verificados. Você pode corrigir ou apagar qualquer entrada.</p>'+
+    '<p class="hint">Lembranças são trechos atribuídos aos participantes, não fatos verificados. Ao corrigir ou apagar uma lembrança derivada, o Nexus não a usa mais nas respostas. O histórico original de transcrições permanece no PC até você apagá-lo por jogador ou limpar tudo.</p>'+
     '<div id="nexusMindFactsList">'+facts()+'</div></section>';
   function update(){
     const status=document.querySelector("#nexusMindStatus");
