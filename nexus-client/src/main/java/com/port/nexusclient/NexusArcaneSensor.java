@@ -196,6 +196,14 @@ final class NexusArcaneSensor {
         }
         data.addProperty("totalCasts",state.totalCasts);
         data.addProperty("lastReadAt",readAt);
+        JsonObject arm=NexusVitals.snapshot();
+        boolean managed=arm.has("managed")&&arm.get("managed").getAsBoolean();
+        boolean active=arm.has("enabled")&&arm.get("enabled").getAsBoolean();
+        data.addProperty("armAvailable",managed&&active);
+        if(managed&&active){
+            data.addProperty("armIntegrity",arm.get("integrity").getAsDouble());
+            data.addProperty("armEnergy",arm.get("energy").getAsDouble());
+        }
         data.addProperty("lastError",state.enabled?state.lastError:"");
         data.add("events",JSON.toJsonTree(state.events));
         return data;
@@ -288,6 +296,8 @@ final class NexusArcaneSensor {
         long now=System.currentTimeMillis();
         state.events.add(new Entry(now,type,spellId,school,message,level));
         while(state.events.size()>80)state.events.remove(0);
+        if(ClientConfig.allowMind&&(type.equals("cast_start")||type.equals("mana_low")||type.equals("holy_power")))
+            NexusSocial.onArcaneEvent(type,message,now);
         state.updatedAt=now;
         persist();
         if(state.reactions&&now-lastReaction>REACTION_COOLDOWN_MS){

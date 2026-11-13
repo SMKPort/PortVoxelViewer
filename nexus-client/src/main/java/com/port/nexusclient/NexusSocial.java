@@ -248,6 +248,24 @@ final class NexusSocial {
         warningAt=now;
         return "Port, "+lastWarningSpeaker+" mencionou perigo há pouco e sua integridade física caiu. Recomendo cautela.";
     }
+    /** Only observed local player spells; a fictional diary, not a claim about true magic. */
+    static synchronized void onArcaneEvent(String type,String note,long at){
+        load();
+        if(!state.diaryEnabled)return;
+        if(!java.util.Set.of("cast_start","mana_low","holy_power").contains(type))return;
+        for(int i=state.diary.size()-1;i>=0;i--){
+            DiaryEntry last=state.diary.get(i);
+            if(last.speaker.equals("Nexus")&&last.kind.equals("arcano")&&
+               at-last.at>=0&&at-last.at<180000)return;
+        }
+        String safe=NexusSocialRules.sanitized(note);
+        state.diary.add(new DiaryEntry(state.sequence++,at,0,"Nexus","arcano",
+            "Registro mágico observado: "+safe+
+            ". Esta leitura descreve dados do jogo; minha interpretação é narrativa."));
+        while(state.diary.size()>220)state.diary.remove(0);
+        save();
+    }
+
     static synchronized void onEvolution(String stage){
         load();
         if(!state.diaryEnabled)return;
