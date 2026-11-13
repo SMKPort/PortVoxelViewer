@@ -40,6 +40,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusSocialRules.java \
             nexus-client/verification/NexusSocialRulesTest.java
           java -ea -cp /tmp/nexus-social-tests com.port.nexusclient.NexusSocialRulesTest
+      - name: Test Nexus @a consent-only selector
+        run: |
+          mkdir -p /tmp/nexus-selector-tests
+          javac -encoding UTF-8 -d /tmp/nexus-selector-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusHearingSelectors.java \
+            nexus-client/verification/NexusHearingSelectorsTest.java
+          java -ea -cp /tmp/nexus-selector-tests com.port.nexusclient.NexusHearingSelectorsTest
       - name: Compile mod
         run: gradle -p nexus-client build --no-daemon --stacktrace
       - name: Upload JAR
