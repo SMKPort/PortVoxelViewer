@@ -137,9 +137,42 @@ public class NexusClientMod {
                     notifyPlayer("Mensagens espontâneas desativadas.");return 1;
                 })))
             .then(Commands.literal("hearing")
-                .then(Commands.literal("status").executes(ctx -> {notifyPlayer(NexusHearing.status());return 1;}))
+                .then(Commands.literal("status").executes(ctx -> {
+                    notifyPlayer(NexusHearing.status());
+                    notifyPlayer(NexusHearing.diagnostic());
+                    return 1;
+                }))
+                .then(Commands.literal("diagnose").executes(ctx -> {
+                    notifyPlayer(NexusHearing.status());
+                    notifyPlayer(NexusHearing.diagnostic());
+                    return 1;
+                }))
+                .then(Commands.literal("dialogue")
+                    .then(Commands.literal("on").executes(ctx -> {
+                        try {
+                            // Explicitly authorize replying in /l under the player's
+                            // identity. Listening still requires existing consent.
+                            NexusHearing.listen(true);
+                            ClientConfig.allowChat=true;
+                            ClientConfig.allowMind=true;
+                            ClientConfig.allowAutonomy=true;
+                            ClientConfig.save();
+                            NexusHearing.answer(true);
+                            ClientLink.sendHearingState();
+                            notifyPlayer("DIÁLOGO ON: ouvindo consentidos e respondendo no /l &6&l[Nexus Aterna].");
+                        } catch(Exception error) {
+                            notifyPlayer("Diálogo indisponível: "+error.getMessage());
+                        }
+                        return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx -> {
+                        NexusHearing.answer(false);
+                        ClientLink.sendHearingState();
+                        notifyPlayer("DIÁLOGO OFF: respostas pausadas. Audição permanece como estava.");
+                        return 1;
+                    })))
                 .then(Commands.literal("on").executes(ctx -> {try{NexusHearing.listen(true);ClientLink.sendHearingState();
-                    notifyPlayer("Audição ATIVA para jogadores com consentimento na lista.");
+                    notifyPlayer("Audição ativa. Para autorizar respostas no /l use /nexusclient hearing dialogue on.");
                 }catch(Exception e){notifyPlayer(e.getMessage());}return 1;}))
                 .then(Commands.literal("off").executes(ctx -> {NexusHearing.listen(false);ClientLink.sendHearingState();
                     notifyPlayer("Audição DESATIVADA.");return 1;}))
