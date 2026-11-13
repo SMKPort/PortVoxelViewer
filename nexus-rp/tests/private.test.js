@@ -95,6 +95,8 @@ test("private persona keeps Mizora as canon without obsessive callbacks",async()
   }
  });
  assert.doesNotMatch(JSON.stringify(body.contents),/Mizora/i);
- assert.match(body.systemInstruction.parts[0].text,/Não tenha obsessão/);
- assert.match(body.systemInstruction.parts[0].text,/amiga dele/);
+ assert.match(body.systemInstruction.parts[0].text,/Não desenvolva obsessão/);
+ assert.doesNotMatch(body.systemInstruction.parts[0].text,/Mizora/i);
+ const explicit=makePrompt({freedom:true},"","Quero falar da Mizora");
+ assert.match(explicit,/Mizora é amiga do Port/);
 });
