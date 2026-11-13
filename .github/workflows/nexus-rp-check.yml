@@ -23,6 +23,7 @@ jobs:
           node --check nexus-rp/bridge.js
           node --check nexus-rp/client_relay.js
           node --check nexus-rp/audio_transcription.js
+          node --check nexus-rp/speech_synthesis.js
           node --check nexus-rp/voice_reply.js
           node --check nexus-rp/ai_conversation.js
           node --check nexus-rp/public/voice.js
@@ -36,4 +37,4 @@ jobs:
       - name: Check Python agent
         run: python -m py_compile nexus-rp/agent/bridge_agent.py
       - name: Run bridge integration tests
-        run: node --test nexus-rp/tests/bridge.test.js nexus-rp/tests/client-relay.test.js nexus-rp/tests/client-ui.test.js nexus-rp/tests/http-routes.test.js nexus-rp/tests/live-events.test.js nexus-rp/tests/alerts-ui.test.js nexus-rp/tests/hearing.test.js nexus-rp/tests/alerts-settings.test.js nexus-rp/tests/monitor-persistence.test.js nexus-rp/tests/voice.test.js nexus-rp/tests/ai-conversation.test.js
+        run: node --test nexus-rp/tests/bridge.test.js nexus-rp/tests/client-relay.test.js nexus-rp/tests/client-ui.test.js nexus-rp/tests/http-routes.test.js nexus-rp/tests/live-events.test.js nexus-rp/tests/alerts-ui.test.js nexus-rp/tests/hearing.test.js nexus-rp/tests/speech.test.js nexus-rp/tests/alerts-settings.test.js nexus-rp/tests/monitor-persistence.test.js nexus-rp/tests/voice.test.js nexus-rp/tests/ai-conversation.test.js
