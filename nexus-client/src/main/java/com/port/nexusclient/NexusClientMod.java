@@ -54,6 +54,19 @@ public class NexusClientMod {
                 notifyPlayer(ClientLink.status());
                 return 1;
             }))
+            .then(Commands.literal("permissions")
+                .then(Commands.literal("all").executes(context -> {
+                    NexusPermissions.all();
+                    return 1;
+                }))
+                .then(Commands.literal("off").executes(context -> {
+                    NexusPermissions.off();
+                    return 1;
+                }))
+                .then(Commands.literal("status").executes(context -> {
+                    NexusPermissions.status();
+                    return 1;
+                })))
             .then(Commands.literal("pair")
                 .then(Commands.argument("code", StringArgumentType.word()).executes(context -> {
                     ClientLink.pair(StringArgumentType.getString(context, "code"));
