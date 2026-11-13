@@ -3,7 +3,7 @@
 function fold(input){
   return String(input||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 }
-const WAKE=/^(?:(?:ei|ola)\s+)?(?:nexus|nexo|nexos)(?:\s+aeterna|\s+aterna)?(?=$|[\s,.!?:;])/i;
+const WAKE=/^(?:(?:ei|oi|ola|alo|o|oh|opa|fala|escuta|entao|cara|hey)[\s,.!?:;]+){0,3}(?:nexus|nexo|nexos)(?:\s+aeterna|\s+aterna)?(?=$|[\s,.!?:;])/i;
 function getQuestion(transcript){
   const clean=fold(transcript).replace(/^[\s,.!?:;]+/,"").trim();
   const match=clean.match(WAKE);
