@@ -68,6 +68,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusPrivateRules.java \
             nexus-client/verification/NexusPrivateRulesTest.java
           java -ea -cp /tmp/nexus-private-tests com.port.nexusclient.NexusPrivateRulesTest
+      - name: Test global permissions and hearing consent
+        run: |
+          mkdir -p /tmp/nexus-permissions
+          javac -encoding UTF-8 -d /tmp/nexus-permissions \
+            nexus-client/src/main/java/com/port/nexusclient/NexusPermissions.java \
+            nexus-client/verification/NexusPermissionsSmokeTest.java
+          java -ea -cp /tmp/nexus-permissions com.port.nexusclient.NexusPermissionsSmokeTest
       - name: Compile mod
         run: gradle -p nexus-client build --no-daemon --stacktrace
       - name: Upload JAR
