@@ -16,7 +16,7 @@ test("Mind 2.0 view hides private memories and renders consented text safely",as
  const payload={ok:true,online:true,syncedAt:"2026-11-13T11:00:00Z",state:{
   social:{diaryEnabled:true,protectionEnabled:true,sharePanel:false,
    factCount:1,diaryCount:1,relationCount:1},
-  speaker:{enabled:false,voice:"auto"}
+  speaker:{enabled:true,voice:"Kore"}
  }};
  const rp={escape:escapeHtml,date:x=>String(x),getAccess:()=>"SECRET_MUST_NEVER_APPEAR",
   rerender(){updates++;},toast(){},clientQueue:async()=>({ok:true})};
