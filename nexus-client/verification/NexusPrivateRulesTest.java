@@ -17,6 +17,12 @@ public final class NexusPrivateRulesTest {
         String secret=NexusPrivateRules.safeText("senha=abc123 e tudo bem",150);
         ok(!secret.contains("abc123"),"basic secret redaction");
         ok(NexusPrivateRules.safeText("Oi\\nPort",10).length()<=10,"bounded text");
+        ok(!NexusPrivateRules.includeOldMessage("Vamos melhorar o braço",
+            "Mizora é tudo em que penso"),"obsolete fixation never primes unrelated turns");
+        ok(NexusPrivateRules.includeOldMessage("Quero falar sobre Mizora",
+            "Mizora é amiga do Port"),"explicit canon discussion still possible");
+        ok(NexusPrivateRules.includeOldMessage("Vamos melhorar o braço",
+            "Ajustei as placas arcanas"),"unrelated memories still included");
         System.out.println("Nexus private decision rules: passed");
     }
 }
