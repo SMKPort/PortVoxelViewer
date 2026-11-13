@@ -90,7 +90,7 @@ final class NexusPermissionsScreen extends Screen {
         if(tab==Tab.AUDICAO)buildConsentButtons(x,w);
         if(tab==Tab.GERAL)
             addRenderableWidget(Button.builder(Component.literal("§6ATIVAR DIÁLOGO COM PARTICIPANTES CONSENTIDOS"),
-                b->enableDialogue()).bounds(x+6,204,w-12,20).build());
+                b->enableDialogue()).bounds(x+6,height<285?177:204,w-12,20).build());
 
         int footerY=height-34,btnW=(w-22)/3;
         addRenderableWidget(Button.builder(Component.literal("§aATIVAR TUDO"),b->{
@@ -117,23 +117,30 @@ final class NexusPermissionsScreen extends Screen {
     }
 
     private void buildConsentButtons(int x,int w){
-        int y=168;
-        int textW=Math.max(100,w-220);
+        int y=height<325?145:168;
+        boolean narrow=w<435;
+        int textW=narrow?w-14:w-220;
         playerName=new EditBox(font,x+7,y,textW,20,Component.literal("Nick consentido"));
         playerName.setMaxLength(16);
         playerName.setHint(Component.literal("Nick do jogador"));
         addRenderableWidget(playerName);
+        int buttonsY=narrow?y+24:y;
+        int actionW=narrow?(w-20)/2:94;
+        int addX=narrow?x+7:x+13+textW;
+        int denyX=narrow?x+13+actionW:x+113+textW;
         addRenderableWidget(Button.builder(Component.literal("§aAUTORIZAR"),b->changeConsent(true,b))
-            .bounds(x+13+textW,y,94,20).build());
+            .bounds(addX,buttonsY,actionW,20).build());
         addRenderableWidget(Button.builder(Component.literal("§cREVOGAR"),b->changeConsent(false,b))
-            .bounds(x+113+textW,y,94,20).build());
+            .bounds(denyX,buttonsY,actionW,20).build());
+        int dialogueY=height<325?(narrow?y+50:y+55):235;
         addRenderableWidget(Button.builder(Component.literal("§6ATIVAR DIÁLOGO (VOZ + RESPOSTA)"),
-            b->enableDialogue()).bounds(x+6,235,w-12,20).build());
-        addRenderableWidget(Button.builder(Component.literal("DIAGNOSTICAR AUDIÇÃO"),b->{
-            NexusClientMod.notifyPlayer(NexusHearing.status());
-            NexusClientMod.notifyPlayer(NexusHearing.diagnostic());
-            message="Diagnóstico detalhado enviado ao seu chat local.";
-        }).bounds(x+6,263,w-12,20).build());
+            b->enableDialogue()).bounds(x+6,dialogueY,w-12,20).build());
+        if(height>=345)
+            addRenderableWidget(Button.builder(Component.literal("DIAGNOSTICAR AUDIÇÃO"),b->{
+                NexusClientMod.notifyPlayer(NexusHearing.status());
+                NexusClientMod.notifyPlayer(NexusHearing.diagnostic());
+                message="Diagnóstico detalhado enviado ao seu chat local.";
+            }).bounds(x+6,263,w-12,20).build());
     }
 
     private boolean confirm(String type,String nick,Button button,String prompt){
@@ -192,21 +199,29 @@ final class NexusPermissionsScreen extends Screen {
             x+6,31,MUTED,false);
 
         if(tab==Tab.GERAL){
-            graphics.drawString(font,"O envio de mensagens /l usa sua própria conta no servidor.",
-                x+8,190,MUTED,false);
-            graphics.drawString(font,"O diálogo também exige consentimento individual e Plasmo Voice.",
-                x+8,230,MUTED,false);
+            if(height>=310){
+                graphics.drawString(font,"O envio de mensagens /l usa sua própria conta no servidor.",
+                    x+8,190,MUTED,false);
+                graphics.drawString(font,"O diálogo exige consentimento individual e Plasmo Voice.",
+                    x+8,230,MUTED,false);
+            }
         }else if(tab==Tab.AUDICAO){
-            graphics.drawString(font,"NICKS COM CONSENTIMENTO EXPLÍCITO (máximo 20)",x+8,153,GOLD,false);
+            int y=height<325?145:168;
+            graphics.drawString(font,"NICKS COM CONSENTIMENTO EXPLÍCITO (máximo 20)",
+                x+8,y-15,GOLD,false);
             List<String> approved=NexusHearing.consentedPlayers();
             String joined=approved.isEmpty()?"Nenhum participante cadastrado.":
                 String.join(", ",approved);
-            graphics.drawString(font,shortText("Consentidos: "+joined,w-16),x+8,194,WHITE,false);
-            graphics.drawString(font,
-                "Seleção @a apenas filtra os jogadores já autorizados e online.",
-                x+8,210,MUTED,false);
-            graphics.drawString(font,shortText(NexusHearing.diagnostic(),w-16),
-                x+8,291,MUTED,false);
+            if(w>=435){
+                graphics.drawString(font,shortText("Consentidos: "+joined,w-16),
+                    x+8,y+26,WHITE,false);
+                graphics.drawString(font,
+                    "Seleção @a filtra apenas jogadores já consentidos e online.",
+                    x+8,y+40,MUTED,false);
+            }
+            if(height>=345)
+                graphics.drawString(font,shortText(NexusHearing.diagnostic(),w-16),
+                    x+8,291,MUTED,false);
         }else if(tab==Tab.ARCANO){
             graphics.drawString(font,"Leituras arcanas dependem do Iron's Spells presente no cliente.",
                 x+8,147,MUTED,false);
@@ -229,7 +244,7 @@ final class NexusPermissionsScreen extends Screen {
                     RED:GREEN,false);
             graphics.drawString(font,shortText("Apenas client-side. F8 ou /nexusclient menu para abrir.",w-16),
                 x+8,footerY-22,MUTED,false);
-        }else{
+        }else if(height>=265){
             graphics.drawString(font,shortText(message,w-16),x+8,footerY-14,GREEN,false);
         }
         super.render(graphics,mouseX,mouseY,partialTick);
