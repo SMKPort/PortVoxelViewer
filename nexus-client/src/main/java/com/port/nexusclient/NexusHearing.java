@@ -127,6 +127,10 @@ final class NexusHearing {
         if(enable&&!plasmoReady)throw new IllegalStateException("Plasmo Voice indisponível.");
         boolean reset=!enable||sensitivity!=settings.sensitivity||
             !allowed.equals(settings.allowedPlayers);
+        // A revoked participant cannot remain in the transcript archive.
+        for(String previous:settings.allowedPlayers)
+            if(allowed.stream().noneMatch(s->s.equalsIgnoreCase(previous)))
+                MEMORIES.forget(previous);
         settings.listening=enable;settings.memory=data.get("memory").getAsBoolean();
         settings.answer=data.get("answer").getAsBoolean();
         settings.sensitivity=sensitivity;settings.allowedPlayers=allowed;

@@ -184,8 +184,12 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         if(data.listening&&(!data.consentConfirmed||data.allowedPlayers.length===0))
           return err(res,422,"Confirme o consentimento dos jogadores antes de ativar.");
         const allowedPlayers=[...new Set(data.allowedPlayers)];
+        const sensitivity=data.sensitivity===undefined?55:data.sensitivity;
+        if(!Number.isInteger(sensitivity)||sensitivity<20||sensitivity>100)
+          return err(res,422,"Sensibilidade permitida entre 20 e 100.");
         send(res,200,enqueue("hearing_settings",{
-          listening:data.listening,memory:data.memory,answer:data.answer,allowedPlayers
+          listening:data.listening,memory:data.memory,answer:data.answer,
+          sensitivity,allowedPlayers
         }));return true;
       }catch(e){return err(res,422,String(e.message));}
     }
@@ -314,7 +318,11 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         const transcript=String(data.transcript||"").replace(/[\u0000-\u001f\u007f]/g," ")
           .replace(/\s+/g," ").trim().slice(0,400);
         const question=getQuestion(transcript);
-        if(!question)return err(res,422,"O interlocutor precisa chamar 'Nexus' antes da pergunta.");
+        if(question===null)return err(res,422,"O interlocutor precisa chamar 'Nexus' antes da pergunta.");
+        if(!question){
+          send(res,200,{ok:true,speaker,reply:"Estou ouvindo. Pode falar."});
+          return true;
+        }
         if(!Array.isArray(data.memories)||data.memories.length>20||
           !data.memories.every(v=>typeof v==="string"&&v.length<=250))
           return err(res,422,"Contexto de memória inválido.");

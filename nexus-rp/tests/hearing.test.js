@@ -78,6 +78,7 @@ test("Hearing preferences are panel-authenticated, require consent, and sync no 
  assert.equal(saved.status,200);
  const poll=await call("GET","/api/client/poll",client);
  assert.equal(poll.payload.jobs[0].type,"hearing_settings");
+ assert.equal(poll.payload.jobs[0].payload.sensitivity,55);
  assert.deepEqual(poll.payload.jobs[0].payload.allowedPlayers,["FriendA"]);
  const synced=await call("POST","/api/client/hearing/state",client,{
    ready:true,listening:true,memory:true,answer:true,
