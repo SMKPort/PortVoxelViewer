@@ -259,7 +259,9 @@ final class NexusPrivateMind {
         load();
         if(!state.enabled||!state.autonomy||!ClientConfig.allowMind||
             !NexusPrivateRules.prefersPrivate(kind,text))return false;
-        if(System.currentTimeMillis()-lastThought<THOUGHT_COOLDOWN)return false;
+        // A private-only observation must never leak into /l just because
+        // its local notification is throttled.
+        if(System.currentTimeMillis()-lastThought<THOUGHT_COOLDOWN)return true;
         thought(text);
         return true;
     }
