@@ -77,7 +77,6 @@ final class NexusPrivateScreen extends Screen {
     public boolean isPauseScreen(){return false;}
     @Override
     public void render(GuiGraphics graphics,int mouseX,int mouseY,float delta){
-        super.render(graphics,mouseX,mouseY,delta);
         int w=Math.min(490,width-28),x=(width-w)/2;
         int top=19,bottom=height-70;
         graphics.fill(x-6,top-12,x+w+6,bottom+5,0xE80F0911);
@@ -118,6 +117,8 @@ final class NexusPrivateScreen extends Screen {
             graphics.drawString(font,
                 "Mensagens locais: "+lines.size()+" | PgUp/PgDn para percorrer",
                 x,Math.max(top+55,bottom-8),0xFFAA9D91,false);
+        // Render widgets after the panel to avoid covering the message box and buttons.
+        super.render(graphics,mouseX,mouseY,delta);
     }
     private String trim(String value,int width){
         if(font.width(value)<=width)return value;

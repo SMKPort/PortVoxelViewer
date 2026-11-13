@@ -62,6 +62,8 @@ final class NexusPrivateMind {
                 if(stored.messages.size()>150)
                     stored.messages=new ArrayList<>(stored.messages.subList(stored.messages.size()-150,stored.messages.size()));
                 if(!stored.remember)stored.messages.clear();
+                // Initiative requires renewed authorization after every client restart.
+                stored.autonomy=false;
                 stored.independence=clamp(stored.independence);
                 stored.trust=clamp(stored.trust);
                 stored.caution=clamp(stored.caution);
