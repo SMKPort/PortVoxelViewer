@@ -47,7 +47,7 @@ public final class NexusPermissionsSmokeTest {
             "Private channel permissions must be on.");
         check(NexusSocial.diary && NexusSocial.protection && NexusSocial.share,
             "Social settings must be on.");
-        check(NexusSpeaker.active,"Optional local TTS may remain enabled.");
+        check(!NexusSpeaker.active,"Global activation must not enable potentially paid TTS.");
         check(!NexusHearing.listening && !NexusHearing.memory &&
             !NexusHearing.answer && !NexusHearing.collective,
             "Global enable must never activate retired audio capture.");
