@@ -1,59 +1,52 @@
 package com.port.nexusclient;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.neoforged.fml.loading.FMLPaths;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.Base64;
 
-/**
- * Hearing and optional memory. Defaults entirely OFF; explicit peer consent
- * must be obtained before adding each speaker to an allowlist. No WAV is stored.
- */
+/** Streaming Plasmo hearing, consent-only, no audio saved to disk. */
 final class NexusHearing {
-    private static final Gson JSON=new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson JSON=new Gson();
     private static final Path SETTINGS=FMLPaths.CONFIGDIR.get().resolve("nexus-hearing.json");
-    private static final Path MEMORIES=FMLPaths.CONFIGDIR.get().resolve("nexus-hearing-memories.json");
-    private static final int SAMPLE_RATE=16000, MAX_SECONDS=5;
-    private static final long GAP_MS=800, SERVER_GAP_MS=8500;
+    private static final NexusHearingMemory MEMORIES=new NexusHearingMemory();
+    private static final int PARALLEL=3,MAX_QUEUED=36;
+    private static final long MAX_QUEUE_BYTES=12L*1024*1024;
+    private static final Map<String,NexusVoiceSegmenter> streams=new LinkedHashMap<>();
+    private static final ArrayDeque<Clip> queued=new ArrayDeque<>();
+    private static final Map<Long,Clip> inFlight=new LinkedHashMap<>();
     private static Settings settings;
-    private static List<Memory> memory;
-    private static final Map<String,Clip> pending=new LinkedHashMap<>();
     private static volatile boolean plasmoReady;
-    private static long lastUpload;
-    private static boolean busy;
+    private static long nextId=1,queueBytes,processed,dropped,retries,noticeAt,dispatchAfter;
+    private static String lastError="",lastSpeaker="";
 
     private static class Settings {
         boolean listening=false,memory=false,answer=false;
+        int sensitivity=55;
         List<String> allowedPlayers=new ArrayList<>();
     }
-    private static class Memory {
-        String speaker,text,at;
-        Memory(String speaker,String text){
-            this.speaker=speaker;this.text=text;
-            this.at=java.time.Instant.now().toString();
+    private static final class Clip {
+        final long id,capturedAt;
+        final String speaker;
+        final byte[] pcm;
+        int attempts;
+        Clip(long id,String speaker,NexusVoiceSegmenter.Segment segment){
+            this.id=id;this.speaker=speaker;pcm=segment.pcm;capturedAt=segment.startedAtMs;
         }
-    }
-    private static class Clip {
-        final ByteArrayOutputStream pcm=new ByteArrayOutputStream();
-        final long started=System.currentTimeMillis();
-        long lastFrame=started;
-        int samples;
     }
     private NexusHearing(){}
     private static void load(){
@@ -61,214 +54,227 @@ final class NexusHearing {
         settings=new Settings();
         if(!Files.isRegularFile(SETTINGS))return;
         try{
-            Settings stored=JSON.fromJson(Files.readString(SETTINGS,StandardCharsets.UTF_8),Settings.class);
-            if(stored!=null){
-                settings=stored;
+            Settings saved=JSON.fromJson(Files.readString(SETTINGS,StandardCharsets.UTF_8),Settings.class);
+            if(saved!=null){
+                settings=saved;
                 if(settings.allowedPlayers==null)settings.allowedPlayers=new ArrayList<>();
                 settings.allowedPlayers.removeIf(s->s==null||!s.matches("[A-Za-z0-9_]{3,16}"));
                 if(settings.allowedPlayers.size()>20)
                     settings.allowedPlayers=new ArrayList<>(settings.allowedPlayers.subList(0,20));
-                // Hearing requires explicit reauthorization on each game launch.
-                settings.listening=false;
+                settings.sensitivity=Math.max(20,Math.min(100,settings.sensitivity));
+                settings.listening=false; // Explicit approval on every game launch.
             }
-        }catch(Exception error){System.err.println("Nexus Hearing: preferências inválidas.");}
+        }catch(Exception e){System.err.println("Nexus Hearing: configuração inválida.");}
     }
-    static synchronized void setPlasmoReady(boolean ready){plasmoReady=ready;if(!ready)pending.clear();}
+    static synchronized void setPlasmoReady(boolean ready){
+        plasmoReady=ready;
+        if(!ready)dropPending();
+    }
     static synchronized boolean isListening(){load();return settings.listening&&plasmoReady;}
     static synchronized boolean isAllowed(String nick){
         load();
-        return settings.allowedPlayers.stream().anyMatch(s->s.equalsIgnoreCase(nick));
+        return nick!=null&&settings.allowedPlayers.stream().anyMatch(s->s.equalsIgnoreCase(nick));
     }
     static synchronized JsonObject snapshot(){
-        load();loadMemory();
-        JsonObject status=new JsonObject();
-        status.addProperty("ready",plasmoReady);
-        status.addProperty("listening",isListening());
-        status.addProperty("memory",settings.memory);
-        status.addProperty("answer",settings.answer);
-        status.add("allowedPlayers",JSON.toJsonTree(settings.allowedPlayers));
-        status.addProperty("memoryCount",memory.size());
-        return status;
+        load();
+        JsonObject out=new JsonObject();
+        out.addProperty("ready",plasmoReady);
+        out.addProperty("listening",isListening());
+        out.addProperty("memory",settings.memory);
+        out.addProperty("answer",settings.answer);
+        out.addProperty("sensitivity",settings.sensitivity);
+        out.add("allowedPlayers",JSON.toJsonTree(settings.allowedPlayers));
+        out.addProperty("memoryCount",MEMORIES.count());
+        out.addProperty("memoryFull",MEMORIES.full());
+        out.addProperty("queued",queued.size());
+        out.addProperty("inFlight",inFlight.size());
+        out.addProperty("processed",processed);
+        out.addProperty("dropped",dropped);
+        out.addProperty("retries",retries);
+        out.addProperty("lastSpeaker",lastSpeaker);
+        out.addProperty("lastError",lastError);
+        return out;
+    }
+    static synchronized String status(){
+        load();
+        return "Audição "+(isListening()?"CONTÍNUA":settings.listening?"AGUARDANDO PLASMO":"OFF")+
+            " | Plasmo "+(plasmoReady?"OK":"não detectado")+
+            " | Memórias "+MEMORIES.count()+(MEMORIES.full()?" (LIMITE DE DISCO)":"")+
+            " | Fila "+queued.size()+" / "+inFlight.size()+" enviando"+
+            " | Transcrições "+processed+" | Perdidas "+dropped;
     }
     static synchronized void configure(JsonObject data){
         load();
-        if(!data.has("listening")||!data.get("listening").isJsonPrimitive()||
-            !data.get("listening").getAsJsonPrimitive().isBoolean()||
-            !data.has("memory")||!data.get("memory").getAsJsonPrimitive().isBoolean()||
-            !data.has("answer")||!data.get("answer").getAsJsonPrimitive().isBoolean()||
-            !data.has("allowedPlayers")||!data.get("allowedPlayers").isJsonArray())
-            throw new IllegalArgumentException("Preferências de audição inválidas.");
-        var list=new ArrayList<String>();
-        var original=data.getAsJsonArray("allowedPlayers");
-        if(original.size()>20)throw new IllegalArgumentException("Máximo 20 jogadores.");
-        for(var player:original){
-            String name=player.getAsString();
-            if(!name.matches("[A-Za-z0-9_]{3,16}"))
-                throw new IllegalArgumentException("Nick inválido: "+name);
-            if(list.stream().noneMatch(x->x.equalsIgnoreCase(name)))list.add(name);
+        for(String name:new String[]{"listening","memory","answer"})
+            if(!data.has(name)||!data.get(name).isJsonPrimitive()||
+                !data.get(name).getAsJsonPrimitive().isBoolean())
+                throw new IllegalArgumentException("Configuração inválida: "+name);
+        if(!data.has("allowedPlayers")||!data.get("allowedPlayers").isJsonArray())
+            throw new IllegalArgumentException("Informe jogadores consentidos.");
+        var allowed=new ArrayList<String>();
+        if(data.getAsJsonArray("allowedPlayers").size()>20)
+            throw new IllegalArgumentException("Máximo 20 jogadores.");
+        for(var entry:data.getAsJsonArray("allowedPlayers")){
+            String nick=entry.getAsString();
+            if(!nick.matches("[A-Za-z0-9_]{3,16}"))throw new IllegalArgumentException("Nick inválido.");
+            if(allowed.stream().noneMatch(s->s.equalsIgnoreCase(nick)))allowed.add(nick);
         }
-        boolean enabled=data.get("listening").getAsBoolean();
-        if(enabled&&list.isEmpty())throw new IllegalArgumentException("Permita ao menos um jogador.");
-        if(enabled&&!plasmoReady)throw new IllegalStateException("Plasmo Voice indisponível.");
-        settings.listening=enabled;settings.memory=data.get("memory").getAsBoolean();
+        int sensitivity=data.has("sensitivity")?data.get("sensitivity").getAsInt():55;
+        if(sensitivity<20||sensitivity>100)
+            throw new IllegalArgumentException("Sensibilidade de 20 a 100.");
+        boolean enable=data.get("listening").getAsBoolean();
+        if(enable&&allowed.isEmpty())throw new IllegalArgumentException("Adicione um jogador consentido.");
+        if(enable&&!plasmoReady)throw new IllegalStateException("Plasmo Voice indisponível.");
+        boolean reset=!enable||sensitivity!=settings.sensitivity||
+            !allowed.equals(settings.allowedPlayers);
+        settings.listening=enable;settings.memory=data.get("memory").getAsBoolean();
         settings.answer=data.get("answer").getAsBoolean();
-        settings.allowedPlayers=list;
-        pending.clear();saveSettings();
-    }
-    static synchronized void resetSession(){pending.clear();busy=false;}
-    static synchronized String status(){
-        load();
-        return "Audição "+(isListening()?"ON":settings.listening?"AGUARDANDO PLASMO":"OFF")+
-            " | Plasmo "+(plasmoReady?"OK":"não detectado")+
-            " | memória "+(settings.memory?"ON":"OFF")+
-            " | resposta "+(settings.answer?"ON":"OFF")+
-            " | jogadores: "+(settings.allowedPlayers.isEmpty()?"nenhum":String.join(", ",settings.allowedPlayers));
+        settings.sensitivity=sensitivity;settings.allowedPlayers=allowed;
+        if(reset)dropPending();
+        saveSettings();
     }
     static synchronized void listen(boolean enabled){
         load();
         if(enabled&&settings.allowedPlayers.isEmpty())
-            throw new IllegalStateException("Adicione primeiro um jogador que consentiu, via /nexusclient hearing allow NICK.");
-        if(enabled&&!plasmoReady)
-            throw new IllegalStateException("Plasmo Voice não está disponível no cliente.");
+            throw new IllegalStateException("Autorize um participante consentido com /nexusclient hearing allow NICK.");
+        if(enabled&&!plasmoReady)throw new IllegalStateException("Plasmo Voice não detectado.");
         settings.listening=enabled;
-        pending.clear();saveSettings();
-    }
-    static synchronized void remember(boolean enabled){
-        load();settings.memory=enabled;
+        if(!enabled)dropPending();
         saveSettings();
     }
-    static synchronized void answer(boolean enabled){
-        load();settings.answer=enabled;saveSettings();
-    }
+    static synchronized void remember(boolean enabled){load();settings.memory=enabled;saveSettings();}
+    static synchronized void answer(boolean enabled){load();settings.answer=enabled;saveSettings();}
     static synchronized void allow(String name){
         load();
-        if(!name.matches("[A-Za-z0-9_]{3,16}"))throw new IllegalArgumentException("Nick inválido.");
+        if(name==null||!name.matches("[A-Za-z0-9_]{3,16}"))
+            throw new IllegalArgumentException("Nick inválido.");
         if(!isAllowed(name)){
-            if(settings.allowedPlayers.size()>=20)throw new IllegalStateException("Lista cheia (máximo 20).");
-            settings.allowedPlayers.add(name);
-            saveSettings();
+            if(settings.allowedPlayers.size()>=20)throw new IllegalStateException("Lista cheia (20 jogadores).");
+            settings.allowedPlayers.add(name);saveSettings();
         }
     }
     static synchronized void deny(String name){
         load();
         settings.allowedPlayers.removeIf(s->s.equalsIgnoreCase(name));
-        pending.keySet().removeIf(s->s.equalsIgnoreCase(name));
+        removeSpeaker(name);
         if(settings.allowedPlayers.isEmpty())settings.listening=false;
         saveSettings();
+        MEMORIES.forget(name); // Withdrawing consent also purges stored transcripts.
     }
-    static synchronized void clearMemory(){
-        memory=new ArrayList<>();
-        saveMemory();
+    static synchronized long forgetSpeaker(String name){
+        if(name==null||!name.matches("[A-Za-z0-9_]{3,16}"))
+            throw new IllegalArgumentException("Nick inválido.");
+        removeSpeaker(name);
+        return MEMORIES.forget(name);
     }
-    static synchronized List<String> recentMemories(){
-        loadMemory();
-        List<String> out=new ArrayList<>();
-        for(int i=memory.size()-1;i>=Math.max(0,memory.size()-6);i--)
-            out.add(memory.get(i).speaker+": "+memory.get(i).text);
-        return out.isEmpty()?List.of("Nenhuma memória de voz salva."):out;
+    static synchronized void clearMemory(){MEMORIES.clear();}
+    static synchronized List<String> recentMemories(){return MEMORIES.recent(6);}
+    static synchronized void resetSession(){dropPending();}
+    private static void dropPending(){
+        queued.clear();inFlight.clear();streams.clear();queueBytes=0;dispatchAfter=0;
+    }
+    private static void removeSpeaker(String nick){
+        if(nick==null)return;
+        streams.remove(nick.toLowerCase(Locale.ROOT));
+        for(Iterator<Clip> it=queued.iterator();it.hasNext();){
+            Clip clip=it.next();
+            if(clip.speaker.equalsIgnoreCase(nick)){queueBytes-=clip.pcm.length;it.remove();}
+        }
+        inFlight.values().removeIf(c->c.speaker.equalsIgnoreCase(nick));
     }
     private static void saveSettings(){
         try{
             Files.createDirectories(SETTINGS.getParent());
-            atomic(SETTINGS,JSON.toJson(settings));
-        }catch(IOException e){throw new IllegalStateException("Falha ao salvar preferências de audição.",e);}
+            Path temp=SETTINGS.resolveSibling(SETTINGS.getFileName()+".tmp");
+            Files.writeString(temp,JSON.toJson(settings),StandardCharsets.UTF_8);
+            try{Files.move(temp,SETTINGS,StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);}
+            catch(AtomicMoveNotSupportedException ex){Files.move(temp,SETTINGS,StandardCopyOption.REPLACE_EXISTING);}
+        }catch(IOException ex){throw new IllegalStateException("Falha ao salvar audição.",ex);}
     }
-    private static void loadMemory(){
-        if(memory!=null)return;
-        memory=new ArrayList<>();
-        if(!Files.isRegularFile(MEMORIES))return;
-        try{
-            Memory[] read=JSON.fromJson(Files.readString(MEMORIES,StandardCharsets.UTF_8),Memory[].class);
-            if(read!=null)for(Memory item:read)
-                if(item!=null&&item.speaker!=null&&item.text!=null&&item.at!=null)
-                    memory.add(item);
-            while(memory.size()>200)memory.remove(0);
-        }catch(Exception e){System.err.println("Nexus Hearing: falha ao ler memórias.");}
+    /** Called from Plasmo audio thread. Bounded RAM only; no network or disk I/O. */
+    static synchronized void capture(String nick,short[] samples,int sampleRate,int channels){
+        if(!isListening()||!isAllowed(nick)||samples==null)return;
+        String key=nick.toLowerCase(Locale.ROOT);
+        if(!streams.containsKey(key)&&streams.size()>=20)return;
+        var segmenter=streams.computeIfAbsent(key,ignored->new NexusVoiceSegmenter(settings.sensitivity));
+        for(var clip:segmenter.accept(samples,sampleRate,channels,System.currentTimeMillis()))
+            enqueue(nick,clip);
     }
-    private static void saveMemory(){
-        try{Files.createDirectories(MEMORIES.getParent());atomic(MEMORIES,JSON.toJson(memory));}
-        catch(IOException e){System.err.println("Nexus Hearing: falha ao salvar memórias.");}
-    }
-    private static void atomic(Path target,String body)throws IOException{
-        Path tmp=target.resolveSibling(target.getFileName()+".tmp");
-        Files.writeString(tmp,body,StandardCharsets.UTF_8);
-        try{Files.move(tmp,target,StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);}
-        catch(AtomicMoveNotSupportedException e){Files.move(tmp,target,StandardCopyOption.REPLACE_EXISTING);}
-    }
-    /** Audio thread; only allowed speakers, never disk. Downmix and decimate 48k -> 16k. */
-    static synchronized void capture(String speaker,short[] samples,int rate,int channels){
-        if(!isListening()||!isAllowed(speaker)||samples==null||
-            samples.length==0||rate<8000||rate>48000||channels<1||channels>2)return;
-        if(busy||pending.size()>3)return;
-        Clip clip=pending.computeIfAbsent(speaker,key->new Clip());
-        if(clip.samples>=SAMPLE_RATE*MAX_SECONDS)return;
-        int frames=samples.length/channels;
-        // Average source frames into the nearest 16kHz buckets to avoid aliasing.
-        for(int outFrame=0;outFrame<(int)Math.ceil(frames*16000.0/rate);outFrame++){
-            int from=(int)Math.floor(outFrame*rate/16000.0);
-            int to=Math.min(frames,Math.max(from+1,(int)Math.floor((outFrame+1)*rate/16000.0)));
-            if(from>=frames||clip.samples>=SAMPLE_RATE*MAX_SECONDS)break;
-            long sum=0;int count=0;
-            for(int i=from;i<to;i++)for(int c=0;c<channels;c++){sum+=samples[i*channels+c];count++;}
-            int value=(int)(sum/Math.max(count,1));
-            clip.pcm.write(value&255);clip.pcm.write((value>>>8)&255);clip.samples++;
+    private static void enqueue(String nick,NexusVoiceSegmenter.Segment segment){
+        if(segment==null||!isListening()||!isAllowed(nick))return;
+        Clip clip=new Clip(nextId++,nick,segment);
+        while(!queued.isEmpty()&&(queued.size()>=MAX_QUEUED||
+            queueBytes+clip.pcm.length>MAX_QUEUE_BYTES)){
+            queueBytes-=queued.removeFirst().pcm.length;
+            dropped++;
         }
-        clip.lastFrame=System.currentTimeMillis();
+        if(clip.pcm.length>MAX_QUEUE_BYTES){dropped++;return;}
+        queued.addLast(clip);queueBytes+=clip.pcm.length;
     }
-    /** Called from client tick, never from audio thread. */
+    /** Minecraft tick: flush utterances on silence and dispatch up to 3 parallel HTTP calls. */
     static synchronized void tick(){
-        if(!isListening()){pending.clear();return;}
-        if(busy||lastUpload>0&&System.currentTimeMillis()-lastUpload<SERVER_GAP_MS)return;
+        if(!isListening()){if(!streams.isEmpty()||!queued.isEmpty())dropPending();return;}
         long now=System.currentTimeMillis();
-        String who=null;Clip clip=null;
-        for(var entry:pending.entrySet()){
-            Clip c=entry.getValue();
-            if(now-c.lastFrame>=GAP_MS||c.samples>=SAMPLE_RATE*MAX_SECONDS){
-                who=entry.getKey();clip=c;break;
-            }
+        for(var stream:streams.entrySet()){
+            var tail=stream.getValue().flushIdle(now);
+            if(tail!=null)enqueue(stream.getKey(),tail);
         }
-        if(who==null)return;
-        pending.remove(who);
-        if(clip.samples<SAMPLE_RATE/2)return;
-        byte[] wave=wave(clip.pcm.toByteArray());
-        JsonArray history=new JsonArray();
-        if(settings.memory&&settings.answer){
-            loadMemory();
-            for(int i=Math.max(0,memory.size()-7);i<memory.size();i++){
-                Memory item=memory.get(i);
-                if(!item.speaker.equalsIgnoreCase(who))continue;
-                JsonObject row=new JsonObject();
-                row.addProperty("role","user");row.addProperty("text",item.text.substring(0,Math.min(item.text.length(),250)));
-                history.add(row);
-            }
+        if(ClientConfig.token.isBlank()||now<dispatchAfter)return;
+        while(inFlight.size()<PARALLEL&&!queued.isEmpty()){
+            Clip clip=queued.removeFirst();queueBytes-=clip.pcm.length;
+            if(!isAllowed(clip.speaker))continue;
+            inFlight.put(clip.id,clip);
+            ClientLink.transcribeHearing(clip.id,clip.speaker,wave(clip.pcm),
+                new ArrayList<>(settings.allowedPlayers));
         }
-        busy=true;lastUpload=now;
-        ClientLink.transcribeHearing(who,wave,settings.answer,history,new ArrayList<>(settings.allowedPlayers));
     }
-    private static byte[] wave(byte[] pcm){
-        int length=pcm.length;
-        var buffer=java.nio.ByteBuffer.allocate(44+length).order(java.nio.ByteOrder.LITTLE_ENDIAN);
-        buffer.put(new byte[]{'R','I','F','F'}).putInt(length+36)
+    private static byte[] wave(byte[] samples){
+        ByteBuffer out=ByteBuffer.allocate(44+samples.length).order(ByteOrder.LITTLE_ENDIAN);
+        out.put(new byte[]{'R','I','F','F'}).putInt(samples.length+36)
             .put(new byte[]{'W','A','V','E','f','m','t',' '}).putInt(16).putShort((short)1)
-            .putShort((short)1).putInt(SAMPLE_RATE).putInt(SAMPLE_RATE*2)
-            .putShort((short)2).putShort((short)16)
-            .put(new byte[]{'d','a','t','a'}).putInt(length).put(pcm);
-        return buffer.array();
+            .putShort((short)1).putInt(NexusVoiceSegmenter.RATE)
+            .putInt(NexusVoiceSegmenter.RATE*2).putShort((short)2).putShort((short)16)
+            .put(new byte[]{'d','a','t','a'}).putInt(samples.length).put(samples);
+        return out.array();
     }
-    static synchronized void onTranscription(String speaker,String transcript,String reply){
-        busy=false;
-        if(!isAllowed(speaker)||!settings.listening)return;
-        String text=transcript.replaceAll("[\\p{Cntrl}]"," ").trim();
-        if(text.length()>400)text=text.substring(0,400);
-        if(!text.isEmpty()&&settings.memory){
-            loadMemory();memory.add(new Memory(speaker,text));
-            while(memory.size()>200)memory.remove(0);
-            saveMemory();
+    /** Async result arrives on game thread. Matching by ID tolerates out-of-order responses. */
+    static synchronized void onTranscription(long clipId,String transcript){
+        Clip clip=inFlight.remove(clipId);
+        if(clip==null||!isListening()||!isAllowed(clip.speaker))return;
+        processed++;lastSpeaker=clip.speaker;lastError="";
+        String text=String.valueOf(transcript).replaceAll("[\\p{Cntrl}]"," ").trim();
+        if(text.isEmpty())return;
+        text=text.substring(0,Math.min(400,text.length()));
+        if(settings.memory&&!MEMORIES.record(clip.speaker,text,clip.capturedAt)){
+            lastError=MEMORIES.full()?"Memórias atingiram 24 MiB.":"Falha ao salvar memória.";
         }
-        if(!text.isEmpty()&&settings.answer&&!reply.isBlank())ClientLink.speak(reply,"mind");
+        if(settings.answer&&wake(text)){
+            List<String> context=MEMORIES.search(clip.speaker,text,10);
+            ClientLink.replyHearing(clip.speaker,text,context);
+        }
     }
-    static synchronized void onTranscriptionError(String error){
-        busy=false;
-        if(settings.listening)NexusClientMod.notifyPlayer("Audição: "+error);
+    private static boolean wake(String text){
+        String normalized=java.text.Normalizer.normalize(text,java.text.Normalizer.Form.NFD)
+            .replaceAll("\\p{M}","").toLowerCase(Locale.ROOT).trim();
+        return normalized.matches("^(?:(?:ei|ola)\\s+)?(?:nexus|nexo|nexos)(?:\\s+aeterna|\\s+aterna)?(?:$|[\\s,.!?:;].*)");
+    }
+    static synchronized void onReply(String speaker,String text){
+        if(isListening()&&settings.answer&&isAllowed(speaker)&&text!=null&&!text.isBlank())
+            ClientLink.speak(text,"mind");
+    }
+    static synchronized void onTranscriptionError(long clipId,String reason,boolean transientFailure){
+        Clip clip=inFlight.remove(clipId);
+        if(clip==null)return;
+        lastError=String.valueOf(reason).substring(0,Math.min(120,String.valueOf(reason).length()));
+        if(transientFailure&&isListening()&&isAllowed(clip.speaker)&&clip.attempts<2){
+            clip.attempts++;retries++;dispatchAfter=System.currentTimeMillis()+2000L*clip.attempts;
+            if(queued.size()<MAX_QUEUED&&queueBytes+clip.pcm.length<=MAX_QUEUE_BYTES){
+                queued.addFirst(clip);queueBytes+=clip.pcm.length;
+            }else dropped++;
+        }else dropped++;
+        if(isListening()&&System.currentTimeMillis()-noticeAt>30000){
+            noticeAt=System.currentTimeMillis();
+            NexusClientMod.notifyPlayer("Audição: "+lastError+" (fila "+queued.size()+").");
+        }
     }
 }
