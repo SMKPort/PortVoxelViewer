@@ -31,12 +31,14 @@ final class NexusHearing {
     private static final Map<Long,Clip> inFlight=new LinkedHashMap<>();
     private static Settings settings;
     private static volatile boolean plasmoReady;
+    private static java.util.Set<String> playersOnline=java.util.Set.of();
     private static long nextId=1,queueBytes,processed,dropped,retries,noticeAt,dispatchAfter;
     private static String lastError="",lastSpeaker="";
 
     private static class Settings {
         boolean listening=false,memory=false,answer=false;
         int sensitivity=55;
+        boolean collective=false;
         List<String> allowedPlayers=new ArrayList<>();
     }
     private static final class Clip {
@@ -73,8 +75,49 @@ final class NexusHearing {
     static synchronized boolean isListening(){load();return settings.listening&&plasmoReady;}
     static synchronized boolean isAllowed(String nick){
         load();
-        return nick!=null&&settings.allowedPlayers.stream().anyMatch(s->s.equalsIgnoreCase(nick));
+        return NexusHearingSelectors.isEligible(nick,settings.collective,settings.allowedPlayers,playersOnline);
     }
+    /** Refresh the visible server roster on Minecraft's client thread. */
+    static synchronized void updateOnlinePlayers(java.util.Collection<String> roster){
+        load();
+        java.util.Set<String> before=playersOnline;
+        java.util.Set<String> now=new java.util.HashSet<>();
+        if(roster!=null)for(String player:roster){
+            if(player!=null&&player.matches("[A-Za-z0-9_]{3,16}"))
+                now.add(player.toLowerCase(Locale.ROOT));
+        }
+        playersOnline=java.util.Set.copyOf(now);
+        if(settings.collective&&!before.equals(playersOnline)){
+            for(java.util.Iterator<String> iterator=streams.keySet().iterator();iterator.hasNext();)
+                if(!isAllowed(iterator.next()))iterator.remove();
+            for(java.util.Iterator<Clip> iterator=queued.iterator();iterator.hasNext();){
+                Clip clip=iterator.next();
+                if(!isAllowed(clip.speaker)){queueBytes-=clip.pcm.length;iterator.remove();}
+            }
+            inFlight.values().removeIf(clip->!isAllowed(clip.speaker));
+        }
+    }
+    /**
+     * @a never registers consent. It selects the intersection of the previously
+     * consented player list and the live Minecraft tab-list.
+     */
+    static synchronized int collectiveOn(){
+        load();
+        if(settings.allowedPlayers.isEmpty())
+            throw new IllegalStateException("Nenhum jogador consentiu ainda. Cadastre nicks autorizados primeiro.");
+        settings.collective=true;dropPending();saveSettings();
+        return eligibleOnlineCount();
+    }
+    static synchronized int collectiveOff(){
+        load();
+        int count=eligibleOnlineCount();
+        settings.collective=false;settings.listening=false;dropPending();saveSettings();
+        return count;
+    }
+    private static int eligibleOnlineCount(){
+        return NexusHearingSelectors.eligibleOnline(settings.allowedPlayers,playersOnline).size();
+    }
+
     static synchronized JsonObject snapshot(){
         load();
         JsonObject out=new JsonObject();
@@ -83,6 +126,8 @@ final class NexusHearing {
         out.addProperty("memory",settings.memory);
         out.addProperty("answer",settings.answer);
         out.addProperty("sensitivity",settings.sensitivity);
+        out.addProperty("collective",settings.collective);
+        out.addProperty("eligibleOnline",eligibleOnlineCount());
         out.add("allowedPlayers",JSON.toJsonTree(settings.allowedPlayers));
         out.addProperty("memoryCount",MEMORIES.count());
         out.addProperty("memoryFull",MEMORIES.full());
@@ -102,6 +147,7 @@ final class NexusHearing {
         return "Audição "+(isListening()?"CONTÍNUA":settings.listening?"AGUARDANDO PLASMO":"OFF")+
             " | Plasmo "+(plasmoReady?"OK":"não detectado")+
             " | Memórias "+MEMORIES.count()+(MEMORIES.full()?" (LIMITE DE DISCO)":"")+
+            " | Seleção "+(settings.collective?"@a ("+eligibleOnlineCount()+" consentidos online)":"nomes individuais")+
             " | Fila "+queued.size()+" / "+inFlight.size()+" enviando"+
             " | Transcrições "+processed+" | Perdidas "+dropped;
     }
@@ -122,13 +168,20 @@ final class NexusHearing {
             if(allowed.stream().noneMatch(s->s.equalsIgnoreCase(nick)))allowed.add(nick);
         }
         int sensitivity=data.has("sensitivity")?data.get("sensitivity").getAsInt():55;
+        boolean collective=settings.collective;
+        if(data.has("collective")){
+            if(!data.get("collective").isJsonPrimitive()||
+               !data.get("collective").getAsJsonPrimitive().isBoolean())
+                throw new IllegalArgumentException("Seletor @a inválido.");
+            collective=data.get("collective").getAsBoolean();
+        }
         if(sensitivity<20||sensitivity>100)
             throw new IllegalArgumentException("Sensibilidade de 20 a 100.");
         boolean enable=data.get("listening").getAsBoolean();
         if(enable&&allowed.isEmpty())throw new IllegalArgumentException("Adicione um jogador consentido.");
         if(enable&&!plasmoReady)throw new IllegalStateException("Plasmo Voice indisponível.");
         boolean reset=!enable||sensitivity!=settings.sensitivity||
-            !allowed.equals(settings.allowedPlayers);
+            !allowed.equals(settings.allowedPlayers)||collective!=settings.collective;
         // Revocation removes raw transcripts and derived narrative memories.
         for(String previous:settings.allowedPlayers)
             if(allowed.stream().noneMatch(s->s.equalsIgnoreCase(previous))){
@@ -138,6 +191,7 @@ final class NexusHearing {
         settings.listening=enable;settings.memory=data.get("memory").getAsBoolean();
         settings.answer=data.get("answer").getAsBoolean();
         settings.sensitivity=sensitivity;settings.allowedPlayers=allowed;
+        settings.collective=collective;
         if(data.has("social")&&data.get("social").isJsonObject())
             NexusSocial.configure(data.getAsJsonObject("social"));
         if(data.has("speaker")&&data.get("speaker").isJsonObject())
@@ -160,7 +214,7 @@ final class NexusHearing {
         load();
         if(name==null||!name.matches("[A-Za-z0-9_]{3,16}"))
             throw new IllegalArgumentException("Nick inválido.");
-        if(!isAllowed(name)){
+        if(settings.allowedPlayers.stream().noneMatch(s->s.equalsIgnoreCase(name))){
             if(settings.allowedPlayers.size()>=20)throw new IllegalStateException("Lista cheia (20 jogadores).");
             settings.allowedPlayers.add(name);saveSettings();
         }
@@ -184,7 +238,7 @@ final class NexusHearing {
     }
     static synchronized void clearMemory(){MEMORIES.clear();NexusSocial.clear();}
     static synchronized List<String> recentMemories(){return MEMORIES.recent(6);}
-    static synchronized void resetSession(){dropPending();}
+    static synchronized void resetSession(){dropPending();playersOnline=java.util.Set.of();}
     private static void dropPending(){
         queued.clear();inFlight.clear();streams.clear();queueBytes=0;dispatchAfter=0;
     }

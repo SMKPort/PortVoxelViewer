@@ -116,12 +116,29 @@ public class NexusClientMod {
                 .then(Commands.literal("allow").then(Commands.argument("player",StringArgumentType.word())
                     .executes(ctx -> {try{
                         String name=StringArgumentType.getString(ctx,"player");
-                        NexusHearing.allow(name);ClientLink.sendHearingState();
-                        notifyPlayer(name+" autorizado. Confirme que ele consentiu com a transcrição.");
+                        if("@a".equals(name)){
+                            int online=NexusHearing.collectiveOn();
+                            ClientLink.sendHearingState();
+                            notifyPlayer("@a selecionado: "+online+
+                                " jogador(es) online previamente autorizado(s). "+
+                                "Nenhuma permissão nova foi concedida. Para começar: /nexusclient hearing on.");
+                        }else{
+                            NexusHearing.allow(name);ClientLink.sendHearingState();
+                            notifyPlayer(name+" adicionado à lista após consentimento.");
+                        }
                     }catch(Exception e){notifyPlayer(e.getMessage());}return 1;})))
                 .then(Commands.literal("deny").then(Commands.argument("player",StringArgumentType.word())
-                    .executes(ctx -> {NexusHearing.deny(StringArgumentType.getString(ctx,"player"));ClientLink.sendHearingState();
-                        notifyPlayer("Jogador retirado da lista de audição.");return 1;})))
+                    .executes(ctx -> {try{
+                        String name=StringArgumentType.getString(ctx,"player");
+                        if("@a".equals(name)){
+                            NexusHearing.collectiveOff();
+                            notifyPlayer("Audição coletiva @a INTERROMPIDA. Autorizações individuais preservadas.");
+                        }else{
+                            NexusHearing.deny(name);
+                            notifyPlayer(name+" removido, com exclusão de suas memórias.");
+                        }
+                        ClientLink.sendHearingState();
+                    }catch(Exception error){notifyPlayer(error.getMessage());}return 1;})))
                 .then(Commands.literal("memory")
                     .then(Commands.literal("on").executes(ctx -> {NexusHearing.remember(true);ClientLink.sendHearingState();
                         notifyPlayer("Memória textual de audição ATIVA.");return 1;}))

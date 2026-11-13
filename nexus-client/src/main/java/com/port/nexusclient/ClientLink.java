@@ -91,6 +91,8 @@ final class ClientLink {
             previousHealth=Float.NaN;previousPlayer="";previousEffects="";
             NexusMind.resetSession();COMBAT_ALERTS.reset();NexusHearing.resetSession();return;
         }
+        NexusHearing.updateOnlinePlayers(mc.getConnection().getOnlinePlayers().stream()
+            .map(info->info.getProfile().getName()).toList());
         NexusHearing.tick();
         if(++ticks%60!=0)return;
         NexusMind.sample(mc.player);
