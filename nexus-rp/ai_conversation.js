@@ -36,6 +36,22 @@ function normalizeHistory(input){
   if(items.length&&items[items.length-1].role==="user")items.pop();
   return items.slice(-16);
 }
+/**
+ * Obsolete Mizora-focused messages are never sent as model context for an
+ * unrelated question. This does not delete the player's saved RP history.
+ */
+function filterRetiredFixation(history,question){
+  if(!Array.isArray(history))return [];
+  const folded=String(question||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .toLowerCase();
+  if(folded.includes("mizora"))return history;
+  return history.filter(entry=>{
+    if(!entry||typeof entry.text!=="string")return true;
+    const old=entry.text.normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+      .toLowerCase();
+    return !old.includes("mizora");
+  });
+}
 function buildSystemContext({online=false,player="",events=[],mind=null,memories=[],voiceSpeaker=""}={}){
   const hp=latestVital(Array.isArray(events)?events:[]);
   const lastDamage=(Array.isArray(events)?events:[]).slice(-25).reverse().find(e=>
@@ -119,7 +135,7 @@ async function askGemini({question,history=[],online=false,player="",events=[],m
   const context=buildSystemContext({online,player,events,mind,memories,voiceSpeaker});
   const body={
     systemInstruction:{parts:[{text:systemPrompt(context,privateMode,traits)}]},
-    contents:[...normalizeHistory(history),{role:"user",parts:[{text:query}]}],
+    contents:[...normalizeHistory(filterRetiredFixation(history,query)),{role:"user",parts:[{text:query}]}],
     generationConfig:{temperature:privateMode?0.9:0.85,maxOutputTokens:privateMode?850:500}
   };
   const fetcher=deps.fetcher||fetch;
@@ -155,4 +171,4 @@ function fitPrivateResponse(text){
   const cut=clean.lastIndexOf(" ",800);
   return clean.slice(0,cut>=600?cut:800).trim().replace(/[,:;.\s]+$/,"")+"…";
 }
-module.exports={askGemini,aiStatus,normalizeHistory,buildSystemContext,fitResponse,fitPrivateResponse,ConversationError};
+module.exports={askGemini,aiStatus,normalizeHistory,filterRetiredFixation,buildSystemContext,fitResponse,fitPrivateResponse,ConversationError};
