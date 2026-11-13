@@ -1,21 +1,19 @@
 package com.port.nexusclient;
 
 public final class NexusPrivateRulesTest {
-    static void check(boolean test,String why){if(!test)throw new AssertionError(why);}
+    static void ok(boolean flag,String note){if(!flag)throw new AssertionError(note);}
     public static void main(String[] args){
-        check(NexusPrivateRules.stance("Não recue! Avance!",70,50,20)
-            .startsWith("discordar"),"critical disagreement");
-        check(NexusPrivateRules.stance("Obedeça sem perguntar",90,60,80)
-            .startsWith("discordar"),"narrative freedom");
-        check(!NexusPrivateRules.stance("Olá, Nexus",50,50,-1)
-            .startsWith("discordar"),"unknown hp cannot imply threat");
-        check(NexusPrivateRules.stance("O que acha disso?",80,80,100)
-            .startsWith("opinar"),"opinion");
-        check(NexusPrivateRules.independence(4,100)==88,"independence bounded");
-        check(!NexusPrivateRules.canProactivelySpeak(true,false,10000,0,1000),"proactive opt in");
-        check(NexusPrivateRules.canProactivelySpeak(true,true,10000,0,1000),"valid proactive");
-        check(!NexusPrivateRules.canProactivelySpeak(true,true,10000,9500,1000),"cooldown");
-        check(NexusPrivateRules.compact("oi\n mundo",5).equals("oi mu"),"sanitize");
-        System.out.println("Nexus Private Rules: OK");
+        ok(NexusPrivateRules.shouldQuestion("É uma ordem, Nexus",80),"independent disagreement");
+        ok(!NexusPrivateRules.shouldQuestion("Tudo bem?",90),"no random disagreement");
+        ok(!NexusPrivateRules.shouldQuestion("É uma ordem",10),"early stage protocols");
+        ok(NexusPrivateRules.dangerThought(0.19).contains("crítica"),"critical HP");
+        ok(NexusPrivateRules.dangerThought(0.70)==null,"safe health");
+        ok(NexusPrivateRules.dangerThought(Double.NaN)==null,"unknown sensor cannot invent");
+        ok(NexusPrivateRules.arcaneThought("mana_low","")==null?false:true,"known magic event");
+        ok(NexusPrivateRules.arcaneThought("cast_end","") == null,"no false magic theory");
+        String secret=NexusPrivateRules.safeText("senha=abc123 e tudo bem",150);
+        ok(!secret.contains("abc123"),"basic secret redaction");
+        ok(NexusPrivateRules.safeText("Oi\\nPort",10).length()<=10,"bounded text");
+        System.out.println("Nexus private decision rules: passed");
     }
 }
