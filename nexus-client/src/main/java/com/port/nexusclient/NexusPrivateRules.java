@@ -44,6 +44,13 @@ final class NexusPrivateRules {
             return "Port, detectei uma mudança no atributo Holy. Quero acompanhar se ela se repete.";
         return null;
     }
+    /** Stop obsolete model fixation from re-entering the private AI context.
+     * Past messages remain on disk; only the context window is filtered.
+     */
+    static boolean includeOldMessage(String currentQuestion,String pastMessage){
+        if(normalize(currentQuestion).contains("mizora"))return true;
+        return !normalize(pastMessage).contains("mizora");
+    }
     static String normalize(String raw){
         return Normalizer.normalize(safeText(raw,400).toLowerCase(Locale.ROOT),Normalizer.Form.NFD).replaceAll("\\p{M}","");
     }
