@@ -64,5 +64,6 @@ test("Nexus drops old Mizora fixation from unrelated dialogue context",async()=>
   }
  });
  assert.doesNotMatch(JSON.stringify(sent.contents),/Mizora/i);
- assert.match(sent.systemInstruction.parts[0].text,/Não a mencione espontaneamente/);
+ assert.match(sent.systemInstruction.parts[0].text,/Não desenvolva fixação/);
+ assert.doesNotMatch(sent.systemInstruction.parts[0].text,/Mizora/i);
 });
