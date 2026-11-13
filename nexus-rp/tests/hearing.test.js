@@ -13,7 +13,7 @@ function wave(rate=16000,seconds=1){
 }
 test("Rejects malformed WAV and transcribes without writing audio",async()=>{
  assert.throws(()=>verifyWave("bad"));
- assert.throws(()=>verifyWave(wave(48000,7)),/limite|Formato/);
+ assert.throws(()=>verifyWave(wave(48000,15)),/limite|Formato/);
  let req,modelRequest;
  const result=await transcribeClip({audio:wave(),answer:true,speaker:"PlayerA",history:[{role:"user",text:"Oficina do jogador em construção."}]},{
   key:"development-key-long-enough",model:"gemini-2.5-flash",
@@ -88,4 +88,57 @@ test("Hearing preferences are panel-authenticated, require consent, and sync no 
  assert.equal(view.payload.state.ready,true);
  assert.equal(JSON.stringify(view.payload).includes("transcript"),false);
  assert.equal((await call("GET","/api/client/hearing")).status,401);
+});
+
+
+test("Concurrent client ASR requests and memory-grounded wake reply",async()=>{
+ const requests=[];
+ let release;
+ const pending=new Promise(resolve=>{release=resolve;});
+ const relay=createClientRelay({
+  send:(res,status,payload)=>{res.status=status;res.payload=payload;},
+  verifyUser:req=>req.headers["x-nexus-key"]==="panel-secret",limit:()=>true,
+  transcribe:async data=>{requests.push(data);return pending;},
+  askAI:async args=>{requests.push({reply:args});return {text:"Você contou sobre a oficina."};}
+ });
+ async function call(method,route,headers={},payload){
+  const req=Readable.from(payload===undefined?[]:[Buffer.from(JSON.stringify(payload))]);
+  req.headers=headers;req.method=method;const res={status:0,payload:null};
+  const u=new URL(route,"https://nexus.example");
+  await relay.handle(req,res,u.pathname,u);return res;
+ }
+ const owner={"x-nexus-key":"panel-secret"};
+ const code=(await call("POST","/api/client/pair/new",owner,{})).payload.code;
+ const token=(await call("POST","/api/client/pair/exchange",{}, {code,player:"Port"})).payload.token;
+ const client={"x-nexus-client":token};
+ await call("POST","/api/client/hearing/state",client,{
+  ready:true,listening:true,memory:true,answer:true,allowedPlayers:["FriendA"],
+  memoryCount:345,queued:12,inFlight:3,dropped:2,processed:11,retries:1,
+  sensitivity:55,memoryFull:false,lastSpeaker:"FriendA",lastError:""});
+ const view=await call("GET","/api/client/hearing",owner);
+ assert.equal(view.payload.state.memoryCount,345);
+ assert.equal(view.payload.state.queued,12);
+ assert.equal(view.payload.state.dropped,2);
+ const clip={speaker:"FriendA",audio:wave(),consentedPlayers:["FriendA"],answer:false};
+ const p1=call("POST","/api/client/hearing/transcribe",client,clip);
+ const p2=call("POST","/api/client/hearing/transcribe",client,clip);
+ const p3=call("POST","/api/client/hearing/transcribe",client,clip);
+ await new Promise(done=>setImmediate(done));
+ assert.equal((await call("POST","/api/client/hearing/transcribe",client,clip)).status,429);
+ assert.equal(requests.length,3);
+ release({transcript:"Nexus, lembra da oficina?"});
+ assert.equal((await p1).status,200);
+ assert.equal((await p2).status,200);
+ assert.equal((await p3).status,200);
+ assert.equal((await call("POST","/api/client/hearing/transcribe",client,{
+  ...clip,speaker:"Stranger",consentedPlayers:["Stranger"]})).status,403);
+ assert.equal((await call("POST","/api/client/hearing/reply",client,{
+  speaker:"FriendA",transcript:"boa tarde",memories:[]})).status,422);
+ const reply=await call("POST","/api/client/hearing/reply",client,{
+  speaker:"FriendA",transcript:"Nexus, lembra da oficina?",
+  memories:["Ontem comecei a construir uma oficina."]});
+ assert.equal(reply.status,200);
+ assert.match(reply.payload.reply,/oficina/);
+ assert.equal(requests.at(-1).reply.voiceSpeaker,"FriendA");
+ assert.equal(requests.at(-1).reply.memories.length,1);
 });
