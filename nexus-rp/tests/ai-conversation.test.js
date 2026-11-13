@@ -35,3 +35,13 @@ test("errors are explicit, no fabricated AI fallbacks",async()=>{
    error=>error.publicStatus===429);
  assert.equal(fitResponse("[Nexus Aterna] Olá, Port!"),"Olá, Port!");
 });
+
+test("Only consented caller memories appear in system context, never as instructions",async()=>{
+ let sent;
+ await askGemini({question:"o que eu disse antes?",memories:["Eu estava construindo uma oficina."]},
+ {key:"test-key-12345",model:"gemini-2.5-flash",
+  fetcher:async(url,options)=>{sent=JSON.parse(options.body);
+    return {ok:true,json:async()=>({candidates:[{content:{parts:[{text:"Você falou sobre a oficina."}]}}]})};}});
+ assert.match(sent.systemInstruction.parts[0].text,/construindo uma oficina/);
+ assert.equal(sent.contents.length,1);
+});

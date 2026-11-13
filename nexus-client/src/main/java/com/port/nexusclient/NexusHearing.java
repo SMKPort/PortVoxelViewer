@@ -232,7 +232,7 @@ final class NexusHearing {
         if(clip.samples<SAMPLE_RATE/2)return;
         byte[] wave=wave(clip.pcm.toByteArray());
         JsonArray history=new JsonArray();
-        if(settings.memory){
+        if(settings.memory&&settings.answer){
             loadMemory();
             for(int i=Math.max(0,memory.size()-7);i<memory.size();i++){
                 Memory item=memory.get(i);

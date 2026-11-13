@@ -48,7 +48,7 @@ window.NexusRPHearingUpgrade=function(rp,views){
       '<div class="notice" id="nexusHearingStatus">'+E(status())+'</div>'+
       '<form id="nexusHearingForm" class="nexus-alert-form">'+
       '<label class="nexus-alert-option"><input type="checkbox" name="listening"'+(values.listening?" checked":"")+disabled+'><span><strong>Ativar audição</strong><small>Analisa apenas vozes dos jogadores autorizados, recebidas pelo seu Plasmo Voice.</small></span></label>'+
-      '<label class="nexus-alert-option"><input type="checkbox" name="memory"'+(values.memory?" checked":"")+disabled+'><span><strong>Guardar memórias textuais</strong><small>Salva até 200 transcrições no seu computador. Nenhum áudio é gravado no disco.</small></span></label>'+
+      '<label class="nexus-alert-option"><input type="checkbox" name="memory"'+(values.memory?" checked":"")+disabled+'><span><strong>Guardar memórias textuais</strong><small>Salva até 200 transcrições no seu computador. Nenhum áudio é gravado no disco. Lembranças relevantes podem ser enviadas ao Gemini quando a resposta está ativada.</small></span></label>'+
       '<label class="nexus-alert-option"><input type="checkbox" name="answer"'+(values.answer?" checked":"")+disabled+'><span><strong>Responder quando chamado</strong><small>Se ouvir “Nexus, ...”, gera resposta pelo chat /l (requer chat, mente e autonomia ativados).</small></span></label>'+
       '<label class="field"><span class="field-label">JOGADORES QUE CONSENTIRAM</span>'+
       '<textarea name="allowedPlayers" rows="3" maxlength="340" placeholder="Nick1, Nick2"'+disabled+'>'+

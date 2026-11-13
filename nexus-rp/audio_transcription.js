@@ -58,9 +58,10 @@ async function transcribeClip({audio,answer=false,history=[]},deps={}){
   const question=getQuestion(transcript);
   if(answer&&question){
     // No persistent or raw-audio history on Render. Only bounded context sent by consenting client.
-    const safeHistory=Array.isArray(history)?history.slice(-8).filter(x=>
-      x&&["user","model"].includes(x.role)&&typeof x.text==="string"&&x.text.length<=250):[];
-    const out=await (deps.askAI||askGemini)({question,history:safeHistory,online:true});
+    const memories=Array.isArray(history)?history.slice(-8).filter(x=>
+      x&&x.role==="user"&&typeof x.text==="string"&&x.text.length<=250)
+      .map(x=>x.text):[];
+    const out=await (deps.askAI||askGemini)({question,memories,online:true});
     reply=String(out.text||"").slice(0,360);
   }
   return {transcript,reply};
