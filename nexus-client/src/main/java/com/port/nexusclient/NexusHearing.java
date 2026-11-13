@@ -33,6 +33,7 @@ final class NexusHearing {
     private static volatile boolean plasmoReady;
     private static java.util.Set<String> playersOnline=java.util.Set.of();
     private static long nextId=1,queueBytes,processed,dropped,retries,noticeAt,dispatchAfter;
+    private static long quotaPauseUntil,quotaSkipped;
     private static String lastError="",lastSpeaker="",lastDecision="sem teste";
     private static long emptyTranscripts,notAddressed,replyRequests,replySent,replyBlocked;
     private static String pendingReply="",pendingSpeaker="";
@@ -139,6 +140,8 @@ final class NexusHearing {
         out.addProperty("processed",processed);
         out.addProperty("dropped",dropped);
         out.addProperty("retries",retries);
+        out.addProperty("quotaPausedSeconds",Math.max(0,(quotaPauseUntil-System.currentTimeMillis()+999)/1000));
+        out.addProperty("quotaSkipped",quotaSkipped);
         out.addProperty("lastSpeaker",lastSpeaker);
         out.addProperty("lastError",lastError);
         out.add("social",NexusSocial.snapshot());
@@ -156,7 +159,9 @@ final class NexusHearing {
             " | Autonomia "+(ClientConfig.allowAutonomy?"ON":"OFF")+
             " | Seleção "+(settings.collective?"@a ("+eligibleOnlineCount()+" consentidos online)":"nomes individuais")+
             " | Fila "+queued.size()+" / "+inFlight.size()+" enviando"+
-            " | Transcrições "+processed+" | Perdidas "+dropped;
+            " | Transcrições "+processed+" | Perdidas "+dropped+
+            (quotaPauseUntil>System.currentTimeMillis()?
+                " | PAUSA COTA "+((quotaPauseUntil-System.currentTimeMillis()+999)/1000)+"s":"");
     }
     static synchronized void configure(JsonObject data){
         load();
@@ -270,6 +275,8 @@ final class NexusHearing {
             " | capturas reconhecidas "+processed+" | vazias "+emptyTranscripts+
             " | sem chamada "+notAddressed+" | pedidos IA "+replyRequests+
             " | enviados no chat "+replySent+" | bloqueados "+replyBlocked+
+            " | áudio pausado "+Math.max(0,(quotaPauseUntil-System.currentTimeMillis()+999)/1000)+"s"+
+            " | descartados pela cota "+quotaSkipped+
             " | último resultado: "+lastDecision+
             (lastError.isEmpty()?"":" | erro: "+lastError);
     }
@@ -301,6 +308,12 @@ final class NexusHearing {
     }
     /** Called from Plasmo audio thread. Bounded RAM only; no network or disk I/O. */
     static synchronized void capture(String nick,short[] samples,int sampleRate,int channels){
+        // Skip at the source while the ASR project is in cooldown rather than
+        // retaining raw voice segments and flooding the API when it recovers.
+        if(System.currentTimeMillis()<quotaPauseUntil){
+            quotaSkipped++;
+            return;
+        }
         if(!isListening()||!isAllowed(nick)||samples==null)return;
         String key=nick.toLowerCase(Locale.ROOT);
         if(!streams.containsKey(key)&&streams.size()>=20)return;
@@ -339,6 +352,10 @@ final class NexusHearing {
                     clearPendingReply();
                 }else nextReplyTry=now+1200;
             }
+        }
+        if(now<quotaPauseUntil){
+            queued.clear();streams.clear();queueBytes=0;
+            return;
         }
         if(ClientConfig.token.isBlank()||now<dispatchAfter)return;
         while(inFlight.size()<PARALLEL&&!queued.isEmpty()){
@@ -423,6 +440,25 @@ final class NexusHearing {
         String safe=String.valueOf(message).replaceAll("[\\p{Cntrl}]"," ");
         lastError=safe.substring(0,Math.min(120,safe.length()));
         NexusClientMod.notifyPlayer("Audição: "+lastError);
+    }
+    /** Back off on rate/quota errors instead of reuploading the same voice clip. */
+    static synchronized void onTranscriptionRateLimit(long clipId,String category,
+        String message,int waitSeconds){
+        Clip clip=inFlight.remove(clipId);
+        if(clip==null)return;
+        dropped++;
+        int delay=Math.max(5,Math.min(3600,waitSeconds));
+        quotaPauseUntil=Math.max(quotaPauseUntil,
+            System.currentTimeMillis()+delay*1000L);
+        queued.clear();streams.clear();queueBytes=0;
+        lastError=String.valueOf(message).substring(0,Math.min(120,String.valueOf(message).length()));
+        lastDecision=("gemini_quota".equals(category)?
+            "Cota do Gemini atingida":"Redutor local de áudio ativo");
+        if(System.currentTimeMillis()-noticeAt>20000){
+            noticeAt=System.currentTimeMillis();
+            NexusClientMod.notifyPlayer("Audição: "+lastError+
+                " (pausa "+delay+"s, sem reenviar o mesmo áudio).");
+        }
     }
     static synchronized void onTranscriptionError(long clipId,String reason,boolean transientFailure){
         Clip clip=inFlight.remove(clipId);
