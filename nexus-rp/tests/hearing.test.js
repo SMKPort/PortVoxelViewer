@@ -266,3 +266,74 @@ test("Quota and authorization errors never cause model fallback",async()=>{
   assert.equal(count,1);
  }
 });
+
+
+test("Gemini 429 pauses transcription without retry storms or privacy bypass",async()=>{
+ let calls=0;
+ const relay=createClientRelay({
+  send:(res,status,payload)=>{res.status=status;res.payload=payload;},
+  verifyUser:()=>true,limit:()=>true,
+  transcribe:async()=>{
+   calls++;
+   throw Object.assign(Error("Google project quota"),{
+    publicStatus:429,providerQuota:true,retryAfterSeconds:180
+   });
+  }
+ });
+ async function invoke(method,route,headers={},payload){
+  const req=Readable.from(payload===undefined?[]:[Buffer.from(JSON.stringify(payload))]);
+  req.headers=headers;req.method=method;const res={status:0,payload:null};
+  const url=new URL(route,"https://test.invalid");
+  await relay.handle(req,res,url.pathname,url);
+  return res;
+ }
+ const pair=await invoke("POST","/api/client/pair/new",{}, {});
+ const token=(await invoke("POST","/api/client/pair/exchange",{},{
+  code:pair.payload.code,player:"Port"
+ })).payload.token;
+ const client={"x-nexus-client":token};
+ const clip={speaker:"FriendA",consentedPlayers:["FriendA"],audio:wave()};
+ const first=await invoke("POST","/api/client/hearing/transcribe",client,clip);
+ assert.equal(first.status,429);
+ assert.equal(first.payload.kind,"gemini_quota");
+ assert.equal(first.payload.retryAfterSeconds>=180,true);
+ assert.equal(calls,1);
+ for(let i=0;i<10;i++){
+  const paused=await invoke("POST","/api/client/hearing/transcribe",client,clip);
+  assert.equal(paused.status,429);
+  assert.equal(paused.payload.kind,"gemini_quota");
+ }
+ assert.equal(calls,1,"Do not call Gemini repeatedly while project is exhausted");
+ const unauthorized=await invoke("POST","/api/client/hearing/transcribe",client,{
+  ...clip,speaker:"Nonconsenting"});
+ assert.equal(unauthorized.status,403,"Quota must never bypass consent");
+});
+
+test("Local audio rate budget cuts excess requests before Gemini",async()=>{
+ let calls=0;
+ const relay=createClientRelay({
+  send:(res,status,payload)=>{res.status=status;res.payload=payload;},
+  verifyUser:()=>true,limit:()=>true,
+  transcribe:async()=>{calls++;return {transcript:"Olá Nexus",reply:""};}
+ });
+ async function invoke(method,route,headers={},payload){
+  const req=Readable.from(payload===undefined?[]:[Buffer.from(JSON.stringify(payload))]);
+  req.headers=headers;req.method=method;const res={status:0,payload:null};
+  const url=new URL(route,"https://test.invalid");
+  await relay.handle(req,res,url.pathname,url);
+  return res;
+ }
+ const pair=await invoke("POST","/api/client/pair/new",{}, {});
+ const token=(await invoke("POST","/api/client/pair/exchange",{},{
+  code:pair.payload.code,player:"Port"
+ })).payload.token;
+ const clip={speaker:"FriendA",consentedPlayers:["FriendA"],audio:wave()};
+ const client={"x-nexus-client":token};
+ for(let i=0;i<8;i++)
+  assert.equal((await invoke("POST","/api/client/hearing/transcribe",client,clip)).status,200);
+ const blocked=await invoke("POST","/api/client/hearing/transcribe",client,clip);
+ assert.equal(blocked.status,429);
+ assert.equal(blocked.payload.kind,"local_rate");
+ assert.equal(blocked.payload.retryAfterSeconds>0,true);
+ assert.equal(calls,8,"Do not call provider above the conservative budget");
+});
