@@ -43,6 +43,8 @@ final class NexusPrivateMind {
         int schema=1;
         boolean remember=false;
         boolean autonomy=false;
+        boolean enabled=false;
+        boolean freedom=false;
         int independence=35,trust=50,curiosity=50,caution=55;
         long privateTurns=0;
         List<Message> messages=new ArrayList<>();
@@ -78,6 +80,7 @@ final class NexusPrivateMind {
             Path temp=FILE.resolveSibling(FILE.getFileName()+".tmp");
             State copy=new State();
             copy.autonomy=state.autonomy;copy.remember=state.remember;
+            copy.enabled=state.enabled;copy.freedom=state.freedom;
             copy.independence=state.independence;copy.trust=state.trust;
             copy.curiosity=state.curiosity;copy.caution=state.caution;
             copy.privateTurns=state.privateTurns;
@@ -91,6 +94,39 @@ final class NexusPrivateMind {
             System.err.println("Nexus private: não foi possível salvar as preferências.");
         }
     }
+    static final class Line {
+        final String kind,text;
+        Line(String kind,String text){this.kind=kind;this.text=text;}
+    }
+    static synchronized List<Line> history(){
+        load();
+        List<Line> lines=new ArrayList<>();
+        for(Message m:state.messages){
+            String kind="observation".equals(m.origin)?"thought":m.role;
+            lines.add(new Line(kind,m.text));
+        }
+        return List.copyOf(lines);
+    }
+    static synchronized boolean enabled(){load();return state.enabled;}
+    static synchronized void enable(boolean on){
+        load();state.enabled=on;
+        if(!on){waiting=false;state.autonomy=false;}
+        save();
+    }
+    static synchronized void setProactive(boolean on){
+        load();
+        if(on&&!state.enabled)throw new IllegalStateException("Ative o canal privado primeiro.");
+        autonomy(on);
+    }
+    static synchronized void setFreedom(boolean on){
+        load();state.freedom=on;
+        if(on)state.independence=Math.max(40,state.independence);
+        save();
+    }
+    static synchronized void send(String message){ask(message);}
+    static synchronized void answered(String answer){if(enabled())reply(answer);else waiting=false;}
+    static synchronized void failed(String reason){failure(reason);}
+
     static synchronized void memory(boolean enabled){
         load();state.remember=enabled;
         if(!enabled){state.messages.clear();waiting=false;}
@@ -111,8 +147,9 @@ final class NexusPrivateMind {
     }
     static synchronized String status(){
         load();
-        return "Canal neural PRIVADO | Memória local "+(state.remember?"ON":"OFF")+
-            " | livre-arbítrio narrativo "+(state.autonomy?"ON":"OFF")+
+        return "Canal neural "+(state.enabled?"ON":"OFF")+" | Memória local "+(state.remember?"ON":"OFF")+
+            " | iniciativa espontânea "+(state.autonomy?"ON":"OFF")+
+            " | personalidade independente "+(state.freedom?"ON":"OFF")+
             " | independência "+state.independence+
             "/100 | histórico "+state.messages.size()+" mensagens";
     }
@@ -135,6 +172,7 @@ final class NexusPrivateMind {
         info.addProperty("curiosity",state.curiosity);
         info.addProperty("caution",state.caution);
         info.addProperty("autonomy",state.autonomy);
+        info.addProperty("freedom",state.freedom);
         info.addProperty("stage",NexusMind.stageIndex());
         info.addProperty("temperament",NexusPrivateRules.opinion(
             state.independence,state.caution,state.trust));
@@ -143,6 +181,7 @@ final class NexusPrivateMind {
     /** Called by UI; never sends the text to Minecraft's public chat. */
     static synchronized void ask(String raw){
         load();
+        if(!state.enabled)throw new IllegalStateException("Ative com /nexusclient private on antes de conversar.");
         if(waiting)throw new IllegalStateException("Nexus ainda está formulando sua resposta.");
         if(ClientConfig.token.isBlank())
             throw new IllegalStateException("Pareie o Nexus pelo painel HTTPS primeiro.");
@@ -172,7 +211,10 @@ final class NexusPrivateMind {
             state.curiosity=clamp(state.curiosity+1);
         add("user",text,"private");
         waiting=true;
-        ClientLink.askPrivate(text,history,persona());
+        String stance=NexusPrivateRules.shouldQuestion(text,state.freedom?state.independence:0)?
+            "A ordem merece ser questionada com argumentos e sem interferir no controle real do jogo.":
+            "Formule uma resposta própria, coerente e sustentada no contexto disponível.";
+        ClientLink.askPrivateNexus(text,history,persona(),stance);
     }
     static synchronized void reply(String answer){
         waiting=false;add("model",answer,"private");
@@ -186,7 +228,7 @@ final class NexusPrivateMind {
         waiting=false;lastLifeRatio=Float.NaN;lastThought=0;
     }
     private static void thought(String text){
-        if(!state.autonomy||text==null||text.isBlank())return;
+        if(!state.enabled||!state.autonomy||text==null||text.isBlank())return;
         long now=System.currentTimeMillis();
         if(now-lastThought<THOUGHT_COOLDOWN)return;
         lastThought=now;
@@ -209,6 +251,17 @@ final class NexusPrivateMind {
             thought(NexusPrivateRules.dangerThought(ratio));
         }
         lastLifeRatio=ratio;
+    }
+    static synchronized void noticeCombat(String type,float ratio){
+        load();
+        if(!state.enabled||!state.autonomy||!ClientConfig.allowMind)return;
+        if("damage".equals(type)||"death".equals(type)){
+            String warning=NexusPrivateRules.dangerThought(ratio);
+            if(warning!=null)thought(warning);
+        }
+    }
+    static synchronized void noticeArcane(String kind,String observed){
+        observeArcane(kind,observed);
     }
     static synchronized void observeArcane(String kind,String observed){
         load();
