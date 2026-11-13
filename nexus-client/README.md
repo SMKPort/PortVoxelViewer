@@ -218,3 +218,29 @@ Opcional:
 A liberdade de escolha é SIMULADA para roleplay. O Nexus pode discordar, debater ou optar por discutir em particular, mas não controla ações reais do Minecraft nem impede o Port de agir. Falas espontâneas dependem de acontecimentos detectados, como dano crítico ou alterações de mana/Holy; o aviso é local, sem transmissão aos outros jogadores.
 
 Segurança e privacidade: quando você envia uma mensagem privada, apenas sua mensagem e uma janela curta (até 12 entradas) de histórico são transmitidas pelo HTTPS pareado ao Gemini na Render. Nenhum histórico de conversa privado é armazenado no servidor Node, mas o conteúdo passa pelo provedor de IA para gerar a resposta. Memória privada em disco vem DESATIVADA por padrão e, quando habilitada, usa um arquivo JSON local em texto simples, sem criptografia. Não compartilhe esse arquivo. As observações espontâneas são locais e não são enviadas automaticamente ao Gemini.
+
+
+## Controle único de permissões (Modo TOTAL)
+
+Use comandos **locais** do NeoForge, sem pedir privilégios ao servidor:
+
+| Comando | Comportamento |
+| --- | --- |
+| `/nexusclient permissions all` | Liga em um passo chat, telemetria, mente/autonomia, sensor arcano e reações, percepção próxima, canal privado e iniciativa, memória privada, personalidade livre RP, diário e proteção, compartilhamento no painel privado, voz local e opções de transcrição |
+| `/nexusclient permissions off` | Interrompe o chat remoto, a observação, a audição e os recursos automáticos, sem apagar as memórias já gravadas |
+| `/nexusclient permissions status` | Mostra as autorizações e a disponibilidade de cada subsistema |
+
+**Limites importantes:** o comando **não** autoriza a audição de jogadores desconhecidos.
+Para Plasmo Voice, cadastre previamente os nicks de quem consentiu usando
+`/nexusclient hearing allow NICK`. O modo TOTAL seleciona `@a` somente entre
+os participantes consentidos e online. Se não houver consentidos ou se o Plasmo
+Voice estiver indisponível, as demais permissões são ativadas e a audição
+permanece desligada, com o motivo exibido no chat. Reiniciar o Minecraft exige
+nova ativação manual da audição.
+
+O comando também não concede permissão de microfone ao sistema operacional,
+não cria chaves Gemini e não altera permissões administrativas no servidor.
+As mensagens públicas continuam aparecendo como enviadas pela **conta do
+jogador** e o compartilhamento de diário é restrito ao painel privado.
+No modo `off`, gravações antigas e memórias textuais são preservadas; para
+apagá-las, use os comandos específicos de esquecimento.
