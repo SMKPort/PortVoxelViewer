@@ -95,6 +95,8 @@ final class NexusSpeaker {
             " | "+settings.voice+" | Som "+(busy?"reproduzindo":"silencioso")+
             (lastError.isBlank()?"":" | "+lastError);
     }
+    static synchronized boolean settingEnabled(){load();return settings.enabled;}
+
     static synchronized void onSpeech(String message,int stage){
         load();
         if(!settings.enabled||busy||ClientConfig.token.isBlank()||
