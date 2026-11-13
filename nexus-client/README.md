@@ -140,3 +140,27 @@ Adicione jogadores **somente depois de obter consentimento explícito**. Comando
 ## Nexus Client 1.8: transcrição contínua
 
 A captura de voz autorizada passa por VAD adaptativo, detecta pausas e divide falas longas em trechos de até 12 segundos. Até 3 transcrições podem ocorrer em paralelo, com 36 trechos / 12 MiB na fila RAM. Não existe mais o antigo intervalo mínimo de 8,5 segundos. O painel exibe contadores de trechos transcritos, aguardando, reenviados e descartados. Cada jogador precisa consentir previamente; o áudio não é salvo pelo mod. A memória textual é escrita incrementalmente no arquivo `config/nexus-hearing-memory.jsonl` com limite de 24 MiB, preservando entradas do arquivo legado. O reconhecimento requer a chave Gemini e conectividade. Para remover um jogador e suas memórias, use `/nexusclient hearing deny NICK` ou desative a audição com `/nexusclient hearing off`.
+
+
+## Nexus Mind 2.0.0: memória social, proteção, diário e voz local
+
+Nexus Mind 2.0 diferencia transcrições históricas de lembranças derivadas (promessas, projetos, acontecimentos e lore). Cada fala é atribuída a quem consentiu com o processamento, sem transformar declarações em fatos verificados. O histórico cronológico de turnos dá contexto às respostas. Familiaridade e afinidade são índices narrativos de RP, não diagnósticos de pessoas reais. O diário produz entradas atribuídas a acontecimentos observados e aos estágios evolutivos.
+
+Proteção contextual: se um jogador autorizado mencionar perigo e Port sofrer dano confirmado com menos de 52% de vida, o Nexus poderá emitir um aviso de RP, respeitando o controle de autonomia e os cooldowns.
+
+Comandos do Minecraft:
+- /nexusclient social status e /nexusclient social diary: status e diário.
+- /nexusclient social protection on ou off: proteção contextual.
+- /nexusclient social share on ou off: exibição opcional de memórias derivadas no painel privado. Desligado por padrão.
+- /nexusclient social forget confirm: apaga apenas as memórias derivadas.
+- /nexusclient hearing deny NICK: revoga autorização e apaga transcrições e lembranças do jogador.
+- /nexusclient hearing forget confirm: apaga o histórico completo de audição e memória social.
+- /nexusclient voice on, off ou status: controle da voz local.
+
+Arquivos no computador: config/nexus-mind-social.json (memórias derivadas), config/nexus-hearing-memory.jsonl (transcrições de voz) e config/nexus-speaker.json (voz local). Em Outras ferramentas > Nexus Mind 2.0 é possível corrigir e apagar lembranças derivadas, apagar dados por jogador e autorizar a visualização das memórias no painel.
+
+Ao corrigir uma lembrança, o texto histórico original deixa de ser usado como contexto da IA, mas a transcrição original permanece até ser apagada por jogador ou por limpeza total.
+
+Voz própria: Gemini TTS opcional, 24 kHz/16 bits PCM, reprodução pelo dispositivo de áudio do computador com Java Sound. Os cinco estágios usam Charon, Orus, Puck, Kore e Algenib, com seleção de voz fixa disponível. Voz desativada por padrão. A voz ainda NÃO é transmitida aos outros jogadores pelo Plasmo Voice. A Render precisa de NEXUS_GEMINI_API_KEY ou GEMINI_API_KEY. O modelo TTS pode ser escolhido com NEXUS_GEMINI_TTS_MODEL (padrão: gemini-2.5-flash-preview-tts). A disponibilidade e os limites dependem do provedor. O cliente não armazena PCM gerado nem áudio de outros jogadores.
+
+O mod continua exclusivamente cliente para Minecraft 1.21.1 NeoForge. Voz de terceiros só é capturada com autorização prévia, e o sistema exige ativação novamente ao iniciar cada partida. A captura de áudio do Plasmo Voice e a saída local precisam ser testadas no jogo com dispositivos reais.

@@ -237,3 +237,14 @@ A página Outras ferramentas > Audição do Nexus permite ativar a audição, es
 O Nexus Client 1.8 remove o intervalo fixo de 8,5 s. Segmentação por atividade/silêncio em quadros de ~20 ms, trechos de no máximo 12 s com sobreposição curta, fila RAM de até 36 trechos e 12 MiB, e até 3 requisições simultâneas de ASR. A API aceita 3 transcrições paralelas por sessão e tem um teto de proteção de 90/minuto. Erros temporários podem ser tentados novamente (até duas vezes); contadores de filas, transcrições e perdas aparecem em Outras ferramentas > Audição do Nexus. O cliente não persiste WAV. Não se promete transcrição integral sem perdas quando a rede ou o Gemini estiverem indisponíveis.
 
 Memória nova em arquivo JSONL incremental `config/nexus-hearing-memory.jsonl`, com limite de 24 MiB para não consumir o disco indefinidamente. Ao atingir esse espaço, o aplicativo avisa e não sobrescreve as memórias antigas; pode apagar todas ou por jogador. Memórias legadas do arquivo `nexus-hearing-memories.json` continuam sendo carregadas. Para responder, o Nexus seleciona localmente trechos relevantes do jogador autorizado e os envia ao Gemini como contexto, sem enviar o arquivo completo. O áudio é transmitido ao Gemini para transcrição, sujeito à política de tratamento de dados do provedor. A audição precisa ser ativada de novo a cada inicialização, e remover um participante limpa sua memória.
+
+
+## Console 3.0 / Nexus Mind 2.0
+
+A nova aba Outras ferramentas > Nexus Mind 2.0 exibe memórias atribuídas e corrigíveis, diário narrativo, relacionamentos RP, proteção por telemetria e voz local com timbre por estágio, além do contexto cronológico de conversas autorizadas.
+
+Detalhes privados ficam no PC. Para consultar o diário e vínculos pelo painel, o proprietário precisa habilitar explicitamente o compartilhamento. Caso contrário, só contadores agregados são sincronizados. O backend Render guarda apenas cópia temporária e o painel requer o código HTTPS de acesso.
+
+Rotas autenticadas: POST /api/client/mind/settings (configuração remota), POST /api/client/hearing/fact (correção e apagamento de lembranças), POST /api/client/tts (voz local para cliente pareado). A voz usa o Gemini TTS configurado por variável de ambiente NEXUS_GEMINI_TTS_MODEL opcional; chave NEXUS_GEMINI_API_KEY ou GEMINI_API_KEY. Áudio PCM não é armazenado pelo serviço.
+
+O TTS funciona apenas como reprodução de áudio no computador do Port. A transmissão pelo Plasmo Voice a outros jogadores não foi implementada nem testada. O sistema de captura existente também deve ser validado no Somake Network antes de uso regular.
