@@ -271,6 +271,12 @@ final class ClientLink {
                     payload.has("channel")?payload.get("channel").getAsString():"local",
                     payload.has("command")?payload.get("command").getAsString():"",
                     payload.has("format")?payload.get("format").getAsString():"&6&l");success=true;
+            }else if("mind_settings".equals(kind)){
+                NexusSocial.configure(payload.getAsJsonObject("social"));
+                NexusSpeaker.configure(payload.getAsJsonObject("speaker"));
+                sendHearingState();
+                output="Nexus Mind 2.0 configurado localmente.";
+                success=true;
             }else if("mind_memory".equals(kind)){
                 String actionName=payload.get("action").getAsString();
                 if("delete".equals(actionName)){

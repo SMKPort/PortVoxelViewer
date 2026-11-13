@@ -82,8 +82,8 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
   async function handle(req,res,route,url){
     if(!route.startsWith("/api/client/"))return false;
     cleanup();
-    if(["/api/client/pair/new","/api/client/pair/exchange","/api/client/chat","/api/client/voice","/api/client/action","/api/client/monitor/settings","/api/client/alerts/settings","/api/client/hearing/settings","/api/client/hearing/fact"].includes(route)&&!limit(req))return err(res,429,"Limite de requisições. Reduza a frequência.");
-    const userPaths=new Set(["/api/client/pair/new","/api/client/status","/api/client/events","/api/client/chat","/api/client/voice","/api/client/ai/status","/api/client/action","/api/client/job","/api/client/monitor/settings","/api/client/alerts","/api/client/alerts/settings","/api/client/hearing","/api/client/hearing/settings","/api/client/hearing/fact"]);
+    if(["/api/client/pair/new","/api/client/pair/exchange","/api/client/chat","/api/client/voice","/api/client/action","/api/client/monitor/settings","/api/client/alerts/settings","/api/client/hearing/settings","/api/client/hearing/fact","/api/client/mind/settings"].includes(route)&&!limit(req))return err(res,429,"Limite de requisições. Reduza a frequência.");
+    const userPaths=new Set(["/api/client/pair/new","/api/client/status","/api/client/events","/api/client/chat","/api/client/voice","/api/client/ai/status","/api/client/action","/api/client/job","/api/client/monitor/settings","/api/client/alerts","/api/client/alerts/settings","/api/client/hearing","/api/client/hearing/settings","/api/client/hearing/fact","/api/client/mind/settings"]);
     const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/mind","/api/client/ack","/api/client/monitor/state","/api/client/alerts/state","/api/client/hearing/transcribe","/api/client/hearing/state","/api/client/hearing/reply","/api/client/tts"]);
     if(!userPaths.has(route)&&!clientPaths.has(route))return err(res,404,"Rota desconhecida.");
     if(userPaths.has(route)&&!guardUser(req,res))return true;
@@ -203,6 +203,23 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         }));return true;
       }catch(e){return err(res,422,String(e.message));}
     }
+    if(route==="/api/client/mind/settings"&&req.method==="POST"){
+      try{
+        const data=await body(req,1200);
+        const social=data.social||{},speaker=data.speaker||{};
+        if(!["diaryEnabled","protectionEnabled","sharePanel"].every(k=>typeof social[k]==="boolean")||
+          typeof speaker.enabled!=="boolean"||
+          !["auto","Charon","Orus","Kore","Puck","Algenib","Fenrir"].includes(speaker.voice))
+          return err(res,422,"Preferências do Nexus Mind inválidas.");
+        if(social.sharePanel&&data.consentConfirmed!==true)
+          return err(res,422,"Confirme o compartilhamento de memórias com o painel.");
+        send(res,200,enqueue("mind_settings",{
+          social:{diaryEnabled:social.diaryEnabled,
+            protectionEnabled:social.protectionEnabled,sharePanel:social.sharePanel},
+          speaker:{enabled:speaker.enabled,voice:speaker.voice}
+        }));return true;
+      }catch(e){return err(res,422,String(e.message));}
+    }
     if(route==="/api/client/hearing/fact"&&req.method==="POST"){
       try{
         const data=await body(req,1100);
@@ -296,7 +313,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
     }
     if(route==="/api/client/hearing/state"&&req.method==="POST"){
       try{
-        const data=await body(req,2400);
+        const data=await body(req,42000);
         if(typeof data.ready!=="boolean"||typeof data.listening!=="boolean"||
           typeof data.memory!=="boolean"||typeof data.answer!=="boolean"||
           !Array.isArray(data.allowedPlayers)||data.allowedPlayers.length>20||
