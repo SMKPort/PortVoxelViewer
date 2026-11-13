@@ -93,6 +93,8 @@ final class NexusHearing {
         out.addProperty("retries",retries);
         out.addProperty("lastSpeaker",lastSpeaker);
         out.addProperty("lastError",lastError);
+        out.add("social",NexusSocial.snapshot());
+        out.add("speaker",NexusSpeaker.snapshot());
         return out;
     }
     static synchronized String status(){
@@ -127,13 +129,19 @@ final class NexusHearing {
         if(enable&&!plasmoReady)throw new IllegalStateException("Plasmo Voice indisponível.");
         boolean reset=!enable||sensitivity!=settings.sensitivity||
             !allowed.equals(settings.allowedPlayers);
-        // A revoked participant cannot remain in the transcript archive.
+        // Revocation removes raw transcripts and derived narrative memories.
         for(String previous:settings.allowedPlayers)
-            if(allowed.stream().noneMatch(s->s.equalsIgnoreCase(previous)))
+            if(allowed.stream().noneMatch(s->s.equalsIgnoreCase(previous))){
                 MEMORIES.forget(previous);
+                NexusSocial.forgetSpeaker(previous);
+            }
         settings.listening=enable;settings.memory=data.get("memory").getAsBoolean();
         settings.answer=data.get("answer").getAsBoolean();
         settings.sensitivity=sensitivity;settings.allowedPlayers=allowed;
+        if(data.has("social")&&data.get("social").isJsonObject())
+            NexusSocial.configure(data.getAsJsonObject("social"));
+        if(data.has("speaker")&&data.get("speaker").isJsonObject())
+            NexusSpeaker.configure(data.getAsJsonObject("speaker"));
         if(reset)dropPending();
         saveSettings();
     }
@@ -164,14 +172,17 @@ final class NexusHearing {
         if(settings.allowedPlayers.isEmpty())settings.listening=false;
         saveSettings();
         MEMORIES.forget(name); // Withdrawing consent also purges stored transcripts.
+        NexusSocial.forgetSpeaker(name);
     }
     static synchronized long forgetSpeaker(String name){
         if(name==null||!name.matches("[A-Za-z0-9_]{3,16}"))
             throw new IllegalArgumentException("Nick inválido.");
         removeSpeaker(name);
-        return MEMORIES.forget(name);
+        long removed=MEMORIES.forget(name);
+        NexusSocial.forgetSpeaker(name);
+        return removed;
     }
-    static synchronized void clearMemory(){MEMORIES.clear();}
+    static synchronized void clearMemory(){MEMORIES.clear();NexusSocial.clear();}
     static synchronized List<String> recentMemories(){return MEMORIES.recent(6);}
     static synchronized void resetSession(){dropPending();}
     private static void dropPending(){
@@ -249,11 +260,18 @@ final class NexusHearing {
         String text=String.valueOf(transcript).replaceAll("[\\p{Cntrl}]"," ").trim();
         if(text.isEmpty())return;
         text=text.substring(0,Math.min(400,text.length()));
-        if(settings.memory&&!MEMORIES.record(clip.speaker,text,clip.capturedAt)){
-            lastError=MEMORIES.full()?"Memórias atingiram 24 MiB.":"Falha ao salvar memória.";
+        if(settings.memory){
+            if(MEMORIES.record(clip.speaker,text,clip.capturedAt)){
+                NexusSocial.heard(clip.speaker,text,clip.capturedAt);
+            }else lastError=MEMORIES.full()?"Memórias atingiram 24 MiB.":"Falha ao salvar memória.";
         }
         if(settings.answer&&wake(text)){
-            List<String> context=settings.memory?MEMORIES.search(clip.speaker,text,10):List.of();
+            List<String> context=new ArrayList<>();
+            if(settings.memory){
+                context.addAll(MEMORIES.search(clip.speaker,text,8));
+                context.addAll(NexusSocial.relevant(clip.speaker,text,4));
+                context.addAll(NexusSocial.recentConversation(clip.capturedAt,5));
+            }
             ClientLink.replyHearing(clip.speaker,text,context);
         }
     }

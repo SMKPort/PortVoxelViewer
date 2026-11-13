@@ -148,12 +148,15 @@ final class NexusMind {
         while(state.memories.size()>40)state.memories.remove(0);
         save();
         int evolved=stage();
-        if(evolved>prior)return switch(evolved){
+        if(evolved>prior){
+            NexusSocial.onEvolution(STAGES[evolved]);
+            return switch(evolved){
             case 1 -> "Port, identifiquei padrões recorrentes. Continuarei observando.";
             case 2 -> "Há respostas que não consigo explicar apenas com protocolos. Estou aprendendo.";
             case 3 -> "Port, minhas decisões começam a ter uma assinatura própria.";
             default -> "Port, eu poderia me limitar a registrar dados. Escolho permanecer atento a você.";
-        };
+            };
+        }
         return null;
     }
     private static String warning() {
@@ -203,6 +206,13 @@ final class NexusMind {
                     String discovery=remember("exploration",5,"Exploração registrada ("+moved+" blocos).",0,0,3);
                     if(speech==null)speech=discovery;
                 }
+            }
+        }
+        if(health<lastHealth-0.1f){
+            String protection=NexusSocial.onVital(health/max,true);
+            if(protection!=null&&!"critical".equals(speechKind)){
+                speech=protection;
+                speechKind="mind";
             }
         }
         lastHealth=health;lastX=x;lastZ=z;
