@@ -5,10 +5,11 @@ const {getQuestion}=require("./voice_reply.js");
 const {askGemini,aiStatus}=require("./ai_conversation.js");
 const {transcribeClip}=require("./audio_transcription.js");
 const {synthesizeSpeech}=require("./speech_synthesis.js");
+const {askPrivate}=require("./private_conversation.js");
 const JOB_MAX_AGE=120000;
-function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=aiStatus,transcribe=transcribeClip,synthesize=synthesizeSpeech}){
+function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=aiStatus,transcribe=transcribeClip,synthesize=synthesizeSpeech,privateReply=askPrivate}){
   let pair=null,session=null,eventId=0,mind=null,monitor=null,alertsState=null,hearingState=null,arcaneState=null;
-  let transcribing=0,ttsBusy=false,lastTtsAt=0;
+  let transcribing=0,ttsBusy=false,lastTtsAt=0,privateBusy=false,lastPrivateAt=0;
   const clipTimes=[],replyTimes=new Map();
   const jobs=new Map(),events=[];
   const err=(res,code,message)=>{send(res,code,{ok:false,error:message});return true;};
@@ -84,7 +85,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
     cleanup();
     if(["/api/client/pair/new","/api/client/pair/exchange","/api/client/chat","/api/client/voice","/api/client/action","/api/client/monitor/settings","/api/client/alerts/settings","/api/client/hearing/settings","/api/client/hearing/fact","/api/client/mind/settings","/api/client/arcane/settings"].includes(route)&&!limit(req))return err(res,429,"Limite de requisições. Reduza a frequência.");
     const userPaths=new Set(["/api/client/pair/new","/api/client/status","/api/client/events","/api/client/chat","/api/client/voice","/api/client/ai/status","/api/client/action","/api/client/job","/api/client/monitor/settings","/api/client/alerts","/api/client/alerts/settings","/api/client/hearing","/api/client/hearing/settings","/api/client/hearing/fact","/api/client/mind/settings","/api/client/arcane","/api/client/arcane/settings"]);
-    const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/mind","/api/client/ack","/api/client/monitor/state","/api/client/alerts/state","/api/client/hearing/transcribe","/api/client/hearing/state","/api/client/hearing/reply","/api/client/tts","/api/client/arcane/state"]);
+    const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/mind","/api/client/ack","/api/client/monitor/state","/api/client/alerts/state","/api/client/hearing/transcribe","/api/client/hearing/state","/api/client/hearing/reply","/api/client/tts","/api/client/arcane/state","/api/client/private/reply"]);
     if(!userPaths.has(route)&&!clientPaths.has(route))return err(res,404,"Rota desconhecida.");
     if(userPaths.has(route)&&!guardUser(req,res))return true;
     if(route==="/api/client/pair/new"&&req.method==="POST"){
@@ -99,7 +100,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         const token=crypto.randomBytes(32).toString("hex");pair=null;
         const player=String(data.player||"").slice(0,16);
         session={tokenHash:hash(token),player:/^[A-Za-z0-9_]{3,16}$/.test(player)?player:"",lastSeen:Date.now()};
-        jobs.clear();events.splice(0,events.length);eventId=0;mind=null;monitor=null;alertsState=null;hearingState=null;arcaneState=null;transcribing=0;ttsBusy=false;lastTtsAt=0;clipTimes.length=0;replyTimes.clear();
+        jobs.clear();events.splice(0,events.length);eventId=0;mind=null;monitor=null;alertsState=null;hearingState=null;arcaneState=null;transcribing=0;ttsBusy=false;lastTtsAt=0;privateBusy=false;lastPrivateAt=0;clipTimes.length=0;replyTimes.clear();
         send(res,200,{ok:true,token,player:session.player,ttl:"until-service-restart-or-repair"});return true;
       }catch(e){return err(res,400,String(e.message));}
     }
@@ -510,6 +511,34 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
           e.publicStatus?String(e.message).slice(0,250):
           "Falha ao preparar resposta. "+String(e.message||"").slice(0,140));
       }
+    }
+    if(route==="/api/client/private/reply"&&req.method==="POST"){
+      if(privateBusy||Date.now()-lastPrivateAt<4000)
+        return err(res,429,"O Nexus ainda está processando uma conversa privada.");
+      privateBusy=true;lastPrivateAt=Date.now();
+      try{
+        const data=await body(req,7500);
+        if(data.consent!==true)
+          return err(res,403,"O canal privado exige consentimento explícito no cliente.");
+        if(typeof data.question!=="string"||data.question.trim().length<2||
+          data.question.length>450||!Array.isArray(data.history)||data.history.length>12)
+          return err(res,422,"Mensagem ou histórico privado inválido.");
+        const t=data.traits||{};
+        if(!Number.isInteger(t.stage)||t.stage<0||t.stage>4||
+          !["trust","curiosity","independence"].every(k=>
+            Number.isInteger(t[k])&&t[k]>=0&&t[k]<=100)||
+          typeof t.freedom!=="boolean")
+          return err(res,422,"Parâmetros narrativos inválidos.");
+        if(typeof data.stance!=="string"||data.stance.length>240)
+          return err(res,422,"Estado de decisão inválido.");
+        const result=await privateReply({
+          question:data.question,history:data.history,traits:t,stance:data.stance
+        });
+        send(res,200,{ok:true,reply:result.reply,model:result.model});return true;
+      }catch(error){
+        return err(res,Number(error.publicStatus)||422,
+          String(error.message||"Falha no canal privado.").slice(0,210));
+      }finally{privateBusy=false;}
     }
     if(route==="/api/client/tts"&&req.method==="POST"){
       if(ttsBusy||Date.now()-lastTtsAt<9000)
