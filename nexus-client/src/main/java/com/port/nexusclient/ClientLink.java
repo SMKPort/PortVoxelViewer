@@ -55,7 +55,7 @@ final class ClientLink {
             +" | Consciência: "+(ClientConfig.allowMind?"ATIVA":"DESATIVADA")
             +" | Autonomia RP: "+(ClientConfig.allowAutonomy?"AUTORIZADA":"BLOQUEADA")
             +" | Privado: "+(NexusPrivateMind.enabled()?"ATIVO":"OFF")
-            +" | Serviço: "+ClientConfig.url+" | "+NexusVitals.status()+" | "+NexusHearing.status();
+            +" | Serviço: "+ClientConfig.url+" | "+NexusVitals.status()+" | Audição: REMOVIDA";
     }
 
     static void pair(String code) {
@@ -92,9 +92,6 @@ final class ClientLink {
             previousHealth=Float.NaN;previousPlayer="";previousEffects="";
             NexusMind.resetSession();COMBAT_ALERTS.reset();NexusHearing.resetSession();NexusArcaneSensor.resetSession();return;
         }
-        NexusHearing.updateOnlinePlayers(mc.getConnection().getOnlinePlayers().stream()
-            .map(info->info.getProfile().getName()).toList());
-        NexusHearing.tick();
         ++ticks;
         if(ticks%2==0)NexusArcaneSensor.sample(mc.player);
         if(ticks%60!=0)return;
@@ -189,76 +186,14 @@ final class ClientLink {
             post("/api/client/telemetry",data,true).exceptionally(err -> null);
     }
 
+    /** Historical compatibility only. Audio is never sent over HTTPS. */
     static void transcribeHearing(long clipId,String speaker,byte[] wav,List<String> allowedPlayers){
-        if(ClientConfig.token.isBlank()){
-            NexusHearing.onTranscriptionError(clipId,"Nexus não está pareado com a Render.",true);
-            return;
-        }
-        JsonObject data=new JsonObject();
-        data.addProperty("speaker",speaker);
-        data.addProperty("audio",java.util.Base64.getEncoder().encodeToString(wav));
-        data.addProperty("answer",false); // Uses local memory search after transcription.
-        data.add("consentedPlayers",JSON.toJsonTree(allowedPlayers));
-        Minecraft mc=Minecraft.getInstance();
-        post("/api/client/hearing/transcribe",data,true,Duration.ofSeconds(45))
-            .thenAccept(result -> mc.execute(() -> {
-                if(result.has("ok")&&result.get("ok").getAsBoolean()&&result.has("transcript")){
-                    NexusHearing.onTranscription(clipId,result.get("transcript").getAsString());
-                }else{
-                    String error=errorText(result);
-                    String kind=result!=null&&result.has("kind")?
-                        result.get("kind").getAsString():"";
-                    if("gemini_quota".equals(kind)||"local_rate".equals(kind)||
-                       "local_busy".equals(kind)){
-                        int seconds=result!=null&&result.has("retryAfterSeconds")?
-                            result.get("retryAfterSeconds").getAsInt():60;
-                        NexusHearing.onTranscriptionRateLimit(clipId,kind,error,seconds);
-                    }else{
-                        String normalized=error.toLowerCase(java.util.Locale.ROOT);
-                        // Legacy 429 quota errors must not be retried either.
-                        boolean quota=normalized.contains("cota")||
-                            normalized.contains("limite de transcri");
-                        if(quota){
-                            NexusHearing.onTranscriptionRateLimit(clipId,"gemini_quota",error,180);
-                        }else{
-                            boolean retry=normalized.contains("aguarde")||
-                                normalized.contains("ocupad")||normalized.contains("indispon")||
-                                normalized.contains("tempo")||normalized.contains("http 5");
-                            NexusHearing.onTranscriptionError(clipId,error,retry);
-                        }
-                    }
-                }
-            }))
-            .exceptionally(error -> {
-                mc.execute(() -> NexusHearing.onTranscriptionError(
-                    clipId,"Serviço de transcrição sem resposta.",true));
-                return null;
-            });
+        NexusHearing.onTranscriptionError(clipId,
+            "A transcrição de voz foi removida do Nexus.",false);
     }
 
     static void replyHearing(String speaker,String utterance,List<String> memories){
-        if(ClientConfig.token.isBlank()){
-            NexusHearing.onReplyError("Pareamento HTTPS necessário para responder.");
-            return;
-        }
-        JsonObject payload=new JsonObject();
-        payload.addProperty("speaker",speaker);
-        payload.addProperty("transcript",utterance);
-        payload.add("memories",JSON.toJsonTree(memories));
-        Minecraft mc=Minecraft.getInstance();
-        post("/api/client/hearing/reply",payload,true,Duration.ofSeconds(40))
-            .thenAccept(result -> mc.execute(() -> {
-                if(result.has("ok")&&result.get("ok").getAsBoolean()&&result.has("reply")){
-                    NexusHearing.onReply(speaker,result.get("reply").getAsString());
-                }else{
-                    NexusHearing.onReplyError(errorText(result));
-                }
-            }))
-            .exceptionally(error -> {
-                mc.execute(() -> NexusHearing.onReplyError(
-                    "Não foi possível gerar resposta da IA."));
-                return null;
-            });
+        NexusHearing.onReplyError("A resposta por audição foi removida do Nexus.");
     }
 
     static void synthesizeNexus(String text,int stage,String voice){
@@ -353,10 +288,7 @@ final class ClientLink {
                 output="Núcleo Arcano configurado no cliente.";
                 success=true;
             }else if("hearing_settings".equals(kind)){
-                NexusHearing.configure(payload);
-                sendHearingState();
-                output="Audição salva no Minecraft (sem armazenar áudio).";
-                success=true;
+                throw new IllegalStateException("Audição removida do Nexus Client.");
             }else if("alerts_settings".equals(kind)){
                 NexusAlertSettings.configure(payload);
                 sendAlertState();
