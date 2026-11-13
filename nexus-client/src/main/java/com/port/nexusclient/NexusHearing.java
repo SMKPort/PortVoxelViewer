@@ -206,6 +206,25 @@ final class NexusHearing {
         if(reset)dropPending();
         saveSettings();
     }
+    static synchronized boolean listeningEnabled(){load();return settings.listening;}
+    static synchronized boolean memoryEnabled(){load();return settings.memory;}
+    static synchronized boolean replyEnabled(){load();return settings.answer;}
+    static synchronized boolean collectiveEnabled(){load();return settings.collective;}
+    static synchronized boolean plasmoAvailable(){return plasmoReady;}
+    static synchronized int authorizedOnlineCount(){load();return eligibleOnlineCount();}
+    static synchronized java.util.List<String> consentedPlayers(){load();return java.util.List.copyOf(settings.allowedPlayers);}
+    /** UI selection changes never grant new consent or silently erase saved conversations. */
+    static synchronized void selectCollective(boolean enabled){
+        load();
+        if(enabled&&settings.allowedPlayers.isEmpty())
+            throw new IllegalStateException("Cadastre pelo menos um jogador que consentiu.");
+        if(settings.collective!=enabled){
+            settings.collective=enabled;
+            dropPending();
+            saveSettings();
+        }
+    }
+
     static synchronized void listen(boolean enabled){
         load();
         if(enabled&&settings.allowedPlayers.isEmpty())
