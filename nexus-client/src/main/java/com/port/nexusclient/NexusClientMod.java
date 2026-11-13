@@ -22,6 +22,8 @@ public class NexusClientMod {
 
     private static final KeyMapping PRIVATE_KEY=new KeyMapping(
         "key.nexusclient.private",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_N,"key.categories.misc");
+    private static final KeyMapping PERMISSIONS_KEY=new KeyMapping(
+        "key.nexusclient.permissions",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_F8,"key.categories.misc");
     public NexusClientMod(IEventBus modBus) {
         modBus.addListener(this::onRegisterKeys);
         ClientConfig.load();
@@ -37,6 +39,7 @@ public class NexusClientMod {
 
     private void onRegisterKeys(RegisterKeyMappingsEvent event){
         event.register(PRIVATE_KEY);
+        event.register(PERMISSIONS_KEY);
     }
 
     private void onTick(ClientTickEvent.Post event) {
@@ -46,6 +49,10 @@ public class NexusClientMod {
             if(mc.player!=null&&mc.screen==null)
                 mc.setScreen(new NexusPrivateScreen());
         }
+        while(PERMISSIONS_KEY.consumeClick()){
+            if(mc.player!=null&&mc.screen==null)
+                mc.setScreen(new NexusPermissionsScreen());
+        }
     }
 
     private void registerCommands(RegisterClientCommandsEvent event) {
@@ -54,7 +61,17 @@ public class NexusClientMod {
                 notifyPlayer(ClientLink.status());
                 return 1;
             }))
+            .then(Commands.literal("menu").executes(context -> {
+                Minecraft mc=Minecraft.getInstance();
+                if(mc.player!=null)mc.setScreen(new NexusPermissionsScreen());
+                return 1;
+            }))
             .then(Commands.literal("permissions")
+                .then(Commands.literal("menu").executes(context -> {
+                    Minecraft mc=Minecraft.getInstance();
+                    if(mc.player!=null)mc.setScreen(new NexusPermissionsScreen());
+                    return 1;
+                }))
                 .then(Commands.literal("all").executes(context -> {
                     NexusPermissions.all();
                     return 1;
