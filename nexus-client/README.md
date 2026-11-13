@@ -164,3 +164,10 @@ Ao corrigir uma lembrança, o texto histórico original deixa de ser usado como 
 Voz própria: Gemini TTS opcional, 24 kHz/16 bits PCM, reprodução pelo dispositivo de áudio do computador com Java Sound. Os cinco estágios usam Charon, Orus, Puck, Kore e Algenib, com seleção de voz fixa disponível. Voz desativada por padrão. A voz ainda NÃO é transmitida aos outros jogadores pelo Plasmo Voice. A Render precisa de NEXUS_GEMINI_API_KEY ou GEMINI_API_KEY. O modelo TTS pode ser escolhido com NEXUS_GEMINI_TTS_MODEL (padrão: gemini-2.5-flash-preview-tts). A disponibilidade e os limites dependem do provedor. O cliente não armazena PCM gerado nem áudio de outros jogadores.
 
 O mod continua exclusivamente cliente para Minecraft 1.21.1 NeoForge. Voz de terceiros só é capturada com autorização prévia, e o sistema exige ativação novamente ao iniciar cada partida. A captura de áudio do Plasmo Voice e a saída local precisam ser testadas no jogo com dispositivos reais.
+
+
+## Nexus Client 2.0.1: seletor @a de audição consentida
+
+O comando `/nexusclient hearing allow @a` seleciona automaticamente os jogadores **online que já deram consentimento e foram cadastrados** com `/nexusclient hearing allow Nick`. Ele **não** registra jogadores novos sem autorização e não precisa de permissão do servidor. Depois de selecionar, use `/nexusclient hearing on` para começar (a ativação continua manual a cada jogo). Quem entrar depois será considerado automaticamente se estiver na lista de consentimento. Sem lista de jogadores online disponível, o seletor bloqueia por segurança.
+
+Para interromper imediatamente toda audição: `/nexusclient hearing deny @a`. O comando desativa a audição, limpa os trechos em memória e preserva o cadastro de consentimento. Para revogar a autorização e apagar as memórias de uma pessoa use `/nexusclient hearing deny Nick`. O painel Audição do Nexus também permite marcar o seletor @a e ver quantos autorizados estão online. `/nexusclient hearing status` mostra o estado atual.

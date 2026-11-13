@@ -190,18 +190,19 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         const sensitivity=data.sensitivity===undefined?55:data.sensitivity;
         if(!Number.isInteger(sensitivity)||sensitivity<20||sensitivity>100)
           return err(res,422,"Sensibilidade permitida entre 20 e 100.");
-        const social=data.social||{diaryEnabled:true,protectionEnabled:true,sharePanel:false};
-        if(!["diaryEnabled","protectionEnabled","sharePanel"].every(k=>typeof social[k]==="boolean"))
+        const social=data.social===undefined?null:data.social;
+        if(social&&!["diaryEnabled","protectionEnabled","sharePanel"].every(k=>typeof social[k]==="boolean"))
           return err(res,422,"Preferências de memória social inválidas.");
-        const speaker=data.speaker||{enabled:false,voice:"auto"};
-        if(typeof speaker.enabled!=="boolean"||
-          !["auto","Charon","Orus","Kore","Puck","Algenib","Fenrir"].includes(speaker.voice))
+        const speaker=data.speaker===undefined?null:data.speaker;
+        if(speaker&&(typeof speaker.enabled!=="boolean"||
+          !["auto","Charon","Orus","Kore","Puck","Algenib","Fenrir"].includes(speaker.voice)))
           return err(res,422,"Preferências de voz inválidas.");
-        if(social.sharePanel&&!data.consentConfirmed)
+        if(social?.sharePanel&&!data.consentConfirmed)
           return err(res,422,"Confirme a autorização para compartilhar o diário com o painel.");
         send(res,200,enqueue("hearing_settings",{
           listening:data.listening,memory:data.memory,answer:data.answer,
-          sensitivity,allowedPlayers,collective:data.collective===true,social,speaker
+          sensitivity,allowedPlayers,collective:data.collective===true,
+          ...(social?{social}:{}),...(speaker?{speaker}:{})
         }));return true;
       }catch(e){return err(res,422,String(e.message));}
     }

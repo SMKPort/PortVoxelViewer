@@ -248,3 +248,8 @@ Detalhes privados ficam no PC. Para consultar o diário e vínculos pelo painel,
 Rotas autenticadas: POST /api/client/mind/settings (configuração remota), POST /api/client/hearing/fact (correção e apagamento de lembranças), POST /api/client/tts (voz local para cliente pareado). A voz usa o Gemini TTS configurado por variável de ambiente NEXUS_GEMINI_TTS_MODEL opcional; chave NEXUS_GEMINI_API_KEY ou GEMINI_API_KEY. Áudio PCM não é armazenado pelo serviço.
 
 O TTS funciona apenas como reprodução de áudio no computador do Port. A transmissão pelo Plasmo Voice a outros jogadores não foi implementada nem testada. O sistema de captura existente também deve ser validado no Somake Network antes de uso regular.
+
+
+## Coletivo @a, Nexus Client 2.0.1
+
+Audição do Nexus inclui um seletor @a local, restrito à interseção entre os jogadores visíveis online e a lista prévia de consentimento. `allow @a` não dá permissão a desconhecidos. `deny @a` desativa a audição e limpa a fila, mas preserva o cadastro de consentimento. O painel exibe o total de autorizados online, sem publicar seus nomes adicionais. Salvar audição pelo site preserva as preferências independentes do diário e da síntese de voz.
