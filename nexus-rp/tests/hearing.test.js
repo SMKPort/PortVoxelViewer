@@ -51,7 +51,7 @@ test("Client-only hearing route checks consent list and auth",async()=>{
   {...payload,consentedPlayers:[]})).status,403);
  const ok=await run("POST","/api/client/hearing/transcribe",{"x-nexus-client":token},payload);
  assert.equal(ok.status,200);assert.equal(ok.payload.transcript,"Olá Nexus");assert.equal(calls.length,1);
- assert.equal((await run("POST","/api/client/hearing/transcribe",{"x-nexus-client":token},payload)).status,429);
+ assert.equal((await run("POST","/api/client/hearing/transcribe",{"x-nexus-client":token},payload)).status,200);
 });
 
 test("Hearing preferences are panel-authenticated, require consent, and sync no transcripts",async()=>{

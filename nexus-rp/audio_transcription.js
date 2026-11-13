@@ -6,16 +6,16 @@
 const {getQuestion}=require("./voice_reply.js");
 const {askGemini}=require("./ai_conversation.js");
 function verifyWave(input){
-  if(typeof input!=="string"||input.length<100||input.length>820000||!/^[A-Za-z0-9+/]+={0,2}$/.test(input))
-    throw Object.assign(Error("Áudio inválido ou excedeu o limite de seis segundos."),{publicStatus:422});
+  if(typeof input!=="string"||input.length<100||input.length>1100000||!/^[A-Za-z0-9+/]+={0,2}$/.test(input))
+    throw Object.assign(Error("Áudio inválido ou excedeu o limite permitido de 14 segundos."),{publicStatus:422});
   const wave=Buffer.from(input,"base64");
-  if(wave.length<44||wave.length>615000||wave.toString("ascii",0,4)!=="RIFF"||
+  if(wave.length<44||wave.length>825000||wave.toString("ascii",0,4)!=="RIFF"||
     wave.toString("ascii",8,12)!=="WAVE"||wave.toString("ascii",12,16)!=="fmt "||
     wave.readUInt16LE(20)!==1||wave.readUInt16LE(34)!==16||
     wave.toString("ascii",36,40)!=="data")
     throw Object.assign(Error("Envie somente WAV PCM 16 bits válido."),{publicStatus:422});
   const channels=wave.readUInt16LE(22),rate=wave.readUInt32LE(24),bytes=wave.readUInt32LE(40);
-  if(![1,2].includes(channels)||rate<8000||rate>48000||bytes>rate*channels*2*6||
+  if(![1,2].includes(channels)||rate<8000||rate>48000||bytes>rate*channels*2*14||
     bytes!==wave.length-44||wave.readUInt32LE(28)!==rate*channels*2||
     wave.readUInt16LE(32)!==channels*2||bytes<rate*channels*2/3)
     throw Object.assign(Error("Formato ou duração de áudio não aceitos."),{publicStatus:422});

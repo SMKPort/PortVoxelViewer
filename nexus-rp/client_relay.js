@@ -6,7 +6,9 @@ const {askGemini,aiStatus}=require("./ai_conversation.js");
 const {transcribeClip}=require("./audio_transcription.js");
 const JOB_MAX_AGE=120000;
 function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=aiStatus,transcribe=transcribeClip}){
-  let pair=null,session=null,eventId=0,mind=null,monitor=null,alertsState=null,hearingState=null,lastAudioAt=0,audioBusy=false;
+  let pair=null,session=null,eventId=0,mind=null,monitor=null,alertsState=null,hearingState=null;
+  let transcribing=0;
+  const clipTimes=[],replyTimes=new Map();
   const jobs=new Map(),events=[];
   const err=(res,code,message)=>{send(res,code,{ok:false,error:message});return true;};
   const hash=s=>crypto.createHash("sha256").update(String(s||"")).digest("hex");
@@ -81,7 +83,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
     cleanup();
     if(["/api/client/pair/new","/api/client/pair/exchange","/api/client/chat","/api/client/voice","/api/client/action","/api/client/monitor/settings","/api/client/alerts/settings","/api/client/hearing/settings"].includes(route)&&!limit(req))return err(res,429,"Limite de requisições. Reduza a frequência.");
     const userPaths=new Set(["/api/client/pair/new","/api/client/status","/api/client/events","/api/client/chat","/api/client/voice","/api/client/ai/status","/api/client/action","/api/client/job","/api/client/monitor/settings","/api/client/alerts","/api/client/alerts/settings","/api/client/hearing","/api/client/hearing/settings"]);
-    const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/mind","/api/client/ack","/api/client/monitor/state","/api/client/alerts/state","/api/client/hearing/transcribe","/api/client/hearing/state"]);
+    const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/mind","/api/client/ack","/api/client/monitor/state","/api/client/alerts/state","/api/client/hearing/transcribe","/api/client/hearing/state","/api/client/hearing/reply"]);
     if(!userPaths.has(route)&&!clientPaths.has(route))return err(res,404,"Rota desconhecida.");
     if(userPaths.has(route)&&!guardUser(req,res))return true;
     if(route==="/api/client/pair/new"&&req.method==="POST"){
@@ -96,7 +98,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         const token=crypto.randomBytes(32).toString("hex");pair=null;
         const player=String(data.player||"").slice(0,16);
         session={tokenHash:hash(token),player:/^[A-Za-z0-9_]{3,16}$/.test(player)?player:"",lastSeen:Date.now()};
-        jobs.clear();events.splice(0,events.length);eventId=0;mind=null;monitor=null;alertsState=null;hearingState=null;lastAudioAt=0;audioBusy=false;
+        jobs.clear();events.splice(0,events.length);eventId=0;mind=null;monitor=null;alertsState=null;hearingState=null;transcribing=0;clipTimes.length=0;replyTimes.clear();
         send(res,200,{ok:true,token,player:session.player,ttl:"until-service-restart-or-repair"});return true;
       }catch(e){return err(res,400,String(e.message));}
     }
@@ -263,28 +265,73 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
           return err(res,422,"Estado de audição inválido.");
         hearingState={ready:data.ready,listening:data.listening,
           memory:data.memory,answer:data.answer,allowedPlayers:data.allowedPlayers,
-          memoryCount:numericValue(data.memoryCount,0,200,0),
+          sensitivity:numericValue(data.sensitivity,20,100,55),
+          memoryCount:numericValue(data.memoryCount,0,250000,0),
+          memoryFull:data.memoryFull===true,
+          queued:numericValue(data.queued,0,36,0),
+          inFlight:numericValue(data.inFlight,0,3,0),
+          processed:numericValue(data.processed,0,9999999,0),
+          dropped:numericValue(data.dropped,0,9999999,0),
+          retries:numericValue(data.retries,0,9999999,0),
+          lastSpeaker:String(data.lastSpeaker||"").slice(0,16),
+          lastError:String(data.lastError||"").slice(0,120),
           syncedAt:new Date().toISOString()};
         send(res,200,{ok:true});return true;
       }catch(e){return err(res,422,String(e.message));}
     }
     if(route==="/api/client/hearing/transcribe"&&req.method==="POST"){
-      if(audioBusy||Date.now()-lastAudioAt<7000)return err(res,429,"Aguarde antes de enviar outra fala.");
-      audioBusy=true;
+      const now=Date.now();
+      while(clipTimes.length&&clipTimes[0]<now-60000)clipTimes.shift();
+      if(transcribing>=3)return err(res,429,"Transcrição ocupada. Reenviar em instantes.");
+      if(clipTimes.length>=90)return err(res,429,"Limite de transcrição por minuto atingido.");
+      transcribing++;
       try{
-        const data=await body(req,840000);
+        const data=await body(req,1100000);
         const speaker=String(data.speaker||"");
         if(!/^[A-Za-z0-9_]{3,16}$/.test(speaker))
           return err(res,422,"Nick de participante inválido.");
         if(!Array.isArray(data.consentedPlayers)||!data.consentedPlayers.includes(speaker))
           return err(res,403,"Participante não autorizado para transcrição.");
-        lastAudioAt=Date.now();
-        const result=await transcribe({audio:data.audio,answer:data.answer===true,history:data.history,speaker});
-        send(res,200,{ok:true,speaker,transcript:result.transcript,reply:result.reply||""});
+        if(hearingState&&(!hearingState.ready||!hearingState.listening||
+          !hearingState.allowedPlayers.some(s=>s.toLowerCase()===speaker.toLowerCase())))
+          return err(res,403,"Audição desativada ou participante revogado.");
+        clipTimes.push(now);
+        const result=await transcribe({audio:data.audio,answer:false,history:[],speaker});
+        send(res,200,{ok:true,speaker,transcript:result.transcript,reply:""});
         return true;
       }catch(e){
         return err(res,Number(e.publicStatus)||422,String(e.message||"Falha na transcrição."));
-      }finally{audioBusy=false;}
+      }finally{transcribing=Math.max(0,transcribing-1);}
+    }
+    if(route==="/api/client/hearing/reply"&&req.method==="POST"){
+      try{
+        const data=await body(req,8000),speaker=String(data.speaker||"");
+        if(!/^[A-Za-z0-9_]{3,16}$/.test(speaker))
+          return err(res,422,"Nick inválido.");
+        if(hearingState&&(!hearingState.listening||!hearingState.answer||
+          !hearingState.allowedPlayers.some(s=>s.toLowerCase()===speaker.toLowerCase())))
+          return err(res,403,"Respostas de audição desativadas.");
+        const transcript=String(data.transcript||"").replace(/[\u0000-\u001f\u007f]/g," ")
+          .replace(/\s+/g," ").trim().slice(0,400);
+        const question=getQuestion(transcript);
+        if(!question)return err(res,422,"O interlocutor precisa chamar 'Nexus' antes da pergunta.");
+        if(!Array.isArray(data.memories)||data.memories.length>20||
+          !data.memories.every(v=>typeof v==="string"&&v.length<=250))
+          return err(res,422,"Contexto de memória inválido.");
+        const prev=replyTimes.get(speaker.toLowerCase())||0;
+        if(Date.now()-prev<4500)return err(res,429,"Respostas muito próximas. Aguarde.");
+        replyTimes.set(speaker.toLowerCase(),Date.now());
+        const generated=await askAI({
+          question,memories:data.memories,voiceSpeaker:speaker,
+          online:true,player:session?.player||"",events,mind
+        });
+        send(res,200,{ok:true,speaker,reply:String(generated.text||"").slice(0,380)});
+        return true;
+      }catch(e){
+        return err(res,Number(e.publicStatus)||422,
+          e.publicStatus?String(e.message).slice(0,250):
+          "Falha ao preparar resposta. "+String(e.message||"").slice(0,140));
+      }
     }
     if(route==="/api/client/monitor/state"&&req.method==="POST"){
       try{
