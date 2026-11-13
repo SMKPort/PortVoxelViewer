@@ -33,6 +33,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusVoiceSegmenter.java \
             nexus-client/verification/NexusVoiceSegmenterTest.java
           java -ea -cp /tmp/nexus-voice-tests com.port.nexusclient.NexusVoiceSegmenterTest
+      - name: Test Nexus Mind 2.0 social rules
+        run: |
+          mkdir -p /tmp/nexus-social-tests
+          javac -encoding UTF-8 -d /tmp/nexus-social-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusSocialRules.java \
+            nexus-client/verification/NexusSocialRulesTest.java
+          java -ea -cp /tmp/nexus-social-tests com.port.nexusclient.NexusSocialRulesTest
       - name: Compile mod
         run: gradle -p nexus-client build --no-daemon --stacktrace
       - name: Upload JAR
