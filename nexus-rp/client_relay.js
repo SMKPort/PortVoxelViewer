@@ -465,7 +465,13 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         const speaker=String(data.speaker||"");
         if(!/^[A-Za-z0-9_]{3,16}$/.test(speaker))
           return err(res,422,"Nick de participante inválido.");
-        if(!Array.isArray(data.consentedPlayers)||!data.consentedPlayers.includes(speaker))
+        // Match Minecraft nicknames as the client does (case-insensitive).
+        // Consent must still be present on this request and, when available,
+        // in the currently synchronized client state. Never trust @a as consent.
+        const consented=Array.isArray(data.consentedPlayers)&&data.consentedPlayers.some(
+          nick=>typeof nick==="string"&&/^[A-Za-z0-9_]{3,16}$/.test(nick)&&
+            nick.toLowerCase()===speaker.toLowerCase());
+        if(!consented)
           return err(res,403,"Participante não autorizado para transcrição.");
         if(hearingState&&(!hearingState.ready||!hearingState.listening||
           !hearingState.allowedPlayers.some(s=>s.toLowerCase()===speaker.toLowerCase())))
