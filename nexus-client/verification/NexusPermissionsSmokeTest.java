@@ -47,9 +47,10 @@ public final class NexusPermissionsSmokeTest {
             "Private channel permissions must be on.");
         check(NexusSocial.diary && NexusSocial.protection && NexusSocial.share,
             "Social settings must be on.");
-        check(NexusSpeaker.active && NexusHearing.memory && NexusHearing.answer
-            && NexusHearing.listening && NexusHearing.collective,
-            "Consented voice features must be enabled.");
+        check(NexusSpeaker.active,"Optional local TTS may remain enabled.");
+        check(!NexusHearing.listening && !NexusHearing.memory &&
+            !NexusHearing.answer && !NexusHearing.collective,
+            "Global enable must never activate retired audio capture.");
         NexusPermissions.status();
         NexusPermissions.off();
         check(!ClientConfig.allowChat && !ClientConfig.allowTelemetry
