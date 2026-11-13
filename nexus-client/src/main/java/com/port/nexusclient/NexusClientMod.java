@@ -108,35 +108,36 @@ public class NexusClientMod {
                 })))
             .then(Commands.literal("hearing")
                 .then(Commands.literal("status").executes(ctx -> {notifyPlayer(NexusHearing.status());return 1;}))
-                .then(Commands.literal("on").executes(ctx -> {try{NexusHearing.listen(true);
+                .then(Commands.literal("on").executes(ctx -> {try{NexusHearing.listen(true);ClientLink.sendHearingState();
                     notifyPlayer("Audição ATIVA para jogadores com consentimento na lista.");
                 }catch(Exception e){notifyPlayer(e.getMessage());}return 1;}))
-                .then(Commands.literal("off").executes(ctx -> {NexusHearing.listen(false);
+                .then(Commands.literal("off").executes(ctx -> {NexusHearing.listen(false);ClientLink.sendHearingState();
                     notifyPlayer("Audição DESATIVADA.");return 1;}))
                 .then(Commands.literal("allow").then(Commands.argument("player",StringArgumentType.word())
                     .executes(ctx -> {try{
                         String name=StringArgumentType.getString(ctx,"player");
-                        NexusHearing.allow(name);
+                        NexusHearing.allow(name);ClientLink.sendHearingState();
                         notifyPlayer(name+" autorizado. Confirme que ele consentiu com a transcrição.");
                     }catch(Exception e){notifyPlayer(e.getMessage());}return 1;})))
                 .then(Commands.literal("deny").then(Commands.argument("player",StringArgumentType.word())
-                    .executes(ctx -> {NexusHearing.deny(StringArgumentType.getString(ctx,"player"));
+                    .executes(ctx -> {NexusHearing.deny(StringArgumentType.getString(ctx,"player"));ClientLink.sendHearingState();
                         notifyPlayer("Jogador retirado da lista de audição.");return 1;})))
                 .then(Commands.literal("memory")
-                    .then(Commands.literal("on").executes(ctx -> {NexusHearing.remember(true);
+                    .then(Commands.literal("on").executes(ctx -> {NexusHearing.remember(true);ClientLink.sendHearingState();
                         notifyPlayer("Memória textual de audição ATIVA.");return 1;}))
-                    .then(Commands.literal("off").executes(ctx -> {NexusHearing.remember(false);
+                    .then(Commands.literal("off").executes(ctx -> {NexusHearing.remember(false);ClientLink.sendHearingState();
                         notifyPlayer("Memória de audição DESATIVADA.");return 1;})))
                 .then(Commands.literal("reply")
-                    .then(Commands.literal("on").executes(ctx -> {NexusHearing.answer(true);
+                    .then(Commands.literal("on").executes(ctx -> {NexusHearing.answer(true);ClientLink.sendHearingState();
                         notifyPlayer("Respostas por voz ATIVAS (por chat).");return 1;}))
-                    .then(Commands.literal("off").executes(ctx -> {NexusHearing.answer(false);
+                    .then(Commands.literal("off").executes(ctx -> {NexusHearing.answer(false);ClientLink.sendHearingState();
                         notifyPlayer("Respostas por voz DESATIVADAS.");return 1;})))
                 .then(Commands.literal("memories").executes(ctx -> {for(String line:NexusHearing.recentMemories())
                     notifyPlayer(line);return 1;}))
                 .then(Commands.literal("forget").then(Commands.literal("confirm").executes(ctx -> {
-                    NexusHearing.clearMemory();notifyPlayer("Todas as memórias textuais de voz apagadas.");return 1;}))))
+                    NexusHearing.clearMemory();ClientLink.sendHearingState();notifyPlayer("Todas as memórias textuais de voz apagadas.");return 1;}))))
             .then(Commands.literal("unpair").executes(context -> {
+                NexusHearing.listen(false);
                 ClientConfig.token = "";ClientConfig.allowChat = false;
                 ClientConfig.allowTelemetry = false;ClientConfig.allowAutonomy=false;ClientConfig.save();
                 ClientLink.reset();
