@@ -360,14 +360,14 @@ public class NexusClientMod {
                     NexusSpeaker.enable(false);ClientLink.sendHearingState();
                     notifyPlayer("Voz local do Nexus desativada.");return 1;})))
             .then(Commands.literal("unpair").executes(context -> {
-                NexusHearing.listen(false);
+                // Always disable every capability, not only chat and telemetry.
+                // The old command left Mind/Arcane/private permissions enabled.
+                NexusPermissions.off();
                 NexusSpeaker.stop();
-                NexusPrivateMind.enable(false);
                 NexusPrivateMind.resetSession();
-                ClientConfig.token = "";ClientConfig.allowChat = false;
-                ClientConfig.allowTelemetry = false;ClientConfig.allowAutonomy=false;ClientConfig.save();
+                ClientConfig.token="";ClientConfig.save();
                 ClientLink.reset();
-                notifyPlayer("Nexus Client desconectado e permissões desativadas.");
+                notifyPlayer("Nexus desconectado. Permissões revogadas; memórias preservadas.");
                 return 1;
             }))
         );
