@@ -18,7 +18,7 @@ final class NexusArcaneRules {
         String id=String.valueOf(registryId);
         int sep=id.indexOf(':');
         String path=sep>=0?id.substring(sep+1):id;
-        if(path.isBlank()||path.length()>90||!path.matches("[a-z0-9_/.-]+"))
+        if(path.isBlank()||path.length()>90||path.contains("..")||path.startsWith("/")||!path.matches("[a-z0-9_/.-]+"))
             return "Feitiço não identificado";
         String title=path.substring(path.lastIndexOf('/')+1).replace('_',' ').replace('-',' ');
         if(title.isEmpty())return "Feitiço não identificado";
