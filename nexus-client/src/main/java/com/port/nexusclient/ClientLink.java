@@ -206,11 +206,27 @@ final class ClientLink {
                     NexusHearing.onTranscription(clipId,result.get("transcript").getAsString());
                 }else{
                     String error=errorText(result);
-                    String normalized=error.toLowerCase(java.util.Locale.ROOT);
-                    boolean retry=normalized.contains("limite")||normalized.contains("aguarde")||
-                        normalized.contains("ocupad")||normalized.contains("indispon")||
-                        normalized.contains("tempo")||normalized.contains("http 5");
-                    NexusHearing.onTranscriptionError(clipId,error,retry);
+                    String kind=result!=null&&result.has("kind")?
+                        result.get("kind").getAsString():"";
+                    if("gemini_quota".equals(kind)||"local_rate".equals(kind)||
+                       "local_busy".equals(kind)){
+                        int seconds=result!=null&&result.has("retryAfterSeconds")?
+                            result.get("retryAfterSeconds").getAsInt():60;
+                        NexusHearing.onTranscriptionRateLimit(clipId,kind,error,seconds);
+                    }else{
+                        String normalized=error.toLowerCase(java.util.Locale.ROOT);
+                        // Legacy 429 quota errors must not be retried either.
+                        boolean quota=normalized.contains("cota")||
+                            normalized.contains("limite de transcri");
+                        if(quota){
+                            NexusHearing.onTranscriptionRateLimit(clipId,"gemini_quota",error,180);
+                        }else{
+                            boolean retry=normalized.contains("aguarde")||
+                                normalized.contains("ocupad")||normalized.contains("indispon")||
+                                normalized.contains("tempo")||normalized.contains("http 5");
+                            NexusHearing.onTranscriptionError(clipId,error,retry);
+                        }
+                    }
                 }
             }))
             .exceptionally(error -> {
