@@ -17,7 +17,9 @@ final class NexusVoiceSegmenter {
     private static final int PRE_ROLL_BYTES=RATE*2*180/1000;
     private static final int OVERLAP_BYTES=RATE*2*200/1000;
     private static final int MIN_VOICE_SAMPLES=RATE*280/1000;
-    private static final int SILENCE_SAMPLES=RATE*550/1000;
+    // Wait slightly longer across natural pauses, combining short words into
+    // one request without retaining voice history.
+    private static final int SILENCE_SAMPLES=RATE*800/1000;
     private static final long IDLE_MS=680;
 
     static final class Segment {
