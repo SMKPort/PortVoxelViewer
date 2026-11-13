@@ -1,5 +1,34 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
+## Versão atual 2.5.0: Plasmo Voice removido e personalidade revisada
+
+A escuta, gravação temporária e transcrição das vozes de outros jogadores foram
+**removidas** por escolha do proprietário para evitar despesas com APIs.
+O cliente não carrega mais o addon Plasmo Voice e o servidor rejeita
+`/api/client/hearing/transcribe`, `/api/client/hearing/reply` e
+`/api/client/hearing/settings` com HTTP 410, inclusive para JARs antigos.
+Os comandos e a aba **Audição** foram retirados do Minecraft e do painel.
+Históricos anteriores permanecem armazenados localmente até exclusão deliberada.
+
+O centro de permissões continua acessível pelo **F8** ou
+`/nexusclient menu` e agora oferece **Geral**, **Arcano** e **Memórias**.
+O comando `/nexusclient permissions all` não reativa escuta nem liga
+automaticamente a voz sintetizada Gemini (TTS), que é opcional e também pode
+consumir uma cota paga. O chat textual, a IA privada, os alertas, a
+telemetria e o sistema arcano continuam funcionando conforme suas próprias
+configurações de acesso e limites de API.
+
+**Personagem:** a antiga fixação do Nexus por Mizora foi revogada em ambos
+os prompts de IA. O Nexus não deve mencioná-la sem ser pertinente ao
+assunto, nem expressar obsessão ou ciúme. Mizora continua sendo amiga
+do Port no cânone. Históricos antigos com o nome Mizora são excluídos
+do contexto enviado ao Gemini em perguntas sobre outros assuntos;
+as mensagens locais não são apagadas.
+
+> Os blocos abaixo que descrevem audição e transcrição referem-se a versões
+> históricas e estão descontinuados na 2.5.0.
+
+
 **Mod Client-Side de Port Morningstar para o Nexus Aterna RP.** Pode ser instalado apenas no Minecraft do jogador, inclusive quando ele não tem acesso aos arquivos nem às permissões administrativas do servidor.
 
 O código-fonte fica em `nexus-client/`, dentro da branch `nexus-aterna-rp`. O painel web é https://nexus-aterna-rp.onrender.com.
