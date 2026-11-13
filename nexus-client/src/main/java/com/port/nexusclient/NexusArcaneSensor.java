@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import net.minecraft.core.Holder;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLPaths;
 
@@ -19,6 +20,9 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.HashMap;
 
 /**
  * Client-only optional compatibility with Iron's Spells n Spellbooks (1.21.1).
@@ -33,10 +37,22 @@ final class NexusArcaneSensor {
     private static Bridge bridge;
     private static boolean attempted;
     private static boolean previousCasting,lowManaArmed,lowManaWarned,baseline;
+    private static long lastNearbyScan;
+    private static final Map<java.util.UUID,String> knownNearby=new HashMap<>();
+    private static final List<Nearby> nearNow=new ArrayList<>();
     private static String previousSpell="";
     private static double previousHoly=Double.NaN;
     private static long lastReaction,sessionCastCount;
     private static final long REACTION_COOLDOWN_MS=25000;
+    static final class Nearby {
+        String player,spellId,spellName,school;
+        int level;
+        double distance;
+        Nearby(String player,String spellId,String spellName,String school,int level,double distance){
+            this.player=player;this.spellId=spellId;this.spellName=spellName;
+            this.school=school;this.level=level;this.distance=distance;
+        }
+    }
     static final class Entry {
         long at;
         String type,spellId,school,message;
@@ -49,14 +65,15 @@ final class NexusArcaneSensor {
     private static final class State {
         boolean enabled=false;
         boolean reactions=false;
+        boolean scanNearby=false;
         int sensitivity=22;
         long updatedAt;
-        long totalCasts;
+        long totalCasts,totalNearby;
         String lastError="";
         List<Entry> events=new ArrayList<>();
     }
     private static final class Bridge {
-        final Method mana,casting,spellId,spellLevel,completion;
+        final Method mana,casting,spellId,spellLevel,completion,nearbyData;
         final Method lookupSpell;
         Bridge()throws ReflectiveOperationException{
             Class<?> magic=Class.forName("io.redspace.ironsspellbooks.player.ClientMagicData");
@@ -65,8 +82,29 @@ final class NexusArcaneSensor {
             spellId=magic.getMethod("getCastingSpellId");
             spellLevel=magic.getMethod("getCastingSpellLevel");
             completion=magic.getMethod("getCastCompletionPercent");
+            Method optional;
+            try{optional=magic.getMethod("getSyncedSpellData",LivingEntity.class);}
+            catch(NoSuchMethodException e){optional=null;}
+            nearbyData=optional;
             Class<?> spells=Class.forName("io.redspace.ironsspellbooks.api.registry.SpellRegistry");
             lookupSpell=spells.getMethod("getSpell",String.class);
+        }
+        Object getNearby(Player player){
+            if(nearbyData==null)return null;
+            try{return nearbyData.invoke(null,player);}catch(Exception e){return null;}
+        }
+        boolean nearbyCasting(Object data){
+            if(data==null)return false;
+            try{return Boolean.TRUE.equals(data.getClass().getMethod("isCasting").invoke(data));}
+            catch(Exception e){return false;}
+        }
+        String nearbySpell(Object data){
+            try{return String.valueOf(data.getClass().getMethod("getCastingSpellId").invoke(data));}
+            catch(Exception e){return "";}
+        }
+        int nearbyLevel(Object data){
+            try{return ((Number)data.getClass().getMethod("getCastingSpellLevel").invoke(data)).intValue();}
+            catch(Exception e){return 0;}
         }
         double mana(){try{return ((Number)mana.invoke(null)).doubleValue();}catch(Exception e){return -1;}}
         boolean casting(){try{return (Boolean)casting.invoke(null);}catch(Exception e){return false;}}
@@ -132,6 +170,7 @@ final class NexusArcaneSensor {
     private static void resetReadings(){
         available=false;mana=-1;maxMana=-1;spellPower=-1;holyPower=-1;
         progress=0;casting=false;currentSpell="";currentName="";currentSchool="";
+        nearNow.clear();knownNearby.clear();lastNearbyScan=0;
         currentLevel=0;readAt=0;baseline=false;previousCasting=false;
         previousSpell="";previousHoly=Double.NaN;lowManaArmed=false;lowManaWarned=false;
     }
@@ -139,6 +178,11 @@ final class NexusArcaneSensor {
     static synchronized void enabled(boolean on){
         load();state.enabled=on;
         if(!on)resetReadings();
+        persist();
+    }
+    static synchronized void scanNearby(boolean on){
+        load();state.scanNearby=on;
+        nearNow.clear();knownNearby.clear();lastNearbyScan=0;
         persist();
     }
     static synchronized void reactions(boolean on){
@@ -154,7 +198,9 @@ final class NexusArcaneSensor {
         boolean enabled=data.get("enabled").getAsBoolean();
         boolean reactions=data.get("reactions").getAsBoolean();
         if(reactions&&!enabled)throw new IllegalArgumentException("Ative o Núcleo antes das reações.");
-        state.enabled=enabled;state.reactions=reactions;
+        boolean nearby=data.has("scanNearby")&&data.get("scanNearby").getAsBoolean();
+        if(state.scanNearby!=nearby){nearNow.clear();knownNearby.clear();lastNearbyScan=0;}
+        state.enabled=enabled;state.reactions=reactions;state.scanNearby=nearby;
         if(!enabled)resetReadings();
         persist();
     }
@@ -177,6 +223,8 @@ final class NexusArcaneSensor {
         JsonObject data=new JsonObject();
         data.addProperty("enabled",state.enabled);
         data.addProperty("reactions",state.reactions);
+        data.addProperty("scanNearby",state.scanNearby);
+        data.add("nearby",JSON.toJsonTree(state.enabled&&state.scanNearby?nearNow:List.of()));
         data.addProperty("present",state.enabled&&bridge!=null);
         data.addProperty("available",state.enabled&&available);
         data.addProperty("source","Iron's Spells n Spellbooks (cliente)");
@@ -195,6 +243,7 @@ final class NexusArcaneSensor {
             if(holyPower>=0)data.addProperty("holyPower",holyPower);
         }
         data.addProperty("totalCasts",state.totalCasts);
+        data.addProperty("totalNearby",state.totalNearby);
         data.addProperty("lastReadAt",readAt);
         JsonObject arm=NexusVitals.snapshot();
         boolean managed=arm.has("managed")&&arm.get("managed").getAsBoolean();
@@ -278,7 +327,36 @@ final class NexusArcaneSensor {
                 "Poder Holy alterado: "+String.format(Locale.ROOT,"%.2f",previousHoly)+
                     " → "+String.format(Locale.ROOT,"%.2f",holyPower),percent);
         }
+        if(state.scanNearby&&now-lastNearbyScan>=500){lastNearbyScan=now;scan(player,percent);}
         previousCasting=casting;previousSpell=currentSpell;previousHoly=holyPower;
+    }
+    private static void scan(Player player,double manaPercentage){
+        nearNow.clear();
+        Map<java.util.UUID,String> current=new HashMap<>();
+        if(bridge==null||bridge.nearbyData==null)return;
+        for(Player other:player.level().players()){
+            if(other==null||other==player||other.isRemoved()||
+                player.distanceToSqr(other)>576||nearNow.size()>=12)continue;
+            Object synced=bridge.getNearby(other);
+            if(!bridge.nearbyCasting(synced))continue;
+            String spell=bridge.nearbySpell(synced);
+            if(!spell.matches("[a-z0-9_.-]+:[a-z0-9_./-]+")||spell.length()>90)continue;
+            String name=other.getGameProfile().getName();
+            if(name==null||!name.matches("[A-Za-z0-9_]{3,16}"))continue;
+            current.put(other.getUUID(),spell);
+            String school=bridge.school(spell),label=bridge.spellName(spell);
+            int level=Math.max(0,bridge.nearbyLevel(synced));
+            double distance=Math.sqrt(player.distanceToSqr(other));
+            nearNow.add(new Nearby(name,spell,label,school,level,distance));
+            if(!NexusArcaneRules.sameSpell(knownNearby.get(other.getUUID()),spell)){
+                state.totalNearby++;
+                addEvent("nearby_cast",spell,school,level,
+                    "Conjuração próxima: "+name+" canaliza "+label+" ("+
+                    Math.round(distance)+" blocos)",manaPercentage);
+            }
+        }
+        knownNearby.clear();
+        knownNearby.putAll(current);
     }
     private static double attribute(Player player,String field){
         try{

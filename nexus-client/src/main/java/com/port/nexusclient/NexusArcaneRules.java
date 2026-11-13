@@ -35,6 +35,7 @@ final class NexusArcaneRules {
             case "mana_low" -> "Reserva de mana baixa";
             case "mana_recovered" -> "Reserva de mana estabilizada";
             case "holy_power" -> "Potência da escola Holy alterada";
+            case "nearby_cast" -> "Conjuração próxima detectada";
             default -> "Leitura arcana";
         };
     }
@@ -46,6 +47,8 @@ final class NexusArcaneRules {
             return "Port, os atributos de poder da escola Holy sofreram uma alteração detectável.";
         if("cast_start".equals(type))
             return "Conjuração identificada: "+spellLabel(spell)+". Monitorando o fluxo arcano.";
+        if("nearby_cast".equals(type))
+            return "Port, detectei uma conjuração próxima: "+spellLabel(spell)+".";
         return "";
     }
 }

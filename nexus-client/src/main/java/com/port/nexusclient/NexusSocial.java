@@ -252,7 +252,7 @@ final class NexusSocial {
     static synchronized void onArcaneEvent(String type,String note,long at){
         load();
         if(!state.diaryEnabled)return;
-        if(!java.util.Set.of("cast_start","mana_low","holy_power").contains(type))return;
+        if(!java.util.Set.of("cast_start","mana_low","holy_power","nearby_cast").contains(type))return;
         for(int i=state.diary.size()-1;i>=0;i--){
             DiaryEntry last=state.diary.get(i);
             if(last.speaker.equals("Nexus")&&last.kind.equals("arcano")&&
