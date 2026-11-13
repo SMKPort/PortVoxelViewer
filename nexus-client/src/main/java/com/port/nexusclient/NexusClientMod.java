@@ -221,6 +221,17 @@ public class NexusClientMod {
                     notifyPlayer("Canal privado desligado. Histórico local preservado.");
                     return 1;
                 }))
+                .then(Commands.literal("memory")
+                    .then(Commands.literal("on").executes(ctx->{
+                        NexusPrivateMind.memory(true);
+                        notifyPlayer("Memória do chat privado salva localmente em config/nexus-private-mind.json. Arquivo não criptografado.");
+                        return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx->{
+                        NexusPrivateMind.memory(false);
+                        notifyPlayer("Memória privada desativada, histórico anterior apagado.");
+                        return 1;
+                    })))
                 .then(Commands.literal("proactive")
                     .then(Commands.literal("on").executes(ctx->{
                         try{
