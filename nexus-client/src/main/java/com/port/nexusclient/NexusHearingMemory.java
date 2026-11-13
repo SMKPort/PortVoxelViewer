@@ -120,6 +120,61 @@ final class NexusHearingMemory {
         java.util.Collections.reverse(result);
         return result;
     }
+    /**
+     * Searches the locally cached long-term entries for this consented player.
+     * Uses keyword relevance with recent fallback. Audio and full archive stay local.
+     */
+    synchronized List<String> search(String speaker,String question,int limit){
+        load();
+        int countWanted=Math.max(1,Math.min(20,limit));
+        String clean=fold(question);
+        java.util.Set<String> keywords=new java.util.HashSet<>();
+        var matcher=java.util.regex.Pattern.compile("[a-z0-9]{4,}").matcher(clean);
+        var stopwords=java.util.Set.of("nexus","nexo","voce","sobre","lembra","lembro",
+            "disse","falei","falar","quando","onde","aqui","ontem","hoje","pode",
+            "queria","gostaria","aquele","aquela","alguma","algum","estava","estamos");
+        while(matcher.find()){
+            String word=matcher.group();
+            if(!stopwords.contains(word))keywords.add(word);
+        }
+        List<Integer> matched=new ArrayList<>();
+        for(int i=0;i<cache.size();i++){
+            Entry entry=cache.get(i);
+            if(!entry.speaker.equalsIgnoreCase(speaker)||entry.text.equalsIgnoreCase(question))continue;
+            String haystack=fold(entry.text);
+            int overlap=0;
+            for(String key:keywords)if(haystack.contains(key))overlap++;
+            if(overlap>0)matched.add(i);
+        }
+        matched.sort((a,b)->{
+            String ea=fold(cache.get(a).text),eb=fold(cache.get(b).text);
+            int scoreA=0,scoreB=0;
+            for(String key:keywords){if(ea.contains(key))scoreA++;if(eb.contains(key))scoreB++;}
+            int byScore=Integer.compare(scoreB,scoreA);
+            return byScore!=0?byScore:Integer.compare(b,a);
+        });
+        List<Integer> selected=new ArrayList<>();
+        for(int index:matched){
+            if(selected.size()>=countWanted)break;
+            selected.add(index);
+        }
+        for(int i=cache.size()-1;i>=0&&selected.size()<countWanted;i--){
+            if(!cache.get(i).speaker.equalsIgnoreCase(speaker)||selected.contains(i)||
+               cache.get(i).text.equalsIgnoreCase(question))continue;
+            selected.add(i);
+        }
+        java.util.Collections.sort(selected);
+        List<String> result=new ArrayList<>();
+        for(int index:selected){
+            String text=cache.get(index).text;
+            result.add(text.substring(0,Math.min(250,text.length())));
+        }
+        return result;
+    }
+    private static String fold(String text){
+        return java.text.Normalizer.normalize(String.valueOf(text),java.text.Normalizer.Form.NFD)
+            .replaceAll("\\p{M}","").toLowerCase(java.util.Locale.ROOT);
+    }
     synchronized void clear(){
         try{
             Files.deleteIfExists(archive);Files.deleteIfExists(legacy);

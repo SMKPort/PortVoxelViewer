@@ -249,7 +249,7 @@ final class NexusHearing {
             lastError=MEMORIES.full()?"Memórias atingiram 24 MiB.":"Falha ao salvar memória.";
         }
         if(settings.answer&&wake(text)){
-            List<String> context=MEMORIES.search(clip.speaker,text,10);
+            List<String> context=settings.memory?MEMORIES.search(clip.speaker,text,10):List.of();
             ClientLink.replyHearing(clip.speaker,text,context);
         }
     }
