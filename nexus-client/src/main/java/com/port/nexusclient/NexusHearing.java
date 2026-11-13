@@ -76,7 +76,7 @@ final class NexusHearing {
         plasmoReady=ready;
         if(!ready)dropPending();
     }
-    static synchronized boolean isListening(){load();return settings.listening&&plasmoReady;}
+    static synchronized boolean isListening(){return false;} // Feature retired, fail closed.
     static synchronized boolean isAllowed(String nick){
         load();
         return NexusHearingSelectors.isEligible(nick,settings.collective,settings.allowedPlayers,playersOnline);
@@ -190,6 +190,8 @@ final class NexusHearing {
         if(sensitivity<20||sensitivity>100)
             throw new IllegalArgumentException("Sensibilidade de 20 a 100.");
         boolean enable=data.get("listening").getAsBoolean();
+        if(enable||data.get("answer").getAsBoolean())
+            throw new IllegalStateException("Audição removida do Nexus Client.");
         if(enable&&allowed.isEmpty())throw new IllegalArgumentException("Adicione um jogador consentido.");
         if(enable&&!plasmoReady)throw new IllegalStateException("Plasmo Voice indisponível.");
         boolean reset=!enable||sensitivity!=settings.sensitivity||
@@ -232,15 +234,15 @@ final class NexusHearing {
 
     static synchronized void listen(boolean enabled){
         load();
-        if(enabled&&settings.allowedPlayers.isEmpty())
-            throw new IllegalStateException("Autorize um participante consentido com /nexusclient hearing allow NICK.");
-        if(enabled&&!plasmoReady)throw new IllegalStateException("Plasmo Voice não detectado.");
-        settings.listening=enabled;
-        if(!enabled)dropPending();
+        settings.listening=false;
+        settings.answer=false;
+        dropPending();
         saveSettings();
+        if(enabled)throw new IllegalStateException(
+            "A audição de jogadores foi removida para evitar custos de transcrição.");
     }
     static synchronized void remember(boolean enabled){load();settings.memory=enabled;saveSettings();}
-    static synchronized void answer(boolean enabled){load();settings.answer=enabled;saveSettings();}
+    static synchronized void answer(boolean enabled){load();settings.answer=false;saveSettings();}
     static synchronized void allow(String name){
         load();
         if(name==null||!name.matches("[A-Za-z0-9_]{3,16}"))
