@@ -134,6 +134,13 @@ final class NexusPrivateMind {
         if(!enabled){state.messages.clear();waiting=false;}
         save();
     }
+    /** Disable or enable future storage without erasing existing history. */
+    static synchronized void setMemoryWithoutClearing(boolean enabled){
+        load();
+        state.remember=enabled;
+        save();
+    }
+
     static synchronized void autonomy(boolean enabled){
         load();state.autonomy=enabled;
         lastLifeRatio=Float.NaN;
