@@ -171,3 +171,24 @@ O mod continua exclusivamente cliente para Minecraft 1.21.1 NeoForge. Voz de ter
 O comando `/nexusclient hearing allow @a` seleciona automaticamente os jogadores **online que já deram consentimento e foram cadastrados** com `/nexusclient hearing allow Nick`. Ele **não** registra jogadores novos sem autorização e não precisa de permissão do servidor. Depois de selecionar, use `/nexusclient hearing on` para começar (a ativação continua manual a cada jogo). Quem entrar depois será considerado automaticamente se estiver na lista de consentimento. Sem lista de jogadores online disponível, o seletor bloqueia por segurança.
 
 Para interromper imediatamente toda audição: `/nexusclient hearing deny @a`. O comando desativa a audição, limpa os trechos em memória e preserva o cadastro de consentimento. Para revogar a autorização e apagar as memórias de uma pessoa use `/nexusclient hearing deny Nick`. O painel Audição do Nexus também permite marcar o seletor @a e ver quantos autorizados estão online. `/nexusclient hearing status` mostra o estado atual.
+
+
+## Nexus Arcane Sensor 2.1.0 (Iron's Spells n Spellbooks)
+
+Monitoramento CLIENT-ONLY e opcional. Observa as leituras que o Iron's Spells 1.21.1 já sincroniza no cliente, usando uma ponte reflexiva para evitar dependência obrigatória ou acesso ao servidor. Não altera mana, atributos, recursos nem conjurações, e não controla os feitiços de outros jogadores.
+
+Comandos:
+- /nexusclient arcane on : habilita observação de mana, poder mágico, Holy Power e conjurações locais
+- /nexusclient arcane off : desativa leituras, mantendo o histórico local
+- /nexusclient arcane status : confirma disponibilidade e mana lida
+- /nexusclient arcane history : mostra os sete registros mais recentes
+- /nexusclient arcane reactions on|off : falas automáticas via /l &6&l[Nexus Aterna], exigindo chat, mind e autonomy autorizados
+- No painel Núcleo Arcano, é possível ativar opcionalmente percepção mágica próxima até 24 blocos. São apenas estados sincronizados de jogadores visíveis pelo cliente.
+
+Indicadores reais: mana atual e máxima, percentual (quando conhecido), feitiço e nível em canalização, escola da magia, avanço da canalização, Spell Power e Holy Spell Power. A ponte não promete capturar feitiços instantâneos entre amostragens nem confirmar se uma conjuração terminou com sucesso. Eventos e leituras vêm apenas da API de cliente do Iron's Spells; os addons Somake só são reconhecidos caso sincronizem seus feitiços por essa API.
+
+O painel mostra as leituras em https://nexus-aterna-rp.onrender.com/#arcano . Um diagnóstico separado mostra a integridade e energia do Nexus (SIMULAÇÃO RP), sem confundir esses valores com atributos do Minecraft. O diário Nexus Mind 2.0 recebe registros arcanos relevantes quando o modo de observação está habilitado.
+
+As preferências e os 80 eventos mais recentes ficam em .minecraft/config/nexus-arcane.json. O site recebe apenas as 40 entradas mais recentes, e nenhuma coordenada ou conversa de voz. Os dados são enviados somente ao serviço HTTPS pareado e não exigem deixar a página aberta. Se o mod Iron's Spells não estiver instalado ou mudar sua API, o sensor indica indisponibilidade e o resto do Nexus continua funcionando.
+
+Precisa ser validado com o modpack real, principalmente leitura dos atributos de versões específicas e feitiços de terceiros.

@@ -253,3 +253,15 @@ O TTS funciona apenas como reprodução de áudio no computador do Port. A trans
 ## Coletivo @a, Nexus Client 2.0.1
 
 Audição do Nexus inclui um seletor @a local, restrito à interseção entre os jogadores visíveis online e a lista prévia de consentimento. `allow @a` não dá permissão a desconhecidos. `deny @a` desativa a audição e limpa a fila, mas preserva o cadastro de consentimento. O painel exibe o total de autorizados online, sem publicar seus nomes adicionais. Salvar audição pelo site preserva as preferências independentes do diário e da síntese de voz.
+
+
+## Console 3.3 / Núcleo Arcano
+
+Página https://nexus-aterna-rp.onrender.com/#arcano, baseada no Nexus Client 2.1.0. Leitura local opcional de mana, feitiços em conjuração, poder Holy/Spell Power, histórico de eventos e percepção mágica próxima de até 24 blocos, quando as informações forem sincronizadas ao cliente. A energia e integridade das placas são indicadores RP distintos.
+
+Rotas autenticadas:
+- GET /api/client/arcane (painel privado)
+- POST /api/client/arcane/settings (painel privado, enfileira preferências para o cliente)
+- POST /api/client/arcane/state (cliente HTTPS pareado)
+
+O Java observa dados Iron's Spells via ponte reflexiva; caso não esteja instalado, nenhuma leitura mágica é inventada. Todos os valores enviados ao site são limitados e validados. O histórico local contém até 80 eventos; o backend sincroniza até 40, temporariamente, em memória. A página tem acesso protegido pelo código existente do Nexus RP. Os avisos automáticos são desativados por padrão, e o usuário precisa ativar tanto o Arcane Sensor quanto, separadamente, os comandos de chat/mente/autonomia.
