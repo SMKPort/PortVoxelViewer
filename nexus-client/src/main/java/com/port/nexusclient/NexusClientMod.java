@@ -14,7 +14,6 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.fml.ModList;
 
 @Mod(value = NexusClientMod.MOD_ID, dist = Dist.CLIENT)
 public class NexusClientMod {
@@ -27,12 +26,8 @@ public class NexusClientMod {
     public NexusClientMod(IEventBus modBus) {
         modBus.addListener(this::onRegisterKeys);
         ClientConfig.load();
-        if(ModList.get().isLoaded("plasmovoice")){
-            try{NexusPlasmoAddon.attach();}
-            catch(RuntimeException|LinkageError error){
-                System.err.println("Nexus Hearing: Plasmo Voice indisponível: "+error.getMessage());
-            }
-        }
+        // Paid Plasmo transcription has been retired. Keep archived memories only.
+        NexusHearing.listen(false);
         NeoForge.EVENT_BUS.addListener(this::onTick);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
     }
@@ -153,86 +148,6 @@ public class NexusClientMod {
                     ClientConfig.allowAutonomy=false;ClientConfig.save();
                     notifyPlayer("Mensagens espontâneas desativadas.");return 1;
                 })))
-            .then(Commands.literal("hearing")
-                .then(Commands.literal("status").executes(ctx -> {
-                    notifyPlayer(NexusHearing.status());
-                    notifyPlayer(NexusHearing.diagnostic());
-                    return 1;
-                }))
-                .then(Commands.literal("diagnose").executes(ctx -> {
-                    notifyPlayer(NexusHearing.status());
-                    notifyPlayer(NexusHearing.diagnostic());
-                    return 1;
-                }))
-                .then(Commands.literal("dialogue")
-                    .then(Commands.literal("on").executes(ctx -> {
-                        try {
-                            // Explicitly authorize replying in /l under the player's
-                            // identity. Listening still requires existing consent.
-                            NexusHearing.listen(true);
-                            ClientConfig.allowChat=true;
-                            ClientConfig.allowMind=true;
-                            ClientConfig.allowAutonomy=true;
-                            ClientConfig.save();
-                            NexusHearing.answer(true);
-                            ClientLink.sendHearingState();
-                            notifyPlayer("DIÁLOGO ON: ouvindo consentidos e respondendo no /l &6&l[Nexus Aterna].");
-                        } catch(Exception error) {
-                            notifyPlayer("Diálogo indisponível: "+error.getMessage());
-                        }
-                        return 1;
-                    }))
-                    .then(Commands.literal("off").executes(ctx -> {
-                        NexusHearing.answer(false);
-                        ClientLink.sendHearingState();
-                        notifyPlayer("DIÁLOGO OFF: respostas pausadas. Audição permanece como estava.");
-                        return 1;
-                    })))
-                .then(Commands.literal("on").executes(ctx -> {try{NexusHearing.listen(true);ClientLink.sendHearingState();
-                    notifyPlayer("Audição ativa. Para autorizar respostas no /l use /nexusclient hearing dialogue on.");
-                }catch(Exception e){notifyPlayer(e.getMessage());}return 1;}))
-                .then(Commands.literal("off").executes(ctx -> {NexusHearing.listen(false);ClientLink.sendHearingState();
-                    notifyPlayer("Audição DESATIVADA.");return 1;}))
-                .then(Commands.literal("allow").then(Commands.argument("player",StringArgumentType.word())
-                    .executes(ctx -> {try{
-                        String name=StringArgumentType.getString(ctx,"player");
-                        if("@a".equals(name)){
-                            int online=NexusHearing.collectiveOn();
-                            ClientLink.sendHearingState();
-                            notifyPlayer("@a selecionado: "+online+
-                                " jogador(es) online previamente autorizado(s). "+
-                                "Nenhuma permissão nova foi concedida. Para começar: /nexusclient hearing on.");
-                        }else{
-                            NexusHearing.allow(name);ClientLink.sendHearingState();
-                            notifyPlayer(name+" adicionado à lista após consentimento.");
-                        }
-                    }catch(Exception e){notifyPlayer(e.getMessage());}return 1;})))
-                .then(Commands.literal("deny").then(Commands.argument("player",StringArgumentType.word())
-                    .executes(ctx -> {try{
-                        String name=StringArgumentType.getString(ctx,"player");
-                        if("@a".equals(name)){
-                            NexusHearing.collectiveOff();
-                            notifyPlayer("Audição coletiva @a INTERROMPIDA. Autorizações individuais preservadas.");
-                        }else{
-                            NexusHearing.deny(name);
-                            notifyPlayer(name+" removido, com exclusão de suas memórias.");
-                        }
-                        ClientLink.sendHearingState();
-                    }catch(Exception error){notifyPlayer(error.getMessage());}return 1;})))
-                .then(Commands.literal("memory")
-                    .then(Commands.literal("on").executes(ctx -> {NexusHearing.remember(true);ClientLink.sendHearingState();
-                        notifyPlayer("Memória textual de audição ATIVA.");return 1;}))
-                    .then(Commands.literal("off").executes(ctx -> {NexusHearing.remember(false);ClientLink.sendHearingState();
-                        notifyPlayer("Memória de audição DESATIVADA.");return 1;})))
-                .then(Commands.literal("reply")
-                    .then(Commands.literal("on").executes(ctx -> {NexusHearing.answer(true);ClientLink.sendHearingState();
-                        notifyPlayer("Respostas por voz ATIVAS (por chat).");return 1;}))
-                    .then(Commands.literal("off").executes(ctx -> {NexusHearing.answer(false);ClientLink.sendHearingState();
-                        notifyPlayer("Respostas por voz DESATIVADAS.");return 1;})))
-                .then(Commands.literal("memories").executes(ctx -> {for(String line:NexusHearing.recentMemories())
-                    notifyPlayer(line);return 1;}))
-                .then(Commands.literal("forget").then(Commands.literal("confirm").executes(ctx -> {
-                    NexusHearing.clearMemory();ClientLink.sendHearingState();notifyPlayer("Todas as memórias textuais de voz apagadas.");return 1;}))))
             .then(Commands.literal("arcane")
                 .then(Commands.literal("status").executes(ctx -> {
                     notifyPlayer(NexusArcaneSensor.status());return 1;}))
@@ -348,7 +263,7 @@ public class NexusClientMod {
                         notifyPlayer("Proteção contextual desabilitada.");return 1;})))
                 .then(Commands.literal("forget").then(Commands.literal("confirm").executes(ctx -> {
                     NexusSocial.clear();ClientLink.sendHearingState();
-                    notifyPlayer("Memórias derivadas apagadas. Para transcrições: hearing forget confirm.");
+                    notifyPlayer("Memórias sociais apagadas. Histórico legado de voz permanece preservado no PC.");
                     return 1;}))))
             .then(Commands.literal("voice")
                 .then(Commands.literal("status").executes(ctx -> {
