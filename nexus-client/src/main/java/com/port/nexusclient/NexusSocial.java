@@ -135,6 +135,10 @@ final class NexusSocial {
         state.sharePanel=data.get("sharePanel").getAsBoolean();
         save();
     }
+    static synchronized boolean diaryEnabled(){load();return state.diaryEnabled;}
+    static synchronized boolean protectionEnabled(){load();return state.protectionEnabled;}
+    static synchronized boolean sharingEnabled(){load();return state.sharePanel;}
+
     static synchronized void setting(String name,boolean enabled){
         load();
         switch(name){
