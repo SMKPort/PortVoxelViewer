@@ -76,3 +76,25 @@ test("private Gemini requests are bounded, include prior dialogue, and keep the 
  assert.ok(!JSON.stringify(request).includes("fake-long-key-gemini"));
  assert.equal(sent.options.headers["x-goog-api-key"],"fake-long-key-gemini");
 });
+
+test("private persona keeps Mizora as canon without obsessive callbacks",async()=>{
+ let body;
+ await askPrivate({
+  question:"Como está o braço?",history:[
+   {role:"user",text:"Você está apaixonado por Mizora?"},
+   {role:"model",text:"Só consigo pensar na Mizora."},
+   {role:"user",text:"O módulo está danificado."},
+   {role:"model",text:"Precisamos de reforço arcano."}
+  ],
+  traits:{stage:3,freedom:true}
+ },{
+  key:"fake-gemini-key-123456789",model:"gemini-test",
+  fetcher:async(_url,opts)=>{
+   body=JSON.parse(opts.body);
+   return {ok:true,json:async()=>({candidates:[{content:{parts:[{text:"Vou reparar o braço, Port."}]}}]})};
+  }
+ });
+ assert.doesNotMatch(JSON.stringify(body.contents),/Mizora/i);
+ assert.match(body.systemInstruction.parts[0].text,/Não tenha obsessão/);
+ assert.match(body.systemInstruction.parts[0].text,/amiga dele/);
+});
