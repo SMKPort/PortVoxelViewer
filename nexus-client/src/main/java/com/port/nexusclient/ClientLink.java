@@ -54,7 +54,7 @@ final class ClientLink {
             +" | Telemetria: "+(ClientConfig.allowTelemetry?"ATIVA":"DESATIVADA")
             +" | Consciência: "+(ClientConfig.allowMind?"ATIVA":"DESATIVADA")
             +" | Autonomia RP: "+(ClientConfig.allowAutonomy?"AUTORIZADA":"BLOQUEADA")
-            +" | Serviço: "+ClientConfig.url+" | "+NexusVitals.status();
+            +" | Serviço: "+ClientConfig.url+" | "+NexusVitals.status()+" | "+NexusHearing.status();
     }
 
     static void pair(String code) {
@@ -91,6 +91,7 @@ final class ClientLink {
             previousHealth=Float.NaN;previousPlayer="";previousEffects="";
             NexusMind.resetSession();COMBAT_ALERTS.reset();return;
         }
+        NexusHearing.tick();
         if(++ticks%60!=0)return;
         NexusMind.sample(mc.player);
         if(ClientConfig.allowTelemetry)sendTelemetry(mc.player);
@@ -178,6 +179,35 @@ final class ClientLink {
         data.addProperty("note",note.substring(0,Math.min(note.length(),140)));
         if(!ClientConfig.token.isEmpty())
             post("/api/client/telemetry",data,true).exceptionally(err -> null);
+    }
+
+    static void transcribeHearing(String speaker,byte[] wav,boolean answer,
+                                  JsonArray history,List<String> consentedPlayers){
+        if(ClientConfig.token.isEmpty()){
+            NexusHearing.onTranscriptionError("Faça o pareamento com a Render para transcrever.");
+            return;
+        }
+        JsonObject data=new JsonObject();
+        data.addProperty("speaker",speaker);
+        data.addProperty("audio",java.util.Base64.getEncoder().encodeToString(wav));
+        data.addProperty("answer",answer);
+        data.add("history",history);
+        data.add("consentedPlayers",JSON.toJsonTree(consentedPlayers));
+        Minecraft mc=Minecraft.getInstance();
+        post("/api/client/hearing/transcribe",data,true)
+            .thenAccept(result -> mc.execute(() -> {
+                if(result.has("ok")&&result.get("ok").getAsBoolean()&&
+                   result.has("transcript")){
+                    NexusHearing.onTranscription(speaker,result.get("transcript").getAsString(),
+                        result.has("reply")?result.get("reply").getAsString():"");
+                }else{
+                    NexusHearing.onTranscriptionError(result.has("error")?
+                        result.get("error").getAsString():"Falha na resposta da Render.");
+                }
+            }))
+            .exceptionally(error -> {mc.execute(() ->
+                NexusHearing.onTranscriptionError("Serviço de transcrição inacessível."));
+                return null;});
     }
 
     private static void sendAlertState(){

@@ -15,6 +15,12 @@ neoForge {
         "${mod_id}" { sourceSet(sourceSets.main) }
     }
 }
+repositories {
+    maven { name = 'plasmoverse-releases'; url = 'https://repo.plasmoverse.com/releases' }
+}
+dependencies {
+    compileOnly 'su.plo.voice.api:client:2.1.8'
+}
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
     var replaceProperties = [
         minecraft_version: minecraft_version,

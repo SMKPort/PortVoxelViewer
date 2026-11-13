@@ -9,6 +9,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.fml.ModList;
 
 @Mod(value = NexusClientMod.MOD_ID, dist = Dist.CLIENT)
 public class NexusClientMod {
@@ -16,6 +17,12 @@ public class NexusClientMod {
 
     public NexusClientMod() {
         ClientConfig.load();
+        if(ModList.get().isLoaded("plasmovoice")){
+            try{NexusPlasmoAddon.attach();}
+            catch(RuntimeException|LinkageError error){
+                System.err.println("Nexus Hearing: Plasmo Voice indisponível: "+error.getMessage());
+            }
+        }
         NeoForge.EVENT_BUS.addListener(this::onTick);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
     }
@@ -99,6 +106,36 @@ public class NexusClientMod {
                     ClientConfig.allowAutonomy=false;ClientConfig.save();
                     notifyPlayer("Mensagens espontâneas desativadas.");return 1;
                 })))
+            .then(Commands.literal("hearing")
+                .then(Commands.literal("status").executes(ctx -> {notifyPlayer(NexusHearing.status());return 1;}))
+                .then(Commands.literal("on").executes(ctx -> {try{NexusHearing.listen(true);
+                    notifyPlayer("Audição ATIVA para jogadores com consentimento na lista.");
+                }catch(Exception e){notifyPlayer(e.getMessage());}return 1;}))
+                .then(Commands.literal("off").executes(ctx -> {NexusHearing.listen(false);
+                    notifyPlayer("Audição DESATIVADA.");return 1;}))
+                .then(Commands.literal("allow").then(Commands.argument("player",StringArgumentType.word())
+                    .executes(ctx -> {try{
+                        String name=StringArgumentType.getString(ctx,"player");
+                        NexusHearing.allow(name);
+                        notifyPlayer(name+" autorizado. Confirme que ele consentiu com a transcrição.");
+                    }catch(Exception e){notifyPlayer(e.getMessage());}return 1;})))
+                .then(Commands.literal("deny").then(Commands.argument("player",StringArgumentType.word())
+                    .executes(ctx -> {NexusHearing.deny(StringArgumentType.getString(ctx,"player"));
+                        notifyPlayer("Jogador retirado da lista de audição.");return 1;})))
+                .then(Commands.literal("memory")
+                    .then(Commands.literal("on").executes(ctx -> {NexusHearing.remember(true);
+                        notifyPlayer("Memória textual de audição ATIVA.");return 1;}))
+                    .then(Commands.literal("off").executes(ctx -> {NexusHearing.remember(false);
+                        notifyPlayer("Memória de audição DESATIVADA.");return 1;})))
+                .then(Commands.literal("reply")
+                    .then(Commands.literal("on").executes(ctx -> {NexusHearing.answer(true);
+                        notifyPlayer("Respostas por voz ATIVAS (por chat).");return 1;}))
+                    .then(Commands.literal("off").executes(ctx -> {NexusHearing.answer(false);
+                        notifyPlayer("Respostas por voz DESATIVADAS.");return 1;})))
+                .then(Commands.literal("memories").executes(ctx -> {for(String line:NexusHearing.recentMemories())
+                    notifyPlayer(line);return 1;}))
+                .then(Commands.literal("forget").then(Commands.literal("confirm").executes(ctx -> {
+                    NexusHearing.clearMemory();notifyPlayer("Todas as memórias textuais de voz apagadas.");return 1;}))))
             .then(Commands.literal("unpair").executes(context -> {
                 ClientConfig.token = "";ClientConfig.allowChat = false;
                 ClientConfig.allowTelemetry = false;ClientConfig.allowAutonomy=false;ClientConfig.save();

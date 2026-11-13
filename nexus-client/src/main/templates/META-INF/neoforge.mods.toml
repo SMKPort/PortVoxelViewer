@@ -17,6 +17,12 @@ versionRange="[${neo_version},)"
 ordering="NONE"
 side="CLIENT"
 [[dependencies.${mod_id}]]
+modId="plasmovoice"
+type="optional"
+versionRange="[2.1.8,)"
+ordering="AFTER"
+side="CLIENT"
+[[dependencies.${mod_id}]]
 modId="minecraft"
 type="required"
 versionRange="${minecraft_version_range}"
