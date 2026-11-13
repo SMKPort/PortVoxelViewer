@@ -1,339 +1,82 @@
 "use strict";
-const test=require("node:test"),assert=require("node:assert/strict");
+const test=require("node:test");
+const assert=require("node:assert/strict");
 const {Readable}=require("node:stream");
-const {verifyWave,transcribeClip}=require("../audio_transcription.js");
 const {createClientRelay}=require("../client_relay.js");
-function wave(rate=16000,seconds=1){
- const bytes=rate*2*seconds,b=Buffer.alloc(bytes+44);
- b.write("RIFF",0,"ascii");b.writeUInt32LE(bytes+36,4);b.write("WAVEfmt ",8,"ascii");
- b.writeUInt32LE(16,16);b.writeUInt16LE(1,20);b.writeUInt16LE(1,22);
- b.writeUInt32LE(rate,24);b.writeUInt32LE(rate*2,28);b.writeUInt16LE(2,32);
- b.writeUInt16LE(16,34);b.write("data",36,"ascii");b.writeUInt32LE(bytes,40);
- return b.toString("base64");
+
+function createTestClient(){
+ const relay=createClientRelay({
+  send:(res,status,data)=>{res.status=status;res.payload=data;res.end();},
+  verifyUser:req=>req.headers["x-nexus-key"]==="owner",
+  limit:()=>true,
+  askAI:async()=>{throw Error("Retired speech path called AI");}
+ });
+ async function call(method,route,headers={},data){
+  const req=Readable.from(data===undefined?[]:[Buffer.from(JSON.stringify(data))]);
+  req.method=method;req.headers=headers;
+  const res={status:0,payload:null,end(){}};
+  const url=new URL(route,"https://test.invalid");
+  await relay.handle(req,res,url.pathname,url);
+  return res;
+ }
+ return {call};
 }
-test("Rejects malformed WAV and transcribes without writing audio",async()=>{
- assert.throws(()=>verifyWave("bad"));
- assert.throws(()=>verifyWave(wave(48000,15)),/limite|Formato/);
- let req,modelRequest;
- const result=await transcribeClip({audio:wave(),answer:true,speaker:"PlayerA",history:[{role:"user",text:"Oficina do jogador em construção."}]},{
-  key:"development-key-long-enough",model:"gemini-2.5-flash",
-  fetcher:async(url,options)=>{
-   req=JSON.parse(options.body);
-   return {ok:true,json:async()=>({candidates:[{content:{parts:[{text:"Nexus, bom dia."}]}}]})};
-  },
-  askAI:async data=>{modelRequest=data;return {text:"Bom dia. Estou atento."};}
- });
- assert.equal(result.transcript,"Nexus, bom dia.");
- assert.equal(result.reply,"Bom dia. Estou atento.");
- assert.equal(modelRequest.memories[0],"Oficina do jogador em construção.");
- assert.equal(modelRequest.voiceSpeaker,"PlayerA");
- assert.equal(req.contents[0].parts[1].inlineData.mimeType,"audio/wav");
-});
-test("Client-only hearing route checks consent list and auth",async()=>{
- const calls=[];
- const relay=createClientRelay({
-  send:(res,code,payload)=>{res.status=code;res.payload=payload;},
-  verifyUser:req=>req.headers["x-nexus-key"]==="key",limit:()=>true,
-  transcribe:async data=>{calls.push(data);return {transcript:"Olá Nexus",reply:""};}
- });
- async function run(method,route,headers={},body){
-  const req=Readable.from(body===undefined?[]:[Buffer.from(JSON.stringify(body))]);
-  req.headers=headers;req.method=method;const res={status:0,payload:null};
-  const u=new URL(route,"https://test.invalid");await relay.handle(req,res,u.pathname,u);
-  return res;
+
+test("Deprecated speech endpoints always return 410 and cannot call Gemini",async()=>{
+ const {call}=createTestClient();
+ for(const route of [
+  "/api/client/hearing/transcribe",
+  "/api/client/hearing/reply",
+  "/api/client/hearing/settings"
+ ]){
+  const res=await call("POST",route,{},{
+   speaker:"ConsentedPlayer",audio:"FAKE_AUDIO_BYTES",
+   allowedPlayers:["ConsentedPlayer"],transcript:"Nexus, me escute."
+  });
+  assert.equal(res.status,410,route);
+  assert.equal(res.payload.kind,"audio_retired",route);
+  assert.equal(res.payload.ok,false,route);
+  assert.match(res.payload.error,/removid/i);
  }
- const user={"x-nexus-key":"key"};
- const code=(await run("POST","/api/client/pair/new",user,{})).payload.code;
- const token=(await run("POST","/api/client/pair/exchange",{}, {code,player:"Port"})).payload.token;
- const payload={speaker:"Other",audio:wave(),consentedPlayers:["Other"],answer:false};
- assert.equal((await run("POST","/api/client/hearing/transcribe",user,payload)).status,401);
- assert.equal((await run("POST","/api/client/hearing/transcribe",{"x-nexus-client":token},
-  {...payload,consentedPlayers:[]})).status,403);
- const ok=await run("POST","/api/client/hearing/transcribe",{"x-nexus-client":token},payload);
- assert.equal(ok.status,200);assert.equal(ok.payload.transcript,"Olá Nexus");assert.equal(calls.length,1);
- assert.equal((await run("POST","/api/client/hearing/transcribe",{"x-nexus-client":token},payload)).status,200);
- // Minecraft nicks are case-insensitive on the client; the relay must agree.
- const mixedCase={...payload,speaker:"oThEr",consentedPlayers:["OTHER"]};
- assert.equal((await run("POST","/api/client/hearing/transcribe",{"x-nexus-client":token},mixedCase)).status,200);
- assert.equal((await run("POST","/api/client/hearing/transcribe",{"x-nexus-client":token},{
-  ...payload,speaker:"Intruder",consentedPlayers:["OTHER"]})).status,403);
- // The synchronized client-state allowlist remains an independent guard.
- assert.equal((await run("POST","/api/client/hearing/state",{"x-nexus-client":token},{
-  ready:true,listening:true,memory:true,answer:true,allowedPlayers:["OtHeR"]
- })).status,200);
- assert.equal((await run("POST","/api/client/hearing/transcribe",{"x-nexus-client":token},mixedCase)).status,200);
- assert.equal((await run("POST","/api/client/hearing/state",{"x-nexus-client":token},{
-  ready:true,listening:true,memory:true,answer:true,allowedPlayers:["FriendA"]
- })).status,200);
- assert.equal((await run("POST","/api/client/hearing/transcribe",{"x-nexus-client":token},mixedCase)).status,403);
 });
 
-test("Hearing preferences are panel-authenticated, require consent, and sync no transcripts",async()=>{
- const relay=createClientRelay({send:(res,status,payload)=>{res.status=status;res.payload=payload;},
-   verifyUser:req=>req.headers["x-nexus-key"]==="key",limit:()=>true});
- async function call(method,route,headers={},body){
-  const req=Readable.from(body===undefined?[]:[Buffer.from(JSON.stringify(body))]);
-  req.headers=headers;req.method=method;const res={status:0,payload:null};
-  const u=new URL(route,"https://test.invalid");
-  await relay.handle(req,res,u.pathname,u);return res;
- }
- const owner={"x-nexus-key":"key"};
- const pair=await call("POST","/api/client/pair/new",owner,{});
+test("An old client cannot enable or report active Plasmo capture",async()=>{
+ const {call}=createTestClient();
+ const code=await call("POST","/api/client/pair/new",{"x-nexus-key":"owner"},{});
  const token=(await call("POST","/api/client/pair/exchange",{},{
-  code:pair.payload.code,player:"Port"})).payload.token;
+  code:code.payload.code,player:"Port"
+ })).payload.token;
  const client={"x-nexus-client":token};
- const payload={listening:true,memory:true,answer:true,
-   allowedPlayers:["FriendA"],consentConfirmed:false};
- assert.equal((await call("POST","/api/client/hearing/settings",owner,payload)).status,422);
- assert.equal((await call("POST","/api/client/hearing/settings",client,{
-   ...payload,consentConfirmed:true})).status,401);
- const saved=await call("POST","/api/client/hearing/settings",owner,{
-   ...payload,consentConfirmed:true});
- assert.equal(saved.status,200);
- const poll=await call("GET","/api/client/poll",client);
- assert.equal(poll.payload.jobs[0].type,"hearing_settings");
- assert.equal(poll.payload.jobs[0].payload.sensitivity,55);
- assert.equal(poll.payload.jobs[0].payload.collective,false);
- assert.deepEqual(poll.payload.jobs[0].payload.allowedPlayers,["FriendA"]);
- assert.equal("social" in poll.payload.jobs[0].payload,false);
- assert.equal("speaker" in poll.payload.jobs[0].payload,false);
- const synced=await call("POST","/api/client/hearing/state",client,{
-   ready:true,listening:true,memory:true,answer:true,
-   allowedPlayers:["FriendA"],memoryCount:28});
- assert.equal(synced.status,200);
- const view=await call("GET","/api/client/hearing",owner);
- assert.equal(view.payload.state.memoryCount,28);
- assert.equal(view.payload.state.ready,true);
- assert.equal(JSON.stringify(view.payload).includes("transcript"),false);
- assert.equal((await call("GET","/api/client/hearing")).status,401);
-});
-
-
-test("Concurrent client ASR requests and memory-grounded wake reply",async()=>{
- const requests=[];
- let release;
- const pending=new Promise(resolve=>{release=resolve;});
- const relay=createClientRelay({
-  send:(res,status,payload)=>{res.status=status;res.payload=payload;},
-  verifyUser:req=>req.headers["x-nexus-key"]==="panel-secret",limit:()=>true,
-  transcribe:async data=>{requests.push(data);return pending;},
-  askAI:async args=>{requests.push({reply:args});return {text:"Você contou sobre a oficina."};}
- });
- async function call(method,route,headers={},payload){
-  const req=Readable.from(payload===undefined?[]:[Buffer.from(JSON.stringify(payload))]);
-  req.headers=headers;req.method=method;const res={status:0,payload:null};
-  const u=new URL(route,"https://nexus.example");
-  await relay.handle(req,res,u.pathname,u);return res;
- }
- const owner={"x-nexus-key":"panel-secret"};
- const code=(await call("POST","/api/client/pair/new",owner,{})).payload.code;
- const token=(await call("POST","/api/client/pair/exchange",{}, {code,player:"Port"})).payload.token;
- const client={"x-nexus-client":token};
- await call("POST","/api/client/hearing/state",client,{
-  ready:true,listening:true,memory:true,answer:true,allowedPlayers:["FriendA"],
-  memoryCount:345,queued:12,inFlight:3,dropped:2,processed:11,retries:1,
-  sensitivity:55,memoryFull:false,lastSpeaker:"FriendA",lastError:""});
- const view=await call("GET","/api/client/hearing",owner);
- assert.equal(view.payload.state.memoryCount,345);
- assert.equal(view.payload.state.queued,12);
- assert.equal(view.payload.state.dropped,2);
- const clip={speaker:"FriendA",audio:wave(),consentedPlayers:["FriendA"],answer:false};
- const p1=call("POST","/api/client/hearing/transcribe",client,clip);
- const p2=call("POST","/api/client/hearing/transcribe",client,clip);
- const p3=call("POST","/api/client/hearing/transcribe",client,clip);
- await new Promise(done=>setImmediate(done));
- assert.equal((await call("POST","/api/client/hearing/transcribe",client,clip)).status,429);
- assert.equal(requests.length,3);
- release({transcript:"Nexus, lembra da oficina?"});
- assert.equal((await p1).status,200);
- assert.equal((await p2).status,200);
- assert.equal((await p3).status,200);
  assert.equal((await call("POST","/api/client/hearing/transcribe",client,{
-  ...clip,speaker:"Stranger",consentedPlayers:["Stranger"]})).status,403);
- assert.equal((await call("POST","/api/client/hearing/reply",client,{
-  speaker:"FriendA",transcript:"boa tarde",memories:[]})).status,422);
- const reply=await call("POST","/api/client/hearing/reply",client,{
-  speaker:"FriendA",transcript:"Nexus, lembra da oficina?",
-  memories:["Ontem comecei a construir uma oficina."]});
- assert.equal(reply.status,200);
- assert.match(reply.payload.reply,/oficina/);
- assert.equal(requests.at(-1).reply.voiceSpeaker,"FriendA");
- assert.equal(requests.at(-1).reply.memories.length,1);
-});
-
-
-test("@a collective settings only select previously consenting players",async()=>{
- const relay=createClientRelay({send:(res,status,payload)=>{res.status=status;res.payload=payload;},
-  verifyUser:req=>req.headers["x-nexus-key"]==="owner",limit:()=>true});
- async function call(method,url,headers={},payload){
-  const req=Readable.from(payload===undefined?[]:[Buffer.from(JSON.stringify(payload))]);
-  req.headers=headers;req.method=method;const res={status:0,payload:null};
-  const u=new URL(url,"https://test.invalid");
-  await relay.handle(req,res,u.pathname,u);return res;
- }
- const owner={"x-nexus-key":"owner"};
- const code=(await call("POST","/api/client/pair/new",owner,{})).payload.code;
- const client={"x-nexus-client":(await call("POST","/api/client/pair/exchange",{},{
-   code,player:"Port"})).payload.token};
- const base={listening:true,memory:true,answer:false,collective:true,
-   allowedPlayers:["Alice"],sensitivity:55,consentConfirmed:true};
- assert.equal((await call("POST","/api/client/hearing/settings",owner,{
-   ...base,allowedPlayers:[]})).status,422);
- assert.equal((await call("POST","/api/client/hearing/settings",owner,{
-   ...base,collective:"@a"})).status,422);
- assert.equal((await call("POST","/api/client/hearing/settings",owner,{
-   ...base,consentConfirmed:false})).status,422);
- const accepted=await call("POST","/api/client/hearing/settings",owner,base);
- assert.equal(accepted.status,200);
- const poll=await call("GET","/api/client/poll",client);
- assert.equal(poll.payload.jobs[0].payload.collective,true);
- assert.deepEqual(poll.payload.jobs[0].payload.allowedPlayers,["Alice"]);
- const current=await call("POST","/api/client/hearing/state",client,{
-   ready:true,listening:true,memory:true,answer:false,collective:true,
-   eligibleOnline:1,allowedPlayers:["Alice"],memoryCount:0});
- assert.equal(current.status,200);
- const view=(await call("GET","/api/client/hearing",owner)).payload;
- assert.equal(view.state.collective,true);
- assert.equal(view.state.eligibleOnline,1);
- assert.equal(JSON.stringify(view).includes("Charlie"),false);
-});
-
-
-test("Gemini 3.5 Transcribe uses audio-only verbatim input",async()=>{
- const seen=[];
- const result=await transcribeClip({audio:wave(),speaker:"FriendA"},{
-  key:"development-key-long-enough",model:"gemini-3.5-transcribe",
-  fetcher:async(url,options)=>{
-   seen.push({url,body:JSON.parse(options.body)});
-   return {ok:true,status:200,json:async()=>({
-    candidates:[{content:{parts:[{text:"Olá, Nexus!"}]}}]
-   })};
-  }
+  speaker:"FriendA",consentedPlayers:["FriendA"],audio:"ANY"
+ })).status,410);
+ const synced=await call("POST","/api/client/hearing/state",client,{
+  ready:true,listening:true,memory:true,answer:true,
+  allowedPlayers:["FriendA"],memoryCount:2
  });
- assert.equal(result.transcript,"Olá, Nexus!");
- assert.equal(seen.length,1);
- assert.match(seen[0].url,/gemini-3\.5-transcribe:generateContent$/);
- assert.equal(seen[0].body.contents[0].parts.length,1);
- assert.equal(seen[0].body.contents[0].parts[0].inlineData.mimeType,"audio/wav");
- assert.equal(seen[0].body.generationConfig.audioTranscriptionConfig.mode,"VERBATIM");
+ assert.equal(synced.status,200);
+ const state=await call("GET","/api/client/hearing",{"x-nexus-key":"owner"});
+ assert.equal(state.status,200);
+ assert.equal(state.payload.state.ready,false);
+ assert.equal(state.payload.state.listening,false);
+ assert.equal(state.payload.state.memoryCount,2);
 });
 
-test("404 legacy audio model falls back to supported dedicated transcriber",async()=>{
- const attempted=[];
- const result=await transcribeClip({audio:wave()},{
-  key:"development-key-long-enough",model:"gemini-2.5-flash",
-  fetcher:async(url,options)=>{
-   attempted.push({url,body:JSON.parse(options.body)});
-   if(url.includes("gemini-2.5-flash"))
-    return {ok:false,status:404};
-   return {ok:true,status:200,json:async()=>({
-    candidates:[{content:{parts:[{text:"Transcrição disponível"}]}}]
-   })};
-  }
- });
- assert.equal(result.transcript,"Transcrição disponível");
- assert.equal(attempted.length,2);
- assert.match(attempted[0].url,/gemini-2\.5-flash:generateContent$/);
- assert.equal(attempted[0].body.contents[0].parts.length,2);
- assert.match(attempted[1].url,/gemini-3\.5-transcribe:generateContent$/);
- assert.equal(attempted[1].body.contents[0].parts.length,1);
-});
-
-test("404 on dedicated transcriber tries modern Flash-Lite once",async()=>{
- const attempted=[];
- await transcribeClip({audio:wave()},{
-  key:"development-key-long-enough",model:"gemini-3.5-transcribe",
-  fetcher:async(url)=>{
-   attempted.push(url);
-   if(url.includes("gemini-3.5-transcribe"))
-    return {ok:false,status:404};
-   return {ok:true,status:200,json:async()=>({
-    candidates:[{content:{parts:[{text:"Nexus está ouvindo"}]}}]
-   })};
-  }
- });
- assert.equal(attempted.length,2);
- assert.match(attempted[1],/gemini-3\.5-flash-lite:generateContent$/);
-});
-
-test("Quota and authorization errors never cause model fallback",async()=>{
- for(const status of [401,403,429,500]){
-  let count=0;
-  await assert.rejects(()=>transcribeClip({audio:wave()},{
-   key:"development-key-long-enough",model:"gemini-2.5-flash",
-   fetcher:async()=>{count++;return {ok:false,status};}
-  }),/Gemini|Limite/);
-  assert.equal(count,1);
- }
-});
-
-
-test("Gemini 429 pauses transcription without retry storms or privacy bypass",async()=>{
- let calls=0;
- const relay=createClientRelay({
-  send:(res,status,payload)=>{res.status=status;res.payload=payload;},
-  verifyUser:()=>true,limit:()=>true,
-  transcribe:async()=>{
-   calls++;
-   throw Object.assign(Error("Google project quota"),{
-    publicStatus:429,providerQuota:true,retryAfterSeconds:180
-   });
-  }
- });
- async function invoke(method,route,headers={},payload){
-  const req=Readable.from(payload===undefined?[]:[Buffer.from(JSON.stringify(payload))]);
-  req.headers=headers;req.method=method;const res={status:0,payload:null};
-  const url=new URL(route,"https://test.invalid");
-  await relay.handle(req,res,url.pathname,url);
-  return res;
- }
- const pair=await invoke("POST","/api/client/pair/new",{}, {});
- const token=(await invoke("POST","/api/client/pair/exchange",{},{
-  code:pair.payload.code,player:"Port"
+test("Legacy social memory remains accessible without transcribing",async()=>{
+ const {call}=createTestClient();
+ const code=await call("POST","/api/client/pair/new",{"x-nexus-key":"owner"},{});
+ const token=(await call("POST","/api/client/pair/exchange",{},{
+  code:code.payload.code,player:"Port"
  })).payload.token;
  const client={"x-nexus-client":token};
- const clip={speaker:"FriendA",consentedPlayers:["FriendA"],audio:wave()};
- const first=await invoke("POST","/api/client/hearing/transcribe",client,clip);
- assert.equal(first.status,429);
- assert.equal(first.payload.kind,"gemini_quota");
- assert.equal(first.payload.retryAfterSeconds>=180,true);
- assert.equal(calls,1);
- for(let i=0;i<10;i++){
-  const paused=await invoke("POST","/api/client/hearing/transcribe",client,clip);
-  assert.equal(paused.status,429);
-  assert.equal(paused.payload.kind,"gemini_quota");
- }
- assert.equal(calls,1,"Do not call Gemini repeatedly while project is exhausted");
- const unauthorized=await invoke("POST","/api/client/hearing/transcribe",client,{
-  ...clip,speaker:"Nonconsenting"});
- assert.equal(unauthorized.status,403,"Quota must never bypass consent");
-});
-
-test("Local audio rate budget cuts excess requests before Gemini",async()=>{
- let calls=0;
- const relay=createClientRelay({
-  send:(res,status,payload)=>{res.status=status;res.payload=payload;},
-  verifyUser:()=>true,limit:()=>true,
-  transcribe:async()=>{calls++;return {transcript:"Olá Nexus",reply:""};}
+ const result=await call("POST","/api/client/hearing/state",client,{
+  ready:false,listening:false,memory:false,answer:false,
+  allowedPlayers:[],memoryCount:7,
+  social:{sharePanel:false,diaryEnabled:true,protectionEnabled:true}
  });
- async function invoke(method,route,headers={},payload){
-  const req=Readable.from(payload===undefined?[]:[Buffer.from(JSON.stringify(payload))]);
-  req.headers=headers;req.method=method;const res={status:0,payload:null};
-  const url=new URL(route,"https://test.invalid");
-  await relay.handle(req,res,url.pathname,url);
-  return res;
- }
- const pair=await invoke("POST","/api/client/pair/new",{}, {});
- const token=(await invoke("POST","/api/client/pair/exchange",{},{
-  code:pair.payload.code,player:"Port"
- })).payload.token;
- const clip={speaker:"FriendA",consentedPlayers:["FriendA"],audio:wave()};
- const client={"x-nexus-client":token};
- for(let i=0;i<8;i++)
-  assert.equal((await invoke("POST","/api/client/hearing/transcribe",client,clip)).status,200);
- const blocked=await invoke("POST","/api/client/hearing/transcribe",client,clip);
- assert.equal(blocked.status,429);
- assert.equal(blocked.payload.kind,"local_rate");
- assert.equal(blocked.payload.retryAfterSeconds>0,true);
- assert.equal(calls,8,"Do not call provider above the conservative budget");
+ assert.equal(result.status,200);
+ const view=await call("GET","/api/client/hearing",{"x-nexus-key":"owner"});
+ assert.equal(view.payload.state.memoryCount,7);
+ assert.equal(view.payload.state.listening,false);
+ assert.equal((await call("GET","/api/client/hearing",{})).status,401);
 });
