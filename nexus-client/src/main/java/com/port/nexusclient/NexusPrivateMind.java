@@ -254,6 +254,15 @@ final class NexusPrivateMind {
         }
         lastLifeRatio=ratio;
     }
+    /** Keep explicitly sensitive fictional observations on the private channel. */
+    static synchronized boolean routePrivate(String kind,String text){
+        load();
+        if(!state.enabled||!state.autonomy||!ClientConfig.allowMind||
+            !NexusPrivateRules.prefersPrivate(kind,text))return false;
+        if(System.currentTimeMillis()-lastThought<THOUGHT_COOLDOWN)return false;
+        thought(text);
+        return true;
+    }
     static synchronized void noticeCombat(String type,float ratio){
         load();
         if(!state.enabled||!state.autonomy||!ClientConfig.allowMind)return;

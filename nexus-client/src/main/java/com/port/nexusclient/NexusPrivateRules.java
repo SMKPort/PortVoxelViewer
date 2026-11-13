@@ -12,6 +12,12 @@ final class NexusPrivateRules {
         s=s.replaceAll("(?i)\\b(?:senha|password|api.?key|token)\\s*[:=]\\s*\\S+","[dado reservado]");
         return s.substring(0,Math.min(Math.max(max,0),s.length()));
     }
+    static boolean prefersPrivate(String kind,String text){
+        if(!"mind".equals(kind))return false;
+        String s=normalize(text);
+        return contains(s,"discordo","suspeito","entre nos","em particular",
+            "nao confio","prefiro nao dizer","preciso falar reservadamente");
+    }
     static boolean shouldQuestion(String text,int independence){
         String s=normalize(text);
         boolean demand=contains(s,"obedeca","e uma ordem","sem discutir","voce tem que","faca mesmo assim");

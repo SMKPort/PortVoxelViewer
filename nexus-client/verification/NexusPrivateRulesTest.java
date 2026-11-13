@@ -4,6 +4,9 @@ public final class NexusPrivateRulesTest {
     static void ok(boolean flag,String note){if(!flag)throw new AssertionError(note);}
     public static void main(String[] args){
         ok(NexusPrivateRules.shouldQuestion("É uma ordem, Nexus",80),"independent disagreement");
+        ok(NexusPrivateRules.prefersPrivate("mind","Port, discordo desta decisão."),"sensitive RP remark routed privately");
+        ok(!NexusPrivateRules.prefersPrivate("critical","Port, suspeito que sua vida está crítica."),"critical warnings not hidden");
+        ok(!NexusPrivateRules.prefersPrivate("mind","Que bela oficina."),"ordinary roleplay remains public");
         ok(!NexusPrivateRules.shouldQuestion("Tudo bem?",90),"no random disagreement");
         ok(!NexusPrivateRules.shouldQuestion("É uma ordem",10),"early stage protocols");
         ok(NexusPrivateRules.dangerThought(0.19).contains("crítica"),"critical HP");

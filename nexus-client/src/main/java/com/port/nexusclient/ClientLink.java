@@ -99,6 +99,7 @@ final class ClientLink {
         if(ticks%2==0)NexusArcaneSensor.sample(mc.player);
         if(ticks%60!=0)return;
         NexusMind.sample(mc.player);
+        NexusPrivateMind.observe(mc.player);
         if(ClientConfig.allowTelemetry)sendTelemetry(mc.player);
         if(ClientConfig.token.isEmpty())return;
         if(ticks%180==0)sendAlertState();
@@ -360,6 +361,7 @@ final class ClientLink {
 
     static boolean speak(String text){return speak(text,"mind");}
     static boolean speak(String text,String kind) {
+        if(NexusPrivateMind.routePrivate(kind,text))return true;
         if(!ClientConfig.allowMind || !ClientConfig.allowAutonomy || !ClientConfig.allowChat ||
             !NexusAlertSettings.allows(kind))return false;
         String safe=text.replaceAll("[\\p{Cntrl}]", " ").trim();
