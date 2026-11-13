@@ -369,6 +369,13 @@ final class ClientLink {
             !NexusAlertSettings.allows(kind))return false;
         String safe=text.replaceAll("[\\p{Cntrl}]", " ").trim();
         if(safe.isEmpty())return false;
+        // chat() has a hard limit of 230 characters INCLUDING the Nexus tag.
+        // Gemini can return up to 380. Truncate only the spoken copy instead of
+        // silently losing the entire answer to IllegalArgumentException.
+        if(safe.length()>205){
+            int cut=safe.lastIndexOf(' ',205);
+            safe=safe.substring(0,cut>=130?cut:205).trim()+"…";
+        }
         try {
             chat("[Nexus Aterna] "+safe,"local","l","&6&l",false);
             NexusAlertHistory.record(kind,safe);
