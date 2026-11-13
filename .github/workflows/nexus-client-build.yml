@@ -54,6 +54,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusArcaneRules.java \
             nexus-client/verification/NexusArcaneRulesTest.java
           java -ea -cp /tmp/nexus-arcane-tests com.port.nexusclient.NexusArcaneRulesTest
+      - name: Test Nexus 2.2 private roleplay rules
+        run: |
+          mkdir -p /tmp/nexus-private-tests
+          javac -encoding UTF-8 -d /tmp/nexus-private-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusPrivateRules.java \
+            nexus-client/verification/NexusPrivateRulesTest.java
+          java -ea -cp /tmp/nexus-private-tests com.port.nexusclient.NexusPrivateRulesTest
       - name: Compile mod
         run: gradle -p nexus-client build --no-daemon --stacktrace
       - name: Upload JAR
