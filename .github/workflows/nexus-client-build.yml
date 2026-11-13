@@ -26,6 +26,13 @@ jobs:
           mkdir -p /tmp/nexus-alert-tests
           javac -encoding UTF-8 -d /tmp/nexus-alert-tests             nexus-client/src/main/java/com/port/nexusclient/NexusCombatAlerts.java             nexus-client/verification/NexusCombatAlertsTest.java
           java -ea -cp /tmp/nexus-alert-tests com.port.nexusclient.NexusCombatAlertsTest
+      - name: Test streaming VAD, splitting and silence detection
+        run: |
+          mkdir -p /tmp/nexus-voice-tests
+          javac -encoding UTF-8 -d /tmp/nexus-voice-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusVoiceSegmenter.java \
+            nexus-client/verification/NexusVoiceSegmenterTest.java
+          java -ea -cp /tmp/nexus-voice-tests com.port.nexusclient.NexusVoiceSegmenterTest
       - name: Compile mod
         run: gradle -p nexus-client build --no-daemon --stacktrace
       - name: Upload JAR
