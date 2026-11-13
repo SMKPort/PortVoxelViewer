@@ -90,29 +90,32 @@ final class NexusPrivateScreen extends Screen {
             "Roleplay independente · sem mensagens no /l",x,top+44,0xFFD6A85A,false);
 
         List<NexusPrivateMind.Line> lines=NexusPrivateMind.history();
-        int available=Math.max(0,bottom-(top+67));
-        int maxRows=Math.max(1,available/31);
-        int from=Math.max(0,lines.size()-maxRows-scroll);
-        int to=Math.min(lines.size(),from+maxRows);
-        int y=top+66;
-        graphics.enableScissor(x-2,y-3,x+w+2,bottom);
-        for(int i=from;i<to;i++){
-            NexusPrivateMind.Line line=lines.get(i);
+        List<ScreenRow> rendered=new ArrayList<>();
+        for(NexusPrivateMind.Line line:lines){
             boolean port="user".equals(line.kind);
-            int color=port?0xFFDBB28E:"thought".equals(line.kind)?0xFFD29DE2:0xFFF2D58E;
+            int header=port?0xFFDBB28E:"thought".equals(line.kind)?0xFFD29DE2:0xFFF2D58E;
             String name=port?"PORT":"system".equals(line.kind)?"SISTEMA":
                 "thought".equals(line.kind)?"NEXUS · PENSAMENTO":"NEXUS ATERNA";
-            graphics.drawString(font,name,x,y,color,true);
-            y+=10;
-            List<FormattedCharSequence> wrapped=font.split(
-                Component.literal(line.text),w-8);
-            for(int j=0;j<Math.min(2,wrapped.size());j++){
-                graphics.drawString(font,wrapped.get(j),x+3,y,0xFFE1DAD3,false);
-                y+=10;
-            }
-            y+=7;
+            rendered.add(new ScreenRow(Component.literal(name).getVisualOrderText(),header));
+            for(FormattedCharSequence part:font.split(Component.literal(line.text),w-12))
+                rendered.add(new ScreenRow(part,0xFFE1DAD3));
+            rendered.add(new ScreenRow(Component.literal(" ").getVisualOrderText(),0xFFE1DAD3));
         }
-        graphics.disableScissor();
+        int firstY=top+66;
+        if(bottom>firstY){
+            int maxRows=Math.max(1,(bottom-firstY)/11);
+            scroll=Math.min(scroll,Math.max(0,rendered.size()-maxRows));
+            int from=Math.max(0,rendered.size()-maxRows-scroll);
+            int to=Math.min(rendered.size(),from+maxRows);
+            int y=firstY;
+            graphics.enableScissor(x-2,y-3,x+w+2,bottom);
+            for(int i=from;i<to;i++){
+                ScreenRow row=rendered.get(i);
+                graphics.drawString(font,row.text(),x+3,y,row.color(),false);
+                y+=11;
+            }
+            graphics.disableScissor();
+        }
         if(!lines.isEmpty())
             graphics.drawString(font,
                 "Mensagens locais: "+lines.size()+" | PgUp/PgDn para percorrer",
@@ -120,6 +123,7 @@ final class NexusPrivateScreen extends Screen {
         // Render widgets after the panel to avoid covering the message box and buttons.
         super.render(graphics,mouseX,mouseY,delta);
     }
+    private record ScreenRow(FormattedCharSequence text,int color){}
     private String trim(String value,int width){
         if(font.width(value)<=width)return value;
         while(!value.isEmpty()&&font.width(value+"…")>width)
