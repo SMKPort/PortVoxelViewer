@@ -52,6 +52,20 @@ test("Client-only hearing route checks consent list and auth",async()=>{
  const ok=await run("POST","/api/client/hearing/transcribe",{"x-nexus-client":token},payload);
  assert.equal(ok.status,200);assert.equal(ok.payload.transcript,"Olá Nexus");assert.equal(calls.length,1);
  assert.equal((await run("POST","/api/client/hearing/transcribe",{"x-nexus-client":token},payload)).status,200);
+ // Minecraft nicks are case-insensitive on the client; the relay must agree.
+ const mixedCase={...payload,speaker:"oThEr",consentedPlayers:["OTHER"]};
+ assert.equal((await run("POST","/api/client/hearing/transcribe",{"x-nexus-client":token},mixedCase)).status,200);
+ assert.equal((await run("POST","/api/client/hearing/transcribe",{"x-nexus-client":token},{
+  ...payload,speaker:"Intruder",consentedPlayers:["OTHER"]})).status,403);
+ // The synchronized client-state allowlist remains an independent guard.
+ assert.equal((await run("POST","/api/client/hearing/state",{"x-nexus-client":token},{
+  ready:true,listening:true,memory:true,answer:true,allowedPlayers:["OtHeR"]
+ })).status,200);
+ assert.equal((await run("POST","/api/client/hearing/transcribe",{"x-nexus-client":token},mixedCase)).status,200);
+ assert.equal((await run("POST","/api/client/hearing/state",{"x-nexus-client":token},{
+  ready:true,listening:true,memory:true,answer:true,allowedPlayers:["FriendA"]
+ })).status,200);
+ assert.equal((await run("POST","/api/client/hearing/transcribe",{"x-nexus-client":token},mixedCase)).status,403);
 });
 
 test("Hearing preferences are panel-authenticated, require consent, and sync no transcripts",async()=>{
