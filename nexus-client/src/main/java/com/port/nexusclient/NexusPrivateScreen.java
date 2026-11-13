@@ -38,6 +38,9 @@ final class NexusPrivateScreen extends Screen {
                 NexusClientMod.notifyPlayer("No canal privado, pressione SHIFT e clique em LIMPAR HISTÓRICO para confirmar.");
             }
         }).bounds(x,y-26,132,20).build());
+        addRenderableWidget(Button.builder(Component.literal("PERMISSÕES"),b->
+            minecraft.setScreen(new NexusPermissionsScreen(this)))
+            .bounds(x+widthBox-184,Math.max(8,y-26),105,20).build());
         addRenderableWidget(Button.builder(Component.literal("FECHAR"),b->onClose())
             .bounds(x+widthBox-70,Math.max(8,y-26),70,20).build());
         setInitialFocus(entry);
