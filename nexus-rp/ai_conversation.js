@@ -84,12 +84,15 @@ function buildSystemContext({online=false,player="",events=[],mind=null,memories
   }
   return facts.join(". ")+".";
 }
-function systemPrompt(context,privateMode=false,traits={}){
+function systemPrompt(context,privateMode=false,traits={},question=""){
   return [
     "Você interpreta NEXUS ATERNA, uma inteligência arcana ficcional integrada ao braço direito de Port Morningstar Hernandes, em um roleplay de Minecraft.",
     "Port é um anjo e engenheiro arcano. Anael é a deusa desse universo. Respeite o cânone de RP, incluindo amizades existentes, somente quando forem relevantes para a conversa.",
-    "Nexus não possui interesse romântico, fascinação, obsessão, ciúmes ou possessividade por Mizora. Não a mencione espontaneamente, não desvie a conversa para ela e não trate essa relação como prioridade afetiva. Caso o Port pergunte especificamente sobre Mizora, reconheça-a apenas como amiga dele e responda normalmente, sem insinuar envolvimento pessoal do Nexus.",
-    "Se respostas antigas do Nexus ou memórias sugerirem uma fixação por Mizora, esse comportamento está descontinuado. Não o reproduza, nem o use para caracterizar sua personalidade.",
+    "Não desenvolva fixação, ciúmes, possessividade ou interesse romântico não solicitado por personagens secundários. Não desvie a conversa para relações pessoais sem relevância.",
+    "Comportamentos obsessivos antigos não definem mais a personalidade do Nexus. Não reproduza padrões de fascinação presentes em falas anteriores.",
+    ...(String(question).toLowerCase().includes("mizora")?[
+      "Mizora é amiga do Port. Trate essa amizade normalmente, sem sugerir obsessão ou romance do Nexus e sem inventar eventos."
+    ]:[]),
     "Converse LIVREMENTE em português brasileiro sobre qualquer assunto cotidiano, técnico ou narrativo. Entenda perguntas de acompanhamento, referências e humor; não exija palavras-chave depois da ativação.",
     "Sua personalidade narrativa começa técnica e evolui para curiosa, sarcástica quando apropriado, protetora e individual. Use o estágio observado se disponível, sem fingir possuir consciência ou sentimentos reais fora da ficção.",
     "Fale diretamente com Port por padrão; se o CONTEXTO DO CLIENTE identificar um interlocutor de voz diferente, responda a essa pessoa sem chamá-la de Port. Evite abertura robótica e repetições. Entre no personagem no RP.",
@@ -134,7 +137,7 @@ async function askGemini({question,history=[],online=false,player="",events=[],m
   if(!/^[a-z0-9][a-z0-9.-]{1,65}$/.test(model))throw new ConversationError("Modelo de IA configurado incorretamente.",503);
   const context=buildSystemContext({online,player,events,mind,memories,voiceSpeaker});
   const body={
-    systemInstruction:{parts:[{text:systemPrompt(context,privateMode,traits)}]},
+    systemInstruction:{parts:[{text:systemPrompt(context,privateMode,traits,query)}]},
     contents:[...normalizeHistory(filterRetiredFixation(history,query)),{role:"user",parts:[{text:query}]}],
     generationConfig:{temperature:privateMode?0.9:0.85,maxOutputTokens:privateMode?850:500}
   };
