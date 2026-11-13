@@ -3,9 +3,10 @@
 const crypto=require("node:crypto");
 const {getQuestion}=require("./voice_reply.js");
 const {askGemini,aiStatus}=require("./ai_conversation.js");
+const {transcribeClip}=require("./audio_transcription.js");
 const JOB_MAX_AGE=120000;
-function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=aiStatus}){
-  let pair=null,session=null,eventId=0,mind=null,monitor=null,alertsState=null;
+function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=aiStatus,transcribe=transcribeClip}){
+  let pair=null,session=null,eventId=0,mind=null,monitor=null,alertsState=null,lastAudioAt=0,audioBusy=false;
   const jobs=new Map(),events=[];
   const err=(res,code,message)=>{send(res,code,{ok:false,error:message});return true;};
   const hash=s=>crypto.createHash("sha256").update(String(s||"")).digest("hex");
@@ -80,7 +81,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
     cleanup();
     if(["/api/client/pair/new","/api/client/pair/exchange","/api/client/chat","/api/client/voice","/api/client/action","/api/client/monitor/settings","/api/client/alerts/settings"].includes(route)&&!limit(req))return err(res,429,"Limite de requisições. Reduza a frequência.");
     const userPaths=new Set(["/api/client/pair/new","/api/client/status","/api/client/events","/api/client/chat","/api/client/voice","/api/client/ai/status","/api/client/action","/api/client/job","/api/client/monitor/settings","/api/client/alerts","/api/client/alerts/settings"]);
-    const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/mind","/api/client/ack","/api/client/monitor/state","/api/client/alerts/state"]);
+    const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/mind","/api/client/ack","/api/client/monitor/state","/api/client/alerts/state","/api/client/hearing/transcribe"]);
     if(!userPaths.has(route)&&!clientPaths.has(route))return err(res,404,"Rota desconhecida.");
     if(userPaths.has(route)&&!guardUser(req,res))return true;
     if(route==="/api/client/pair/new"&&req.method==="POST"){
@@ -95,7 +96,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         const token=crypto.randomBytes(32).toString("hex");pair=null;
         const player=String(data.player||"").slice(0,16);
         session={tokenHash:hash(token),player:/^[A-Za-z0-9_]{3,16}$/.test(player)?player:"",lastSeen:Date.now()};
-        jobs.clear();events.splice(0,events.length);eventId=0;mind=null;monitor=null;alertsState=null;
+        jobs.clear();events.splice(0,events.length);eventId=0;mind=null;monitor=null;alertsState=null;lastAudioAt=0;audioBusy=false;
         send(res,200,{ok:true,token,player:session.player,ttl:"until-service-restart-or-repair"});return true;
       }catch(e){return err(res,400,String(e.message));}
     }
@@ -230,6 +231,23 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         };
         send(res,200,{ok:true,historyCount:alertsState.history.length});return true;
       }catch(e){return err(res,422,String(e.message));}
+    }
+    if(route==="/api/client/hearing/transcribe"&&req.method==="POST"){
+      if(audioBusy||Date.now()-lastAudioAt<7000)return err(res,429,"Aguarde antes de enviar outra fala.");
+      audioBusy=true;lastAudioAt=Date.now();
+      try{
+        const data=await body(req,840000);
+        const speaker=String(data.speaker||"");
+        if(!/^[A-Za-z0-9_]{3,16}$/.test(speaker))
+          return err(res,422,"Nick de participante inválido.");
+        if(!Array.isArray(data.consentedPlayers)||!data.consentedPlayers.includes(speaker))
+          return err(res,403,"Participante não autorizado para transcrição.");
+        const result=await transcribe({audio:data.audio,answer:data.answer===true,history:data.history});
+        send(res,200,{ok:true,speaker,transcript:result.transcript,reply:result.reply||""});
+        return true;
+      }catch(e){
+        return err(res,Number(e.publicStatus)||422,String(e.message||"Falha na transcrição."));
+      }finally{audioBusy=false;}
     }
     if(route==="/api/client/monitor/state"&&req.method==="POST"){
       try{
