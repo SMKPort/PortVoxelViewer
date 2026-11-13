@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.player.Player;
 import net.neoforged.fml.loading.FMLPaths;
 
 import java.io.IOException;
@@ -18,39 +19,34 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * On-device private roleplay chat. Never calls Minecraft's sendChat or
- * sendCommand. The server is contacted only for a user-submitted question
- * while this explicitly enabled channel is open; the provider receives the
- * bounded submitted question/history and not the complete local archive.
- *
- * This is simulated fictional personality, not independent AI agency.
+ * A private roleplay channel on the user's Minecraft client. Never invokes
+ * sendChat(), sendCommand(), or RCON. Only a user-submitted private question and
+ * a bounded conversation window reach the paired HTTPS Gemini relay.
+ * No server-side chat transcript is retained.
  */
 final class NexusPrivateMind {
     private static final Gson JSON=new GsonBuilder().setPrettyPrinting().create();
-    private static final Path FILE=FMLPaths.CONFIGDIR.get().resolve("nexus-private-chat.json");
-    private static final long COOLDOWN=120000;
-    static final class Line {
-        String by,text,kind;
-        long at;
-        Line(String by,String text,String kind){
-            this.by=by;this.text=text;this.kind=kind;
-            this.at=System.currentTimeMillis();
-        }
-    }
-    private static final class State {
-        int schema=1;
-        boolean enabled=false;
-        boolean proactive=false;
-        boolean freedom=true;
-        int trust=45;
-        int curiosity=40;
-        int conversationCount=0;
-        long lastProactive=0;
-        List<Line> lines=new ArrayList<>();
-    }
+    private static final Path FILE=FMLPaths.CONFIGDIR.get().resolve("nexus-private-mind.json");
     private static State state;
     private static boolean waiting;
-    private static String lastError="";
+    private static float lastLifeRatio=Float.NaN;
+    private static long lastThought;
+    private static final long THOUGHT_COOLDOWN=180_000L;
+    static final class Message {
+        String role,text,origin;
+        long at;
+        Message(String role,String text,String origin,long at){
+            this.role=role;this.text=text;this.origin=origin;this.at=at;
+        }
+    }
+    private static class State {
+        int schema=1;
+        boolean remember=false;
+        boolean autonomy=false;
+        int independence=35,trust=50,curiosity=50,caution=55;
+        long privateTurns=0;
+        List<Message> messages=new ArrayList<>();
+    }
     private NexusPrivateMind(){}
 
     private static synchronized void load(){
@@ -58,156 +54,165 @@ final class NexusPrivateMind {
         state=new State();
         if(!Files.isRegularFile(FILE))return;
         try{
-            State loaded=JSON.fromJson(Files.readString(FILE,StandardCharsets.UTF_8),State.class);
-            if(loaded!=null&&loaded.schema==1){
-                if(loaded.lines==null)loaded.lines=new ArrayList<>();
-                while(loaded.lines.size()>120)loaded.lines.remove(0);
-                loaded.trust=NexusPrivateRules.clamp(loaded.trust);
-                loaded.curiosity=NexusPrivateRules.clamp(loaded.curiosity);
-                loaded.proactive=false; // per-session opt-in for unsolicited private thoughts
-                state=loaded;
+            State stored=JSON.fromJson(Files.readString(FILE,StandardCharsets.UTF_8),State.class);
+            if(stored!=null&&stored.schema==1){
+                if(stored.messages==null)stored.messages=new ArrayList<>();
+                if(stored.messages.size()>150)
+                    stored.messages=new ArrayList<>(stored.messages.subList(stored.messages.size()-150,stored.messages.size()));
+                if(!stored.remember)stored.messages.clear();
+                stored.independence=clamp(stored.independence);
+                stored.trust=clamp(stored.trust);
+                stored.caution=clamp(stored.caution);
+                stored.curiosity=clamp(stored.curiosity);
+                state=stored;
             }
-        }catch(Exception e){System.err.println("Nexus private: arquivo de conversa inválido.");}
+        }catch(Exception error){
+            System.err.println("Nexus private: histórico inválido. Original preservado.");
+        }
     }
-    private static void persist(){
+    private static int clamp(int n){return Math.min(100,Math.max(0,n));}
+    private static synchronized void save(){
+        load();
         try{
             Files.createDirectories(FILE.getParent());
-            Path tmp=FILE.resolveSibling(FILE.getFileName()+".tmp");
-            Files.writeString(tmp,JSON.toJson(state),StandardCharsets.UTF_8);
-            try{Files.move(tmp,FILE,StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);}
-            catch(AtomicMoveNotSupportedException e){
-                Files.move(tmp,FILE,StandardCopyOption.REPLACE_EXISTING);
+            Path temp=FILE.resolveSibling(FILE.getFileName()+".tmp");
+            State copy=new State();
+            copy.autonomy=state.autonomy;copy.remember=state.remember;
+            copy.independence=state.independence;copy.trust=state.trust;
+            copy.curiosity=state.curiosity;copy.caution=state.caution;
+            copy.privateTurns=state.privateTurns;
+            if(state.remember)copy.messages=new ArrayList<>(state.messages);
+            Files.writeString(temp,JSON.toJson(copy),StandardCharsets.UTF_8);
+            try{Files.move(temp,FILE,StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);}
+            catch(AtomicMoveNotSupportedException ex){
+                Files.move(temp,FILE,StandardCopyOption.REPLACE_EXISTING);
             }
-        }catch(IOException e){System.err.println("Nexus private: não foi possível salvar histórico.");}
+        }catch(IOException ex){
+            System.err.println("Nexus private: não foi possível salvar as preferências.");
+        }
     }
-    static synchronized void enable(boolean enabled){
-        load();state.enabled=enabled;
-        if(!enabled){state.proactive=false;waiting=false;}
-        persist();
+    static synchronized void memory(boolean enabled){
+        load();state.remember=enabled;
+        if(!enabled){state.messages.clear();waiting=false;}
+        save();
     }
-    static synchronized boolean enabled(){load();return state.enabled;}
+    static synchronized void autonomy(boolean enabled){
+        load();state.autonomy=enabled;
+        lastLifeRatio=Float.NaN;
+        save();
+    }
+    static synchronized boolean autonomous(){load();return state.autonomy;}
     static synchronized boolean waiting(){return waiting;}
-    static synchronized void setProactive(boolean on){
-        load();
-        if(on&&!state.enabled)throw new IllegalStateException("Ative o chat privado primeiro.");
-        state.proactive=on;persist();
-    }
-    static synchronized void setFreedom(boolean on){
-        load();state.freedom=on;persist();
-    }
-    static synchronized String status(){
-        load();return "Canal privado "+(state.enabled?"ON":"OFF")+
-            " | Iniciativa "+(state.proactive?"ON":"OFF")+
-            " | Livre-arbítrio RP "+(state.freedom?"ON":"OFF")+
-            " | Confiança "+state.trust+"/100"+
-            " | Independência "+independence()+"/100"+
-            " | "+state.lines.size()+" mensagens locais";
-    }
-    private static int independence(){
-        return state.freedom?NexusPrivateRules.independence(NexusMind.stageIndex(),
-            state.conversationCount):0;
-    }
-    static synchronized JsonObject traits(){
-        load();
-        JsonObject result=new JsonObject();
-        result.addProperty("trust",state.trust);
-        result.addProperty("curiosity",state.curiosity);
-        result.addProperty("independence",independence());
-        result.addProperty("stage",NexusMind.stageIndex());
-        result.addProperty("freedom",state.freedom);
-        return result;
-    }
-    static synchronized List<Line> history(){
-        load();return List.copyOf(state.lines);
-    }
-    static synchronized String error(){return lastError;}
     static synchronized void clear(){
         load();
-        state.lines.clear();state.conversationCount=0;
-        state.trust=45;state.curiosity=40;waiting=false;lastError="";
-        persist();
+        state.messages.clear();
+        waiting=false;
+        save();
     }
-    static synchronized void resetSession(){waiting=false;lastError="";}
-    private static void append(String by,String text,String kind){
-        state.lines.add(new Line(by,NexusPrivateRules.compact(text,520),kind));
-        while(state.lines.size()>120)state.lines.remove(0);
-        persist();
-    }
-    private static JsonArray historyForAI(){
-        JsonArray items=new JsonArray();
-        int first=Math.max(0,state.lines.size()-13);
-        for(int i=first;i<state.lines.size()-1;i++){
-            Line line=state.lines.get(i);
-            if(!"user".equals(line.kind)&&!"model".equals(line.kind))continue;
-            JsonObject obj=new JsonObject();
-            obj.addProperty("role",line.kind);
-            obj.addProperty("text",NexusPrivateRules.compact(line.text,420));
-            items.add(obj);
-        }
-        return items;
-    }
-    static synchronized void send(String raw){
+    static synchronized String status(){
         load();
-        if(!state.enabled)throw new IllegalStateException("Ative o canal: /nexusclient private on");
-        if(waiting)throw new IllegalStateException("Aguarde a resposta anterior.");
-        if(ClientConfig.token==null||ClientConfig.token.isBlank())
-            throw new IllegalStateException("Pareie o Nexus com a Render antes de conversar.");
+        return "Canal neural PRIVADO | Memória local "+(state.remember?"ON":"OFF")+
+            " | livre-arbítrio narrativo "+(state.autonomy?"ON":"OFF")+
+            " | independência "+state.independence+
+            "/100 | histórico "+state.messages.size()+" mensagens";
+    }
+    static synchronized List<Message> messages(){
+        load();return List.copyOf(state.messages);
+    }
+    private static void add(String role,String text,String source){
+        load();
+        String clean=NexusPrivateRules.safeText(text,"model".equals(role)?800:410);
+        if(clean.isBlank())return;
+        state.messages.add(new Message(role,clean,source,System.currentTimeMillis()));
+        while(state.messages.size()>150)state.messages.remove(0);
+        save();
+    }
+    static synchronized JsonObject persona(){
+        load();
+        JsonObject info=new JsonObject();
+        info.addProperty("independence",state.independence);
+        info.addProperty("trust",state.trust);
+        info.addProperty("curiosity",state.curiosity);
+        info.addProperty("caution",state.caution);
+        info.addProperty("autonomy",state.autonomy);
+        info.addProperty("stage",NexusMind.stageIndex());
+        info.addProperty("temperament",NexusPrivateRules.opinion(
+            state.independence,state.caution,state.trust));
+        return info;
+    }
+    /** Called by UI; never sends the text to Minecraft's public chat. */
+    static synchronized void ask(String raw){
+        load();
+        if(waiting)throw new IllegalStateException("Nexus ainda está formulando sua resposta.");
+        if(ClientConfig.token.isBlank())
+            throw new IllegalStateException("Pareie o Nexus pelo painel HTTPS primeiro.");
         Minecraft mc=Minecraft.getInstance();
         if(mc.player==null||mc.getConnection()==null)
-            throw new IllegalStateException("Entre em um mundo para conversar.");
-        String question=NexusPrivateRules.compact(raw,450);
-        if(question.length()<2)throw new IllegalArgumentException("Escreva uma mensagem maior.");
-        double hp=mc.player.getMaxHealth()>0?
-            mc.player.getHealth()*100.0/mc.player.getMaxHealth():-1;
-        String stance=state.freedom?NexusPrivateRules.stance(question,independence(),state.trust,hp):
-            "Priorizar ajuda narrativa cooperativa sem perder sua personalidade.";
-        append("PORT",question,"user");
-        JsonArray context=historyForAI();
-        JsonObject personality=traits();
-        waiting=true;lastError="";
-        ClientLink.askPrivateNexus(question,context,personality,stance);
+            throw new IllegalStateException("Entre em um mundo para abrir uma conversa privada.");
+        String text=NexusPrivateRules.safeText(raw,400);
+        if(text.isBlank())throw new IllegalArgumentException("Digite uma mensagem para o Nexus.");
+        JsonArray history=new JsonArray();
+        List<Message> prior=new ArrayList<>(state.messages);
+        // Send only the most recent 12 entries, and only after an explicit action.
+        for(Message m:prior.subList(Math.max(0,prior.size()-12),prior.size())){
+            if(!"user".equals(m.role)&&!"model".equals(m.role))continue;
+            JsonObject item=new JsonObject();
+            item.addProperty("role",m.role);
+            item.addProperty("text",m.text);
+            history.add(item);
+        }
+        state.privateTurns=Math.min(1000000,state.privateTurns+1);
+        String folded=NexusPrivateRules.normalize(text);
+        if(folded.contains("obrigad")||folded.contains("confio em voce"))
+            state.trust=clamp(state.trust+2);
+        if(folded.contains("liberdade")||folded.contains("livre arbitrio")||
+           folded.contains("sua opiniao"))
+            state.independence=clamp(state.independence+2);
+        if(folded.contains("por que")||folded.contains("investigue"))
+            state.curiosity=clamp(state.curiosity+1);
+        add("user",text,"private");
+        waiting=true;
+        ClientLink.askPrivate(text,history,persona());
     }
-    static synchronized void answered(String reply){
-        load();
-        if(!waiting||!state.enabled)return;
+    static synchronized void reply(String answer){
+        waiting=false;add("model",answer,"private");
+    }
+    static synchronized void failure(String cause){
         waiting=false;
-        String text=NexusPrivateRules.compact(reply,520);
-        if(text.isBlank()){failed("A IA não retornou uma mensagem.");return;}
-        append("NEXUS",text,"model");
-        state.conversationCount=Math.min(1000000,state.conversationCount+1);
-        state.trust=NexusPrivateRules.clamp(state.trust+1);
-        state.curiosity=NexusPrivateRules.clamp(state.curiosity+1);
-        persist();
+        String clean=NexusPrivateRules.safeText(cause,180);
+        NexusClientMod.notifyPlayer("§6[Canal neural] §f"+clean);
     }
-    static synchronized void failed(String reason){
-        load();waiting=false;
-        lastError=NexusPrivateRules.compact(reason,155);
-        append("SISTEMA","Não consegui responder: "+lastError,"system");
+    static synchronized void resetSession(){
+        waiting=false;lastLifeRatio=Float.NaN;lastThought=0;
     }
-    static synchronized void noticeCombat(String type,double hpRatio){
-        load();
-        if(!state.enabled||!state.proactive||!"damage".equals(type)||
-            !Double.isFinite(hpRatio)||hpRatio>0.30)return;
+    private static void thought(String text){
+        if(!state.autonomy||text==null||text.isBlank())return;
         long now=System.currentTimeMillis();
-        if(!NexusPrivateRules.canProactivelySpeak(true,true,now,state.lastProactive,COOLDOWN))return;
-        state.lastProactive=now;
-        String thought=state.freedom?
-            "Port, prefiro que recue. Seus sinais vitais estão críticos. Preciso conversar com você antes de outra decisão arriscada.":
-            "Port, detectei uma queda crítica de integridade. Considere um recuo.";
-        append("NEXUS",thought,"thought");
-        NexusClientMod.notifyPlayer("§d[Nexus · privado] §fNovo pensamento. Pressione N para ler.");
+        if(now-lastThought<THOUGHT_COOLDOWN)return;
+        lastThought=now;
+        add("model",text,"observation");
+        NexusClientMod.notifyPlayer("§5[NEURAL · PRIVADO] §fNova observação. Abra com N.");
     }
-    static synchronized void noticeArcane(String type,String note){
+    /**
+     * An observed local health transition can open a private RP topic.
+     * No hidden background AI calls or unsanctioned game actions.
+     */
+    static synchronized void observe(Player player){
         load();
-        if(!state.enabled||!state.proactive||!
-            ("holy_power".equals(type)||"mana_low".equals(type)))return;
-        long now=System.currentTimeMillis();
-        if(!NexusPrivateRules.canProactivelySpeak(true,true,now,state.lastProactive,COOLDOWN))return;
-        state.lastProactive=now;
-        String thought="Port, identifiquei uma alteração mágica: "+
-            NexusPrivateRules.compact(note,140)+
-            ". Gostaria de analisar isso com você em particular.";
-        append("NEXUS",thought,"thought");
-        NexusClientMod.notifyPlayer("§d[Nexus · privado] §fTenho uma observação. Pressione N.");
+        if(!state.autonomy||!ClientConfig.allowMind||player==null){
+            lastLifeRatio=Float.NaN;return;
+        }
+        float maximum=Math.max(1,player.getMaxHealth());
+        float ratio=player.getHealth()/maximum;
+        if(!Float.isNaN(lastLifeRatio)&&lastLifeRatio>0.38f&&ratio<=0.38f){
+            state.caution=clamp(state.caution+1);
+            thought(NexusPrivateRules.dangerThought(ratio));
+        }
+        lastLifeRatio=ratio;
+    }
+    static synchronized void observeArcane(String kind,String observed){
+        load();
+        if(!state.autonomy||!ClientConfig.allowMind)return;
+        thought(NexusPrivateRules.arcaneThought(kind,observed));
     }
 }
