@@ -334,3 +334,31 @@ baixe o JAR do artefato `Nexus-Aterna-Client-1.21.1-NeoForge` da execução
 concluída com sucesso, substitua o antigo em `.minecraft/mods` e reinicie
 o jogo. A tela é parte do mod e não pode ser entregue apenas atualizando o
 serviço Render. O fluxo CI executa testes das permissões e compila o JAR.
+
+
+## Nexus Client 2.4.1: gerenciamento de cota de áudio
+
+A transcrição por Gemini tem cotas do projeto (incluindo requisições por
+minuto e dia). O backend envia no máximo **8 trechos de áudio por minuto**
+por padrão (configurável na Render com `NEXUS_AUDIO_MAX_RPM`, de 1 a 30).
+Quando a API Gemini retorna HTTP 429, a Render pausa novas chamadas ao
+provedor por pelo menos três minutos, com pausas maiores em esgotamentos
+repetidos. O áudio é descartado durante a pausa: **não é armazenado para
+reenvio automático**, e participantes revogados continuam bloqueados.
+
+A versão 2.4.1 do cliente também respeita os novos campos de erro
+`kind: gemini_quota | local_rate | local_busy` e
+`retryAfterSeconds`: interrompe temporariamente novas capturas e
+não reenvia a mesma fala. O comando
+`/nexusclient hearing diagnose` e a aba Audição mostram se a pausa de
+cota está ativa. O client 2.4.0 antigo recebe uma explicação amigável do
+servidor, mas ainda é recomendado substituir seu JAR pelo 2.4.1.
+
+**Limite do Google não pode ser removido pelo mod.** Se houver esgotamento
+diário no projeto, verifique o uso e as cotas em
+[Google AI Studio](https://aistudio.google.com/usage). O sistema só pode
+reduzir solicitações e tentar novamente após a pausa, não prometer
+transcrever todas as conversas durante um bloqueio do provedor.
+
+Mantenha apenas nicks com consentimento explícito no seletor `@a`.
+
