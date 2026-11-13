@@ -223,3 +223,10 @@ Com o Nexus Client 1.4 instalado e o Minecraft aberto, vá em **Eventos do Jogo*
 ## Alertas do Nexus no site (painel 2.8)
 
 Nova opção em Outras ferramentas > Alertas do Nexus, com seis chaves independentes (dano elevado, ataques consecutivos, integridade crítica, risco combinado, cura estrutural e vida crítica), intervalo mínimo entre falas de combate de 15 a 180 segundos, histórico sincronizado de até 30 mensagens realmente enviadas. O painel só aceita salvar com o mod 1.6 conectado e com sua configuração recebida. A atualização dos registros acontece automaticamente enquanto a aba está visível. O mod salva o histórico completo de até 80 falas e as preferências localmente. Não grava tokens nem falas em HTML. O backend da Render mantém somente cópia temporária.
+
+
+## Audição do Nexus (client 1.7 / painel 2.9)
+
+O mod usa a API de cliente do Plasmo Voice 2.1.8 para transcrever trechos curtos de jogadores que autorizaram explicitamente o processamento. Nenhuma captura é feita por padrão. A audição exige ativação manual em cada partida, lista individual de participantes consentidos e pareamento HTTPS. Com memória ativa, salva até 200 transcrições em `.minecraft/config/nexus-hearing-memories.json`; nenhum WAV é salvo. Pode apagar todas usando `/nexusclient hearing forget confirm`.
+
+A página Outras ferramentas > Audição do Nexus permite ativar a audição, escolher participantes, memória e respostas. Exige confirmação de consentimento ao ativar. O site exibe só a contagem de memórias, sem copiá-las. Os trechos WAV de 16 kHz/mono são enviados temporariamente à Render para transcrição Gemini; as falas apenas são respondidas por chat se `reply on`, a personalidade e o chat estiverem ativos, e a frase começar com 'Nexus'.

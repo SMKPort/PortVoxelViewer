@@ -130,3 +130,8 @@ Os alertas possuem **intervalo mínimo global de 45 segundos** entre mensagens d
 Em Outras ferramentas > Alertas do Nexus, escolha as categorias de alertas (dano forte, ataques seguidos, integridade crítica, risco conjunto, cura estrutural e vida crítica) e o intervalo de 15 a 180 segundos entre avisos de combate. Salvar envia a configuração autenticada para o mod e grava em .minecraft/config/nexus-alerts.json. As mensagens só são enviadas com chat, mente, telemetria e autonomia autorizados. A configuração funciona com o navegador fechado.
 
 Toda mensagem espontânea realmente transmitida pelo canal /l &6&l[Nexus Aterna] é registrada em .minecraft/config/nexus-alert-history.json (até 80 entradas). As últimas 30 são sincronizadas periodicamente com o painel e exibidas na interface. A Render mantém apenas uma cópia temporária, e a fonte de verdade fica no computador com Minecraft. Falas de evolução da mente também são incluídas no histórico.
+
+
+## Nexus Client 1.7.0: Plasmo Voice e memória textual
+
+Adicione jogadores **somente depois de obter consentimento explícito**. Comandos: `/nexusclient hearing allow NICK`, `hearing deny NICK`, `hearing on/off`, `hearing memory on/off`, `hearing reply on/off`, `hearing status`, `hearing memories`, `hearing forget confirm`. A audição começa desativada em cada sessão. Requer Plasmo Voice 2.1.8+, pareamento HTTPS, Gemini configurado na Render e mod cliente. Os dados de voz enviados para processamento são descartados após transcrição e não há arquivo de áudio. As transcrições persistentes opcionais ficam somente em `config/nexus-hearing-memories.json`, limite 200. Na página Audição do Nexus há também controles para essa configuração, sempre exigindo confirmação de consentimento.
