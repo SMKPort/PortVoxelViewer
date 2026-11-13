@@ -209,6 +209,7 @@ final class NexusArcaneSensor {
         return "Arcane Sensor "+(state.enabled?"ON":"OFF")+
             " | Iron's Spells "+(available?"DETECTADO":bridge!=null?"AGUARDANDO DADOS":"INDISPONÍVEL")+
             " | mana "+(maxMana>0?Math.round(mana)+"/"+Math.round(maxMana):"sem leitura")+
+            " | Próximos "+(state.scanNearby?"ON":"OFF")+
             " | Conjurações "+state.totalCasts+
             " | avisos "+(state.reactions?"ON":"OFF");
     }

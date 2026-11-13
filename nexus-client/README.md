@@ -192,3 +192,5 @@ O painel mostra as leituras em https://nexus-aterna-rp.onrender.com/#arcano . Um
 As preferências e os 80 eventos mais recentes ficam em .minecraft/config/nexus-arcane.json. O site recebe apenas as 40 entradas mais recentes, e nenhuma coordenada ou conversa de voz. Os dados são enviados somente ao serviço HTTPS pareado e não exigem deixar a página aberta. Se o mod Iron's Spells não estiver instalado ou mudar sua API, o sensor indica indisponibilidade e o resto do Nexus continua funcionando.
 
 Precisa ser validado com o modpack real, principalmente leitura dos atributos de versões específicas e feitiços de terceiros.
+
+O modo de percepção próxima também pode ser ativado sem abrir o site: `/nexusclient arcane nearby on` e `/nexusclient arcane nearby off`. Isso só observa jogadores visíveis e sincronizados pelo cliente em até 24 blocos; não lê áudio deles.

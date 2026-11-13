@@ -166,6 +166,15 @@ public class NexusClientMod {
                 .then(Commands.literal("history").executes(ctx -> {
                     for(String entry:NexusArcaneSensor.history())notifyPlayer(entry);
                     return 1;}))
+                .then(Commands.literal("nearby")
+                    .then(Commands.literal("on").executes(ctx -> {
+                        NexusArcaneSensor.scanNearby(true);ClientLink.sendArcaneState();
+                        notifyPlayer("Percepção mágica próxima ativada (até 24 blocos visíveis).");
+                        return 1;}))
+                    .then(Commands.literal("off").executes(ctx -> {
+                        NexusArcaneSensor.scanNearby(false);ClientLink.sendArcaneState();
+                        notifyPlayer("Percepção mágica próxima desativada.");
+                        return 1;})))
                 .then(Commands.literal("reactions")
                     .then(Commands.literal("on").executes(ctx -> {
                         try{
