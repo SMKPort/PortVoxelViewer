@@ -515,7 +515,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
     if(route==="/api/client/private/reply"&&req.method==="POST"){
       if(privateBusy||Date.now()-lastPrivateAt<4000)
         return err(res,429,"O Nexus ainda está processando uma conversa privada.");
-      privateBusy=true;lastPrivateAt=Date.now();
+      privateBusy=true;
       try{
         const data=await body(req,7500);
         if(data.consent!==true)
@@ -531,6 +531,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
           return err(res,422,"Parâmetros narrativos inválidos.");
         if(typeof data.stance!=="string"||data.stance.length>240)
           return err(res,422,"Estado de decisão inválido.");
+        lastPrivateAt=Date.now();
         const result=await privateReply({
           question:data.question,history:data.history,traits:t,stance:data.stance
         });
