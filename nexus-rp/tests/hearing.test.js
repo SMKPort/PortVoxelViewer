@@ -197,3 +197,72 @@ test("@a collective settings only select previously consenting players",async()=
  assert.equal(view.state.eligibleOnline,1);
  assert.equal(JSON.stringify(view).includes("Charlie"),false);
 });
+
+
+test("Gemini 3.5 Transcribe uses audio-only verbatim input",async()=>{
+ const seen=[];
+ const result=await transcribeClip({audio:wave(),speaker:"FriendA"},{
+  key:"development-key-long-enough",model:"gemini-3.5-transcribe",
+  fetcher:async(url,options)=>{
+   seen.push({url,body:JSON.parse(options.body)});
+   return {ok:true,status:200,json:async()=>({
+    candidates:[{content:{parts:[{text:"Olá, Nexus!"}]}}]
+   })};
+  }
+ });
+ assert.equal(result.transcript,"Olá, Nexus!");
+ assert.equal(seen.length,1);
+ assert.match(seen[0].url,/gemini-3\.5-transcribe:generateContent$/);
+ assert.equal(seen[0].body.contents[0].parts.length,1);
+ assert.equal(seen[0].body.contents[0].parts[0].inlineData.mimeType,"audio/wav");
+ assert.equal(seen[0].body.generationConfig.audioTranscriptionConfig.mode,"VERBATIM");
+});
+
+test("404 legacy audio model falls back to supported dedicated transcriber",async()=>{
+ const attempted=[];
+ const result=await transcribeClip({audio:wave()},{
+  key:"development-key-long-enough",model:"gemini-2.5-flash",
+  fetcher:async(url,options)=>{
+   attempted.push({url,body:JSON.parse(options.body)});
+   if(url.includes("gemini-2.5-flash"))
+    return {ok:false,status:404};
+   return {ok:true,status:200,json:async()=>({
+    candidates:[{content:{parts:[{text:"Transcrição disponível"}]}}]
+   })};
+  }
+ });
+ assert.equal(result.transcript,"Transcrição disponível");
+ assert.equal(attempted.length,2);
+ assert.match(attempted[0].url,/gemini-2\.5-flash:generateContent$/);
+ assert.equal(attempted[0].body.contents[0].parts.length,2);
+ assert.match(attempted[1].url,/gemini-3\.5-transcribe:generateContent$/);
+ assert.equal(attempted[1].body.contents[0].parts.length,1);
+});
+
+test("404 on dedicated transcriber tries modern Flash-Lite once",async()=>{
+ const attempted=[];
+ await transcribeClip({audio:wave()},{
+  key:"development-key-long-enough",model:"gemini-3.5-transcribe",
+  fetcher:async(url)=>{
+   attempted.push(url);
+   if(url.includes("gemini-3.5-transcribe"))
+    return {ok:false,status:404};
+   return {ok:true,status:200,json:async()=>({
+    candidates:[{content:{parts:[{text:"Nexus está ouvindo"}]}}]
+   })};
+  }
+ });
+ assert.equal(attempted.length,2);
+ assert.match(attempted[1],/gemini-3\.5-flash-lite:generateContent$/);
+});
+
+test("Quota and authorization errors never cause model fallback",async()=>{
+ for(const status of [401,403,429,500]){
+  let count=0;
+  await assert.rejects(()=>transcribeClip({audio:wave()},{
+   key:"development-key-long-enough",model:"gemini-2.5-flash",
+   fetcher:async()=>{count++;return {ok:false,status};}
+  }),/Gemini|Limite/);
+  assert.equal(count,1);
+ }
+});
