@@ -329,7 +329,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         const sanitizeRows=(rows,max,mapper)=>allowSocial&&Array.isArray(rows)?
           rows.slice(-max).filter(item=>item&&typeof item==="object")
             .map(mapper).filter(item=>item&&
-              (item.speaker===undefined||permitted.has(item.speaker.toLowerCase()))):[];
+              (item.speaker===undefined||item.speaker==="Nexus"||permitted.has(item.speaker.toLowerCase()))):[];
         const social={
           ...counts,sharePanel:allowSocial,diaryEnabled:source.diaryEnabled===true,
           protectionEnabled:source.protectionEnabled===true,
