@@ -175,6 +175,10 @@ final class NexusArcaneSensor {
         previousSpell="";previousHoly=Double.NaN;lowManaArmed=false;lowManaWarned=false;
     }
     static synchronized void resetSession(){resetReadings();bridge=null;attempted=false;sessionCastCount=0;}
+    static synchronized boolean settingEnabled(){load();return state.enabled;}
+    static synchronized boolean nearbyEnabled(){load();return state.scanNearby;}
+    static synchronized boolean reactionsEnabled(){load();return state.reactions;}
+
     static synchronized void enabled(boolean on){
         load();state.enabled=on;
         if(!on)resetReadings();
