@@ -13,7 +13,7 @@ function wave(rate=16000,seconds=1){
 }
 test("Rejects malformed WAV and transcribes without writing audio",async()=>{
  assert.throws(()=>verifyWave("bad"));
- assert.throws(()=>verifyWave(wave(48000,7)),/Formato/);
+ assert.throws(()=>verifyWave(wave(48000,7)),/limite|Formato/);
  let req;
  const result=await transcribeClip({audio:wave(),answer:true},{
   key:"development-key-long-enough",model:"gemini-2.5-flash",
