@@ -4,10 +4,11 @@ const crypto=require("node:crypto");
 const {getQuestion}=require("./voice_reply.js");
 const {askGemini,aiStatus}=require("./ai_conversation.js");
 const {transcribeClip}=require("./audio_transcription.js");
+const {synthesizeSpeech}=require("./speech_synthesis.js");
 const JOB_MAX_AGE=120000;
-function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=aiStatus,transcribe=transcribeClip}){
+function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=aiStatus,transcribe=transcribeClip,synthesize=synthesizeSpeech}){
   let pair=null,session=null,eventId=0,mind=null,monitor=null,alertsState=null,hearingState=null;
-  let transcribing=0;
+  let transcribing=0,ttsBusy=false,lastTtsAt=0;
   const clipTimes=[],replyTimes=new Map();
   const jobs=new Map(),events=[];
   const err=(res,code,message)=>{send(res,code,{ok:false,error:message});return true;};
@@ -81,9 +82,9 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
   async function handle(req,res,route,url){
     if(!route.startsWith("/api/client/"))return false;
     cleanup();
-    if(["/api/client/pair/new","/api/client/pair/exchange","/api/client/chat","/api/client/voice","/api/client/action","/api/client/monitor/settings","/api/client/alerts/settings","/api/client/hearing/settings"].includes(route)&&!limit(req))return err(res,429,"Limite de requisições. Reduza a frequência.");
-    const userPaths=new Set(["/api/client/pair/new","/api/client/status","/api/client/events","/api/client/chat","/api/client/voice","/api/client/ai/status","/api/client/action","/api/client/job","/api/client/monitor/settings","/api/client/alerts","/api/client/alerts/settings","/api/client/hearing","/api/client/hearing/settings"]);
-    const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/mind","/api/client/ack","/api/client/monitor/state","/api/client/alerts/state","/api/client/hearing/transcribe","/api/client/hearing/state","/api/client/hearing/reply"]);
+    if(["/api/client/pair/new","/api/client/pair/exchange","/api/client/chat","/api/client/voice","/api/client/action","/api/client/monitor/settings","/api/client/alerts/settings","/api/client/hearing/settings","/api/client/hearing/fact"].includes(route)&&!limit(req))return err(res,429,"Limite de requisições. Reduza a frequência.");
+    const userPaths=new Set(["/api/client/pair/new","/api/client/status","/api/client/events","/api/client/chat","/api/client/voice","/api/client/ai/status","/api/client/action","/api/client/job","/api/client/monitor/settings","/api/client/alerts","/api/client/alerts/settings","/api/client/hearing","/api/client/hearing/settings","/api/client/hearing/fact"]);
+    const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/mind","/api/client/ack","/api/client/monitor/state","/api/client/alerts/state","/api/client/hearing/transcribe","/api/client/hearing/state","/api/client/hearing/reply","/api/client/tts"]);
     if(!userPaths.has(route)&&!clientPaths.has(route))return err(res,404,"Rota desconhecida.");
     if(userPaths.has(route)&&!guardUser(req,res))return true;
     if(route==="/api/client/pair/new"&&req.method==="POST"){
@@ -98,7 +99,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         const token=crypto.randomBytes(32).toString("hex");pair=null;
         const player=String(data.player||"").slice(0,16);
         session={tokenHash:hash(token),player:/^[A-Za-z0-9_]{3,16}$/.test(player)?player:"",lastSeen:Date.now()};
-        jobs.clear();events.splice(0,events.length);eventId=0;mind=null;monitor=null;alertsState=null;hearingState=null;transcribing=0;clipTimes.length=0;replyTimes.clear();
+        jobs.clear();events.splice(0,events.length);eventId=0;mind=null;monitor=null;alertsState=null;hearingState=null;transcribing=0;ttsBusy=false;lastTtsAt=0;clipTimes.length=0;replyTimes.clear();
         send(res,200,{ok:true,token,player:session.player,ttl:"until-service-restart-or-repair"});return true;
       }catch(e){return err(res,400,String(e.message));}
     }
@@ -187,9 +188,43 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         const sensitivity=data.sensitivity===undefined?55:data.sensitivity;
         if(!Number.isInteger(sensitivity)||sensitivity<20||sensitivity>100)
           return err(res,422,"Sensibilidade permitida entre 20 e 100.");
+        const social=data.social||{diaryEnabled:true,protectionEnabled:true,sharePanel:false};
+        if(!["diaryEnabled","protectionEnabled","sharePanel"].every(k=>typeof social[k]==="boolean"))
+          return err(res,422,"Preferências de memória social inválidas.");
+        const speaker=data.speaker||{enabled:false,voice:"auto"};
+        if(typeof speaker.enabled!=="boolean"||
+          !["auto","Charon","Orus","Kore","Puck","Algenib","Fenrir"].includes(speaker.voice))
+          return err(res,422,"Preferências de voz inválidas.");
+        if(social.sharePanel&&!data.consentConfirmed)
+          return err(res,422,"Confirme a autorização para compartilhar o diário com o painel.");
         send(res,200,enqueue("hearing_settings",{
           listening:data.listening,memory:data.memory,answer:data.answer,
-          sensitivity,allowedPlayers
+          sensitivity,allowedPlayers,social,speaker
+        }));return true;
+      }catch(e){return err(res,422,String(e.message));}
+    }
+    if(route==="/api/client/hearing/fact"&&req.method==="POST"){
+      try{
+        const data=await body(req,1100);
+        if(!hearingState?.social?.sharePanel)
+          return err(res,403,"Habilite a visualização do diário no cliente.");
+        const action=String(data.action||"");
+        if(!["correct","delete","forget_player","clear"].includes(action))
+          return err(res,422,"Ação de memória inválida.");
+        const id=Number(data.id);
+        if(["correct","delete"].includes(action)&&(!Number.isSafeInteger(id)||id<1))
+          return err(res,422,"Identificador de memória inválido.");
+        const player=String(data.player||"");
+        if(action==="forget_player"&&!/^[A-Za-z0-9_]{3,16}$/.test(player))
+          return err(res,422,"Jogador inválido.");
+        const corrected=String(data.text||"").trim();
+        if(action==="correct"&&(corrected.length<3||corrected.length>250))
+          return err(res,422,"Correção de memória inválida.");
+        if(action==="clear"&&data.confirm!==true)
+          return err(res,422,"Confirmação explícita necessária.");
+        send(res,200,enqueue("mind_memory",{
+          action,id:Number.isSafeInteger(id)?id:0,player,text:corrected,
+          confirm:action==="clear"&&data.confirm===true
         }));return true;
       }catch(e){return err(res,422,String(e.message));}
     }
@@ -267,19 +302,59 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
           !Array.isArray(data.allowedPlayers)||data.allowedPlayers.length>20||
           !data.allowedPlayers.every(s=>typeof s==="string"&&/^[A-Za-z0-9_]{3,16}$/.test(s)))
           return err(res,422,"Estado de audição inválido.");
+        const source=data.social||{},voice=data.speaker||{};
+        const counts={};
+        for(const k of ["factCount","diaryCount","relationCount","turnCount"])
+          counts[k]=numericValue(source[k],0,100000,k==="factCount"?0:0);
+        const allowSocial=source.sharePanel===true;
+        const safeText=(s,n)=>String(s||"").replace(/[\u0000-\u001f\u007f]/g," ").slice(0,n);
+        const permitted=new Set(data.allowedPlayers.map(s=>s.toLowerCase()));
+        const sanitizeRows=(rows,max,mapper)=>allowSocial&&Array.isArray(rows)?
+          rows.slice(-max).filter(item=>item&&typeof item==="object")
+            .map(mapper).filter(item=>item&&
+              (item.speaker===undefined||permitted.has(item.speaker.toLowerCase()))):[];
+        const social={
+          ...counts,sharePanel:allowSocial,diaryEnabled:source.diaryEnabled===true,
+          protectionEnabled:source.protectionEnabled===true,
+          facts:sanitizeRows(source.facts,30,item=>({
+            id:numericValue(item.id,0,999999999,0),
+            at:numericValue(item.at,0,9999999999999,0),
+            speaker:safeText(item.speaker,16),kind:safeText(item.kind,30),
+            text:safeText(item.text,270),corrected:item.corrected===true
+          })),
+          diary:sanitizeRows(source.diary,35,item=>({
+            id:numericValue(item.id,0,999999999,0),
+            at:numericValue(item.at,0,9999999999999,0),
+            speaker:safeText(item.speaker,16),kind:safeText(item.kind,30),
+            text:safeText(item.text,350)
+          })),
+          relations:sanitizeRows(source.relations,20,item=>({
+            player:safeText(item.player,16),
+            familiarity:numericValue(item.familiarity,0,100,0),
+            affinity:numericValue(item.affinity,0,100,0),
+            interactions:numericValue(item.interactions,0,100000,0)
+          })).filter(item=>permitted.has(item.player.toLowerCase())),
+          turns:sanitizeRows(source.turns,10,item=>({
+            speaker:safeText(item.speaker,16),text:safeText(item.text,270),
+            at:numericValue(item.at,0,9999999999999,0)
+          }))
+        };
         hearingState={ready:data.ready,listening:data.listening,
           memory:data.memory,answer:data.answer,allowedPlayers:data.allowedPlayers,
           sensitivity:numericValue(data.sensitivity,20,100,55),
           memoryCount:numericValue(data.memoryCount,0,250000,0),
-          memoryFull:data.memoryFull===true,
-          queued:numericValue(data.queued,0,36,0),
+          memoryFull:data.memoryFull===true,queued:numericValue(data.queued,0,36,0),
           inFlight:numericValue(data.inFlight,0,3,0),
           processed:numericValue(data.processed,0,9999999,0),
           dropped:numericValue(data.dropped,0,9999999,0),
           retries:numericValue(data.retries,0,9999999,0),
-          lastSpeaker:String(data.lastSpeaker||"").slice(0,16),
-          lastError:String(data.lastError||"").slice(0,120),
-          syncedAt:new Date().toISOString()};
+          lastSpeaker:safeText(data.lastSpeaker,16),
+          lastError:safeText(data.lastError,120),
+          speaker:{enabled:voice.enabled===true,
+            voice:["auto","Charon","Orus","Kore","Puck","Algenib","Fenrir"].includes(voice.voice)?
+              voice.voice:"auto",playing:voice.playing===true,
+            lastError:safeText(voice.lastError,100)},
+          social,syncedAt:new Date().toISOString()};
         send(res,200,{ok:true});return true;
       }catch(e){return err(res,422,String(e.message));}
     }
@@ -340,6 +415,21 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
           e.publicStatus?String(e.message).slice(0,250):
           "Falha ao preparar resposta. "+String(e.message||"").slice(0,140));
       }
+    }
+    if(route==="/api/client/tts"&&req.method==="POST"){
+      if(ttsBusy||Date.now()-lastTtsAt<9000)
+        return err(res,429,"Aguarde entre as falas do Nexus.");
+      if(!hearingState?.speaker?.enabled)
+        return err(res,403,"Ative a voz local no Nexus Client.");
+      ttsBusy=true;lastTtsAt=Date.now();
+      try{
+        const data=await body(req,1200);
+        const result=await synthesize({
+          text:data.text,stage:data.stage,voice:data.voice
+        });
+        send(res,200,{ok:true,...result});return true;
+      }catch(e){return err(res,Number(e.publicStatus)||502,String(e.message).slice(0,180));}
+      finally{ttsBusy=false;}
     }
     if(route==="/api/client/monitor/state"&&req.method==="POST"){
       try{
