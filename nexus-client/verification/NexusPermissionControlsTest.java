@@ -22,17 +22,11 @@ public final class NexusPermissionControlsTest {
         NexusPermissionControls.set("mind",false);
         check(!NexusPermissionControls.enabled("autonomy"),"Revoking Mind disables autonomy");
 
-        expectedError(()->NexusPermissionControls.set("hearing",true),
-            "Consent required");
-        expectedError(()->NexusPermissionControls.set("collective",true),
-            "Selector is never consent");
-        NexusHearing.authorized=true;
-        NexusHearing.ready=true;
-        NexusPermissionControls.enableDialogue();
-        check(NexusHearing.listening&&NexusHearing.reply,
-            "Dialogue starts capture and reply only after consent");
-        check(ClientConfig.allowChat&&ClientConfig.allowMind&&ClientConfig.allowAutonomy,
-            "Dialogue authorizes dependencies");
+        try{
+            NexusPermissionControls.set("hearing",true);
+            throw new AssertionError("Retired audio permission still accepted.");
+        }catch(IllegalArgumentException expected){}
+        check(ClientConfig.allowMind==false,"Mind remains under user control.");
 
         NexusPrivateMind.messages=3;
         NexusPermissionControls.set("privateMemory",true);
@@ -51,12 +45,6 @@ public final class NexusPermissionControlsTest {
         check(NexusSocial.share,"Sharing is a separate opt-in");
         NexusPermissionControls.set("share",false);
         check(!NexusSocial.share,"Sharing can be revoked");
-
-        NexusHearing.ready=false;
-        NexusHearing.listening=false;
-        expectedError(()->NexusPermissionControls.enableDialogue(),
-            "Plasmo not available");
-        check(!NexusHearing.listening,"Failed authorization must not start listening");
 
         System.out.println("NexusPermissionControlsTest OK");
     }
