@@ -206,6 +206,8 @@ final class NexusPrivateMind {
         // Send only the most recent 12 entries, and only after an explicit action.
         for(Message m:prior.subList(Math.max(0,prior.size()-12),prior.size())){
             if(!"user".equals(m.role)&&!"model".equals(m.role))continue;
+            // Obsolete Mizora-focused chatter must not prime unrelated answers.
+            if(!NexusPrivateRules.includeOldMessage(text,m.text))continue;
             JsonObject item=new JsonObject();
             item.addProperty("role",m.role);
             item.addProperty("text",m.text);
