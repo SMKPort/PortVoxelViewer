@@ -75,6 +75,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusPermissions.java \
             nexus-client/verification/NexusPermissionsSmokeTest.java
           java -ea -cp /tmp/nexus-permissions com.port.nexusclient.NexusPermissionsSmokeTest
+      - name: Test dialogue wake phrases
+        run: |
+          mkdir -p /tmp/nexus-wake-tests
+          javac -encoding UTF-8 -d /tmp/nexus-wake-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusWakeWords.java \
+            nexus-client/verification/NexusWakeWordsTest.java
+          java -ea -cp /tmp/nexus-wake-tests com.port.nexusclient.NexusWakeWordsTest
       - name: Compile mod
         run: gradle -p nexus-client build --no-daemon --stacktrace
       - name: Upload JAR
