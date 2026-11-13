@@ -265,3 +265,10 @@ Rotas autenticadas:
 - POST /api/client/arcane/state (cliente HTTPS pareado)
 
 O Java observa dados Iron's Spells via ponte reflexiva; caso não esteja instalado, nenhuma leitura mágica é inventada. Todos os valores enviados ao site são limitados e validados. O histórico local contém até 80 eventos; o backend sincroniza até 40, temporariamente, em memória. A página tem acesso protegido pelo código existente do Nexus RP. Os avisos automáticos são desativados por padrão, e o usuário precisa ativar tanto o Arcane Sensor quanto, separadamente, os comandos de chat/mente/autonomia.
+
+
+## Nexus Mind 2.2.0: respostas privadas sem broadcast
+
+POST /api/client/private/reply aceita apenas o token do cliente pareado, consentimento explícito e entradas curtas. Uma resposta Gemini é devolvida somente ao mod para exibição local. A rota não enfileira comandos de chat nem grava histórico de conversas no servidor. Envia ao Gemini o texto atual, pequeno histórico fornecido pelo usuário e indicadores narrativos de personalidade (independência, confiança, estágio). Usa NEXUS_GEMINI_API_KEY/GEMINI_API_KEY e NEXUS_GEMINI_MODEL.
+
+A interface privada fica dentro do Minecraft (tecla N), não no painel público. Preferências de livre-arbítrio RP e iniciativa privada são controles locais. O livre-arbítrio é somente uma interpretação ficcional e não habilita controle autônomo de máquinas, jogadores ou comandos de servidor.

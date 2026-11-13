@@ -194,3 +194,27 @@ As preferências e os 80 eventos mais recentes ficam em .minecraft/config/nexus-
 Precisa ser validado com o modpack real, principalmente leitura dos atributos de versões específicas e feitiços de terceiros.
 
 O modo de percepção próxima também pode ser ativado sem abrir o site: `/nexusclient arcane nearby on` e `/nexusclient arcane nearby off`. Isso só observa jogadores visíveis e sincronizados pelo cliente em até 24 blocos; não lê áudio deles.
+
+
+## Nexus Mind 2.2.0: canal neural privado e livre-arbítrio RP
+
+Minecraft 1.21.1 NeoForge, client-only. A tecla N abre o canal neural privado (configurável em Controles). Também é possível abrir usando /nexusclient private open. O canal exige pareamento HTTPS com a Render para respostas Gemini, mas NÃO usa mensagens /l nem o chat público do servidor. O texto aparece somente na interface do cliente local.
+
+Para começar:
+1. /nexusclient private on
+2. /nexusclient private freedom on
+3. Pressione N, escreva a mensagem e clique em ENVIAR (ou Enter)
+
+Opcional:
+- /nexusclient private proactive on : autoriza pensamentos espontâneos privados sobre eventos observados, com cooldown. Para perceber danos, use também /nexusclient mind on. Não executa IA em segundo plano.
+- /nexusclient private proactive off : interrompe novas iniciativas privadas.
+- /nexusclient private freedom off : muda para personalidade cooperativa, sem bloquear as opções reais do jogador.
+- /nexusclient private memory on : permite persistir as conversas localmente em config/nexus-private-mind.json.
+- /nexusclient private memory off : desativa a persistência e apaga o histórico privado anterior.
+- /nexusclient private status : informa os estados e métricas narrativas.
+- /nexusclient private clear confirm : apaga a conversa privada local.
+- /nexusclient private off : desliga o canal sem enviar novas mensagens privadas.
+
+A liberdade de escolha é SIMULADA para roleplay. O Nexus pode discordar, debater ou optar por discutir em particular, mas não controla ações reais do Minecraft nem impede o Port de agir. Falas espontâneas dependem de acontecimentos detectados, como dano crítico ou alterações de mana/Holy; o aviso é local, sem transmissão aos outros jogadores.
+
+Segurança e privacidade: quando você envia uma mensagem privada, apenas sua mensagem e uma janela curta (até 12 entradas) de histórico são transmitidas pelo HTTPS pareado ao Gemini na Render. Nenhum histórico de conversa privado é armazenado no servidor Node, mas o conteúdo passa pelo provedor de IA para gerar a resposta. Memória privada em disco vem DESATIVADA por padrão e, quando habilitada, usa um arquivo JSON local em texto simples, sem criptografia. Não compartilhe esse arquivo. As observações espontâneas são locais e não são enviadas automaticamente ao Gemini.
