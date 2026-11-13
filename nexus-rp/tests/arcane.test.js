@@ -36,7 +36,7 @@ test("Arcane routes require owner for settings and paired client for readings",a
  assert.equal(config.status,200);
  const job=(await call("GET","/api/client/poll",client)).payload.jobs[0];
  assert.equal(job.type,"arcane_settings");
- assert.deepEqual(job.payload,{enabled:true,reactions:true});
+ assert.deepEqual(job.payload,{enabled:true,reactions:true,scanNearby:false});
 });
 test("Arcane readings use synced client values, distinguish RP arm, and sanitize events",async()=>{
  const call=harness();
@@ -49,7 +49,10 @@ test("Arcane readings use synced client values, distinguish RP arm, and sanitize
   castProgress:0.55,spellId:"irons_spellbooks:healing_circle",
   spellName:"Círculo de cura",school:"irons_spellbooks:holy",spellLevel:3,
   spellPower:1.25,holyPower:1.40,armAvailable:true,armIntegrity:72,armEnergy:88,
-  totalCasts:17,lastReadAt:1794566000000,lastError:"",
+  totalCasts:17,totalNearby:2,scanNearby:true,
+  nearby:[{player:"FriendA",spellId:"irons_spellbooks:fireball",
+    spellName:"Fireball",school:"irons_spellbooks:fire",level:2,distance:9}],
+  lastReadAt:1794566000000,lastError:"",
   events:[{at:1794566000000,type:"cast_start",level:3,
     spellId:"irons_spellbooks:healing_circle",school:"irons_spellbooks:holy",
     message:"Iniciada <script>magia</script>"}]};
@@ -59,6 +62,8 @@ test("Arcane readings use synced client values, distinguish RP arm, and sanitize
  assert.equal(view.payload.state.mana,43);
  assert.equal(view.payload.state.armIntegrity,72);
  assert.equal(view.payload.state.events.length,1);
+ assert.equal(view.payload.state.nearby[0].player,"FriendA");
+ assert.equal(view.payload.state.nearby[0].distance,9);
  assert.equal(view.payload.state.events[0].message,"Iniciada <script>magia</script>");
  assert.equal(JSON.stringify(view.payload).includes("event:unknown"),false);
  assert.ok(view.payload.state.syncedAt);

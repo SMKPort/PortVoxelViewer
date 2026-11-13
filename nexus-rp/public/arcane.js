@@ -3,7 +3,7 @@
 window.NexusRPArcaneUpgrade=function(rp,views){
   const E=rp.escape;
   let remote=null,error="",busy=false,dirty=false,loading=false;
-  let values={enabled:false,reactions:false};
+  let values={enabled:false,reactions:false,scanNearby:false};
   const visible=()=>location.hash==="#arcano"&&document.visibilityState!=="hidden";
   function number(value,decimals=0){
     const n=Number(value);
@@ -69,7 +69,18 @@ window.NexusRPArcaneUpgrade=function(rp,views){
       meter("Integridade das placas",arm?s.armIntegrity:null,
         "Estado narrativo das placas do braço direito","red")+
       meter("Energia do Nexus",arm?s.armEnergy:null,
-        "Energia simulada do sistema de armadura","gold")+'</div>';
+        "Energia simulada do sistema de armadura","gold")+'</div>'+nearbyPlayers();
+  }
+  function nearbyPlayers(){
+    const s=state(),list=s?.nearby||[];
+    if(!s?.scanNearby)return '<div class="nexus-arcane-nearby"><small>Percepção de magia próxima: desligada.</small></div>';
+    const rows=list.length?list.map(item=>
+      '<div class="nexus-arcane-nearby-row"><strong>'+E(item.player)+'</strong>'+
+      '<span>'+E(item.spellName||item.spellId)+' · '+number(item.distance,0)+
+      ' blocos</span></div>').join(""):'<p class="hint">Nenhuma conjuração próxima detectada em até 24 blocos.</p>';
+    return '<div class="nexus-arcane-nearby"><div class="card-header"><h3>PERCEPÇÃO MÁGICA PRÓXIMA</h3></div>'+
+      '<p class="hint">Apenas jogadores visíveis e dados de conjuração recebidos pelo cliente. Não permite enxergar magias através de chunks descarregados.</p>'+
+      rows+'</div>';
   }
   function eventHistory(){
     const events=state()?.events||[];
@@ -92,6 +103,9 @@ window.NexusRPArcaneUpgrade=function(rp,views){
       '<label class="nexus-alert-option"><input type="checkbox" name="reactions"'+
       (values.reactions?" checked":"")+disabled+'><span><strong>Respostas narrativas no chat</strong>'+
       '<small>Emite falas do Nexus quando há conjuração ou alterações importantes. Exige mind, chat e autonomy ativados.</small></span></label>'+
+      '<label class="nexus-alert-option"><input type="checkbox" name="scanNearby"'+
+      (values.scanNearby?" checked":"")+disabled+'><span><strong>Percepção mágica próxima (24 blocos)</strong>'+
+      '<small>Observa estados de conjuração de jogadores visíveis pelo seu cliente. Não consulta dados administrativos do servidor.</small></span></label>'+
       '<button class="btn gold" type="submit"'+disabled+'>'+
       (busy?"APLICANDO NO MINECRAFT...":"SALVAR CONFIGURAÇÕES")+'</button></form>';
   }
@@ -137,7 +151,7 @@ window.NexusRPArcaneUpgrade=function(rp,views){
       if(!reply.ok||json.ok===false)throw Error(json.error||"Falha na API.");
       remote=json;error="";
       if(!dirty&&json.state){
-        const next={enabled:json.state.enabled,reactions:json.state.reactions};
+        const next={enabled:json.state.enabled,reactions:json.state.reactions,scanNearby:json.state.scanNearby===true};
         if(JSON.stringify(next)!==JSON.stringify(values)){
           values=next;rp.rerender();
         }
@@ -153,7 +167,7 @@ window.NexusRPArcaneUpgrade=function(rp,views){
     e.preventDefault();e.stopImmediatePropagation();
     if(busy||!remote?.online)return;
     const form=new FormData(e.target);
-    const settings={enabled:form.has("enabled"),reactions:form.has("reactions")};
+    const settings={enabled:form.has("enabled"),reactions:form.has("reactions"),scanNearby:form.has("scanNearby")};
     if(settings.reactions&&!settings.enabled)return rp.toast("Ative primeiro o Núcleo Arcano.");
     busy=true;rp.rerender();
     try{

@@ -182,10 +182,11 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
       try{
         const data=await body(req,1000);
         if(typeof data.enabled!=="boolean"||typeof data.reactions!=="boolean"||
+          data.scanNearby!==undefined&&typeof data.scanNearby!=="boolean"||
           data.reactions&&!data.enabled)
           return err(res,422,"Configure o Núcleo Arcano antes de ativar reações.");
         send(res,200,enqueue("arcane_settings",{
-          enabled:data.enabled,reactions:data.reactions
+          enabled:data.enabled,reactions:data.reactions,scanNearby:data.scanNearby===true
         }));return true;
       }catch(e){return err(res,422,String(e.message));}
     }
@@ -326,15 +327,27 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
           typeof data.present!=="boolean"||typeof data.available!=="boolean"||
           !Array.isArray(data.events)||data.events.length>80)
           return err(res,422,"Estado arcano inválido.");
-        const kinds=new Set(["cast_start","cast_end","mana_low","mana_recovered","holy_power"]);
+        const kinds=new Set(["cast_start","cast_end","mana_low","mana_recovered","holy_power","nearby_cast"]);
         const txt=(value,n)=>String(value||"").replace(/[\u0000-\u001f\u007f]/g," ").slice(0,n);
         if(data.events.some(e=>!e||typeof e!=="object"||!kinds.has(e.type)||
           typeof e.message!=="string"||e.message.length>210||
           !Number.isFinite(Number(e.at))||Number(e.at)<=0))
           return err(res,422,"Histórico arcano inválido.");
         const available=data.enabled&&data.present&&data.available;
+        const scanNearby=data.enabled&&data.scanNearby===true;
+        if(data.nearby!==undefined&&(!Array.isArray(data.nearby)||data.nearby.length>12))
+          return err(res,422,"Leituras de proximidade inválidas.");
         arcaneState={
-          enabled:data.enabled,reactions:data.reactions,
+          enabled:data.enabled,reactions:data.reactions,scanNearby,
+          nearby:available&&scanNearby?(data.nearby||[]).map(item=>({
+            player:/^[A-Za-z0-9_]{3,16}$/.test(String(item?.player||""))?
+              String(item.player):"",
+            spellId:txt(item?.spellId,90),spellName:txt(item?.spellName,70),
+            school:txt(item?.school,90),
+            level:numericValue(item?.level,0,100,0),
+            distance:numericValue(item?.distance,0,24,0)
+          })).filter(item=>item.player):[],
+          totalNearby:numericValue(data.totalNearby,0,9999999,0),
           present:data.enabled&&data.present,available,
           source:"Iron's Spells n Spellbooks (cliente)",
           mana:available?numericValue(data.mana,0,1000000,null):null,
