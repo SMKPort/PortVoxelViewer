@@ -18,11 +18,7 @@ neoForge {
 repositories {
     maven { name = 'plasmoverse-releases'; url = 'https://repo.plasmoverse.com/releases' }
 }
-dependencies {
-    compileOnly('su.plo.voice.api:client:2.1.8') { transitive = false }
-    compileOnly('su.plo.voice.api:common:2.1.8') { transitive = false }
-    compileOnly('su.plo.voice:protocol:2.1.8') { transitive = false }
-}
+// Paid Plasmo transcription feature removed. No Plasmo API dependencies.
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
     var replaceProperties = [
         minecraft_version: minecraft_version,
