@@ -244,3 +244,45 @@ As mensagens públicas continuam aparecendo como enviadas pela **conta do
 jogador** e o compartilhamento de diário é restrito ao painel privado.
 No modo `off`, gravações antigas e memórias textuais são preservadas; para
 apagá-las, use os comandos específicos de esquecimento.
+
+
+## Correção de diálogo do Plasmo Voice (Nexus Client 2.3.0)
+
+A **audição** e a **resposta por chat** são permissões diferentes.
+O comando `/nexusclient hearing on` sozinho não ativa o diálogo.
+Após cadastrar os participantes que consentiram com `/nexusclient hearing allow NICK`,
+use:
+
+```text
+/nexusclient hearing dialogue on
+```
+
+Esse comando local ativa audição, resposta, chat, mente e autonomia,
+conservando as permissões de cada participante. Não dá permissão de
+administrador nem permite ouvir participantes que não consentiram.
+O Nexus responde pelo canal `/l &6&l[Nexus Aterna]`, usando a conta do
+próprio jogador. Confirme que esse canal está disponível no servidor.
+
+Para diagnosticar quando não aparecer resposta:
+
+```text
+/nexusclient hearing diagnose
+```
+
+O diagnóstico informa se as respostas estão ON, quantos trechos foram
+transcritos, quantos vieram vazios, quantos não chamaram o Nexus, quantos
+pedidos à IA foram iniciados e quantas respostas foram enviadas ou bloqueadas.
+Não expõe transcrições no diagnóstico. O Nexus reconhece frases como
+`Ei, Nexus, pode responder?` e `Nexus, você me ouve?`.
+Respostas longas são ajustadas ao limite do chat e uma resposta pode
+aguardar brevemente o cooldown de 4,5 segundos.
+
+Para desligar somente as respostas, use
+`/nexusclient hearing dialogue off`. Para interromper a audição,
+use `/nexusclient hearing off`.
+
+**Instalação:** baixe o novo JAR da compilação de
+[GitHub Actions](https://github.com/SMKPort/PortVoxelViewer/actions/workflows/nexus-client-build.yml)
+na branch `nexus-aterna-rp`. Substitua a versão anterior e reinicie
+o Minecraft. As mudanças de diálogo ocorrem no mod cliente, portanto
+não aparecem apenas com um deploy da Render.
