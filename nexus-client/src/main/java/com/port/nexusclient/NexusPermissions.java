@@ -33,7 +33,8 @@ final class NexusPermissions {
         NexusSocial.setting("diary", true);
         NexusSocial.setting("protection", true);
         NexusSocial.setting("share", true);
-        NexusSpeaker.enable(true);
+        // TTS Gemini may also be metered; leave it an independent opt-in.
+        // The "Ativar tudo" button never turns on paid speech generation.
 
         // Legacy hearing is retired. Never enable paid audio capture.
         NexusHearing.listen(false);
@@ -41,7 +42,7 @@ final class NexusPermissions {
         ClientLink.sendArcaneState();
 
         NexusClientMod.notifyPlayer("Modo TOTAL ativado: chat, telemetria, mente, autonomia, "
-            + "arcano, canal privado, diário, proteção e voz local.");
+            + "arcano, canal privado, diário e proteção. TTS permanece opcional.");
         NexusClientMod.notifyPlayer("As mensagens públicas saem da sua conta. "
             + "O diário pode ser consultado no painel privado; use permissions off para revogar.");
     }
