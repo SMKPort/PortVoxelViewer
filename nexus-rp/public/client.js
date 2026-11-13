@@ -129,7 +129,7 @@ window.NexusRPClientUpgrade=function(rp,views){
    '<section class="card"><div class="card-header"><h2>VINCULAÇÃO SEGURA</h2></div>'+
    '<div class="rp-evo-emergency '+(on?"online":"")+'"><strong>'+(on?"MINECRAFT CONECTADO":"AGUARDANDO MINECRAFT")+'</strong><span>Jogador: '+E(player)+'</span></div>'+
    '<p class="hint">1. Instale o mod Nexus Aterna Client na pasta mods do Minecraft 1.21.1 com NeoForge.</p>'+ 
-   '<p><a href="https://github.com/SMKPort/PortVoxelViewer/actions/runs/43434631834" target="_blank" rel="noopener noreferrer">Baixar Nexus Aterna Client 2.1.0 (GitHub Actions)</a></p>'+
+   '<p><a href="https://github.com/SMKPort/PortVoxelViewer/actions/runs/43435109746" target="_blank" rel="noopener noreferrer">Baixar Nexus Aterna Client 2.1.0 (GitHub Actions)</a></p>'+
    '<p class="hint">2. Nas Configurações, informe a chave HTTPS da Render uma vez. Marque <strong>Lembrar neste dispositivo</strong> para não precisar digitá-la novamente. Não precisa de senha RCON.</p>'+
    '<p class="hint">3. No jogo, execute <code>/nexusclient pair SEU_CODIGO</code>. Este comando é executado no cliente, não no servidor.</p>'+
    '<p class="hint">4. Autorize mensagens com <code>/nexusclient chat on</code> e telemetria com <code>/nexusclient telemetry on</code>.</p>'+
@@ -143,7 +143,7 @@ window.NexusRPClientUpgrade=function(rp,views){
    '<div class="kv"><span>Armadura / rituais</span><span class="value">Avisos e UI local</span></div>'+
    '<div class="kv"><span>Emotes reais</span><span class="value">Exigem integração com o mod de emotes</span></div>'+
    '<div class="divider"></div><div class="notice">Mensagens enviadas pelo painel são transmitidas como mensagens normais do personagem e ficam sujeitas às regras, filtros e limites do servidor. Não é possível executar comandos de administrador ou modificar outros jogadores.</div>'+
-   '<div class="buttons">'+button("open-events","MONITORAR EVENTOS","alt")+button("open-alerts","ALERTAS DO NEXUS","gold")+button("open-hearing","AUDIÇÃO DO NEXUS","alt")+button("open-mind","NEXUS MIND 2.0","gold")+button("open-chat","ABRIR COMUNICADOR","alt")+'</div></section></div>'+
+   '<div class="buttons">'+button("open-events","MONITORAR EVENTOS","alt")+button("open-alerts","ALERTAS DO NEXUS","gold")+button("open-hearing","AUDIÇÃO DO NEXUS","alt")+button("open-mind","NEXUS MIND 2.0","gold")+button("open-arcane","NÚCLEO ARCANO","alt")+button("open-chat","ABRIR COMUNICADOR","alt")+'</div></section></div>'+
    '<section class="card" style="margin-top:16px"><div class="card-header"><h2>DIAGNÓSTICO DA API</h2></div>'+
    '<p class="hint">Verifica se seu navegador consegue acessar a Render e se as rotas estão respondendo JSON. Não exibe sua senha nem o código de acesso.</p>'+
    button("diagnostic","TESTAR API E MOSTRAR DETALHES","gold")+
@@ -172,6 +172,7 @@ window.NexusRPClientUpgrade=function(rp,views){
       if(b.dataset.nexusClient==="open-alerts")return rp.navigate("alertas");
       if(b.dataset.nexusClient==="open-hearing")return rp.navigate("audicao");
       if(b.dataset.nexusClient==="open-mind")return rp.navigate("mente");
+      if(b.dataset.nexusClient==="open-arcane")return rp.navigate("arcano");
      if(b.dataset.nexusClient==="pair"){lastPair=await backend("/pair/new",{method:"POST",body:"{}"});rp.toast("Código criado. Insira-o no comando do Minecraft.");}
      if(b.dataset.nexusClient==="status"){await getStatus();rp.toast(lastStatus.online?"Nexus Client conectado!":"Minecraft ainda não pareado ou offline.");}
      if(b.dataset.nexusClient==="diagnostic"){await runDiagnostics();rp.toast("Diagnóstico exibido no rodapé da aba Nexus Client.");}
