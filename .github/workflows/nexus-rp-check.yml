@@ -22,7 +22,6 @@ jobs:
           node --check nexus-rp/server.js
           node --check nexus-rp/bridge.js
           node --check nexus-rp/client_relay.js
-          node --check nexus-rp/audio_transcription.js
           node --check nexus-rp/speech_synthesis.js
           node --check nexus-rp/voice_reply.js
           node --check nexus-rp/ai_conversation.js
