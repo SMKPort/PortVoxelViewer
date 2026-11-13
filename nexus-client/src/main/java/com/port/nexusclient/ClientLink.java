@@ -41,7 +41,7 @@ final class ClientLink {
 
     static void reset() {
         ticks=0;previousHealth=Float.NaN;previousEffects="";previousPlayer="";
-        NexusMind.resetSession();COMBAT_ALERTS.reset();
+        NexusMind.resetSession();COMBAT_ALERTS.reset();NexusHearing.resetSession();
         invalidTokenNotice=false;POLLING.set(false);
     }
 
@@ -182,36 +182,60 @@ final class ClientLink {
             post("/api/client/telemetry",data,true).exceptionally(err -> null);
     }
 
-    static void transcribeHearing(String speaker,byte[] wav,boolean answer,
-                                  JsonArray history,List<String> consentedPlayers){
-        if(ClientConfig.token.isEmpty()){
-            NexusHearing.onTranscriptionError("Faça o pareamento com a Render para transcrever.");
+    static void transcribeHearing(long clipId,String speaker,byte[] wav,List<String> allowedPlayers){
+        if(ClientConfig.token.isBlank()){
+            NexusHearing.onTranscriptionError(clipId,"Nexus não está pareado com a Render.",true);
             return;
         }
         JsonObject data=new JsonObject();
         data.addProperty("speaker",speaker);
         data.addProperty("audio",java.util.Base64.getEncoder().encodeToString(wav));
-        data.addProperty("answer",answer);
-        data.add("history",history);
-        data.add("consentedPlayers",JSON.toJsonTree(consentedPlayers));
+        data.addProperty("answer",false); // Uses local memory search after transcription.
+        data.add("consentedPlayers",JSON.toJsonTree(allowedPlayers));
         Minecraft mc=Minecraft.getInstance();
-        post("/api/client/hearing/transcribe",data,true)
+        post("/api/client/hearing/transcribe",data,true,Duration.ofSeconds(45))
             .thenAccept(result -> mc.execute(() -> {
-                if(result.has("ok")&&result.get("ok").getAsBoolean()&&
-                   result.has("transcript")){
-                    NexusHearing.onTranscription(speaker,result.get("transcript").getAsString(),
-                        result.has("reply")?result.get("reply").getAsString():"");
+                if(result.has("ok")&&result.get("ok").getAsBoolean()&&result.has("transcript")){
+                    NexusHearing.onTranscription(clipId,result.get("transcript").getAsString());
                 }else{
-                    NexusHearing.onTranscriptionError(result.has("error")?
-                        result.get("error").getAsString():"Falha na resposta da Render.");
+                    String error=errorText(result);
+                    String normalized=error.toLowerCase(java.util.Locale.ROOT);
+                    boolean retry=normalized.contains("limite")||normalized.contains("aguarde")||
+                        normalized.contains("ocupad")||normalized.contains("indispon")||
+                        normalized.contains("tempo")||normalized.contains("http 5");
+                    NexusHearing.onTranscriptionError(clipId,error,retry);
                 }
             }))
-            .exceptionally(error -> {mc.execute(() ->
-                NexusHearing.onTranscriptionError("Serviço de transcrição inacessível."));
-                return null;});
+            .exceptionally(error -> {
+                mc.execute(() -> NexusHearing.onTranscriptionError(
+                    clipId,"Serviço de transcrição sem resposta.",true));
+                return null;
+            });
     }
 
-    private static void sendHearingState(){
+    static void replyHearing(String speaker,String utterance,List<String> memories){
+        if(ClientConfig.token.isBlank())return;
+        JsonObject payload=new JsonObject();
+        payload.addProperty("speaker",speaker);
+        payload.addProperty("transcript",utterance);
+        payload.add("memories",JSON.toJsonTree(memories));
+        Minecraft mc=Minecraft.getInstance();
+        post("/api/client/hearing/reply",payload,true,Duration.ofSeconds(40))
+            .thenAccept(result -> mc.execute(() -> {
+                if(result.has("ok")&&result.get("ok").getAsBoolean()&&result.has("reply")){
+                    NexusHearing.onReply(speaker,result.get("reply").getAsString());
+                }else{
+                    NexusClientMod.notifyPlayer("Audição: "+errorText(result));
+                }
+            }))
+            .exceptionally(error -> {
+                mc.execute(() -> NexusClientMod.notifyPlayer(
+                    "Audição: não foi possível gerar uma resposta."));
+                return null;
+            });
+    }
+
+    static void sendHearingState(){
         if(ClientConfig.token.isEmpty())return;
         post("/api/client/hearing/state",NexusHearing.snapshot(),true).exceptionally(err -> null);
     }
@@ -365,8 +389,12 @@ final class ClientLink {
     }
 
     private static java.util.concurrent.CompletableFuture<JsonObject> post(String path,JsonObject data,boolean auth){
+        return post(path,data,auth,Duration.ofSeconds(8));
+    }
+    private static java.util.concurrent.CompletableFuture<JsonObject> post(
+        String path,JsonObject data,boolean auth,Duration timeout){
         HttpRequest.Builder builder=HttpRequest.newBuilder(URI.create(ClientConfig.url+path))
-            .timeout(Duration.ofSeconds(8)).header("Content-Type","application/json")
+            .timeout(timeout).header("Content-Type","application/json")
             .POST(HttpRequest.BodyPublishers.ofString(JSON.toJson(data)));
         if(auth)builder.header("X-Nexus-Client",ClientConfig.token);
         return HTTP.sendAsync(builder.build(),HttpResponse.BodyHandlers.ofString())
