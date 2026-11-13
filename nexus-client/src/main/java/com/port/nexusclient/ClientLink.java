@@ -235,6 +235,20 @@ final class ClientLink {
             });
     }
 
+    static void synthesizeNexus(String text,int stage,String voice){
+        if(ClientConfig.token.isEmpty()){
+            NexusSpeaker.failed("Pareamento HTTPS necessário.");
+            return;
+        }
+        JsonObject data=new JsonObject();
+        data.addProperty("text",text);
+        data.addProperty("stage",stage);
+        data.addProperty("voice",voice);
+        post("/api/client/tts",data,true,Duration.ofSeconds(48))
+            .thenAccept(NexusSpeaker::accept)
+            .exceptionally(error -> {NexusSpeaker.failed("Serviço de voz indisponível.");return null;});
+    }
+
     static void sendHearingState(){
         if(ClientConfig.token.isEmpty())return;
         post("/api/client/hearing/state",NexusHearing.snapshot(),true).exceptionally(err -> null);
@@ -257,6 +271,24 @@ final class ClientLink {
                     payload.has("channel")?payload.get("channel").getAsString():"local",
                     payload.has("command")?payload.get("command").getAsString():"",
                     payload.has("format")?payload.get("format").getAsString():"&6&l");success=true;
+            }else if("mind_memory".equals(kind)){
+                String actionName=payload.get("action").getAsString();
+                if("delete".equals(actionName)){
+                    NexusSocial.deleteFact(payload.get("id").getAsLong());
+                    output="Lembrança semântica apagada.";
+                }else if("correct".equals(actionName)){
+                    NexusSocial.correctFact(payload.get("id").getAsLong(),payload.get("text").getAsString());
+                    output="Lembrança corrigida no Nexus.";
+                }else if("forget_player".equals(actionName)){
+                    String who=payload.get("player").getAsString();
+                    long removed=NexusHearing.forgetSpeaker(who);
+                    output=removed+" transcrições e vínculos apagados de "+who+".";
+                }else if("clear".equals(actionName)&&payload.has("confirm")&&payload.get("confirm").getAsBoolean()){
+                    NexusHearing.clearMemory();
+                    output="Todas as memórias sociais e transcrições apagadas.";
+                }else throw new IllegalArgumentException("Comando de memória não autorizado.");
+                sendHearingState();
+                success=true;
             }else if("hearing_settings".equals(kind)){
                 NexusHearing.configure(payload);
                 sendHearingState();
@@ -292,6 +324,7 @@ final class ClientLink {
         try {
             chat("[Nexus Aterna] "+safe,"local","l","&6&l",false);
             NexusAlertHistory.record(kind,safe);
+            NexusSpeaker.onSpeech(safe,NexusMind.stageIndex());
             if(!ClientConfig.token.isEmpty())sendAlertState();
             return true;
         }
