@@ -127,7 +127,7 @@ const bridge=createBridge({send:json,verifyUser:req=>checkToken(req.headers["x-n
 const nexusClient=createClientRelay({send:json,verifyUser:req=>checkToken(req.headers["x-nexus-key"]),limit:rateLimit});
 async function serve(req,res,route){
   const requested=route==="/"?"index.html":decodeURIComponent(route).slice(1);
-  if(!/^(index\.html|styles\.css|upgrade\.css|evolution\.css|voice\.css|alerts\.css|hearing\.js|alerts\.js|views\.js|upgrade\.js|evolution\.js|voice\.js|client\.js|app\.js|icon\.svg|manifest\.webmanifest)$/.test(requested))return json(res,404,{error:"Arquivo não encontrado."});
+  if(!/^(index\.html|styles\.css|upgrade\.css|evolution\.css|voice\.css|alerts\.css|hearing\.js|mind2\.js|alerts\.js|views\.js|upgrade\.js|evolution\.js|voice\.js|client\.js|app\.js|icon\.svg|manifest\.webmanifest)$/.test(requested))return json(res,404,{error:"Arquivo não encontrado."});
   try{
     const file=await fs.readFile(path.join(ROOT,requested));
     res.writeHead(200,{...security,"Content-Type":types[path.extname(requested)]||"application/octet-stream","Cache-Control":requested.endsWith(".js")||requested==="index.html"?"no-store":"public, max-age=300"});
