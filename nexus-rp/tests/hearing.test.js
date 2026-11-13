@@ -15,7 +15,7 @@ test("Rejects malformed WAV and transcribes without writing audio",async()=>{
  assert.throws(()=>verifyWave("bad"));
  assert.throws(()=>verifyWave(wave(48000,7)),/limite|Formato/);
  let req,modelRequest;
- const result=await transcribeClip({audio:wave(),answer:true,history:[{role:"user",text:"Oficina do jogador em construção."}]},{
+ const result=await transcribeClip({audio:wave(),answer:true,speaker:"PlayerA",history:[{role:"user",text:"Oficina do jogador em construção."}]},{
   key:"development-key-long-enough",model:"gemini-2.5-flash",
   fetcher:async(url,options)=>{
    req=JSON.parse(options.body);
@@ -26,6 +26,7 @@ test("Rejects malformed WAV and transcribes without writing audio",async()=>{
  assert.equal(result.transcript,"Nexus, bom dia.");
  assert.equal(result.reply,"Bom dia. Estou atento.");
  assert.equal(modelRequest.memories[0],"Oficina do jogador em construção.");
+ assert.equal(modelRequest.voiceSpeaker,"PlayerA");
  assert.equal(req.contents[0].parts[1].inlineData.mimeType,"audio/wav");
 });
 test("Client-only hearing route checks consent list and auth",async()=>{

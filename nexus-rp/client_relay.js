@@ -279,7 +279,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         if(!Array.isArray(data.consentedPlayers)||!data.consentedPlayers.includes(speaker))
           return err(res,403,"Participante não autorizado para transcrição.");
         lastAudioAt=Date.now();
-        const result=await transcribe({audio:data.audio,answer:data.answer===true,history:data.history});
+        const result=await transcribe({audio:data.audio,answer:data.answer===true,history:data.history,speaker});
         send(res,200,{ok:true,speaker,transcript:result.transcript,reply:result.reply||""});
         return true;
       }catch(e){

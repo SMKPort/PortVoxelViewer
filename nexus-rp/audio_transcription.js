@@ -21,7 +21,7 @@ function verifyWave(input){
     throw Object.assign(Error("Formato ou duração de áudio não aceitos."),{publicStatus:422});
   return wave;
 }
-async function transcribeClip({audio,answer=false,history=[]},deps={}){
+async function transcribeClip({audio,answer=false,history=[],speaker=""},deps={}){
   const key=String(deps.key??process.env.NEXUS_GEMINI_API_KEY??process.env.GEMINI_API_KEY??"").trim();
   if(key.length<10)throw Object.assign(Error("NEXUS_GEMINI_API_KEY não configurada."),{publicStatus:503});
   const wave=verifyWave(audio);
@@ -61,7 +61,7 @@ async function transcribeClip({audio,answer=false,history=[]},deps={}){
     const memories=Array.isArray(history)?history.slice(-8).filter(x=>
       x&&x.role==="user"&&typeof x.text==="string"&&x.text.length<=250)
       .map(x=>x.text):[];
-    const out=await (deps.askAI||askGemini)({question,memories,online:true});
+    const out=await (deps.askAI||askGemini)({question,memories,online:true,voiceSpeaker:String(speaker).slice(0,16)});
     reply=String(out.text||"").slice(0,360);
   }
   return {transcript,reply};
