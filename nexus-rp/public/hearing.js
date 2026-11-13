@@ -3,7 +3,7 @@
 window.NexusRPHearingUpgrade=function(rp,views){
   const E=rp.escape;
   let state=null,loading=false,saving=false,error="",dirty=false;
-  let values={listening:false,memory:false,answer:false,sensitivity:55,allowedPlayers:[]};
+  let values={listening:false,memory:false,answer:false,collective:false,sensitivity:55,allowedPlayers:[]};
   const current=()=>location.hash==="#audicao"&&document.visibilityState!=="hidden";
   async function fetchState(){
     if(loading||saving||!current())return;
@@ -17,6 +17,7 @@ window.NexusRPHearingUpgrade=function(rp,views){
       error="";state=data;
       if(!dirty&&data.state){
         const fresh={listening:data.state.listening,memory:data.state.memory,answer:data.state.answer,
+          collective:data.state.collective===true,
           sensitivity:data.state.sensitivity??55,
           allowedPlayers:data.state.allowedPlayers||[]};
         if(JSON.stringify(fresh)!==JSON.stringify(values)){values=fresh;rp.rerender();}
@@ -31,7 +32,10 @@ window.NexusRPHearingUpgrade=function(rp,views){
     if(!state.online)return "Minecraft desconectado. Abra o jogo para alterar a audição.";
     if(!state.state)return "Aguardando Nexus Client 1.8.0 transmitir seu estado.";
     if(!state.state.ready)return "Plasmo Voice ainda não foi detectado pelo Nexus Client.";
-    return state.state.listening?"Audição contínua ativa para jogadores autorizados.":"Audição desativada.";
+    return state.state.listening?(state.state.collective?
+      "Modo @a ativo: "+(state.state.eligibleOnline||0)+" jogador(es) online e autorizado(s).":
+      "Audição contínua ativa para jogadores autorizados."):
+      "Audição desativada"+(state.state.collective?" (seletor @a configurado).":".");
   }
   function update(){
     const target=document.querySelector("#nexusHearingStatus");
@@ -65,6 +69,7 @@ window.NexusRPHearingUpgrade=function(rp,views){
       '<label class="field"><span class="field-label">SENSIBILIDADE DE DETECÇÃO (20–100)</span>'+
       '<input type="number" name="sensitivity" min="20" max="100" step="5" value="'+E(values.sensitivity)+'"'+disabled+'>'+
       '<small>Maior sensibilidade detecta vozes mais baixas, mas também pode aumentar falsos positivos.</small></label>'+
+      '<label class="nexus-alert-option"><input type="checkbox" name="collective"'+(values.collective?" checked":"")+disabled+'><span><strong>Seletor coletivo @a</strong><small>Seleciona automaticamente os jogadores online que JÁ consentiram e estão na lista abaixo. Não autoriza novos participantes.</small></span></label>'+
       '<label class="field"><span class="field-label">JOGADORES QUE CONSENTIRAM</span>'+
       '<textarea name="allowedPlayers" rows="3" maxlength="340" placeholder="Nick1, Nick2"'+disabled+'>'+
       E(values.allowedPlayers.join(", "))+'</textarea><small>Separe nicks por vírgula. Até 20 jogadores. Nunca inclua alguém sem obter autorização explícita.</small></label>'+
@@ -78,6 +83,7 @@ window.NexusRPHearingUpgrade=function(rp,views){
       '<p class="hint" id="nexusHearingError">'+E(state?.state?.lastError||"")+'</p>'+
       '<p class="hint">Memórias novas são adicionadas ao arquivo <code>.minecraft/config/nexus-hearing-memory.jsonl</code> (até 24 MiB). Lembranças antigas do 1.7 são preservadas. O painel recebe contadores, não os textos nem o áudio.</p>'+
       '<div class="notice">Para consultar memórias no jogo: <code>/nexusclient hearing memories</code>. Para apagar todas: <code>/nexusclient hearing forget confirm</code>. Para interromper imediatamente: <code>/nexusclient hearing off</code>.</div>'+
+      '<p class="hint">Comandos no Minecraft: <code>/nexusclient hearing allow @a</code> habilita o seletor de jogadores online previamente autorizados. <code>/nexusclient hearing deny @a</code> interrompe a audição sem apagar as autorizações individuais. Para aceitar novos participantes, cadastre seu nick após obter consentimento.</p>'+
       '<p class="hint">O Nexus captura somente jogadores que consentiram e estão audíveis pelo Plasmo Voice. O reconhecimento depende da Render, da chave Gemini e da rede. A fila é limitada para evitar consumo ilimitado de memória e mostra quando houver perdas.</p>'+
       '<p class="hint">Os outros jogadores precisam saber que suas falas podem ser transcritas. Remova qualquer nick imediatamente se a pessoa retirar o consentimento.</p></section></div>';
   };
@@ -87,16 +93,19 @@ window.NexusRPHearingUpgrade=function(rp,views){
   root.addEventListener("submit",async e=>{
     if(e.target.id!=="nexusHearingForm")return;
     e.preventDefault();e.stopImmediatePropagation();
-    if(saving||!state?.online||!state?.state?.ready)return rp.toast("Conecte o Nexus Client 1.8.0 e o Plasmo Voice.");
+    if(saving||!state?.online||!state?.state?.ready)return rp.toast("Conecte o Nexus Client 2.0.1 e o Plasmo Voice.");
     const form=new FormData(e.target);
     const list=String(form.get("allowedPlayers")||"").split(/[,;\n]+/).map(s=>s.trim()).filter(Boolean);
     if(list.some(s=>!/^[A-Za-z0-9_]{3,16}$/.test(s))||list.length>20)
       return rp.toast("Use até 20 nicks válidos do Minecraft.");
     const body={listening:form.has("listening"),memory:form.has("memory"),
-      answer:form.has("answer"),sensitivity:Number(form.get("sensitivity")),
+      answer:form.has("answer"),collective:form.has("collective"),
+      sensitivity:Number(form.get("sensitivity")),
       allowedPlayers:[...new Set(list)],consentConfirmed:form.has("consentConfirmed")};
     if(!Number.isInteger(body.sensitivity)||body.sensitivity<20||body.sensitivity>100)
       return rp.toast("Sensibilidade permitida: 20 a 100.");
+    if(body.collective&&!body.allowedPlayers.length)
+      return rp.toast("O @a requer nicks previamente autorizados. Não concede consentimento.");
     if(body.listening&&!body.consentConfirmed)
       return rp.toast("Confirme o consentimento dos jogadores para ativar a audição.");
     if(body.listening&&!body.allowedPlayers.length)
@@ -104,7 +113,7 @@ window.NexusRPHearingUpgrade=function(rp,views){
     saving=true;rp.rerender();
     try{
       await rp.clientQueue("/hearing/settings",body);
-      values={listening:body.listening,memory:body.memory,answer:body.answer,sensitivity:body.sensitivity,allowedPlayers:body.allowedPlayers};
+      values={listening:body.listening,memory:body.memory,answer:body.answer,collective:body.collective,sensitivity:body.sensitivity,allowedPlayers:body.allowedPlayers};
       dirty=false;rp.toast("Audição confirmada e salva no Minecraft.");
       state=null;await fetchState();
     }catch(ex){rp.toast("Falha ao salvar: "+String(ex.message||ex));}

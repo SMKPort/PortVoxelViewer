@@ -182,6 +182,8 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
           data.allowedPlayers.length>20||!data.allowedPlayers.every(n=>
             typeof n==="string"&&/^[A-Za-z0-9_]{3,16}$/.test(n)))
           return err(res,422,"Configuração de audição inválida.");
+        if(data.collective!==undefined&&typeof data.collective!=="boolean")
+          return err(res,422,"Seletor @a inválido.");
         if(data.listening&&(!data.consentConfirmed||data.allowedPlayers.length===0))
           return err(res,422,"Confirme o consentimento dos jogadores antes de ativar.");
         const allowedPlayers=[...new Set(data.allowedPlayers)];
@@ -199,7 +201,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
           return err(res,422,"Confirme a autorização para compartilhar o diário com o painel.");
         send(res,200,enqueue("hearing_settings",{
           listening:data.listening,memory:data.memory,answer:data.answer,
-          sensitivity,allowedPlayers,social,speaker
+          sensitivity,allowedPlayers,collective:data.collective===true,social,speaker
         }));return true;
       }catch(e){return err(res,422,String(e.message));}
     }
@@ -358,6 +360,8 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         };
         hearingState={ready:data.ready,listening:data.listening,
           memory:data.memory,answer:data.answer,allowedPlayers:data.allowedPlayers,
+          collective:data.collective===true,
+          eligibleOnline:numericValue(data.eligibleOnline,0,20,0),
           sensitivity:numericValue(data.sensitivity,20,100,55),
           memoryCount:numericValue(data.memoryCount,0,250000,0),
           memoryFull:data.memoryFull===true,queued:numericValue(data.queued,0,36,0),

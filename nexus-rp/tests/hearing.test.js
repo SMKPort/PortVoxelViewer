@@ -79,6 +79,7 @@ test("Hearing preferences are panel-authenticated, require consent, and sync no 
  const poll=await call("GET","/api/client/poll",client);
  assert.equal(poll.payload.jobs[0].type,"hearing_settings");
  assert.equal(poll.payload.jobs[0].payload.sensitivity,55);
+ assert.equal(poll.payload.jobs[0].payload.collective,false);
  assert.deepEqual(poll.payload.jobs[0].payload.allowedPlayers,["FriendA"]);
  const synced=await call("POST","/api/client/hearing/state",client,{
    ready:true,listening:true,memory:true,answer:true,
@@ -142,4 +143,41 @@ test("Concurrent client ASR requests and memory-grounded wake reply",async()=>{
  assert.match(reply.payload.reply,/oficina/);
  assert.equal(requests.at(-1).reply.voiceSpeaker,"FriendA");
  assert.equal(requests.at(-1).reply.memories.length,1);
+});
+
+
+test("@a collective settings only select previously consenting players",async()=>{
+ const relay=createClientRelay({send:(res,status,payload)=>{res.status=status;res.payload=payload;},
+  verifyUser:req=>req.headers["x-nexus-key"]==="owner",limit:()=>true});
+ async function call(method,url,headers={},payload){
+  const req=Readable.from(payload===undefined?[]:[Buffer.from(JSON.stringify(payload))]);
+  req.headers=headers;req.method=method;const res={status:0,payload:null};
+  const u=new URL(url,"https://test.invalid");
+  await relay.handle(req,res,u.pathname,u);return res;
+ }
+ const owner={"x-nexus-key":"owner"};
+ const code=(await call("POST","/api/client/pair/new",owner,{})).payload.code;
+ const client={"x-nexus-client":(await call("POST","/api/client/pair/exchange",{},{
+   code,player:"Port"})).payload.token};
+ const base={listening:true,memory:true,answer:false,collective:true,
+   allowedPlayers:["Alice"],sensitivity:55,consentConfirmed:true};
+ assert.equal((await call("POST","/api/client/hearing/settings",owner,{
+   ...base,allowedPlayers:[]})).status,422);
+ assert.equal((await call("POST","/api/client/hearing/settings",owner,{
+   ...base,collective:"@a"})).status,422);
+ assert.equal((await call("POST","/api/client/hearing/settings",owner,{
+   ...base,consentConfirmed:false})).status,422);
+ const accepted=await call("POST","/api/client/hearing/settings",owner,base);
+ assert.equal(accepted.status,200);
+ const poll=await call("GET","/api/client/poll",client);
+ assert.equal(poll.payload.jobs[0].payload.collective,true);
+ assert.deepEqual(poll.payload.jobs[0].payload.allowedPlayers,["Alice"]);
+ const current=await call("POST","/api/client/hearing/state",client,{
+   ready:true,listening:true,memory:true,answer:false,collective:true,
+   eligibleOnline:1,allowedPlayers:["Alice"],memoryCount:0});
+ assert.equal(current.status,200);
+ const view=(await call("GET","/api/client/hearing",owner)).payload;
+ assert.equal(view.state.collective,true);
+ assert.equal(view.state.eligibleOnline,1);
+ assert.equal(JSON.stringify(view).includes("Charlie"),false);
 });
