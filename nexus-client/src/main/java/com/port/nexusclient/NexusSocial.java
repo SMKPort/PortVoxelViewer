@@ -55,6 +55,10 @@ final class NexusSocial {
         long lastAt;
         Relation(String player){this.player=player;}
     }
+    static final class Obsolete {
+        String speaker,text;
+        Obsolete(String speaker,String text){this.speaker=speaker;this.text=text;}
+    }
     private static final class State {
         int schema=2;
         long sequence=1;
@@ -65,6 +69,7 @@ final class NexusSocial {
         List<DiaryEntry> diary=new ArrayList<>();
         List<Turn> turns=new ArrayList<>();
         List<Relation> relations=new ArrayList<>();
+        List<Obsolete> obsolete=new ArrayList<>();
     }
     private NexusSocial(){}
 
@@ -79,6 +84,7 @@ final class NexusSocial {
                 if(saved.diary==null)saved.diary=new ArrayList<>();
                 if(saved.turns==null)saved.turns=new ArrayList<>();
                 if(saved.relations==null)saved.relations=new ArrayList<>();
+                if(saved.obsolete==null)saved.obsolete=new ArrayList<>();
                 state=saved;
             }
         }catch(Exception e){System.err.println("Nexus Mind 2.0: não foi possível ler o histórico.");}
@@ -251,8 +257,23 @@ final class NexusSocial {
         while(state.diary.size()>220)state.diary.remove(0);
         save();
     }
+    private static void suppress(Fact fact){
+        state.obsolete.add(new Obsolete(fact.speaker,fact.text));
+        while(state.obsolete.size()>1000)state.obsolete.remove(0);
+    }
+    static synchronized boolean isObsolete(String speaker,String transcript){
+        load();
+        if(transcript==null)return false;
+        return state.obsolete.stream().anyMatch(item->
+            item.speaker.equalsIgnoreCase(speaker)&&
+            (item.text.equalsIgnoreCase(transcript)||
+             item.text.toLowerCase(Locale.ROOT).startsWith(transcript.toLowerCase(Locale.ROOT))));
+    }
     static synchronized void deleteFact(long id){
         load();
+        Fact match=state.facts.stream().filter(f->f.id==id).findFirst()
+            .orElseThrow(()->new IllegalArgumentException("Lembrança não encontrada."));
+        suppress(match);
         state.facts.removeIf(f->f.id==id);
         state.diary.removeIf(d->d.sourceFact==id);
         save();
@@ -263,6 +284,7 @@ final class NexusSocial {
         if(safe.length()<3||safe.length()>250)throw new IllegalArgumentException("Correção inválida.");
         Fact match=state.facts.stream().filter(f->f.id==id).findFirst().orElse(null);
         if(match==null)throw new IllegalArgumentException("Lembrança não encontrada.");
+        suppress(match);
         match.text=safe;match.corrected=true;
         // A derivative diary should not retain the old statement after correction.
         state.diary.removeIf(d->d.sourceFact==id);
@@ -274,6 +296,7 @@ final class NexusSocial {
         state.diary.removeIf(d->d.speaker.equalsIgnoreCase(speaker));
         state.turns.removeIf(t->t.speaker.equalsIgnoreCase(speaker));
         state.relations.removeIf(r->r.player.equalsIgnoreCase(speaker));
+        state.obsolete.removeIf(o->o.speaker.equalsIgnoreCase(speaker));
         if(lastWarningSpeaker.equalsIgnoreCase(speaker)){
             spokenDangerAt=0;lastWarningSpeaker="";
         }

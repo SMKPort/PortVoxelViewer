@@ -268,7 +268,8 @@ final class NexusHearing {
         if(settings.answer&&wake(text)){
             List<String> context=new ArrayList<>();
             if(settings.memory){
-                context.addAll(MEMORIES.search(clip.speaker,text,8));
+                for(String raw:MEMORIES.search(clip.speaker,text,8))
+                    if(!NexusSocial.isObsolete(clip.speaker,raw))context.add(raw);
                 context.addAll(NexusSocial.relevant(clip.speaker,text,4));
                 context.addAll(NexusSocial.recentConversation(clip.capturedAt,5));
             }
