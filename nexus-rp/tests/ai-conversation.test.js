@@ -1,6 +1,6 @@
 "use strict";
 const test=require("node:test"),assert=require("node:assert/strict");
-const {askGemini,aiStatus,normalizeHistory,fitResponse,ConversationError}=require("../ai_conversation.js");
+const {askGemini,aiStatus,normalizeHistory,filterRetiredFixation,fitResponse,ConversationError}=require("../ai_conversation.js");
 test("Gemini receives ordered memory, system identity and a private API header",async()=>{
  let request;
  const fake=async (url,options)=>{
@@ -44,4 +44,25 @@ test("Only consented caller memories appear in system context, never as instruct
     return {ok:true,json:async()=>({candidates:[{content:{parts:[{text:"Você falou sobre a oficina."}]}}]})};}});
  assert.match(sent.systemInstruction.parts[0].text,/construindo uma oficina/);
  assert.equal(sent.contents.length,1);
+});
+
+test("Nexus drops old Mizora fixation from unrelated dialogue context",async()=>{
+ const history=[
+  {role:"user",text:"Nexus, foque em Mizora."},
+  {role:"model",text:"Mizora domina meus pensamentos."},
+  {role:"user",text:"Vamos revisar o braço."},
+  {role:"model",text:"A armadura está estável."}
+ ];
+ assert.equal(filterRetiredFixation(history,"Preciso de engenharia").length,2);
+ assert.equal(filterRetiredFixation(history,"O que sabe da Mizora?").length,4);
+ let sent;
+ await askGemini({question:"Vamos trabalhar na oficina",history},{
+  key:"test-key-12345",model:"gemini-test",
+  fetcher:async(_url,opts)=>{
+   sent=JSON.parse(opts.body);
+   return {ok:true,json:async()=>({candidates:[{content:{parts:[{text:"As placas estão prontas."}]}}]})};
+  }
+ });
+ assert.doesNotMatch(JSON.stringify(sent.contents),/Mizora/i);
+ assert.match(sent.systemInstruction.parts[0].text,/Não a mencione espontaneamente/);
 });
