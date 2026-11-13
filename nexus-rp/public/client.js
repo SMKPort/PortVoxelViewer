@@ -130,7 +130,7 @@ window.NexusRPClientUpgrade=function(rp,views){
    '<div class="rp-evo-emergency '+(on?"online":"")+'"><strong>'+(on?"MINECRAFT CONECTADO":"AGUARDANDO MINECRAFT")+'</strong><span>Jogador: '+E(player)+'</span></div>'+
    '<p class="hint">1. Instale o mod Nexus Aterna Client na pasta mods do Minecraft 1.21.1 com NeoForge.</p>'+ 
    '<p class="hint"><strong>Canal neural privado 2.2:</strong> no Minecraft, use <code>/nexusclient private on</code> e pressione <strong>N</strong> para conversar sem enviar mensagens pelo /l. Você também pode ativar a independência narrativa e a iniciativa privada opcionalmente. As conversas não são publicadas neste painel.</p>'+ 
-   '<p><a href="https://github.com/SMKPort/PortVoxelViewer/actions/runs/43452038692" target="_blank" rel="noopener noreferrer">Baixar Nexus Aterna Client 2.2.0 (GitHub Actions)</a></p>'+
+   '<p><a href="https://github.com/SMKPort/PortVoxelViewer/actions/workflows/nexus-client-build.yml" target="_blank" rel="noopener noreferrer">Baixar JAR atualizado do Nexus Client (GitHub Actions)</a></p>'+
    '<p class="hint">2. Nas Configurações, informe a chave HTTPS da Render uma vez. Marque <strong>Lembrar neste dispositivo</strong> para não precisar digitá-la novamente. Não precisa de senha RCON.</p>'+
    '<p class="hint">3. No jogo, execute <code>/nexusclient pair SEU_CODIGO</code>. Este comando é executado no cliente, não no servidor.</p>'+
    '<p class="hint">4. Autorize mensagens com <code>/nexusclient chat on</code> e telemetria com <code>/nexusclient telemetry on</code>.</p>'+
