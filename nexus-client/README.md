@@ -135,3 +135,8 @@ Toda mensagem espontânea realmente transmitida pelo canal /l &6&l[Nexus Aterna]
 ## Nexus Client 1.7.0: Plasmo Voice e memória textual
 
 Adicione jogadores **somente depois de obter consentimento explícito**. Comandos: `/nexusclient hearing allow NICK`, `hearing deny NICK`, `hearing on/off`, `hearing memory on/off`, `hearing reply on/off`, `hearing status`, `hearing memories`, `hearing forget confirm`. A audição começa desativada em cada sessão. Requer Plasmo Voice 2.1.8+, pareamento HTTPS, Gemini configurado na Render e mod cliente. Os dados de voz enviados para processamento são descartados após transcrição e não há arquivo de áudio. As transcrições persistentes opcionais ficam somente em `config/nexus-hearing-memories.json`, limite 200. Na página Audição do Nexus há também controles para essa configuração, sempre exigindo confirmação de consentimento.
+
+
+## Nexus Client 1.8: transcrição contínua
+
+A captura de voz autorizada passa por VAD adaptativo, detecta pausas e divide falas longas em trechos de até 12 segundos. Até 3 transcrições podem ocorrer em paralelo, com 36 trechos / 12 MiB na fila RAM. Não existe mais o antigo intervalo mínimo de 8,5 segundos. O painel exibe contadores de trechos transcritos, aguardando, reenviados e descartados. Cada jogador precisa consentir previamente; o áudio não é salvo pelo mod. A memória textual é escrita incrementalmente no arquivo `config/nexus-hearing-memory.jsonl` com limite de 24 MiB, preservando entradas do arquivo legado. O reconhecimento requer a chave Gemini e conectividade. Para remover um jogador e suas memórias, use `/nexusclient hearing deny NICK` ou desative a audição com `/nexusclient hearing off`.
