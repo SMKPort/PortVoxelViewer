@@ -47,6 +47,7 @@ final class NexusPermissionsScreen extends Screen {
     private long confirmUntil;
 
     NexusPermissionsScreen(){this(Tab.GERAL,null,"Menu de permissões aberto.");}
+    NexusPermissionsScreen(Screen parent){this(Tab.GERAL,parent,"Menu de permissões aberto.");}
     private NexusPermissionsScreen(Tab tab,Screen parent,String message){
         super(Component.literal("Nexus Aterna | Permissões"));
         this.tab=tab;this.parent=parent;this.message=message;
