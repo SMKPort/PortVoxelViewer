@@ -52,3 +52,39 @@ test("Client-only hearing route checks consent list and auth",async()=>{
  assert.equal(ok.status,200);assert.equal(ok.payload.transcript,"Olá Nexus");assert.equal(calls.length,1);
  assert.equal((await run("POST","/api/client/hearing/transcribe",{"x-nexus-client":token},payload)).status,429);
 });
+
+test("Hearing preferences are panel-authenticated, require consent, and sync no transcripts",async()=>{
+ const relay=createClientRelay({send:(res,status,payload)=>{res.status=status;res.payload=payload;},
+   verifyUser:req=>req.headers["x-nexus-key"]==="key",limit:()=>true});
+ async function call(method,route,headers={},body){
+  const req=Readable.from(body===undefined?[]:[Buffer.from(JSON.stringify(body))]);
+  req.headers=headers;req.method=method;const res={status:0,payload:null};
+  const u=new URL(route,"https://test.invalid");
+  await relay.handle(req,res,u.pathname,u);return res;
+ }
+ const owner={"x-nexus-key":"key"};
+ const pair=await call("POST","/api/client/pair/new",owner,{});
+ const token=(await call("POST","/api/client/pair/exchange",{},{
+  code:pair.payload.code,player:"Port"})).payload.token;
+ const client={"x-nexus-client":token};
+ const payload={listening:true,memory:true,answer:true,
+   allowedPlayers:["FriendA"],consentConfirmed:false};
+ assert.equal((await call("POST","/api/client/hearing/settings",owner,payload)).status,422);
+ assert.equal((await call("POST","/api/client/hearing/settings",client,{
+   ...payload,consentConfirmed:true})).status,401);
+ const saved=await call("POST","/api/client/hearing/settings",owner,{
+   ...payload,consentConfirmed:true});
+ assert.equal(saved.status,200);
+ const poll=await call("GET","/api/client/poll",client);
+ assert.equal(poll.payload.jobs[0].type,"hearing_settings");
+ assert.deepEqual(poll.payload.jobs[0].payload.allowedPlayers,["FriendA"]);
+ const synced=await call("POST","/api/client/hearing/state",client,{
+   ready:true,listening:true,memory:true,answer:true,
+   allowedPlayers:["FriendA"],memoryCount:28});
+ assert.equal(synced.status,200);
+ const view=await call("GET","/api/client/hearing",owner);
+ assert.equal(view.payload.state.memoryCount,28);
+ assert.equal(view.payload.state.ready,true);
+ assert.equal(JSON.stringify(view.payload).includes("transcript"),false);
+ assert.equal((await call("GET","/api/client/hearing")).status,401);
+});
