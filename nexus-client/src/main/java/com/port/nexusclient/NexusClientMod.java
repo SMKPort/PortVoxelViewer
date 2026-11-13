@@ -136,8 +136,42 @@ public class NexusClientMod {
                     notifyPlayer(line);return 1;}))
                 .then(Commands.literal("forget").then(Commands.literal("confirm").executes(ctx -> {
                     NexusHearing.clearMemory();ClientLink.sendHearingState();notifyPlayer("Todas as memórias textuais de voz apagadas.");return 1;}))))
+            .then(Commands.literal("social")
+                .then(Commands.literal("status").executes(ctx -> {
+                    notifyPlayer(NexusSocial.status());return 1;}))
+                .then(Commands.literal("diary").executes(ctx -> {
+                    for(String note:NexusSocial.lastDiary())notifyPlayer(note);
+                    return 1;}))
+                .then(Commands.literal("share")
+                    .then(Commands.literal("on").executes(ctx -> {
+                        NexusSocial.setting("share",true);ClientLink.sendHearingState();
+                        notifyPlayer("Diário liberado no seu painel privado.");return 1;}))
+                    .then(Commands.literal("off").executes(ctx -> {
+                        NexusSocial.setting("share",false);ClientLink.sendHearingState();
+                        notifyPlayer("Diário novamente privado no PC.");return 1;})))
+                .then(Commands.literal("protection")
+                    .then(Commands.literal("on").executes(ctx -> {
+                        NexusSocial.setting("protection",true);ClientLink.sendHearingState();
+                        notifyPlayer("Proteção contextual habilitada.");return 1;}))
+                    .then(Commands.literal("off").executes(ctx -> {
+                        NexusSocial.setting("protection",false);ClientLink.sendHearingState();
+                        notifyPlayer("Proteção contextual desabilitada.");return 1;})))
+                .then(Commands.literal("forget").then(Commands.literal("confirm").executes(ctx -> {
+                    NexusSocial.clear();ClientLink.sendHearingState();
+                    notifyPlayer("Memórias derivadas apagadas. Para transcrições: hearing forget confirm.");
+                    return 1;}))))
+            .then(Commands.literal("voice")
+                .then(Commands.literal("status").executes(ctx -> {
+                    notifyPlayer(NexusSpeaker.status());return 1;}))
+                .then(Commands.literal("on").executes(ctx -> {
+                    NexusSpeaker.enable(true);ClientLink.sendHearingState();
+                    notifyPlayer("Voz do Nexus autorizada somente no seu computador.");return 1;}))
+                .then(Commands.literal("off").executes(ctx -> {
+                    NexusSpeaker.enable(false);ClientLink.sendHearingState();
+                    notifyPlayer("Voz local do Nexus desativada.");return 1;})))
             .then(Commands.literal("unpair").executes(context -> {
                 NexusHearing.listen(false);
+                NexusSpeaker.stop();
                 ClientConfig.token = "";ClientConfig.allowChat = false;
                 ClientConfig.allowTelemetry = false;ClientConfig.allowAutonomy=false;ClientConfig.save();
                 ClientLink.reset();

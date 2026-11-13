@@ -12,7 +12,7 @@ import su.plo.voice.proto.data.audio.source.PlayerSourceInfo;
  * Optional Plasmo Voice 2.1.8 client addon.
  * Only samples pre-consented, individually allowlisted real player sources.
  */
-@Addon(id="pv-addon-nexus-aterna",name="Nexus Aterna Hearing",version="1.8.0",authors={"Port"})
+@Addon(id="pv-addon-nexus-aterna",name="Nexus Aterna Hearing",version="2.0.0",authors={"Port"})
 public final class NexusPlasmoAddon implements AddonInitializer {
     @InjectPlasmoVoice private PlasmoVoiceClient voiceClient;
 
