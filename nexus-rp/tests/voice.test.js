@@ -27,6 +27,21 @@ test("wake word is necessary for first turn, not for authorized follow-ups",()=>
  assert.equal(getQuestion("Nexus, como estamos?"),"como estamos?");
  assert.equal(getQuestion("Oi, como estamos?"),null);
 });
+test("Real spoken introductions address Nexus without false positives",()=>{
+ const valid=[
+  "Nexus, você me ouve?",
+  "Ei, Nexus, consegue responder?",
+  "Oi, nexo! Você está aí?",
+  "Ô, Nexus Aeterna, o que acha?",
+  "Então, Nexus, como estamos?",
+  "Cara, Nexus, pode ajudar?"
+ ];
+ for(const line of valid)
+  assert.notEqual(getQuestion(line),null,"Esperava reconhecimento: "+line);
+ for(const line of ["Oi, tudo bem?", "O mod Nexus está funcionando", "Gostei do Nexus", "Nexuses"])
+  assert.equal(getQuestion(line),null,"Não deve responder: "+line);
+});
+
 test("AI replies go to Minecraft only when authorized; preserve context",async()=>{
  const owner={"x-nexus-key":"voice-test-access"};
  assert.equal((await run("POST","/api/client/voice",{}, {transcript:"Nexus, como estamos?"})).status,401);
