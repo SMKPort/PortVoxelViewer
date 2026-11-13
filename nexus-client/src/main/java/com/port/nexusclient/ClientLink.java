@@ -221,7 +221,10 @@ final class ClientLink {
     }
 
     static void replyHearing(String speaker,String utterance,List<String> memories){
-        if(ClientConfig.token.isBlank())return;
+        if(ClientConfig.token.isBlank()){
+            NexusHearing.onReplyError("Pareamento HTTPS necessário para responder.");
+            return;
+        }
         JsonObject payload=new JsonObject();
         payload.addProperty("speaker",speaker);
         payload.addProperty("transcript",utterance);
@@ -232,12 +235,12 @@ final class ClientLink {
                 if(result.has("ok")&&result.get("ok").getAsBoolean()&&result.has("reply")){
                     NexusHearing.onReply(speaker,result.get("reply").getAsString());
                 }else{
-                    NexusClientMod.notifyPlayer("Audição: "+errorText(result));
+                    NexusHearing.onReplyError(errorText(result));
                 }
             }))
             .exceptionally(error -> {
-                mc.execute(() -> NexusClientMod.notifyPlayer(
-                    "Audição: não foi possível gerar uma resposta."));
+                mc.execute(() -> NexusHearing.onReplyError(
+                    "Não foi possível gerar resposta da IA."));
                 return null;
             });
     }
