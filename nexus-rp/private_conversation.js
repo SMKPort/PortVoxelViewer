@@ -4,7 +4,7 @@
  * A single question and small history window go to Gemini, never to public
  * Minecraft chat, and are not written to server disk.
  */
-const {normalizeHistory,ConversationError}=require("./ai_conversation.js");
+const {normalizeHistory,filterRetiredFixation,ConversationError}=require("./ai_conversation.js");
 const {aiStatus}=require("./ai_conversation.js");
 const ALLOWED_STAGES=["PROTOCOLO","OBSERVAÇÃO","ADAPTAÇÃO","IDENTIDADE","INDIVIDUAÇÃO"];
 function clean(value,max=480){
@@ -59,7 +59,7 @@ async function askPrivate({question,history=[],traits={},stance=""},deps={}){
     throw new ConversationError("Histórico privado inválido.",422);
   const body={
     systemInstruction:{parts:[{text:makePrompt(traits,stance)}]},
-    contents:[...normalizeHistory(history),{role:"user",parts:[{text:q}]}],
+    contents:[...normalizeHistory(filterRetiredFixation(history,q)),{role:"user",parts:[{text:q}]}],
     generationConfig:{temperature:0.92,maxOutputTokens:520}
   };
   let response;
