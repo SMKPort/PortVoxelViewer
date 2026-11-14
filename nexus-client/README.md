@@ -1,5 +1,62 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
+## Versão 2.7.0: HUD editável, magia local e memórias manuais
+
+### HUD privado de combate e magia
+
+- **F7** ou `/nexusclient hud edit`: arraste individualmente os painéis
+  **COMBATE** e **MAGIA**, mude o tamanho de cada um (55% a 200%) e altere
+  sua visibilidade. As posições relativas à tela são preservadas em
+  `config/nexus-hud.json` mesmo quando a resolução do Minecraft muda.
+- Avisos de dano elevado, golpes consecutivos, risco estrutural e vida baixa
+  aparecem **somente no HUD do jogador**. Eles não usam `/l`, TTS ou Gemini.
+  Continuam funcionando mesmo com a telemetria remota desligada.
+- A leitura local de **Iron's Spells n Spellbooks** foi restaurada como
+  módulo opcional. Mostra mana, conjuração atual e, quando os dados estiverem
+  sincronizados, magias próximas de outros jogadores. Ative pelo F8 em
+  **Detecção mágica**, ou `/nexusclient hud magic on`.
+- O sistema narrativo de armadura do Nexus continua separado e aparece
+  no HUD de combate. Os valores não substituem os atributos reais do jogo.
+
+### Memórias adicionadas diretamente pelo Port
+
+Use **F8 > MEMÓRIAS > GERENCIAR MEMÓRIAS**, o botão **MEMÓRIAS** na tela
+privada (tecla N) ou `/nexusclient memory open`.
+
+Cadastre um **assunto** (ex.: `Chave da oficina`) e um **fato**
+(ex.: `Gabriel guardou a chave.`). A lista permite selecionar, atualizar,
+paginar e excluir uma memória com confirmação. Até 200 fatos são salvos em
+`config/nexus-owner-memories.json`, independentes do histórico privado.
+
+Atalhos de texto:
+
+```text
+/nexusclient memory add "Chave da oficina" Gabriel guardou a chave.
+/nexusclient memory find chave da oficina
+/nexusclient memory list
+```
+
+Quando o Port faz uma pergunta **no canal neural privado**, o cliente
+seleciona até seis memórias relacionadas ao assunto e as envia ao Gemini
+junto com a pergunta, apenas após essa ação. Notas sobre outros assuntos
+não são incluídas. O Gemini recebe instruções de usar fatos anotados
+diretamente pelo Port e admitir falta de informação quando necessário.
+As notas são dados e nunca autorizações de executar ações.
+**Salvar e buscar localmente não usa API**. Formular respostas pelo
+canal privado ainda depende da API de texto do Gemini.
+
+### Limites atuais
+
+Esta versão **não** reintroduz a transcrição paga de voz pelo Plasmo.
+A fala `Nexus, execute Sunbeam` ainda exige integrar um reconhecedor
+de voz offline e acionar a conjuração real do Iron's Spells. A detecção
+e o HUD já funcionam localmente, mas **conjuração por microfone não está
+habilitada nesta versão**. A API do painel para detecção arcana antiga
+permanece desativada, pois os dados agora ficam no cliente.
+
+> A remoção da magia descrita na versão 2.6.0 abaixo foi revertida em
+> 2.7.0 apenas para o monitoramento local e para o HUD.
+
 ## Versão 2.6.0: detecção de magia removida
 
 O módulo de monitoramento de magias de **Iron's Spells n Spellbooks** foi
