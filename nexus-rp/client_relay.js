@@ -7,7 +7,7 @@ const {synthesizeSpeech}=require("./speech_synthesis.js");
 const {askPrivate}=require("./private_conversation.js");
 const JOB_MAX_AGE=120000;
 function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=aiStatus,synthesize=synthesizeSpeech,privateReply=askPrivate}){
-  let pair=null,session=null,eventId=0,mind=null,monitor=null,alertsState=null,hearingState=null,arcaneState=null;
+  let pair=null,session=null,eventId=0,mind=null,monitor=null,alertsState=null,hearingState=null;
   let ttsBusy=false,lastTtsAt=0,privateBusy=false,lastPrivateAt=0;
   const jobs=new Map(),events=[];
   const err=(res,code,message)=>{send(res,code,{ok:false,error:message});return true;};
@@ -80,6 +80,14 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
   }
   async function handle(req,res,route,url){
     if(!route.startsWith("/api/client/"))return false;
+    // The old Iron's Spells detector is discontinued. Keep other modules online.
+    if(route==="/api/client/arcane"||
+       route==="/api/client/arcane/settings"||
+       route==="/api/client/arcane/state"){
+      send(res,410,{ok:false,kind:"magic_detector_retired",
+        error:"Detecção de magia removida do Nexus. O monitor da armadura continua disponível."});
+      return true;
+    }
     // Permanently retire paid voice recognition, including requests from old JARs.
     // Never read incoming audio and never forward it to Google.
     if(route==="/api/client/hearing/transcribe"||
@@ -107,7 +115,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         const token=crypto.randomBytes(32).toString("hex");pair=null;
         const player=String(data.player||"").slice(0,16);
         session={tokenHash:hash(token),player:/^[A-Za-z0-9_]{3,16}$/.test(player)?player:"",lastSeen:Date.now()};
-        jobs.clear();events.splice(0,events.length);eventId=0;mind=null;monitor=null;alertsState=null;hearingState=null;arcaneState=null;ttsBusy=false;lastTtsAt=0;privateBusy=false;lastPrivateAt=0;
+        jobs.clear();events.splice(0,events.length);eventId=0;mind=null;monitor=null;alertsState=null;hearingState=null;ttsBusy=false;lastTtsAt=0;privateBusy=false;lastPrivateAt=0;
         send(res,200,{ok:true,token,player:session.player,ttl:"until-service-restart-or-repair"});return true;
       }catch(e){return err(res,400,String(e.message));}
     }
@@ -117,10 +125,6 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
       send(res,200,{ok:true,...health(),state:hearingState,
         syncedAt:hearingState?.syncedAt||null});
       return true;
-    }
-    if(route==="/api/client/arcane"&&req.method==="GET"){
-      send(res,200,{ok:true,...health(),state:arcaneState,
-        syncedAt:arcaneState?.syncedAt||null});return true;
     }
     if(route==="/api/client/alerts"&&req.method==="GET"){
       send(res,200,{ok:true,...health(),source:alertsState?"minecraft-client":"none",
@@ -185,18 +189,6 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         return err(res,Number(e.publicStatus)||422,
           e.publicStatus?String(e.message).slice(0,250):"Falha ao preparar resposta. "+String(e.message||"").slice(0,180));
       }
-    }
-    if(route==="/api/client/arcane/settings"&&req.method==="POST"){
-      try{
-        const data=await body(req,1000);
-        if(typeof data.enabled!=="boolean"||typeof data.reactions!=="boolean"||
-          data.scanNearby!==undefined&&typeof data.scanNearby!=="boolean"||
-          data.reactions&&!data.enabled)
-          return err(res,422,"Configure o Núcleo Arcano antes de ativar reações.");
-        send(res,200,enqueue("arcane_settings",{
-          enabled:data.enabled,reactions:data.reactions,scanNearby:data.scanNearby===true
-        }));return true;
-      }catch(e){return err(res,422,String(e.message));}
     }
     if(route==="/api/client/mind/settings"&&req.method==="POST"){
       try{
@@ -295,63 +287,6 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         if(!job.done){job.done=true;job.success=data.success===true;job.error=String(data.error||"").slice(0,250);job.output=String(data.output||"").slice(0,250);}
         send(res,200,{ok:true});return true;
       }catch(e){return err(res,400,String(e.message));}
-    }
-    if(route==="/api/client/arcane/state"&&req.method==="POST"){
-      try{
-        const data=await body(req,24000);
-        if(typeof data.enabled!=="boolean"||typeof data.reactions!=="boolean"||
-          typeof data.present!=="boolean"||typeof data.available!=="boolean"||
-          !Array.isArray(data.events)||data.events.length>80)
-          return err(res,422,"Estado arcano inválido.");
-        const kinds=new Set(["cast_start","cast_end","mana_low","mana_recovered","holy_power","nearby_cast"]);
-        const txt=(value,n)=>String(value||"").replace(/[\u0000-\u001f\u007f]/g," ").slice(0,n);
-        if(data.events.some(e=>!e||typeof e!=="object"||!kinds.has(e.type)||
-          typeof e.message!=="string"||e.message.length>210||
-          !Number.isFinite(Number(e.at))||Number(e.at)<=0))
-          return err(res,422,"Histórico arcano inválido.");
-        const available=data.enabled&&data.present&&data.available;
-        const scanNearby=data.enabled&&data.scanNearby===true;
-        if(data.nearby!==undefined&&(!Array.isArray(data.nearby)||data.nearby.length>12))
-          return err(res,422,"Leituras de proximidade inválidas.");
-        arcaneState={
-          enabled:data.enabled,reactions:data.reactions,scanNearby,
-          nearby:available&&scanNearby?(data.nearby||[]).map(item=>({
-            player:/^[A-Za-z0-9_]{3,16}$/.test(String(item?.player||""))?
-              String(item.player):"",
-            spellId:txt(item?.spellId,90),spellName:txt(item?.spellName,70),
-            school:txt(item?.school,90),
-            level:numericValue(item?.level,0,100,0),
-            distance:numericValue(item?.distance,0,24,0)
-          })).filter(item=>item.player):[],
-          totalNearby:numericValue(data.totalNearby,0,9999999,0),
-          present:data.enabled&&data.present,available,
-          source:"Iron's Spells n Spellbooks (cliente)",
-          mana:available?numericValue(data.mana,0,1000000,null):null,
-          maxMana:available?numericValue(data.maxMana,1,1000000,null):null,
-          manaPercent:available?numericValue(data.manaPercent,0,100,null):null,
-          casting:available&&data.casting===true,
-          castProgress:available?numericValue(data.castProgress,0,1,0):0,
-          spellId:available?txt(data.spellId,90):"",
-          spellName:available?txt(data.spellName,70):"",
-          school:available?txt(data.school,90):"",
-          spellLevel:available?numericValue(data.spellLevel,0,100,0):0,
-          spellPower:available?numericValue(data.spellPower,0,10000,null):null,
-          holyPower:available?numericValue(data.holyPower,0,10000,null):null,
-          armAvailable:data.armAvailable===true,
-          armIntegrity:data.armAvailable===true?numericValue(data.armIntegrity,0,100,null):null,
-          armEnergy:data.armAvailable===true?numericValue(data.armEnergy,0,100,null):null,
-          totalCasts:numericValue(data.totalCasts,0,9999999,0),
-          lastReadAt:numericValue(data.lastReadAt,0,9999999999999,0),
-          lastError:txt(data.lastError,160),
-          events:data.events.slice(-40).map(e=>({
-            at:numericValue(e.at,1,9999999999999,0),
-            type:e.type,message:txt(e.message,210),
-            spellId:txt(e.spellId,90),school:txt(e.school,90),
-            level:numericValue(e.level,0,100,0)
-          })),syncedAt:new Date().toISOString()
-        };
-        send(res,200,{ok:true,events:arcaneState.events.length});return true;
-      }catch(e){return err(res,422,String(e.message));}
     }
     if(route==="/api/client/alerts/state"&&req.method==="POST"){
       try{
