@@ -18,9 +18,6 @@ final class NexusPermissionControls {
             case "privateProactive" -> NexusPrivateMind.autonomous();
             case "privateMemory" -> NexusPrivateMind.memoryEnabled();
             case "privateFreedom" -> NexusPrivateMind.freedomEnabled();
-            case "arcane" -> NexusArcaneSensor.settingEnabled();
-            case "nearby" -> NexusArcaneSensor.nearbyEnabled();
-            case "reactions" -> NexusArcaneSensor.reactionsEnabled();
             case "speaker" -> NexusSpeaker.settingEnabled();
             case "diary" -> NexusSocial.diaryEnabled();
             case "protection" -> NexusSocial.protectionEnabled();
@@ -60,23 +57,6 @@ final class NexusPermissionControls {
                 NexusPrivateMind.setMemoryWithoutClearing(on);
             }
             case "privateFreedom" -> NexusPrivateMind.setFreedom(on);
-            case "arcane" -> {
-                if(!on)NexusArcaneSensor.reactions(false);
-                NexusArcaneSensor.enabled(on);
-                ClientLink.sendArcaneState();
-            }
-            case "nearby" -> {
-                if(on&&!NexusArcaneSensor.settingEnabled())
-                    throw new IllegalStateException("Ative o sensor arcano antes da percepção próxima.");
-                NexusArcaneSensor.scanNearby(on);
-                ClientLink.sendArcaneState();
-            }
-            case "reactions" -> {
-                if(on&&(!ClientConfig.allowChat||!ClientConfig.allowMind||!ClientConfig.allowAutonomy))
-                    throw new IllegalStateException("Reações exigem Chat, Mente e Autonomia.");
-                NexusArcaneSensor.reactions(on);
-                ClientLink.sendArcaneState();
-            }
             case "speaker" -> {
                 NexusSpeaker.enable(on);
                 ClientLink.sendHearingState();
