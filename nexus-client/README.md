@@ -1,5 +1,67 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
+## Versão 2.8.0: conjuração por voz totalmente offline
+
+A conjuração agora é integrada ao Nexus Client e usa o **Vosk** no próprio
+computador. Nenhum áudio vai para Gemini, Render ou Plasmo Voice. A única
+transferência externa relacionada à função é o **download opcional e
+explícito** de um modelo gratuito do repositório oficial do Vosk.
+
+**Primeira utilização:**
+
+1. Com Iron's Spells n Spellbooks instalado no cliente e no servidor, use
+   `/nexusclient voicecast model install` para baixar o modelo de
+   reconhecimento em português (aprox. 31 MB). A fonte é
+   `alphacephei.com/vosk/models/vosk-model-small-pt-0.3.zip`.
+   Alternativamente selecione `/nexusclient voicecast model en`
+   e depois `/nexusclient voicecast model install` para baixar o modelo
+   inglês (40 MB).
+2. Depois que o download terminar, execute `/nexusclient voicecast on`,
+   ou **F6**. O botão **Conjuração offline** aparece também no menu F8.
+3. Equipe seu livro/arma com feitiços e diga **"Nexus, execute Sunbeam"**.
+   A interface aceita também "Nexus, executa Sunbeam" e "Nexus, cast Sunbeam".
+   O mod encontra o feitiço no equipamento e envia o pacote de QuickCast
+   padrão do Iron's Spells para o servidor. Mana, nível do equipamento,
+   cooldown e permissões continuam sendo determinados pelo servidor.
+4. Para parar uma conjuração ativa, diga **"Nexus, cancelar"**.
+   O cliente manda o pacote de cancelamento do próprio Iron's Spells,
+   mantendo o comportamento de cooldown que o jogo aplicar.
+
+O feedback de voz aparece **somente no painel MAGIA do HUD** (editável pelo
+F7). O áudio é processado na RAM e não é salvo no disco. O microfone
+desliga ao abrir menus, sair da partida, perder foco ou desativar a função.
+**A função fica desligada a cada novo início do Minecraft**, mesmo que
+tenha sido usada na sessão anterior.
+
+O reconhecimento suporta comandos explícitos apenas: frases normais sobre
+Sunbeam, feitiços não equipados e falas que não começam com "Nexus execute"
+não disparam conjurações. Um índice atualizado a cada segundo acompanha
+as mudanças de equipamento e limita o vocabulário ao que você pode lançar.
+O modo offline exige que a voz seja reconhecida com confiança suficiente;
+um ambiente barulhento, sotaque ou nomes de feitiços em inglês podem exigir
+usar o modelo EN ou pronunciar "Sun Beam" / "San Bim" para Sunbeam.
+
+Comandos:
+```text
+/nexusclient voicecast status
+/nexusclient voicecast model pt
+/nexusclient voicecast model en
+/nexusclient voicecast model install
+/nexusclient voicecast on
+/nexusclient voicecast off
+```
+
+A versão 2.8.0 **não precisa do mod Incantation**, pois já inclui o
+motor Vosk. Se o Incantation estiver instalado, desative a audição dele
+para não ter dois capturadores disputando o mesmo microfone. A antiga
+audição de outras pessoas pelo Plasmo continua removida; a voz local
+é apenas do próprio Port, para controlar seus feitiços.
+
+**Limitação de validação:** os testes CI compilam o mod e verificam a
+gramática, mas a exatidão do reconhecimento e o disparo no seu servidor
+dependem do microfone, do modelo Vosk e da versão de Iron's Spells no
+modpack, e precisam de teste dentro do jogo.
+
 ## Versão 2.7.0: HUD editável, magia local e memórias manuais
 
 ### HUD privado de combate e magia
