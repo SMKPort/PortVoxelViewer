@@ -45,8 +45,9 @@ final class NexusVoiceGrammar {
         for(Spell spell:equipped){
             if(spell==null||spell.slot<0||spell.slot>255)continue;
             for(String name:names(spell.id)){
-                for(String prefix:List.of("nexus execute ","nexus executa ",
-                        "nexus cast ","nexus lancar ")){
+                for(String prefix:List.of("nexus execute ","nexus execute o ",
+                        "nexus execute a ","nexus executa ","nexus executa o ",
+                        "nexus cast ","nexus lancar ","nexus lance ")){
                     String phrase=normalize(prefix+name);
                     Spell previous=out.putIfAbsent(phrase,spell);
                     if(previous!=null&&!previous.id.equals(spell.id))
