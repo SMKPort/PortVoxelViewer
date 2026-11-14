@@ -13,17 +13,13 @@ import net.minecraft.network.chat.Component;
 final class NexusPermissionsScreen extends Screen {
     private static final int GOLD=0xFFE9BB68,WHITE=0xFFEDE3D6,MUTED=0xFFB7A8A3;
     private static final int GREEN=0xFF9CE0AA,RED=0xFFFFA7A4;
-    private enum Tab { GERAL, ARCANO, MEMORIAS }
+    private enum Tab { GERAL, MEMORIAS }
     private record Entry(String id,String title){}
     private static final Entry[] GENERAL={
         new Entry("chat","Chat /l"),new Entry("telemetry","Telemetria"),
         new Entry("mind","Nexus Mind"),new Entry("autonomy","Autonomia RP"),
         new Entry("private","Canal privado"),new Entry("privateProactive","Iniciativa privada"),
         new Entry("speaker","Voz local (TTS)")
-    };
-    private static final Entry[] ARCANE={
-        new Entry("arcane","Sensor arcano"),new Entry("nearby","Percepção próxima"),
-        new Entry("reactions","Reações arcanas")
     };
     private static final Entry[] MEMORIES={
         new Entry("privateMemory","Memória privada"),new Entry("privateFreedom","Livre-arbítrio RP"),
@@ -50,8 +46,8 @@ final class NexusPermissionsScreen extends Screen {
 
     @Override
     protected void init(){
-        int w=panelW(),x=left(),navW=(w-18)/3;
-        String[] tabs={"GERAL","ARCANO","MEMÓRIAS"};
+        int w=panelW(),x=left(),navW=(w-14)/2;
+        String[] tabs={"GERAL","MEMÓRIAS"};
         for(int i=0;i<tabs.length;i++){
             final Tab next=Tab.values()[i];
             String label=(next==tab?"§6":"")+tabs[i];
@@ -60,8 +56,7 @@ final class NexusPermissionsScreen extends Screen {
                 .bounds(x+5+i*(navW+4),45,navW,20).build());
         }
         Entry[] entries=switch(tab){
-            case GERAL -> GENERAL; case ARCANO -> ARCANE;
-            case MEMORIAS -> MEMORIES;
+            case GERAL -> GENERAL; case MEMORIAS -> MEMORIES;
         };
         int half=(w-20)/2,step=28;
         for(int i=0;i<entries.length;i++){
@@ -83,7 +78,7 @@ final class NexusPermissionsScreen extends Screen {
         int footerY=height-34,btnW=(w-22)/3;
         addRenderableWidget(Button.builder(Component.literal("§aATIVAR TUDO"),b->{
             if(!confirm("all","",b,
-                "Atenção: ativa chat, TTS e compartilhamento do diário. Confirme."))return;
+                "Atenção: ativa chat e compartilhamento do diário. Confirme."))return;
             try{
                 NexusPermissions.all();
                 open(tab,"Modo TOTAL ativo. Nenhuma escuta de jogadores é permitida.");
@@ -141,13 +136,6 @@ final class NexusPermissionsScreen extends Screen {
                 graphics.drawString(font,"Audição e transcrição do Plasmo removidas.",
                     x+8,215,MUTED,false);
             }
-        }else if(tab==Tab.ARCANO){
-            graphics.drawString(font,"Leituras arcanas dependem do Iron's Spells presente no cliente.",
-                x+8,147,MUTED,false);
-            graphics.drawString(font,shortText(NexusArcaneSensor.status(),w-16),
-                x+8,162,GOLD,false);
-            graphics.drawString(font,"Reações precisam de Chat, Mente e Autonomia ativos.",
-                x+8,179,MUTED,false);
         }else{
             graphics.drawString(font,"Memória privada: desligar aqui não apaga registros antigos.",
                 x+8,169,MUTED,false);
