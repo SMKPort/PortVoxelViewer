@@ -17,6 +17,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.GameShuttingDownEvent;
+import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 
 @Mod(value = NexusClientMod.MOD_ID, dist = Dist.CLIENT)
 public class NexusClientMod {
@@ -39,6 +40,7 @@ public class NexusClientMod {
         NeoForge.EVENT_BUS.addListener(this::onTick);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
         NeoForge.EVENT_BUS.addListener(this::onShutdown);
+        NeoForge.EVENT_BUS.addListener(this::onAttackEntity);
     }
 
     private void onRegisterKeys(RegisterKeyMappingsEvent event){
@@ -57,10 +59,15 @@ public class NexusClientMod {
         NexusVoiceCasting.shutdown();
     }
 
+    private void onAttackEntity(AttackEntityEvent event){
+        NexusCombatMacro.onAttack(event);
+    }
+
     private void onTick(ClientTickEvent.Post event) {
         ClientLink.tick();
         NexusVoiceCasting.tick();
         NexusAutoHeal.tick();
+        NexusCombatMacro.tick();
         Minecraft mc=Minecraft.getInstance();
         while(PRIVATE_KEY.consumeClick()){
             if(mc.player!=null&&mc.screen==null)
@@ -326,6 +333,54 @@ public class NexusClientMod {
                     NexusSocial.clear();ClientLink.sendHearingState();
                     notifyPlayer("Memórias sociais apagadas. Histórico legado de voz permanece preservado no PC.");
                     return 1;}))))
+            .then(Commands.literal("macro")
+                .then(Commands.literal("menu").executes(ctx->{
+                    Minecraft mc=Minecraft.getInstance();
+                    if(mc.player!=null)mc.setScreen(new NexusMacroScreen(null));
+                    return 1;
+                }))
+                .then(Commands.literal("status").executes(ctx->{
+                    notifyPlayer(NexusCombatMacro.status());return 1;
+                }))
+                .then(Commands.literal("on").executes(ctx->{
+                    try{
+                        NexusCombatMacro.setEnabled(true);
+                        notifyPlayer(NexusCombatMacro.status());
+                    }catch(Exception ex){notifyPlayer(ex.getMessage());}
+                    return 1;
+                }))
+                .then(Commands.literal("off").executes(ctx->{
+                    NexusCombatMacro.setEnabled(false);
+                    notifyPlayer(NexusCombatMacro.status());return 1;
+                }))
+                .then(Commands.literal("hits")
+                    .then(Commands.argument("count",
+                        com.mojang.brigadier.arguments.IntegerArgumentType.integer(2,6))
+                    .executes(ctx->{
+                        int count=com.mojang.brigadier.arguments.IntegerArgumentType
+                            .getInteger(ctx,"count");
+                        NexusCombatMacro.setHits(count);
+                        notifyPlayer("Macro: "+count+" golpes no mesmo alvo.");return 1;
+                    })))
+                .then(Commands.literal("window")
+                    .then(Commands.argument("seconds",
+                        com.mojang.brigadier.arguments.IntegerArgumentType.integer(2,10))
+                    .executes(ctx->{
+                        int seconds=com.mojang.brigadier.arguments.IntegerArgumentType
+                            .getInteger(ctx,"seconds");
+                        NexusCombatMacro.setWindow(seconds);
+                        notifyPlayer("Macro: janela de "+seconds+" segundos.");return 1;
+                    })))
+                .then(Commands.literal("spell")
+                    .then(Commands.argument("id",StringArgumentType.word())
+                    .executes(ctx->{
+                        try{
+                            NexusCombatMacro.setSpell(StringArgumentType.getString(ctx,"id"));
+                            notifyPlayer("Feitiço da macro: "+NexusCombatMacro.spell());
+                        }catch(Exception ex){notifyPlayer(ex.getMessage());}
+                        return 1;
+                    }))))
+            )
             .then(Commands.literal("autoheal")
                 .then(Commands.literal("status").executes(ctx->{
                     notifyPlayer("Cura automática: "+(NexusAutoHeal.enabled()?"ON":"OFF")+
