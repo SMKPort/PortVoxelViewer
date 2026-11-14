@@ -64,6 +64,9 @@ final class NexusVoiceCasting {
             State saved=JSON.fromJson(Files.readString(SETTINGS,StandardCharsets.UTF_8),State.class);
             if(saved!=null&&saved.schema==1){
                 saved.language="en".equals(saved.language)?"en":"pt";
+                // Local microphone is session-scoped: never reopen it silently
+                // after restarting the game, regardless of the last saved flag.
+                saved.enabled=false;
                 state=saved;
             }
         }catch(Exception ex){status="Configuração de voz inválida; usando padrão desligado.";}
