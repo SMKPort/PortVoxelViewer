@@ -60,6 +60,7 @@ public class NexusClientMod {
     private void onTick(ClientTickEvent.Post event) {
         ClientLink.tick();
         NexusVoiceCasting.tick();
+        NexusAutoHeal.tick();
         Minecraft mc=Minecraft.getInstance();
         while(PRIVATE_KEY.consumeClick()){
             if(mc.player!=null&&mc.screen==null)
@@ -325,6 +326,36 @@ public class NexusClientMod {
                     NexusSocial.clear();ClientLink.sendHearingState();
                     notifyPlayer("Memórias sociais apagadas. Histórico legado de voz permanece preservado no PC.");
                     return 1;}))))
+            .then(Commands.literal("autoheal")
+                .then(Commands.literal("status").executes(ctx->{
+                    notifyPlayer("Cura automática: "+(NexusAutoHeal.enabled()?"ON":"OFF")+
+                        " | Gatilho "+NexusAutoHeal.threshold()+"% da vida");
+                    notifyPlayer(NexusAutoHeal.lastOutcome());
+                    return 1;
+                }))
+                .then(Commands.literal("on").executes(ctx->{
+                    try{
+                        NexusAutoHeal.setEnabled(true);
+                        notifyPlayer("Cura automática ON: abaixo de "+
+                            NexusAutoHeal.threshold()+"% o Nexus tentará Heal.");
+                    }catch(Exception ex){notifyPlayer(ex.getMessage());}
+                    return 1;
+                }))
+                .then(Commands.literal("off").executes(ctx->{
+                    NexusAutoHeal.setEnabled(false);
+                    notifyPlayer("Cura automática OFF.");
+                    return 1;
+                }))
+                .then(Commands.literal("threshold")
+                    .then(Commands.argument("percent",com.mojang.brigadier.arguments.IntegerArgumentType.integer(10,75))
+                        .executes(ctx->{
+                            int value=com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx,"percent");
+                            try{
+                                NexusAutoHeal.setThreshold(value);
+                                notifyPlayer("Cura automática: "+value+"% da vida máxima.");
+                            }catch(Exception ex){notifyPlayer(ex.getMessage());}
+                            return 1;
+                        }))))
             .then(Commands.literal("voicecast")
                 .then(Commands.literal("status").executes(ctx->{
                     notifyPlayer(NexusVoiceCasting.enabled()?"Conjuração de voz: ON":"Conjuração de voz: OFF");
