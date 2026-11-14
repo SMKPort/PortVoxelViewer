@@ -60,6 +60,7 @@ final class NexusPermissions {
         NexusArcaneSensor.scanNearby(false);
         NexusArcaneSensor.enabled(false);
 
+        NexusVoiceCasting.setEnabled(false);
         NexusHearing.listen(false); // Legacy setting remains safely disabled.
         NexusSpeaker.enable(false);
 
@@ -85,5 +86,6 @@ final class NexusPermissions {
         NexusClientMod.notifyPlayer(NexusPrivateMind.status());
         NexusClientMod.notifyPlayer(NexusSocial.status());
         NexusClientMod.notifyPlayer(NexusSpeaker.status());
+        NexusClientMod.notifyPlayer("Voz offline: "+NexusVoiceCasting.status());
     }
 }
