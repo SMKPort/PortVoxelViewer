@@ -19,7 +19,8 @@ final class NexusPermissionsScreen extends Screen {
         new Entry("chat","Chat /l"),new Entry("telemetry","Telemetria"),
         new Entry("mind","Nexus Mind"),new Entry("autonomy","Autonomia RP"),
         new Entry("private","Canal privado"),new Entry("privateProactive","Iniciativa privada"),
-        new Entry("speaker","Voz local (TTS)")
+        new Entry("speaker","Voz local (TTS)"),
+        new Entry("magic","Detecção mágica"),new Entry("combatHud","HUD de combate")
     };
     private static final Entry[] MEMORIES={
         new Entry("privateMemory","Memória privada"),new Entry("privateFreedom","Livre-arbítrio RP"),
@@ -81,6 +82,10 @@ final class NexusPermissionsScreen extends Screen {
                 button->minecraft.setScreen(new NexusMemoryScreen(this)))
                 .bounds(x+6,buttonY,w-12,20).build());
         }
+        if(tab==Tab.GERAL)
+            addRenderableWidget(Button.builder(Component.literal("§6EDITAR POSIÇÃO E TAMANHO DO HUD"),
+                button->minecraft.setScreen(new NexusHudEditorScreen(this)))
+                .bounds(x+6,height>=350?221:210,w-12,20).build());
         int footerY=height-34,btnW=(w-22)/3;
         addRenderableWidget(Button.builder(Component.literal("§aATIVAR TUDO"),b->{
             if(!confirm("all","",b,
