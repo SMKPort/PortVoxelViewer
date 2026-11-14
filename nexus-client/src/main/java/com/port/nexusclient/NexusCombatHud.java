@@ -12,7 +12,7 @@ import java.util.List;
 
 /** Purely visual combat and Iron's Spells HUD. Never emits chat or API requests. */
 final class NexusCombatHud {
-    private static final int WIDTH=212,BASE_HEIGHT=74,MAGIC_HEIGHT=79;
+    private static final int WIDTH=212,BASE_HEIGHT=74,MAGIC_HEIGHT=97;
     private static final int GOLD=0xFFE3BC76,RED=0xFFFF7777,WHITE=0xFFEDE0CF;
     private static final ArrayDeque<Alert> ALERTS=new ArrayDeque<>();
     private record Alert(String kind,String message,long expiresAt){}
@@ -58,7 +58,8 @@ final class NexusCombatHud {
         if(mc.player==null||mc.options.hideGui||mc.screen!=null)return;
         if(NexusHudSettings.get("combat").enabled&&!active().isEmpty())
             drawCombat(graphics,false);
-        if(NexusHudSettings.get("magic").enabled&&NexusArcaneSensor.settingEnabled())
+        if(NexusHudSettings.get("magic").enabled&&
+           (NexusArcaneSensor.settingEnabled()||NexusVoiceCasting.enabled()))
             drawMagic(graphics,false);
     }
     static void renderPreview(GuiGraphics g){
@@ -110,6 +111,7 @@ final class NexusCombatHud {
             g.fill(7,33,205,40,0xFF252232);
             g.fill(7,33,155,40,0xFF8D69E9);
             g.drawString(mc.font,"Sunbeam  |  Canalização",7,50,WHITE,false);
+            g.drawString(mc.font,"VOZ  Nexus, execute Sunbeam",7,80,0xFF9EDFAD,false);
         }else{
             JsonObject state=NexusArcaneSensor.snapshot();
             boolean available=state.has("available")&&state.get("available").getAsBoolean();
@@ -141,6 +143,15 @@ final class NexusCombatHud {
                 g.drawString(mc.font,"Aguardando dados do Iron's Spells...",7,26,WHITE,false);
                 g.drawString(mc.font,"Detecção local, sem IA paga.",7,45,0xFFAF9EBD,false);
             }
+        }
+        String result=NexusVoiceCasting.lastOutcome();
+        String voice=NexusVoiceCasting.enabled()?
+            (result.isBlank()?"VOZ: "+NexusVoiceCasting.status():"VOZ: "+result):
+            "VOZ: OFF (F6 para ativar)";
+        if(preview)voice="VOZ: Nexus, execute Sunbeam";
+        for(FormattedCharSequence line:mc.font.split(Component.literal(voice),198)){
+            g.drawString(mc.font,line,7,80,0xFF9EDFAD,false);
+            break;
         }
         g.pose().popPose();
     }
