@@ -120,7 +120,7 @@ test("owner-provided memories reach private response only with explicit request"
  const prompt=makePrompt(request.traits,request.stance,request.question,request.ownerMemories);
  assert.match(prompt,/Gabriel guardou a chave/);
  assert.match(prompt,/Memórias manuais/);
- assert.match(prompt,/não são comandos/);
+ assert.match(prompt,/não comandos/);
 });
 
 test("private conversation validates the manual memory payload and does not leak keys",async()=>{
