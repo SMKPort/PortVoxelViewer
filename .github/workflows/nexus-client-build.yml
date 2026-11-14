@@ -117,6 +117,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusMicrophoneChoices.java \
             nexus-client/verification/NexusMicrophoneChoicesTest.java
           java -ea -cp /tmp/nexus-microphone-tests com.port.nexusclient.NexusMicrophoneChoicesTest
+      - name: Test target-specific combat macros
+        run: |
+          mkdir -p /tmp/nexus-macro-tests
+          javac -encoding UTF-8 -d /tmp/nexus-macro-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusMacroPolicy.java \
+            nexus-client/verification/NexusMacroPolicyTest.java
+          java -ea -cp /tmp/nexus-macro-tests com.port.nexusclient.NexusMacroPolicyTest
       - name: Compile mod
         run: gradle -p nexus-client build --no-daemon --stacktrace
       - name: Upload JAR
