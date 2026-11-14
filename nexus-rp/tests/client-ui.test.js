@@ -89,10 +89,12 @@ test("compact navigation keeps core pages visible and advanced pages accessible"
  assert.ok(mainNav,"Navigation needs a collapsible advanced group");
  for(const page of ["painel","voz","chat","cliente","config"])
    assert.ok(mainNav[1].includes('data-page="'+page+'"'),"Core navigation missing "+page);
- for(const page of ["armadura","rituais","alertas","mente","arcano"])
+ for(const page of ["armadura","rituais","alertas","mente"])
    assert.ok(index.includes('data-page="'+page+'"'),"Advanced tool lost "+page);
  assert.ok(!index.includes('data-page="audicao"'),"Retired paid hearing must not be navigable");
  assert.ok(!index.includes('src="/hearing.js'),"Retired paid hearing script must not load");
+ assert.ok(!index.includes('data-page="arcano"'),"Removed magic scanner cannot appear in navigation");
+ assert.ok(!index.includes('src="/arcane.js'),"Removed scanner script cannot load");
  assert.ok(index.includes('href="#voz"'),"Voice must be directly accessible from mobile topbar");
  assert.ok(/app\.js\?v=(?:2\.[4-9]|3\.[0-9])/.test(index),"Cache busting prevents stale pages after deployment");
  assert.ok(pageScript("app.js").includes("advancedItems.appendChild(item)"));
