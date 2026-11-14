@@ -1,5 +1,6 @@
 {
   "key.nexusclient.private": "Nexus private channel (N)",
   "key.nexusclient.permissions": "Nexus permissions menu (F8)",
-  "key.nexusclient.hud": "Nexus HUD editor (F7)"
+  "key.nexusclient.hud": "Nexus HUD editor (F7)",
+  "key.nexusclient.voicecast": "Toggle offline spell casting (F6)"
 }
