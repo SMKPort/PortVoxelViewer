@@ -20,9 +20,6 @@ public final class NexusPermissionsSmokeTest {
         NexusHearing.memory=false;
         NexusHearing.answer=false;
         NexusHearing.collective=false;
-        NexusArcaneSensor.active=false;
-        NexusArcaneSensor.nearby=false;
-        NexusArcaneSensor.reactionsEnabled=false;
         NexusPrivateMind.active=false;
         NexusPrivateMind.memoryEnabled=false;
         NexusPrivateMind.proactive=false;
@@ -40,8 +37,6 @@ public final class NexusPermissionsSmokeTest {
         check(ClientConfig.allowChat && ClientConfig.allowTelemetry
             && ClientConfig.allowMind && ClientConfig.allowAutonomy,
             "Core permissions must be authorized together.");
-        check(NexusArcaneSensor.active && NexusArcaneSensor.nearby
-            && NexusArcaneSensor.reactionsEnabled, "Arcane features must be on.");
         check(NexusPrivateMind.active && NexusPrivateMind.memoryEnabled
             && NexusPrivateMind.proactive && NexusPrivateMind.freedom,
             "Private channel permissions must be on.");
@@ -56,8 +51,6 @@ public final class NexusPermissionsSmokeTest {
         check(!ClientConfig.allowChat && !ClientConfig.allowTelemetry
             && !ClientConfig.allowMind && !ClientConfig.allowAutonomy,
             "Core permissions must all be off.");
-        check(!NexusArcaneSensor.active && !NexusArcaneSensor.nearby
-            && !NexusArcaneSensor.reactionsEnabled, "Arcane features must be off.");
         check(!NexusPrivateMind.active && !NexusPrivateMind.memoryEnabled
             && !NexusPrivateMind.proactive && !NexusPrivateMind.freedom,
             "Private channel must be off.");
@@ -95,18 +88,10 @@ final class ClientConfig {
 final class ClientLink {
     static void resetTelemetryBaseline() {}
     static void sendHearingState() {}
-    static void sendArcaneState() {}
     static String status() { return "connected"; }
 }
 final class NexusMind {
     static void resetSession() {}
-}
-final class NexusArcaneSensor {
-    static boolean active, nearby, reactionsEnabled;
-    static void enabled(boolean on) { active=on; }
-    static void scanNearby(boolean on) { nearby=on; }
-    static void reactions(boolean on) { reactionsEnabled=on; }
-    static String status() { return "arcane"; }
 }
 final class NexusPrivateMind {
     static boolean active, memoryEnabled, proactive, freedom;
