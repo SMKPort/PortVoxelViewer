@@ -215,7 +215,13 @@ final class NexusMind {
                 speechKind="mind";
             }
         }
+        boolean hurt=health<lastHealth-0.1f;
         lastHealth=health;lastX=x;lastZ=z;
-        if(speech!=null)ClientLink.speak(speech,speechKind);
+        if(speech!=null){
+            // Health-driven warnings belong to the local HUD, not /l chat.
+            if(hurt||"critical".equals(speechKind))
+                NexusCombatHud.show(speechKind,speech);
+            else ClientLink.speak(speech,speechKind);
+        }
     }
 }
