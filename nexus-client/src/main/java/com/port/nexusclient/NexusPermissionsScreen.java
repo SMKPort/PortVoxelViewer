@@ -75,6 +75,12 @@ final class NexusPermissionsScreen extends Screen {
                 }).bounds(bx,by,half,20).build());
         }
 
+        if(tab==Tab.MEMORIAS){
+            int buttonY=height>=340?242:219;
+            addRenderableWidget(Button.builder(Component.literal("§6GERENCIAR MEMÓRIAS DO PORT"),
+                button->minecraft.setScreen(new NexusMemoryScreen(this)))
+                .bounds(x+6,buttonY,w-12,20).build());
+        }
         int footerY=height-34,btnW=(w-22)/3;
         addRenderableWidget(Button.builder(Component.literal("§aATIVAR TUDO"),b->{
             if(!confirm("all","",b,
