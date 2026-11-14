@@ -29,6 +29,8 @@ public final class NexusPermissionsSmokeTest {
         NexusSocial.protection=false;
         NexusSocial.share=false;
         NexusSpeaker.active=false;
+        NexusArcaneSensor.on=false;
+        NexusHudSettings.combat=false;NexusHudSettings.magic=false;
     }
 
     public static void main(String[] args) {
@@ -43,6 +45,8 @@ public final class NexusPermissionsSmokeTest {
         check(NexusSocial.diary && NexusSocial.protection && NexusSocial.share,
             "Social settings must be on.");
         check(!NexusSpeaker.active,"Global activation must not enable potentially paid TTS.");
+        check(NexusArcaneSensor.on&&NexusHudSettings.combat&&NexusHudSettings.magic,
+            "HUD and client-side magic readings are included in global enable.");
         check(!NexusHearing.listening && !NexusHearing.memory &&
             !NexusHearing.answer && !NexusHearing.collective,
             "Global enable must never activate retired audio capture.");
@@ -54,6 +58,8 @@ public final class NexusPermissionsSmokeTest {
         check(!NexusPrivateMind.active && !NexusPrivateMind.memoryEnabled
             && !NexusPrivateMind.proactive && !NexusPrivateMind.freedom,
             "Private channel must be off.");
+        check(!NexusArcaneSensor.on&&!NexusHudSettings.combat&&!NexusHudSettings.magic,
+            "Global off disables both local HUD panels and magic readings.");
         check(!NexusSocial.diary && !NexusSocial.protection && !NexusSocial.share,
             "Sharing and protection must be off.");
         check(!NexusSpeaker.active && !NexusHearing.listening
@@ -142,4 +148,15 @@ final class NexusClientMod {
     static void notifyPlayer(String message) {
         if (message == null) throw new AssertionError("Message must not be null");
     }
+}
+
+final class NexusHudSettings {
+    static boolean combat,magic;
+    static class Layout { boolean enabled;Layout(boolean enabled){this.enabled=enabled;} }
+    static void enabled(String id,boolean on){if(id.equals("magic"))magic=on;else combat=on;}
+    static Layout get(String id){return new Layout(id.equals("magic")?magic:combat);}
+}
+final class NexusArcaneSensor {
+    static boolean on;
+    static void enabled(boolean enabled){on=enabled;}
 }
