@@ -1,5 +1,60 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
+## Nexus Client 2.9.3: macros arcanas e Julgamento Divino
+
+O Nexus ganhou a primeira macro de combate configurável, chamada
+**Julgamento Divino**. Ao detectar uma sequência de golpes corpo a corpo
+no **mesmo alvo**, o Nexus solicita a conjuração de
+`irons_spellbooks:divine_smite` (Divine Smite) pelo pacote oficial
+`QuickCastPacket` do Iron's Spells. Você pode escolher outro feitiço
+**equipado** usando seu identificador completo.
+
+A macro é **desligada por padrão**. Para ativá-la e editá-la, entre em
+**F8 > Combate > CONFIGURAR MACROS DE COMBATE** ou execute
+`/nexusclient macro menu`.
+
+Configuração inicial: **3 golpes** no mesmo alvo dentro de **5 segundos**,
+com pelo menos 275 ms entre hits para reduzir duplo disparo de eventos.
+A janela pode variar entre 2 e 10 segundos, e a contagem pode variar
+de 2 a 6 ataques. Existe intervalo de **17 segundos** entre tentativas
+de conjuração. Toda troca de alvo reinicia a sequência.
+
+Exemplos de comandos:
+
+```text
+/nexusclient macro status
+/nexusclient macro on
+/nexusclient macro off
+/nexusclient macro hits 3
+/nexusclient macro window 5
+/nexusclient macro spell irons_spellbooks:divine_smite
+/nexusclient macro menu
+```
+
+Somente um ataque que apresente **animação de dano nova** no alvo após
+o evento de ataque conta para o combo. Cliques isolados ou golpes
+sem feedback não avançam a macro. Como o Nexus permanece **client-only**
+e não acessa dados internos do servidor, essa observação visual **não é
+uma confirmação autoritativa de quem causou o dano** em combates com
+muitos jogadores. O sistema é conservador, mas pode não contar todos
+os acertos em servidores com latência elevada.
+
+O Nexus exige a magia equipada, verifica mana, cooldown e outras
+conjurações em andamento e confirma que o alvo continua perto e
+visível. Somente depois envia o pacote normal de Iron's Spells,
+que o servidor pode aceitar ou rejeitar segundo suas regras.
+
+O HUD de combate (editável por F7) mostra o progresso **0/3, 1/3,
+2/3** e exibe o resultado do feitiço solicitado. A configuração
+é salva localmente em `config/nexus-combat-macros.json`. Não há
+transcrição, IA paga, comando de administrador ou dano artificial.
+
+`/nexusclient permissions off` desliga a macro. O comando
+`permissions all` **não liga a conjuração ofensiva sozinho**.
+A compilação CI valida a máquina de estados, mas o reconhecimento
+efetivo das animações de dano e o efeito do feitiço ainda exigem
+teste dentro do seu modpack.
+
 ## Nexus Client 2.9.2: seletor de microfone no VoiceCast
 
 O VoiceCast agora permite selecionar o dispositivo de entrada **dentro
