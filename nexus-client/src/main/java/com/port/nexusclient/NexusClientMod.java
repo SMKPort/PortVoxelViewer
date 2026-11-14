@@ -1,6 +1,7 @@
 package com.port.nexusclient;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.arguments.LongArgumentType;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.Minecraft;
@@ -79,6 +80,43 @@ public class NexusClientMod {
                     NexusPermissions.status();
                     return 1;
                 })))
+            .then(Commands.literal("memory")
+                .then(Commands.literal("open").executes(ctx->{
+                    Minecraft mc=Minecraft.getInstance();
+                    if(mc.player!=null)mc.setScreen(new NexusMemoryScreen(null));
+                    return 1;
+                }))
+                .then(Commands.literal("list").executes(ctx->{
+                    var notes=NexusOwnerMemories.list();
+                    notifyPlayer("Memórias manuais: "+notes.size()+"/200. Use F8 > MEMÓRIAS para editar.");
+                    for(var note:notes.stream().limit(8).toList())
+                        notifyPlayer("#"+note.id+" ["+note.topic+"] "+note.text);
+                    return 1;
+                }))
+                .then(Commands.literal("add")
+                    .then(Commands.argument("topic",StringArgumentType.string())
+                    .then(Commands.argument("text",StringArgumentType.greedyString()).executes(ctx->{
+                        try{
+                            var memory=NexusOwnerMemories.save(0,
+                                StringArgumentType.getString(ctx,"topic"),
+                                StringArgumentType.getString(ctx,"text"));
+                            notifyPlayer("Memória #"+memory.id+" salva: "+memory.topic);
+                        }catch(Exception error){notifyPlayer("Memória: "+error.getMessage());}
+                        return 1;
+                    }))))
+                .then(Commands.literal("find")
+                    .then(Commands.argument("query",StringArgumentType.greedyString()).executes(ctx->{
+                        String query=StringArgumentType.getString(ctx,"query");
+                        var notes=NexusOwnerMemories.relevant(query,6);
+                        if(notes.isEmpty())notifyPlayer("Nenhuma memória relacionada encontrada.");
+                        else for(var note:notes)notifyPlayer("#"+note.id+" ["+note.topic+"] "+note.text);
+                        return 1;
+                    })))
+                .then(Commands.literal("delete")
+                    .then(Commands.argument("id",LongArgumentType.longArg(1)).executes(ctx->{
+                        notifyPlayer("Para excluir memórias, abra F8 > MEMÓRIAS e confirme na tela.");
+                        return 1;
+                    }))))
             .then(Commands.literal("pair")
                 .then(Commands.argument("code", StringArgumentType.word()).executes(context -> {
                     ClientLink.pair(StringArgumentType.getString(context, "code"));
