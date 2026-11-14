@@ -12,13 +12,6 @@
       {key:"antebraco",name:"Placas do antebraço",integrity:100,integrated:true},
       {key:"manopla",name:"Manopla arcana",integrity:100,integrated:true}
     ];
-    const CHAPTERS = [
-      {code:"TS-001",title:"Eco de comando",hidden:"Uma instrução antiga foi localizada na memória do braço. Não corresponde a nenhuma ordem do Port.",trace:"ROOT TS / SINAL OBSOLETO",options:["Conter o fragmento","Analisar a assinatura"]},
-      {code:"TS-014",title:"Memória fragmentada",hidden:"O Nexus encontrou resíduos do vínculo entre a prótese antiga e a rede dos TS.",trace:"OWNER PORT? // CONTROLE DISPUTADO",options:["Arquivar em isolamento","Decodificar os resíduos"]},
-      {code:"TS-026",title:"Retorno do sinal",hidden:"A armadura reconheceu um protocolo que não deveria mais existir. O núcleo aguarda uma decisão.",trace:"VOCÊ NÃO PODE ENTRAR AQUI. NÃO PODE SAIR.",options:["Recusar sincronização","Simular resposta sem conectar"]},
-      {code:"TS-041",title:"O último acesso",hidden:"Um arquivo inerte documenta a tentativa final dos TS de recuperar o Nexus.",trace:"PROTOCOLO DE AUTONOMIA / PORT",options:["Selar o arquivo","Preservar como evidência"]},
-      {code:"TS-099",title:"Livre do controle",hidden:"O fragmento final não contém novas instruções. ATERNA marca o vínculo como encerrado.",trace:"ACESSO NEGADO AOS TS",options:["Confirmar isolamento","Guardar o registro na oficina"]}
-    ];
     const STEP_NAMES = ["Preparação","Canalização","Estabilização","Conclusão"];
     if (!Array.isArray(S.segments) || !S.segments.length) {
       S.segments=DEFAULT_SEGMENTS.map(x=>({...x,integrity:clamp(S.integrity,0,100),integrated:S.armor==="integrada"}));
@@ -27,11 +20,6 @@
       const old=S.segments.find(x=>x?.key===def.key)||S.segments[i]||{};
       return {...def,integrity:clamp(old.integrity??def.integrity,0,100),integrated:Boolean(old.integrated??def.integrated)};
     });
-    if (!S.tsEvents || typeof S.tsEvents!=="object") S.tsEvents={enabled:false,chapter:0,pending:false,actions:0,threat:15,journal:[]};
-    const TS=S.tsEvents;
-    TS.enabled=Boolean(TS.enabled); TS.chapter=clamp(TS.chapter,0,CHAPTERS.length);
-    TS.actions=clamp(TS.actions,0,1e8);TS.threat=clamp(TS.threat??15,0,100);TS.pending=Boolean(TS.pending);
-    if (!Array.isArray(TS.journal)) TS.journal=[];
     if (!Object.prototype.hasOwnProperty.call(S,"stagedRitual")) S.stagedRitual=null;
     if (!S.statusFlags || typeof S.statusFlags!=="object") S.statusFlags={};
     if(!S.segmentBridge || typeof S.segmentBridge!=="object")S.segmentBridge={enabled:false,prefix:"nexus:segmentos"};
@@ -72,15 +60,7 @@
       S.integrity=clamp(Math.round(S.segments.reduce((sum,x)=>sum+x.integrity,0)/S.segments.length),0,100);
       alertState();
     }
-    function noteAction(label){
-      TS.actions++;
-      if(TS.enabled && TS.chapter<CHAPTERS.length && TS.actions%4===0 && !TS.pending){
-        TS.pending=true;
-        log("Arquivo TS pendente de inspeção. Abra o Protocolo TS quando desejar.","TS / FICÇÃO");
-        rp.toast("Novo fragmento TS disponível no painel.");
-      }
-      alertState();persist();
-    }
+    function noteAction(){alertState();persist();}
     // Exposed callbacks let the original RP implementation keep acting as the source
     // of truth for armoring, ritual energy costs, Minecraft RCON and logs.
     rp.afterArmor=(kind)=>{
@@ -120,10 +100,7 @@
       return oldDash()+'<h2 class="section-title">Operação em tempo real</h2>'+
       '<div class="grid two">'+card("RP AO VIVO",'<p class="hint">Acesse o comunicador rápido, acione as placas e acompanhe energia e integridade sem menus complexos.</p>'+
       '<div class="rp-quick-metrics"><span>ENERGIA <b>'+S.energy+'%</b></span><span>INTEGRIDADE <b>'+S.integrity+'%</b></span></div>'+
-      '<div class="buttons">'+button("live-open","ABRIR MODO AO VIVO","gold")+'</div>')+
-      card("PROTOCOLO TS",'<p class="hint">Eventos secretos do universo do Port. Eles ficam desativados por padrão e nunca interferem no servidor sem sua ação.</p>'+
-      '<div class="rp-status-line"><span>Monitor narrativo</span><strong>'+ (TS.enabled?"LIGADO":"MANUAL")+'</strong></div>'+
-      '<div class="buttons">'+button("ts-open",TS.pending?"INSPECIONAR FRAGMENTO":"ABRIR ARQUIVOS TS","alt")+'</div>')+'</div>';
+      '<div class="buttons">'+button("live-open","ABRIR MODO AO VIVO","gold")+'</div>')+'</div>';
     };
     const oldRituals=views.rituais;
     views.rituais=function(){
@@ -161,35 +138,13 @@
       '<h2 class="section-title">Últimas transmissões</h2>'+card("COMUNICADOR",recent||'<div class="empty">Nenhuma mensagem registrada.</div>');
     }
     views.ao_vivo=liveView;
-    function tsView(){
-      const current=CHAPTERS[TS.chapter];
-      const events=TS.journal.slice(-10).reverse().map(j=>'<div class="rp-ts-log"><small>'+E(j.code)+' · '+rp.date(j.at)+'</small><strong>'+E(j.title)+'</strong><p>'+E(j.choice)+'</p></div>').join("");
-      return '<div class="eyebrow">ARQUIVO CLASSIFICADO / TS</div><h1 class="heading">Protocolo TS</h1>'+
-      '<p class="subheading">Fragmentos de lore encontrados na antiga prótese. Eventos controlados por você, sem simulação de invasão real.</p>'+
-      '<div class="grid two">'+
-      card("CENTRAL DE ISOLAMENTO",
-      '<div class="rp-ts-header"><span class="light"></span> SISTEMA NARRATIVO · '+(TS.enabled?"AUTOAVISO ATIVO":"MODO MANUAL")+'</div>'+
-      '<div class="rp-status-line"><span>Fragmentos decifrados</span><strong>'+TS.chapter+' / '+CHAPTERS.length+'</strong></div>'+
-      '<div class="rp-status-line"><span>Pressão fictícia dos TS</span><strong>'+TS.threat+'%</strong></div>'+bar(TS.threat,true)+
-      '<label class="field inline"><input type="checkbox" data-rp-change="ts-auto" '+(TS.enabled?"checked":"")+'><span>Oferecer novo fragmento a cada quatro ações do Nexus</span></label>'+
-      '<p class="hint">A opção apenas sinaliza um evento. Você decide quando abrir e nunca acontece automaticamente no chat.</p>'+
-      (TS.chapter>=CHAPTERS.length?'<div class="notice">ARQUIVOS CONCLUÍDOS. O vínculo narrativo foi encerrado.</div>':
-      !TS.pending?'<div class="rp-ts-hidden"><strong>ARQUIVO NÃO REVELADO</strong><span>Próximo fragmento aguardando autorização.</span></div>'+
-      '<div class="buttons">'+button("ts-reveal","REVELAR PRÓXIMO FRAGMENTO","gold")+'</div>':
-      '<div class="rp-ts-hidden revealed"><small>'+E(current.code)+'</small><h3>'+E(current.title)+'</h3><p>'+E(current.hidden)+'</p><code>'+E(current.trace)+'</code></div>'+
-      '<div class="buttons">'+current.options.map((opt,i)=>button("ts-choice",E(opt),i===0?"gold":"alt",'data-choice="'+i+'"')).join("")+'</div>')+
-      '<div class="divider"></div>'+button("ts-reset","REINICIAR CAMPANHA TS","ghost")
-      )+
-      card("DIÁRIO DOS FRAGMENTOS",events||'<div class="empty">Nenhum fragmento analisado ainda.</div>')+'</div>';
-    }
-    views.ts=tsView;
     const oldConfig=views.config;
     views.config=function(){return oldConfig()+'<h2 class="section-title">Integração de segmentos (opcional)</h2>'+card("FUNÇÕES INDIVIDUAIS DO MINECRAFT",'<p class="hint">Se o seu datapack ou mod já tiver funções individuais, o Nexus pode chamar <code>function prefixo/segmento/acao</code>. Exemplo: <code>nexus:segmentos/ombreira/integrar</code>. Por padrão fica desligado, evitando comandos inexistentes.</p><form id="rpSegmentConfig" class="rp-ext-settings"><label class="field inline"><input type="checkbox" name="enabled" '+(S.segmentBridge.enabled?"checked":"")+'> <span>Ativar chamadas por segmento</span></label><label class="field">PREFIXO DAS FUNÇÕES (namespace:caminho)<input name="prefix" maxlength="75" required value="'+E(S.segmentBridge.prefix||"nexus:segmentos") +'" placeholder="nexus:segmentos"></label><div class="buttons"><button class="btn gold" type="submit">SALVAR FUNÇÕES DAS PLACAS</button></div></form>');};
 
     const nav=document.querySelector("#nav");
     const config=nav?.querySelector('[data-page="config"]');
     if(config){
-      for (const [key,label,icon] of [["ao_vivo","RP ao Vivo","◉"],["ts","Protocolo TS","⊗"]]){
+      for (const [key,label,icon] of [["ao_vivo","RP ao Vivo","◉"]]){
         const el=document.createElement("button");el.className="nav-button";el.dataset.page=key;el.innerHTML="<span>"+icon+"</span> "+label;config.before(el);
       }
     }
@@ -241,16 +196,6 @@
       }
     }
 
-    async function tsChoice(choiceIndex){
-      const story=CHAPTERS[TS.chapter];if(!story || !TS.pending)return;
-      const index=choiceIndex===1?1:0;
-      const choice=story.options[index];
-      TS.journal.push({id:id(),code:story.code,title:story.title,choice,at:new Date().toISOString()});
-      TS.pending=false;TS.chapter++;
-      TS.threat=clamp(TS.threat+(index===1?9:-8),0,100);
-      log("Fragmento "+story.code+" processado: "+choice+".","TS / LORE");
-      persist();show();rp.toast("Fragmento "+story.code+" arquivado.");
-    }
     async function advanceRitual(){
       const r=S.stagedRitual;if(!r)return;
       const current=clamp(r.stage,0,3),name=r.name;
@@ -274,7 +219,7 @@
       catch(err){S.stagedRitual=r;persist();rp.toast(err.message);}
       show();
     }
-    rp.resetUpgrade=()=>{S.segments=DEFAULT_SEGMENTS.map(x=>({...x}));S.tsEvents={enabled:false,chapter:0,pending:false,actions:0,threat:15,journal:[]};Object.assign(TS,S.tsEvents);S.tsEvents=TS;S.stagedRitual=null;S.statusFlags={};persist();};
+    rp.resetUpgrade=()=>{S.segments=DEFAULT_SEGMENTS.map(x=>({...x}));S.stagedRitual=null;S.statusFlags={};persist();};
     const container=document.querySelector("#content");
     container.addEventListener("submit",async e=>{
       if(e.target.id==="rpSegmentConfig"){
@@ -305,24 +250,12 @@
       e.preventDefault();e.stopImmediatePropagation();
       const act=el.dataset.rp,key=el.dataset.key;
       if(act==="live-open")return rp.navigate("ao_vivo");
-      if(act==="ts-open")return rp.navigate("ts");
       if(act==="live-ritual")return rp.navigate("rituais");
       if(act.startsWith("segment-"))return segmentAction(act,key);
       if(act==="ritual-next")return advanceRitual();
       if(act==="ritual-cancel"){
         if(!S.stagedRitual)return;
         S.stagedRitual=null;persist();log("Execução ritualística cancelada antes do consumo de energia.","RITUAL");show();return;
-      }
-      if(act==="ts-reveal"){
-        if(TS.chapter>=CHAPTERS.length)return;
-        TS.pending=true;persist();show();rp.toast("Fragmento disponível para investigação.");return;
-      }
-      if(act==="ts-choice")return tsChoice(Number(el.dataset.choice));
-      if(act==="ts-reset"){
-        if(!confirm("Reiniciar toda a campanha TS e seus registros de fragmentos?"))return;
-        S.tsEvents={enabled:false,chapter:0,pending:false,actions:0,threat:15,journal:[]};
-        // Repurpose outer object reference to preserve event handlers.
-        Object.assign(TS,S.tsEvents); S.tsEvents=TS;persist();show();return;
       }
       if(act==="live-note"){
         const field=container.querySelector('#rpLiveMessage textarea');
@@ -338,11 +271,6 @@
         return rp.armorAction(k);
       }
       if(act==="live-remodelar")return rp.navigate("armadura");
-    },true);
-    container.addEventListener("change",e=>{
-      if(e.target.matches('[data-rp-change="ts-auto"]')){
-        TS.enabled=Boolean(e.target.checked);persist();log("Alertas narrativos TS "+(TS.enabled?"ativados":"desativados")+".","TS");show();
-      }
     },true);
     return views;
   };
