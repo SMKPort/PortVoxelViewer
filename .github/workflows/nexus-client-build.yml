@@ -96,6 +96,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusVoiceGrammar.java \
             nexus-client/verification/NexusVoiceGrammarTest.java
           java -ea -cp /tmp/nexus-voice-tests com.port.nexusclient.NexusVoiceGrammarTest
+      - name: Test explicit auto Heal policy
+        run: |
+          mkdir -p /tmp/nexus-autoheal-tests
+          javac -encoding UTF-8 -d /tmp/nexus-autoheal-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusAutoHealPolicy.java \
+            nexus-client/verification/NexusAutoHealPolicyTest.java
+          java -ea -cp /tmp/nexus-autoheal-tests com.port.nexusclient.NexusAutoHealPolicyTest
       - name: Compile mod
         run: gradle -p nexus-client build --no-daemon --stacktrace
       - name: Upload JAR
