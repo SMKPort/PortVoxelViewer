@@ -60,6 +60,7 @@ final class NexusPermissions {
         NexusArcaneSensor.scanNearby(false);
         NexusArcaneSensor.enabled(false);
 
+        NexusCombatMacro.setEnabled(false);
         NexusAutoHeal.setEnabled(false);
         NexusVoiceCasting.setEnabled(false);
         NexusHearing.listen(false); // Legacy setting remains safely disabled.
@@ -88,6 +89,7 @@ final class NexusPermissions {
         NexusClientMod.notifyPlayer(NexusSocial.status());
         NexusClientMod.notifyPlayer(NexusSpeaker.status());
         NexusClientMod.notifyPlayer("Voz offline: "+NexusVoiceCasting.status());
+        NexusClientMod.notifyPlayer(NexusCombatMacro.status());
         NexusClientMod.notifyPlayer("Cura automática: "+(NexusAutoHeal.enabled()?"ON":"OFF")+
             " | "+NexusAutoHeal.threshold()+"% | "+NexusAutoHeal.lastOutcome());
     }
