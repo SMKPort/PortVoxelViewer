@@ -35,16 +35,12 @@ public final class NexusPermissionControlsTest {
             "Permission toggle may not erase private history");
         NexusPermissionControls.set("speaker",true);
         check(NexusSpeaker.enabled,"Local TTS permission");
-        NexusPermissionControls.set("arcane",true);
-        NexusPermissionControls.set("nearby",true);
-        expectedError(()->NexusPermissionControls.set("reactions",true),
-            "Arcane reactions need Mind and Autonomy");
-        NexusPermissionControls.set("mind",true);
-        NexusPermissionControls.set("autonomy",true);
-        NexusPermissionControls.set("reactions",true);
-        check(NexusArcaneSensor.reactions,"Arcane reactions enabled with prerequisites");
-        NexusPermissionControls.set("arcane",false);
-        check(!NexusArcaneSensor.reactions,"Disable arcane reactions with sensor");
+        for(String removed:new String[]{"arcane","nearby","reactions"}){
+            try{
+                NexusPermissionControls.set(removed,true);
+                throw new AssertionError("Removed magic detection still available: "+removed);
+            }catch(IllegalArgumentException expected){}
+        }
 
         NexusPermissionControls.set("share",true);
         check(NexusSocial.share,"Sharing is a separate opt-in");
@@ -61,7 +57,6 @@ final class ClientConfig {
 }
 final class ClientLink {
     static void resetTelemetryBaseline(){}
-    static void sendArcaneState(){}
     static void sendHearingState(){}
 }
 final class NexusMind {static void resetSession(){}}
@@ -97,18 +92,6 @@ final class NexusPrivateMind {
     }
     static void setMemoryWithoutClearing(boolean on){memory=on;}
     static void setFreedom(boolean on){freedom=on;}
-}
-final class NexusArcaneSensor {
-    static boolean sensor,nearby,reactions;
-    static boolean settingEnabled(){return sensor;}
-    static boolean nearbyEnabled(){return nearby;}
-    static boolean reactionsEnabled(){return reactions;}
-    static void enabled(boolean on){sensor=on;}
-    static void scanNearby(boolean on){nearby=on;}
-    static void reactions(boolean on){
-        if(on&&!sensor)throw new IllegalStateException("Enable sensor first");
-        reactions=on;
-    }
 }
 final class NexusSpeaker {
     static boolean enabled;
