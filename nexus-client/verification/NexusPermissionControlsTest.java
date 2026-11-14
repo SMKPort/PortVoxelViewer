@@ -35,6 +35,13 @@ public final class NexusPermissionControlsTest {
             "Permission toggle may not erase private history");
         NexusPermissionControls.set("speaker",true);
         check(NexusSpeaker.enabled,"Local TTS permission");
+        NexusPermissionControls.set("magic",true);
+        check(NexusArcaneSensor.on&&NexusHudSettings.magic,
+            "HUD magic toggle enables client magic readings");
+        NexusPermissionControls.set("magic",false);
+        check(!NexusArcaneSensor.on&&!NexusHudSettings.magic,"Magic can be disabled");
+        NexusPermissionControls.set("combatHud",true);
+        check(NexusHudSettings.combat,"Combat overlay can be enabled independently");
         for(String removed:new String[]{"arcane","nearby","reactions"}){
             try{
                 NexusPermissionControls.set(removed,true);
@@ -110,4 +117,16 @@ final class NexusSocial {
             case "share" -> share=on;
         }
     }
+}
+
+final class NexusHudSettings {
+    static boolean combat,magic;
+    static class Layout { boolean enabled;Layout(boolean enabled){this.enabled=enabled;} }
+    static void enabled(String id,boolean on){if(id.equals("magic"))magic=on;else combat=on;}
+    static Layout get(String id){return new Layout(id.equals("magic")?magic:combat);}
+}
+final class NexusArcaneSensor {
+    static boolean on;
+    static void enabled(boolean enabled){on=enabled;}
+    static boolean settingEnabled(){return on;}
 }
