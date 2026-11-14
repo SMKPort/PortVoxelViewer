@@ -74,8 +74,10 @@ public class NexusClientMod {
                 mc.setScreen(new NexusHudEditorScreen(null));
         }
         while(VOICE_CAST_KEY.consumeClick()){
-            if(mc.player!=null&&mc.screen==null)
+            if(mc.player!=null&&mc.screen==null){
                 NexusVoiceCasting.setEnabled(!NexusVoiceCasting.enabled());
+                notifyPlayer(NexusVoiceCasting.status());
+            }
         }
     }
 
