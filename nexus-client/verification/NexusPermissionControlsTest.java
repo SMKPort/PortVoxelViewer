@@ -128,5 +128,6 @@ final class NexusHudSettings {
 final class NexusArcaneSensor {
     static boolean on;
     static void enabled(boolean enabled){on=enabled;}
+    static void scanNearby(boolean enabled){}
     static boolean settingEnabled(){return on;}
 }
