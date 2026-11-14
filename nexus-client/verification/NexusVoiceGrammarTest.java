@@ -15,6 +15,9 @@ public final class NexusVoiceGrammarTest {
         var sun=NexusVoiceGrammar.recognize("Nexus, execute Sunbeam!",index);
         check(sun!=null&&!sun.cancel()&&sun.slot()==2,
             "Requested equipped Sunbeam must select its exact QuickCast slot");
+        var withArticle=NexusVoiceGrammar.recognize("Nexus, execute o Sunbeam!",index);
+        check(withArticle!=null&&!withArticle.cancel()&&withArticle.slot()==2,
+            "Brazilian Portuguese article in spoken command");
         var sunVariant=NexusVoiceGrammar.recognize("Néxus, executa sun beam",index);
         check(sunVariant!=null&&sunVariant.spellId().endsWith(":sunbeam"),
             "Portuguese wake phrase and spaced English spell name");
