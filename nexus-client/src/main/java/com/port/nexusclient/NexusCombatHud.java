@@ -126,7 +126,16 @@ final class NexusCombatHud {
                 int i=0;
                 for(FormattedCharSequence line:mc.font.split(Component.literal(spell),198)){
                     g.drawString(mc.font,line,7,50+i*10,WHITE,false);
-                    if(++i>=2)break;
+                    if(++i>=1)break;
+                }
+                if(state.has("nearby")&&state.get("nearby").isJsonArray()&&
+                    state.getAsJsonArray("nearby").size()>0){
+                    JsonObject near=state.getAsJsonArray("nearby").get(0).getAsJsonObject();
+                    String label=near.get("player").getAsString()+": "+near.get("spellName").getAsString();
+                    for(FormattedCharSequence line:mc.font.split(Component.literal("PERTO: "+label),198)){
+                        g.drawString(mc.font,line,7,64,0xFFE0A8EB,false);
+                        break;
+                    }
                 }
             }else{
                 g.drawString(mc.font,"Aguardando dados do Iron's Spells...",7,26,WHITE,false);
