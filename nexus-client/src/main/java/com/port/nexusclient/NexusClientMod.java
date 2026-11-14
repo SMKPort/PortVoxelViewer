@@ -1,7 +1,6 @@
 package com.port.nexusclient;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.arguments.LongArgumentType;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.Minecraft;
@@ -153,11 +152,7 @@ public class NexusClientMod {
                         else for(var note:notes)notifyPlayer("#"+note.id+" ["+note.topic+"] "+note.text);
                         return 1;
                     })))
-                .then(Commands.literal("delete")
-                    .then(Commands.argument("id",LongArgumentType.longArg(1)).executes(ctx->{
-                        notifyPlayer("Para excluir memórias, abra F8 > MEMÓRIAS e confirme na tela.");
-                        return 1;
-                    }))))
+                )
             .then(Commands.literal("pair")
                 .then(Commands.argument("code", StringArgumentType.word()).executes(context -> {
                     ClientLink.pair(StringArgumentType.getString(context, "code"));
