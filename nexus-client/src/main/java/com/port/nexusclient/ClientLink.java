@@ -209,13 +209,14 @@ final class ClientLink {
             .exceptionally(error -> {NexusSpeaker.failed("Serviço de voz indisponível.");return null;});
     }
 
-    static void askPrivateNexus(String text,JsonArray history,JsonObject traits,String stance){
+    static void askPrivateNexus(String text,JsonArray history,JsonObject traits,String stance,JsonArray ownerMemories){
         JsonObject request=new JsonObject();
         request.addProperty("consent",true);
         request.addProperty("question",text);
         request.add("history",history);
         request.add("traits",traits);
         request.addProperty("stance",stance);
+        request.add("ownerMemories",ownerMemories);
         Minecraft mc=Minecraft.getInstance();
         post("/api/client/private/reply",request,true,Duration.ofSeconds(40))
             .thenAccept(result->mc.execute(()->{
