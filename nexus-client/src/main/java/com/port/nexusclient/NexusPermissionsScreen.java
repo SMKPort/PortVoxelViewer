@@ -98,7 +98,6 @@ final class NexusPermissionsScreen extends Screen {
                     b->minecraft.setScreen(new NexusHudEditorScreen(this)))
                     .bounds(x+6,194,w-12,20).build());
             if(height>=340){
-                int half=(w-20)/2;
                 addRenderableWidget(Button.builder(Component.literal("MODELO VOSK "+
                     NexusVoiceCasting.language().toUpperCase()),b->{
                     if(NexusVoiceModels.install(NexusVoiceCasting.language()))
