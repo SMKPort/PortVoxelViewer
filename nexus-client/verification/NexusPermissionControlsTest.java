@@ -49,6 +49,10 @@ public final class NexusPermissionControlsTest {
             }catch(IllegalArgumentException expected){}
         }
 
+        NexusPermissionControls.set("voiceCasting",true);
+        check(NexusVoiceCasting.on,"Voice permission can be enabled explicitly");
+        NexusPermissionControls.set("voiceCasting",false);
+        check(!NexusVoiceCasting.on,"Voice permission can be revoked");
         NexusPermissionControls.set("share",true);
         check(NexusSocial.share,"Sharing is a separate opt-in");
         NexusPermissionControls.set("share",false);
@@ -130,4 +134,11 @@ final class NexusArcaneSensor {
     static void enabled(boolean enabled){on=enabled;}
     static void scanNearby(boolean enabled){}
     static boolean settingEnabled(){return on;}
+}
+
+final class NexusVoiceCasting {
+    static boolean on;
+    static boolean enabled(){return on;}
+    static void setEnabled(boolean enabled){on=enabled;}
+    static String status(){return "offline"; }
 }
