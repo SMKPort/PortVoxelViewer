@@ -103,6 +103,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusAutoHealPolicy.java \
             nexus-client/verification/NexusAutoHealPolicyTest.java
           java -ea -cp /tmp/nexus-autoheal-tests com.port.nexusclient.NexusAutoHealPolicyTest
+      - name: Test Vosk model layouts (legacy Portuguese and modern English)
+        run: |
+          mkdir -p /tmp/nexus-model-tests
+          javac -encoding UTF-8 -d /tmp/nexus-model-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusVoiceModelLayout.java \
+            nexus-client/verification/NexusVoiceModelLayoutTest.java
+          java -ea -cp /tmp/nexus-model-tests com.port.nexusclient.NexusVoiceModelLayoutTest
       - name: Compile mod
         run: gradle -p nexus-client build --no-daemon --stacktrace
       - name: Upload JAR
