@@ -89,6 +89,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusMemoryRecall.java \
             nexus-client/verification/NexusMemoryRecallTest.java
           java -ea -cp /tmp/nexus-memory-tests com.port.nexusclient.NexusMemoryRecallTest
+      - name: Test exact offline spell grammar
+        run: |
+          mkdir -p /tmp/nexus-voice-tests
+          javac -encoding UTF-8 -d /tmp/nexus-voice-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusVoiceGrammar.java \
+            nexus-client/verification/NexusVoiceGrammarTest.java
+          java -ea -cp /tmp/nexus-voice-tests com.port.nexusclient.NexusVoiceGrammarTest
       - name: Compile mod
         run: gradle -p nexus-client build --no-daemon --stacktrace
       - name: Upload JAR
