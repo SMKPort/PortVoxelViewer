@@ -10,6 +10,8 @@ import com.mojang.blaze3d.platform.InputConstants;
 import org.lwjgl.glfw.GLFW;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
@@ -24,8 +26,11 @@ public class NexusClientMod {
         "key.nexusclient.private",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_N,"key.categories.misc");
     private static final KeyMapping PERMISSIONS_KEY=new KeyMapping(
         "key.nexusclient.permissions",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_F8,"key.categories.misc");
+    private static final KeyMapping HUD_KEY=new KeyMapping(
+        "key.nexusclient.hud",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_F7,"key.categories.misc");
     public NexusClientMod(IEventBus modBus) {
         modBus.addListener(this::onRegisterKeys);
+        modBus.addListener(this::onRegisterHud);
         ClientConfig.load();
         // Paid Plasmo transcription has been retired. Keep archived memories only.
         NexusHearing.listen(false);
@@ -36,6 +41,12 @@ public class NexusClientMod {
     private void onRegisterKeys(RegisterKeyMappingsEvent event){
         event.register(PRIVATE_KEY);
         event.register(PERMISSIONS_KEY);
+        event.register(HUD_KEY);
+    }
+
+    private void onRegisterHud(RegisterGuiLayersEvent event){
+        event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(MOD_ID,"nexus_alerts"),
+            (graphics,partialTick)->NexusCombatHud.render(graphics));
     }
 
     private void onTick(ClientTickEvent.Post event) {
@@ -48,6 +59,10 @@ public class NexusClientMod {
         while(PERMISSIONS_KEY.consumeClick()){
             if(mc.player!=null&&mc.screen==null)
                 mc.setScreen(new NexusPermissionsScreen());
+        }
+        while(HUD_KEY.consumeClick()){
+            if(mc.player!=null&&mc.screen==null)
+                mc.setScreen(new NexusHudEditorScreen(null));
         }
     }
 
@@ -80,6 +95,32 @@ public class NexusClientMod {
                     NexusPermissions.status();
                     return 1;
                 })))
+            .then(Commands.literal("hud")
+                .then(Commands.literal("edit").executes(ctx->{
+                    Minecraft mc=Minecraft.getInstance();
+                    if(mc.player!=null)mc.setScreen(new NexusHudEditorScreen(null));
+                    return 1;
+                }))
+                .then(Commands.literal("combat")
+                    .then(Commands.literal("on").executes(ctx->{
+                        NexusHudSettings.enabled("combat",true);
+                        notifyPlayer("HUD de combate ativado.");return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx->{
+                        NexusHudSettings.enabled("combat",false);
+                        notifyPlayer("HUD de combate ocultado.");return 1;
+                    })))
+                .then(Commands.literal("magic")
+                    .then(Commands.literal("on").executes(ctx->{
+                        NexusArcaneSensor.enabled(true);
+                        NexusHudSettings.enabled("magic",true);
+                        notifyPlayer("Leitura do Iron's Spells ativada no HUD.");return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx->{
+                        NexusHudSettings.enabled("magic",false);
+                        NexusArcaneSensor.enabled(false);
+                        notifyPlayer("Detecção de magia desligada.");return 1;
+                    }))))
             .then(Commands.literal("memory")
                 .then(Commands.literal("open").executes(ctx->{
                     Minecraft mc=Minecraft.getInstance();
