@@ -48,6 +48,7 @@ final class NexusHudEditorScreen extends Screen {
         rebuildWidgets();
     }
     @Override public boolean mouseClicked(double mx,double my,int button){
+        if(super.mouseClicked(mx,my,button))return true;
         if(button==0){
             for(String id:new String[]{"combat","magic"}){
                 int x=NexusCombatHud.posX(id,width),y=NexusCombatHud.posY(id,height);
@@ -58,7 +59,7 @@ final class NexusHudEditorScreen extends Screen {
                 }
             }
         }
-        return super.mouseClicked(mx,my,button);
+        return false;
     }
     @Override public boolean mouseDragged(double mx,double my,int button,double dx,double dy){
         if(button==0&&!dragging.isEmpty()){
