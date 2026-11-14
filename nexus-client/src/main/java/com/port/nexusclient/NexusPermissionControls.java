@@ -18,6 +18,8 @@ final class NexusPermissionControls {
             case "privateProactive" -> NexusPrivateMind.autonomous();
             case "privateMemory" -> NexusPrivateMind.memoryEnabled();
             case "privateFreedom" -> NexusPrivateMind.freedomEnabled();
+            case "magic" -> NexusArcaneSensor.settingEnabled();
+            case "combatHud" -> NexusHudSettings.get("combat").enabled;
             case "speaker" -> NexusSpeaker.settingEnabled();
             case "diary" -> NexusSocial.diaryEnabled();
             case "protection" -> NexusSocial.protectionEnabled();
@@ -57,6 +59,11 @@ final class NexusPermissionControls {
                 NexusPrivateMind.setMemoryWithoutClearing(on);
             }
             case "privateFreedom" -> NexusPrivateMind.setFreedom(on);
+            case "magic" -> {
+                NexusArcaneSensor.enabled(on);
+                NexusHudSettings.enabled("magic",on);
+            }
+            case "combatHud" -> NexusHudSettings.enabled("combat",on);
             case "speaker" -> {
                 NexusSpeaker.enable(on);
                 ClientLink.sendHearingState();
