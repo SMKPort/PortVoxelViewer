@@ -12,7 +12,7 @@ import java.util.List;
 
 /** Purely visual combat and Iron's Spells HUD. Never emits chat or API requests. */
 final class NexusCombatHud {
-    private static final int WIDTH=212,BASE_HEIGHT=96,MAGIC_HEIGHT=97;
+    private static final int WIDTH=212,BASE_HEIGHT=112,MAGIC_HEIGHT=97;
     private static final int GOLD=0xFFE3BC76,RED=0xFFFF7777,WHITE=0xFFEDE0CF;
     private static final ArrayDeque<Alert> ALERTS=new ArrayDeque<>();
     private record Alert(String kind,String message,long expiresAt){}
@@ -57,7 +57,7 @@ final class NexusCombatHud {
         Minecraft mc=Minecraft.getInstance();
         if(mc.player==null||mc.options.hideGui||mc.screen!=null)return;
         if(NexusHudSettings.get("combat").enabled&&
-           (!active().isEmpty()||NexusAutoHeal.enabled()))
+           (!active().isEmpty()||NexusAutoHeal.enabled()||NexusCombatMacro.enabled()))
             drawCombat(graphics,false);
         if(NexusHudSettings.get("magic").enabled&&
            (NexusArcaneSensor.settingEnabled()||NexusVoiceCasting.enabled()))
@@ -109,6 +109,14 @@ final class NexusCombatHud {
                 "AUTOCURA (OFF)");
         g.drawString(mc.font,heal,7,82,NexusAutoHeal.enabled()||preview?
             0xFFA4DEAC:0xFFAA9795,false);
+        String macro=preview?"MACRO JULGAMENTO DIVINO   2/3":
+            (NexusCombatMacro.enabled()?
+            "MACRO "+NexusCombatMacro.progress()+"/"+NexusCombatMacro.hits()+
+                "  "+NexusCombatMacro.spell().substring(
+                    NexusCombatMacro.spell().indexOf(':')+1):
+            "MACRO DESLIGADA");
+        g.drawString(mc.font,macro.length()>38?macro.substring(0,38):macro,
+            7,97,NexusCombatMacro.enabled()||preview?GOLD:0xFFAA9795,false);
         g.pose().popPose();
     }
     private static void drawMagic(GuiGraphics g,boolean preview){
