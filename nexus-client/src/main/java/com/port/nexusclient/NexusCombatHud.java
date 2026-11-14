@@ -94,7 +94,10 @@ final class NexusCombatHud {
             List<String> messages=active();
             if(!messages.isEmpty())text=messages.get(0);
         }
-        if(text==null)text="Nenhuma ameaça registrada.";
+        if(text==null){
+            text=NexusAutoHeal.enabled()?NexusAutoHeal.lastOutcome():
+                "Nenhuma ameaça registrada.";
+        }
         int y=42;
         for(FormattedCharSequence line:mc.font.split(Component.literal(text),WIDTH-14)){
             g.drawString(mc.font,line,7,y,RED,false);
