@@ -97,13 +97,18 @@ final class NexusPermissionsScreen extends Screen {
                 addRenderableWidget(Button.builder(Component.literal("§6EDITAR HUD DE COMBATE E MAGIA"),
                     b->minecraft.setScreen(new NexusHudEditorScreen(this)))
                     .bounds(x+6,194,w-12,20).build());
-            if(height>=340)
-                addRenderableWidget(Button.builder(Component.literal("INSTALAR MODELO VOSK "+
+            if(height>=340){
+                int half=(w-20)/2;
+                addRenderableWidget(Button.builder(Component.literal("MODELO VOSK "+
                     NexusVoiceCasting.language().toUpperCase()),b->{
                     if(NexusVoiceModels.install(NexusVoiceCasting.language()))
-                        message="Modelo de voz solicitado. Consulte /nexusclient voicecast status.";
+                        message="Download iniciado. Consulte /nexusclient voicecast status.";
                     else message=NexusVoiceModels.status();
-                }).bounds(x+6,220,w-12,20).build());
+                }).bounds(x+6,220,half,20).build());
+                addRenderableWidget(Button.builder(Component.literal("§6ESCOLHER MICROFONE"),
+                    b->minecraft.setScreen(new NexusMicrophoneScreen(this)))
+                    .bounds(x+12+half,220,half,20).build());
+            }
         }
         int footerY=height-34,btnW=(w-22)/3;
         addRenderableWidget(Button.builder(Component.literal("§aATIVAR TUDO"),b->{
