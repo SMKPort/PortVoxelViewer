@@ -16,9 +16,20 @@ neoForge {
     }
 }
 repositories {
-    maven { name = 'plasmoverse-releases'; url = 'https://repo.plasmoverse.com/releases' }
+    mavenCentral()
 }
-// Paid Plasmo transcription feature removed. No Plasmo API dependencies.
+// Vosk runs entirely on the player's PC. NeoForge/Minecraft already supply JNA.
+// Match Minecraft's JNA version so an older transitive dependency cannot break OSHI.
+configurations.all {
+    resolutionStrategy.force 'net.java.dev.jna:jna:5.12.1', 'net.java.dev.jna:jna-platform:5.12.1'
+}
+dependencies {
+    implementation 'com.alphacephei:vosk:0.3.45'
+    additionalRuntimeClasspath 'com.alphacephei:vosk:0.3.45'
+    jarJar('com.alphacephei:vosk:0.3.45') {
+        exclude group: 'net.java.dev.jna'
+    }
+}
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
     var replaceProperties = [
         minecraft_version: minecraft_version,
