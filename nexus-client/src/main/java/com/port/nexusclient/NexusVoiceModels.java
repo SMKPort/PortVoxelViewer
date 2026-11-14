@@ -29,10 +29,7 @@ final class NexusVoiceModels {
         return FMLPaths.CONFIGDIR.get().resolve("nexus-voice").resolve(id);
     }
     static boolean installed(String lang){
-        Path base=model(lang);
-        return Files.isRegularFile(base.resolve("am/final.mdl")) &&
-            Files.isDirectory(base.resolve("conf")) &&
-            Files.isDirectory(base.resolve("graph"));
+        return NexusVoiceModelLayout.valid(model(lang));
     }
     static String status(){return state;}
     static boolean downloading(){return BUSY.get();}
@@ -42,7 +39,8 @@ final class NexusVoiceModels {
             state="Idioma inválido.";return false;
         }
         if(installed(lang)){
-            state="Modelo "+lang.toUpperCase()+" já instalado.";return true;
+            state="Modelo "+lang.toUpperCase()+" já instalado ("+
+                NexusVoiceModelLayout.describe(model(lang))+").";return true;
         }
         if(!BUSY.compareAndSet(false,true)){
             state="Já existe um download em andamento.";return false;
@@ -59,7 +57,7 @@ final class NexusVoiceModels {
                 connection.setConnectTimeout(20000);
                 connection.setReadTimeout(60000);
                 connection.setInstanceFollowRedirects(true);
-                connection.setRequestProperty("User-Agent","NexusAterna-Voice/2.8");
+                connection.setRequestProperty("User-Agent","NexusAterna-Voice/2.9.1");
                 if(connection.getResponseCode()!=200)
                     throw new IllegalStateException("Servidor de modelos HTTP "+connection.getResponseCode());
                 long expanded=0;
@@ -89,15 +87,20 @@ final class NexusVoiceModels {
                         zip.closeEntry();
                     }
                 }finally{connection.disconnect();}
-                if(!Files.isRegularFile(staging.resolve("am/final.mdl"))||
-                   !Files.isDirectory(staging.resolve("conf"))||
-                   !Files.isDirectory(staging.resolve("graph")))
-                    throw new IllegalStateException("Download incompleto: arquivos do Vosk ausentes.");
+                // Portuguese Vosk small 0.3 uses the official LEGACY flat layout:
+                // final.mdl, mfcc.conf, HCLr.fst and Gr.fst in the root.
+                // English small 0.15 uses the MODERN am/conf/graph layout.
+                // Both load directly in the native Vosk engine. Do not rewrite models.
+                NexusVoiceModelLayout.Format format=NexusVoiceModelLayout.inspect(staging);
+                if(format==NexusVoiceModelLayout.Format.INVALID)
+                    throw new IllegalStateException(
+                        "Pacote extraído, mas não contém um modelo Vosk válido (nem moderno nem legado).");
                 Files.createDirectories(dest.getParent());
                 if(Files.exists(dest))deleteTree(dest);
                 try{Files.move(staging,dest,StandardCopyOption.ATOMIC_MOVE);}
                 catch(AtomicMoveNotSupportedException ignored){Files.move(staging,dest);}
-                state="Vosk "+lang.toUpperCase()+" instalado. Ative a conjuração por voz.";
+                state="Vosk "+lang.toUpperCase()+" instalado ("+
+                    NexusVoiceModelLayout.describe(dest)+"). Ative a conjuração por voz.";
             }catch(Exception ex){
                 state="Falha no modelo: "+String.valueOf(ex.getMessage()).substring(
                     0,Math.min(115,String.valueOf(ex.getMessage()).length()));
