@@ -13,15 +13,17 @@ import net.minecraft.network.chat.Component;
 final class NexusPermissionsScreen extends Screen {
     private static final int GOLD=0xFFE9BB68,WHITE=0xFFEDE3D6,MUTED=0xFFB7A8A3;
     private static final int GREEN=0xFF9CE0AA,RED=0xFFFFA7A4;
-    private enum Tab { GERAL, MEMORIAS }
+    private enum Tab { GERAL, COMBATE, MEMORIAS }
     private record Entry(String id,String title){}
     private static final Entry[] GENERAL={
         new Entry("chat","Chat /l"),new Entry("telemetry","Telemetria"),
         new Entry("mind","Nexus Mind"),new Entry("autonomy","Autonomia RP"),
         new Entry("private","Canal privado"),new Entry("privateProactive","Iniciativa privada"),
-        new Entry("speaker","Voz local (TTS)"),
-        new Entry("magic","Detecção mágica"),new Entry("combatHud","HUD de combate"),
-        new Entry("voiceCasting","Conjuração offline")
+        new Entry("speaker","Voz local (TTS)")
+    };
+    private static final Entry[] COMBAT={
+        new Entry("combatHud","HUD de combate"),new Entry("magic","Detecção mágica"),
+        new Entry("voiceCasting","Conjuração offline"),new Entry("autoHeal","Cura automática")
     };
     private static final Entry[] MEMORIES={
         new Entry("privateMemory","Memória privada"),new Entry("privateFreedom","Livre-arbítrio RP"),
@@ -48,8 +50,8 @@ final class NexusPermissionsScreen extends Screen {
 
     @Override
     protected void init(){
-        int w=panelW(),x=left(),navW=(w-14)/2;
-        String[] tabs={"GERAL","MEMÓRIAS"};
+        int w=panelW(),x=left(),navW=(w-22)/3;
+        String[] tabs={"GERAL","COMBATE","MEMÓRIAS"};
         for(int i=0;i<tabs.length;i++){
             final Tab next=Tab.values()[i];
             String label=(next==tab?"§6":"")+tabs[i];
@@ -58,7 +60,7 @@ final class NexusPermissionsScreen extends Screen {
                 .bounds(x+5+i*(navW+4),45,navW,20).build());
         }
         Entry[] entries=switch(tab){
-            case GERAL -> GENERAL; case MEMORIAS -> MEMORIES;
+            case GERAL -> GENERAL; case COMBATE -> COMBAT; case MEMORIAS -> MEMORIES;
         };
         int half=(w-20)/2,step=28;
         for(int i=0;i<entries.length;i++){
@@ -83,17 +85,22 @@ final class NexusPermissionsScreen extends Screen {
                 button->minecraft.setScreen(new NexusMemoryScreen(this)))
                 .bounds(x+6,buttonY,w-12,20).build());
         }
-        if(tab==Tab.GERAL){
-            addRenderableWidget(Button.builder(Component.literal("§6EDITAR POSIÇÃO E TAMANHO DO HUD"),
-                button->minecraft.setScreen(new NexusHudEditorScreen(this)))
-                .bounds(x+6,height>=350?234:216,w-12,20).build());
-            if(height>=390)
-                addRenderableWidget(Button.builder(Component.literal("INSTALAR MODELO DE VOZ "+
-                    NexusVoiceCasting.language().toUpperCase()),button->{
+        if(tab==Tab.COMBATE){
+            int y=145;
+            addRenderableWidget(Button.builder(Component.literal("− 5%"),
+                b->adjustHeal(-5)).bounds(x+8,y,74,20).build());
+            addRenderableWidget(Button.builder(Component.literal("+ 5%"),
+                b->adjustHeal(5)).bounds(x+89,y,74,20).build());
+            addRenderableWidget(Button.builder(Component.literal("§6EDITAR HUD DE COMBATE E MAGIA"),
+                b->minecraft.setScreen(new NexusHudEditorScreen(this)))
+                .bounds(x+6,194,w-12,20).build());
+            if(height>=340)
+                addRenderableWidget(Button.builder(Component.literal("INSTALAR MODELO VOSK "+
+                    NexusVoiceCasting.language().toUpperCase()),b->{
                     if(NexusVoiceModels.install(NexusVoiceCasting.language()))
-                        message="Download offline Vosk iniciado. Consulte /nexusclient voicecast status.";
+                        message="Modelo de voz solicitado. Consulte /nexusclient voicecast status.";
                     else message=NexusVoiceModels.status();
-                }).bounds(x+6,260,w-12,20).build());
+                }).bounds(x+6,220,w-12,20).build());
         }
         int footerY=height-34,btnW=(w-22)/3;
         addRenderableWidget(Button.builder(Component.literal("§aATIVAR TUDO"),b->{
@@ -112,6 +119,14 @@ final class NexusPermissionsScreen extends Screen {
         }).bounds(x+9+btnW,footerY,btnW,20).build());
         addRenderableWidget(Button.builder(Component.literal("FECHAR"),b->onClose())
             .bounds(x+13+btnW*2,footerY,btnW,20).build());
+    }
+
+    private void adjustHeal(int delta){
+        try{
+            int next=NexusAutoHealPolicy.clampPercent(NexusAutoHeal.threshold()+delta);
+            NexusAutoHeal.setThreshold(next);
+            open(Tab.COMBATE,"Cura automática ajustada para "+next+"% da vida.");
+        }catch(Exception ex){message=ex.getMessage();}
     }
 
     private Component buttonText(Entry entry){
@@ -150,18 +165,25 @@ final class NexusPermissionsScreen extends Screen {
             x+6,31,MUTED,false);
 
         if(tab==Tab.GERAL){
-            if(height>=385){
-                graphics.drawString(font,"O chat do Nexus usa a sua própria conta Minecraft.",
-                    x+8,290,MUTED,false);
-                graphics.drawString(font,"Plasmo sem transcrição. F7 para posicionar o HUD.",
-                    x+8,303,MUTED,false);
-            }
+            if(height>=340)
+                graphics.drawString(font,"Plasmo sem transcrição paga. HUD editável em F7.",
+                    x+8,230,MUTED,false);
+        }else if(tab==Tab.COMBATE){
+            graphics.drawString(font,
+                "Gatilho da cura: "+NexusAutoHeal.threshold()+"% da vida máxima",
+                x+173,151,GOLD,false);
+            graphics.drawString(font,
+                "Heal equipado obrigatório. Intervalo mínimo: 35 segundos.",
+                x+8,177,MUTED,false);
+            if(height>=365)
+                graphics.drawString(font,shortText(NexusAutoHeal.lastOutcome(),w-16),
+                    x+8,250,WHITE,false);
         }else{
-            graphics.drawString(font,"Memória privada: desligar aqui não apaga registros antigos.",
+            graphics.drawString(font,"Memória privada: desligar não apaga registros antigos.",
                 x+8,169,MUTED,false);
-            graphics.drawString(font,"Compartilhar no painel transmite o diário só após autorização.",
+            graphics.drawString(font,"Compartilhar diário requer permissão.",
                 x+8,186,MUTED,false);
-            graphics.drawString(font,"Memórias antigas são preservadas, sem novas transcrições.",
+            graphics.drawString(font,"Memórias antigas permanecem preservadas.",
                 x+8,203,MUTED,false);
         }
 
