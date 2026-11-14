@@ -11,7 +11,7 @@ final class NexusPermissions {
     private NexusPermissions() {}
 
     static void all() {
-        // Prerequisites first: autonomy, arcane reactions and proactive private
+        // Prerequisites first: autonomy and proactive private
         // messages depend on these switches being enabled.
         ClientConfig.allowChat = true;
         ClientConfig.allowTelemetry = true;
@@ -20,10 +20,6 @@ final class NexusPermissions {
         ClientConfig.save();
         ClientLink.resetTelemetryBaseline();
         NexusMind.resetSession();
-
-        NexusArcaneSensor.enabled(true);
-        NexusArcaneSensor.scanNearby(true);
-        NexusArcaneSensor.reactions(true);
 
         NexusPrivateMind.enable(true);
         NexusPrivateMind.memory(true);
@@ -39,10 +35,9 @@ final class NexusPermissions {
         // Legacy hearing is retired. Never enable paid audio capture.
         NexusHearing.listen(false);
         ClientLink.sendHearingState(); // Keep social/voice preferences in sync.
-        ClientLink.sendArcaneState();
 
         NexusClientMod.notifyPlayer("Modo TOTAL ativado: chat, telemetria, mente, autonomia, "
-            + "arcano, canal privado, diário e proteção. TTS permanece opcional.");
+            + "canal privado, diário e proteção. TTS permanece opcional.");
         NexusClientMod.notifyPlayer("As mensagens públicas saem da sua conta. "
             + "O diário pode ser consultado no painel privado; use permissions off para revogar.");
     }
@@ -60,10 +55,6 @@ final class NexusPermissions {
         NexusHearing.listen(false); // Legacy setting remains safely disabled.
         NexusSpeaker.enable(false);
 
-        NexusArcaneSensor.reactions(false);
-        NexusArcaneSensor.scanNearby(false);
-        NexusArcaneSensor.enabled(false);
-
         NexusPrivateMind.setProactive(false);
         NexusPrivateMind.enable(false);
         // The existing memory(false) command deletes history. The global kill
@@ -76,14 +67,12 @@ final class NexusPermissions {
         NexusSocial.setting("diary", false);
 
         ClientLink.sendHearingState();
-        ClientLink.sendArcaneState();
         NexusClientMod.notifyPlayer("Modo TOTAL desligado. Publicações e recursos "
             + "automáticos interrompidos. Memórias antigas preservadas.");
     }
 
     static void status() {
         NexusClientMod.notifyPlayer("Geral: " + ClientLink.status());
-        NexusClientMod.notifyPlayer(NexusArcaneSensor.status());
         NexusClientMod.notifyPlayer(NexusPrivateMind.status());
         NexusClientMod.notifyPlayer(NexusSocial.status());
         NexusClientMod.notifyPlayer(NexusSpeaker.status());
