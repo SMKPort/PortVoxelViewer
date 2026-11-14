@@ -28,6 +28,7 @@ final class NexusMemoryScreen extends Screen {
     }
     private int left(){return (width-Math.min(550,width-20))/2;}
     private int panelWidth(){return Math.min(550,width-20);}
+    private int visibleCount(){return Math.min(PAGE_SIZE,Math.max(1,(height-207)/27));}
 
     @Override protected void init(){
         int x=left(),w=panelWidth();
@@ -57,16 +58,17 @@ final class NexusMemoryScreen extends Screen {
             .bounds(x+22+third*2,actionsY,third,20).build());
 
         List<NexusOwnerMemories.Memory> memories=NexusOwnerMemories.list();
-        int maxPage=Math.max(0,(memories.size()-1)/PAGE_SIZE);
+        int visible=visibleCount();
+        int maxPage=Math.max(0,(memories.size()-1)/visible);
         page=Math.max(0,Math.min(page,maxPage));
-        for(int i=page*PAGE_SIZE;i<Math.min(memories.size(),(page+1)*PAGE_SIZE);i++){
+        for(int i=page*visible;i<Math.min(memories.size(),(page+1)*visible);i++){
             NexusOwnerMemories.Memory memory=memories.get(i);
             String label=memory.id==selectedId?"§6● "+memory.topic:"§f"+memory.topic;
-            int rowY=163+(i%PAGE_SIZE)*27;
+            int rowY=158+(i%visible)*27;
             addRenderableWidget(Button.builder(Component.literal(shorten(label,Math.max(50,w-42))),
                 b->select(memory)).bounds(x+8,rowY,w-16,20).build());
         }
-        int pageY=Math.min(height-57,279);
+        int pageY=Math.min(height-57,163+visible*27);
         addRenderableWidget(Button.builder(Component.literal("◀"),b->{
             if(page>0)openPage(page-1);
         }).bounds(x+8,pageY,42,20).build());
