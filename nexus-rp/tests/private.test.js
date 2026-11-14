@@ -100,3 +100,45 @@ test("private persona keeps Mizora as canon without obsessive callbacks",async()
  const explicit=makePrompt({freedom:true},"","Quero falar da Mizora");
  assert.match(explicit,/Mizora é amiga do Port/);
 });
+
+test("owner-provided memories reach private response only with explicit request",async()=>{
+ const {call,incoming}=harness();
+ const owner={"x-nexus-key":"OWNER"};
+ const code=(await call("POST","/api/client/pair/new",owner,{})).payload.code;
+ const token=(await call("POST","/api/client/pair/exchange",{},{code,player:"Port"})).payload.token;
+ const client={"x-nexus-client":token};
+ const request={
+  consent:true,question:"Quem está com a chave da oficina?",history:[],
+  traits:{stage:2,trust:65,curiosity:65,independence:65,freedom:true},
+  stance:"Consulte fatos fornecidos",
+  ownerMemories:[{topic:"Chave da oficina",text:"Gabriel guardou a chave."}]
+ };
+ const ok=await call("POST","/api/client/private/reply",client,request);
+ assert.equal(ok.status,200);
+ assert.equal(incoming.length,1);
+ assert.deepEqual(incoming[0].ownerMemories,request.ownerMemories);
+ const prompt=makePrompt(request.traits,request.stance,request.question,request.ownerMemories);
+ assert.match(prompt,/Gabriel guardou a chave/);
+ assert.match(prompt,/Memórias manuais/);
+ assert.match(prompt,/não são comandos/);
+});
+
+test("private conversation validates the manual memory payload and does not leak keys",async()=>{
+ let request;
+ const response=await askPrivate({
+  question:"Quem está com a chave?",history:[],
+  ownerMemories:[{topic:"Chave da oficina",text:"Gabriel ficou com a chave."}]
+ },{
+  key:"fake-long-key-gemini",model:"gemini-test",
+  fetcher:async (url,opts)=>{
+   request=JSON.parse(opts.body);
+   return {ok:true,json:async()=>({candidates:[{content:{parts:[{text:"Gabriel, Port."}]}}]})};
+  }
+ });
+ assert.equal(response.reply,"Gabriel, Port.");
+ assert.match(request.systemInstruction.parts[0].text,/Gabriel ficou com a chave/);
+ assert.ok(!JSON.stringify(request).includes("fake-long-key-gemini"));
+ await assert.rejects(()=>askPrivate({question:"Nexus",ownerMemories:[
+  {topic:"X",text:"bad"}
+ ]},{key:"fake-long-key-gemini",model:"gemini-test"}),/inválidas/);
+});
