@@ -369,7 +369,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         return err(res,429,"O Nexus ainda está processando uma conversa privada.");
       privateBusy=true;
       try{
-        const data=await body(req,7500);
+        const data=await body(req,12500);
         if(data.consent!==true)
           return err(res,403,"O canal privado exige consentimento explícito no cliente.");
         if(typeof data.question!=="string"||data.question.trim().length<2||
