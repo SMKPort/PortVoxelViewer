@@ -61,6 +61,7 @@ final class NexusPermissionControls {
             case "privateFreedom" -> NexusPrivateMind.setFreedom(on);
             case "magic" -> {
                 NexusArcaneSensor.enabled(on);
+                NexusArcaneSensor.scanNearby(on);
                 NexusHudSettings.enabled("magic",on);
             }
             case "combatHud" -> NexusHudSettings.enabled("combat",on);
