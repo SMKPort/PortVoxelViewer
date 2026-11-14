@@ -33,7 +33,6 @@ jobs:
           node --check nexus-rp/public/client.js
           node --check nexus-rp/public/alerts.js
           node --check nexus-rp/public/mind2.js
-          node --check nexus-rp/public/arcane.js
           node --check nexus-rp/public/app.js
       - name: Check Python agent
         run: python -m py_compile nexus-rp/agent/bridge_agent.py
