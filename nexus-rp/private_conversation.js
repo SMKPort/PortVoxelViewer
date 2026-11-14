@@ -67,7 +67,8 @@ async function askPrivate({question,history=[],traits={},stance="",ownerMemories
     throw new ConversationError("Histórico privado inválido.",422);
   if(!Array.isArray(ownerMemories)||ownerMemories.length>6||
     ownerMemories.some(note=>!note||typeof note.topic!=="string"||
-      typeof note.text!=="string"||note.topic.length>80||note.text.length>480))
+      typeof note.text!=="string"||note.topic.length<2||note.topic.length>80||
+      note.text.length<3||note.text.length>480))
     throw new ConversationError("Memórias manuais inválidas.",422);
   const body={
     systemInstruction:{parts:[{text:makePrompt(traits,stance,q,ownerMemories)}]},
