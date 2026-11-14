@@ -20,6 +20,7 @@ final class NexusPermissionControls {
             case "privateFreedom" -> NexusPrivateMind.freedomEnabled();
             case "magic" -> NexusArcaneSensor.settingEnabled();
             case "combatHud" -> NexusHudSettings.get("combat").enabled;
+            case "voiceCasting" -> NexusVoiceCasting.enabled();
             case "speaker" -> NexusSpeaker.settingEnabled();
             case "diary" -> NexusSocial.diaryEnabled();
             case "protection" -> NexusSocial.protectionEnabled();
@@ -65,6 +66,11 @@ final class NexusPermissionControls {
                 NexusHudSettings.enabled("magic",on);
             }
             case "combatHud" -> NexusHudSettings.enabled("combat",on);
+            case "voiceCasting" -> {
+                NexusVoiceCasting.setEnabled(on);
+                if(on&&!NexusVoiceCasting.enabled())
+                    throw new IllegalStateException(NexusVoiceCasting.status());
+            }
             case "speaker" -> {
                 NexusSpeaker.enable(on);
                 ClientLink.sendHearingState();
