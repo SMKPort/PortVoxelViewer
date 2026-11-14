@@ -46,7 +46,10 @@ test("Armor telemetry and damage alerts survive magic detector retirement",()=>{
  const client=readFileSync(path.resolve(__dirname,"../../nexus-client/src/main/java/com/port/nexusclient/ClientLink.java"),"utf8");
  assert.match(client,/NexusVitals\.status\(\)/);
  assert.match(client,/sendTelemetry\(mc\.player\)/);
- assert.doesNotMatch(client,/NexusArcaneSensor/);
+ assert.match(client,/NexusArcaneSensor\.sample/);
+ assert.doesNotMatch(client,/sendArcaneState\(/);
+ assert.match(client,/NexusCombatHud\.show/);
+
  const server=readFileSync(path.resolve(__dirname,"../client_relay.js"),"utf8");
  assert.match(server,/\/api\/client\/monitor\/state/);
  assert.match(server,/\/api\/client\/alerts\/state/);
