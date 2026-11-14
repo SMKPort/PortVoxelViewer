@@ -29,6 +29,7 @@ public final class NexusPermissionsSmokeTest {
         NexusSocial.protection=false;
         NexusSocial.share=false;
         NexusSpeaker.active=false;
+        NexusVoiceCasting.on=false;
         NexusArcaneSensor.on=false;
         NexusHudSettings.combat=false;NexusHudSettings.magic=false;
     }
@@ -45,13 +46,17 @@ public final class NexusPermissionsSmokeTest {
         check(NexusSocial.diary && NexusSocial.protection && NexusSocial.share,
             "Social settings must be on.");
         check(!NexusSpeaker.active,"Global activation must not enable potentially paid TTS.");
+        check(!NexusVoiceCasting.on,
+            "Enable everything must never silently activate the real microphone.");
         check(NexusArcaneSensor.on&&NexusHudSettings.combat&&NexusHudSettings.magic,
             "HUD and client-side magic readings are included in global enable.");
         check(!NexusHearing.listening && !NexusHearing.memory &&
             !NexusHearing.answer && !NexusHearing.collective,
             "Global enable must never activate retired audio capture.");
         NexusPermissions.status();
+        NexusVoiceCasting.on=true;
         NexusPermissions.off();
+        check(!NexusVoiceCasting.on,"Disable everything closes the local microphone.");
         check(!ClientConfig.allowChat && !ClientConfig.allowTelemetry
             && !ClientConfig.allowMind && !ClientConfig.allowAutonomy,
             "Core permissions must all be off.");
@@ -160,4 +165,10 @@ final class NexusArcaneSensor {
     static boolean on;
     static void enabled(boolean enabled){on=enabled;}
     static void scanNearby(boolean enabled){}
+}
+
+final class NexusVoiceCasting {
+    static boolean on;
+    static void setEnabled(boolean enabled){on=enabled;}
+    static String status(){return "offline"; }
 }
