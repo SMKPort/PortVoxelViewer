@@ -380,7 +380,6 @@ public class NexusClientMod {
                         }catch(Exception ex){notifyPlayer(ex.getMessage());}
                         return 1;
                     }))))
-            )
             .then(Commands.literal("autoheal")
                 .then(Commands.literal("status").executes(ctx->{
                     notifyPlayer("Cura automática: "+(NexusAutoHeal.enabled()?"ON":"OFF")+
