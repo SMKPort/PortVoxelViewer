@@ -1,6 +1,29 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
-## Versão atual 2.5.0: Plasmo Voice removido e personalidade revisada
+## Versão 2.6.0: detecção de magia removida
+
+O módulo de monitoramento de magias de **Iron's Spells n Spellbooks** foi
+retirado. Não há mais coleta de mana, feitiços lançados, magias de jogadores
+próximos ou cálculo de Holy Spellpower através desse mod. A integração não
+é necessária para executar o Nexus.
+
+O menu F8 agora possui apenas as abas **Geral** e **Memórias**. Os
+comandos `/nexusclient arcane` e a aba de detecção mágica do painel web
+foram removidos, junto com os arquivos da integração. As rotas antigas
+`/api/client/arcane`, `/api/client/arcane/settings` e
+`/api/client/arcane/state` retornam HTTP 410 para impedir que clientes
+antigos reativem esse monitoramento.
+
+**Permanecem:** monitor de vida/combate, efeitos, telemetria de FPS,
+avisos de dano, autonomia de RP, canal neural privado, comunicador
+e **monitor da armadura do Nexus**. Os indicadores da armadura continuam
+vinculados à mecânica de monitoramento já existente, sem alegar medições
+mágicas reais. As memórias anteriores não são apagadas pela atualização.
+
+> As referências à detecção arcana nas seções de versões anteriores abaixo
+> são históricas e não se aplicam à versão 2.6.0.
+
+## Versão 2.5.0: Plasmo Voice removido e personalidade revisada
 
 A escuta, gravação temporária e transcrição das vozes de outros jogadores foram
 **removidas** por escolha do proprietário para evitar despesas com APIs.
