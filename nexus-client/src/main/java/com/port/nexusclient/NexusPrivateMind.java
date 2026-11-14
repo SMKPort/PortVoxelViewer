@@ -223,11 +223,19 @@ final class NexusPrivateMind {
         if(folded.contains("por que")||folded.contains("investigue"))
             state.curiosity=clamp(state.curiosity+1);
         add("user",text,"private");
+        // Only notes relevant to this explicit private question leave the PC.
+        JsonArray selectedNotes=new JsonArray();
+        for(NexusOwnerMemories.Memory note:NexusOwnerMemories.relevant(text,6)){
+            JsonObject entry=new JsonObject();
+            entry.addProperty("topic",note.topic);
+            entry.addProperty("text",note.text);
+            selectedNotes.add(entry);
+        }
         waiting=true;
         String stance=NexusPrivateRules.shouldQuestion(text,state.freedom?state.independence:0)?
             "A ordem merece ser questionada com argumentos e sem interferir no controle real do jogo.":
             "Formule uma resposta própria, coerente e sustentada no contexto disponível.";
-        ClientLink.askPrivateNexus(text,history,persona(),stance);
+        ClientLink.askPrivateNexus(text,history,persona(),stance,selectedNotes);
     }
     static synchronized void reply(String answer){
         waiting=false;add("model",answer,"private");
