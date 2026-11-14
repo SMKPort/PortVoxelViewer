@@ -45,13 +45,14 @@ final class NexusVoiceGrammar {
         for(Spell spell:equipped){
             if(spell==null||spell.slot<0||spell.slot>255)continue;
             for(String name:names(spell.id)){
-                for(String prefix:List.of("nexus execute ","nexus execute o ",
-                        "nexus execute a ","nexus executa ","nexus executa o ",
-                        "nexus cast ","nexus lancar ","nexus lance ")){
-                    String phrase=normalize(prefix+name);
-                    Spell previous=out.putIfAbsent(phrase,spell);
-                    if(previous!=null&&!previous.id.equals(spell.id))
-                        ambiguous.add(phrase);
+                for(String wake:List.of("nexus","nexo","nexos")){
+                    for(String instruction:List.of("execute ","execute o ","execute a ",
+                        "executa ","executa o ","cast ","lancar ","lance ")){
+                        String phrase=normalize(wake+" "+instruction+name);
+                        Spell previous=out.putIfAbsent(phrase,spell);
+                        if(previous!=null&&!previous.id.equals(spell.id))
+                            ambiguous.add(phrase);
+                    }
                 }
             }
         }
@@ -61,17 +62,18 @@ final class NexusVoiceGrammar {
 
     static List<String> vocabulary(Map<String,Spell> index){
         List<String> list=new ArrayList<>(index.keySet());
-        list.add("nexus cancelar");
-        list.add("nexus cancele");
-        list.add("nexus cancel");
+        for(String wake:List.of("nexus","nexo","nexos")){
+            list.add(wake+" cancelar");
+            list.add(wake+" cancele");
+            list.add(wake+" cancel");
+        }
         list.add("[unk]");
         return list;
     }
 
     static Command recognize(String spoken,Map<String,Spell> index){
         String phrase=normalize(spoken);
-        if(phrase.equals("nexus cancelar")||phrase.equals("nexus cancele")||
-            phrase.equals("nexus cancel"))
+        if(phrase.matches("(nexus|nexo|nexos) (cancelar|cancele|cancel)"))
             return new Command(true,"",-1,phrase);
         Spell spell=index.get(phrase);
         return spell==null?null:new Command(false,spell.id,spell.slot,phrase);
