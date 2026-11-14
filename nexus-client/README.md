@@ -1,5 +1,52 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
+## Versão 2.9.0: Heal automático em emergências
+
+O Nexus agora pode usar **Heal** do **Iron's Spells n Spellbooks**
+quando a vida do próprio Port cair abaixo do limite configurado.
+O recurso é inteiramente local e não depende de Vosk, microfone,
+transcrição, Gemini ou Render.
+
+**Ative explicitamente em F8 > Combate > Cura automática.** O padrão é
+**desligado**, mesmo quando se usa "Ativar tudo" para outros recursos.
+Ajuste o limite com os botões de 5% (padrão: **35% da vida máxima**,
+mínimo 10%, máximo 75%). O HUD de combate mostra a permissão ativa,
+o percentual e a última tentativa.
+
+Para funcionar, o feitiço exato **`irons_spellbooks:heal`** precisa estar
+equipado e disponível no índice de conjuração de seu personagem.
+O Nexus verifica vida atual, mana sincronizada, cooldown e se você já está
+conjurando algo antes de enviar o pacote normal
+`QuickCastPacket`. O servidor do jogo ainda faz sua própria validação.
+A ativação **não** usa permissões administrativas, altera o cooldown ou
+cria mana. Se o Heal não estiver equipado, a magia não é solicitada.
+**Greater Heal** não é lançado automaticamente, pois exige conjuração longa.
+
+O Nexus não executa Heal quando você está morto, em espectador, com um
+menu aberto ou fora da janela ativa. Há um **intervalo mínimo de 35
+segundos** entre tentativas automáticas, inclusive se o servidor rejeitar
+a conjuração. Isso evita repetição de pacotes. O recurso permanece
+independente do módulo de conjuração por voz.
+
+Comandos locais:
+
+```text
+/nexusclient autoheal status
+/nexusclient autoheal on
+/nexusclient autoheal off
+/nexusclient autoheal threshold 35
+```
+
+A configuração é salva em `config/nexus-auto-heal.json` no computador.
+O comando `/nexusclient permissions off` desativa também a autocura.
+O comando `permissions all` **não** ativa o uso automático de magia,
+que exige uma escolha específica sua.
+
+**Limite da validação:** a compilação e os testes de gatilho confirmam a
+implementação, mas a cura efetiva deve ser testada com seu conjunto de
+mods, livro equipado, mana suficiente e regras do servidor. O Nexus
+informa que *solicitou* Heal, não garante que o servidor aceitou o cast.
+
 ## Versão 2.8.0: conjuração por voz totalmente offline
 
 A conjuração agora é integrada ao Nexus Client e usa o **Vosk** no próprio
