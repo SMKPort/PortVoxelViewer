@@ -93,10 +93,12 @@ final class ClientLink {
             NexusMind.resetSession();COMBAT_ALERTS.reset();NexusHearing.resetSession();return;
         }
         ++ticks;
+        if(ticks%5==0)NexusArcaneSensor.sample(mc.player);
+        // Local combat HUD must work independently of remote telemetry, chat and Gemini.
+        if(ticks%10==0)sendTelemetry(mc.player);
         if(ticks%60!=0)return;
         NexusMind.sample(mc.player);
         NexusPrivateMind.observe(mc.player);
-        if(ClientConfig.allowTelemetry)sendTelemetry(mc.player);
         if(ClientConfig.token.isEmpty())return;
         if(ticks%180==0)sendAlertState();
         if(ticks%120==0)sendHearingState();
@@ -166,14 +168,16 @@ final class ClientLink {
         double before=NexusVitals.integrity();
         NexusVitals.record(type,amount,name);
         double after=NexusVitals.integrity();
-        if(!ClientConfig.allowMind||!ClientConfig.allowAutonomy||!ClientConfig.allowChat)return;
         long now=System.currentTimeMillis();
         NexusCombatAlerts.Decision alert=COMBAT_ALERTS.observe(
             type,amount,hp,player.getMaxHealth(),before,after,
             NexusMind.stageIndex(),NexusVitals.isEnabled(),now,
             NexusAlertSettings::allows);
-        if(alert!=null&&speak(alert.message,alert.kind))
+        if(alert!=null&&NexusCombatHud.show(alert.kind,alert.message)){
             COMBAT_ALERTS.delivered(alert,now,NexusAlertSettings.cooldownMillis());
+            NexusAlertHistory.record(alert.kind,alert.message);
+            if(!ClientConfig.token.isEmpty())sendAlertState();
+        }
     }
 
     private static void event(String type,String name,float amount,float health,String note){
@@ -181,7 +185,7 @@ final class ClientLink {
         data.addProperty("type",type);data.addProperty("player",name);
         data.addProperty("health",health);data.addProperty("amount",amount);
         data.addProperty("note",note.substring(0,Math.min(note.length(),140)));
-        if(!ClientConfig.token.isEmpty())
+        if(ClientConfig.allowTelemetry&&!ClientConfig.token.isEmpty())
             post("/api/client/telemetry",data,true).exceptionally(err -> null);
     }
 
