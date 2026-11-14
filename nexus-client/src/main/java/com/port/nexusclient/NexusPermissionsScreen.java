@@ -79,7 +79,7 @@ final class NexusPermissionsScreen extends Screen {
                 }).bounds(bx,by,half,20).build());
         }
 
-        if(tab==Tab.MEMORIAS){
+        if(tab==Tab.MEMORIAS&&height>=275){
             int buttonY=height>=340?242:219;
             addRenderableWidget(Button.builder(Component.literal("§6GERENCIAR MEMÓRIAS DO PORT"),
                 button->minecraft.setScreen(new NexusMemoryScreen(this)))
@@ -87,13 +87,16 @@ final class NexusPermissionsScreen extends Screen {
         }
         if(tab==Tab.COMBATE){
             int y=145;
-            addRenderableWidget(Button.builder(Component.literal("− 5%"),
-                b->adjustHeal(-5)).bounds(x+8,y,74,20).build());
-            addRenderableWidget(Button.builder(Component.literal("+ 5%"),
-                b->adjustHeal(5)).bounds(x+89,y,74,20).build());
-            addRenderableWidget(Button.builder(Component.literal("§6EDITAR HUD DE COMBATE E MAGIA"),
-                b->minecraft.setScreen(new NexusHudEditorScreen(this)))
-                .bounds(x+6,194,w-12,20).build());
+            if(height>=230){
+                addRenderableWidget(Button.builder(Component.literal("− 5%"),
+                    b->adjustHeal(-5)).bounds(x+8,y,74,20).build());
+                addRenderableWidget(Button.builder(Component.literal("+ 5%"),
+                    b->adjustHeal(5)).bounds(x+89,y,74,20).build());
+            }
+            if(height>=270)
+                addRenderableWidget(Button.builder(Component.literal("§6EDITAR HUD DE COMBATE E MAGIA"),
+                    b->minecraft.setScreen(new NexusHudEditorScreen(this)))
+                    .bounds(x+6,194,w-12,20).build());
             if(height>=340)
                 addRenderableWidget(Button.builder(Component.literal("INSTALAR MODELO VOSK "+
                     NexusVoiceCasting.language().toUpperCase()),b->{
@@ -169,12 +172,14 @@ final class NexusPermissionsScreen extends Screen {
                 graphics.drawString(font,"Plasmo sem transcrição paga. HUD editável em F7.",
                     x+8,230,MUTED,false);
         }else if(tab==Tab.COMBATE){
-            graphics.drawString(font,
-                "Gatilho da cura: "+NexusAutoHeal.threshold()+"% da vida máxima",
-                x+173,151,GOLD,false);
-            graphics.drawString(font,
-                "Heal equipado obrigatório. Intervalo mínimo: 35 segundos.",
-                x+8,177,MUTED,false);
+            if(height>=230)
+                graphics.drawString(font,
+                    "Gatilho da cura: "+NexusAutoHeal.threshold()+"% da vida máxima",
+                    x+173,151,GOLD,false);
+            if(height>=270)
+                graphics.drawString(font,
+                    "Heal equipado obrigatório. Intervalo mínimo: 35 segundos.",
+                    x+8,177,MUTED,false);
             if(height>=365)
                 graphics.drawString(font,shortText(NexusAutoHeal.lastOutcome(),w-16),
                     x+8,250,WHITE,false);
