@@ -1,5 +1,44 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
+## Nexus Client 2.9.2: seletor de microfone no VoiceCast
+
+O VoiceCast agora permite selecionar o dispositivo de entrada **dentro
+do Minecraft**, sem alterar o microfone padrão do Windows.
+
+Abra **F8 > Combate > Escolher microfone** para ver os dispositivos
+enumerados pelo OpenAL. Há a opção **Padrão do sistema**, a lista de
+microfones conectados, indicadores de seleção e dispositivo em uso,
+paginação, e o botão **Atualizar dispositivos** caso você conecte um
+headset ou microfone USB durante o jogo.
+
+Comandos alternativos:
+
+```text
+/nexusclient voicecast microphone
+/nexusclient voicecast microphone list
+/nexusclient voicecast microphone default
+/nexusclient voicecast microphone select Microfone USB
+/nexusclient voicecast status
+```
+
+A opção escolhida é salva em `config/nexus-voice-settings.json`
+(campo `microphone`). Nome vazio significa microfone padrão do sistema.
+Se o VoiceCast estiver ativo ao selecionar outra entrada, o sistema
+fecha o dispositivo anterior e abre o novo **sem reiniciar o Minecraft**.
+Durante essa troca o reconhecimento é suspenso para evitar comandos
+acidentais. O microfone não é aberto ao visualizar a lista.
+
+Se o dispositivo escolhido for removido ou não estiver disponível, o
+VoiceCast mostra um aviso e **não muda silenciosamente para outro
+microfone**. Use o seletor para escolher outra entrada ou retornar ao
+padrão. A opção **Conjuração offline** continua desligada por padrão
+em toda sessão, e o áudio continua inteiramente local no Vosk.
+
+Observação: nomes e disponibilidade são fornecidos pelo driver de
+captura OpenAL do sistema operacional. Se só aparecer o padrão,
+confira as permissões de acesso ao microfone no Windows e clique
+em Atualizar dispositivos.
+
 ## Correção 2.9.1: instalação do Vosk português
 
 A versão 2.9.0 rejeitava o arquivo oficial
