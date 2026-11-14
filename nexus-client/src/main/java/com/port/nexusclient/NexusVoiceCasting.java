@@ -45,6 +45,9 @@ final class NexusVoiceCasting {
         int schema=1;
         boolean enabled=false;
         String language="pt";
+        // Empty string = OS default. A missing named device must NOT silently
+        // select another microphone.
+        String microphone="";
     }
     private static State state;
     private static volatile boolean captureAllowed,closed;
@@ -52,6 +55,8 @@ final class NexusVoiceCasting {
     private static volatile String status="Desativado",lastCommand="",lastOutcome="";
     private static volatile long lastAt;
     private static long lastDispatch,scanAt,revision;
+    private static volatile long microphoneRevision;
+    private static volatile String capturingMicrophone="";
     private static volatile List<NexusVoiceGrammar.Spell> owned=List.of();
     private static volatile Map<String,NexusVoiceGrammar.Spell> grammar=Map.of();
     private NexusVoiceCasting(){}
@@ -64,6 +69,7 @@ final class NexusVoiceCasting {
             State saved=JSON.fromJson(Files.readString(SETTINGS,StandardCharsets.UTF_8),State.class);
             if(saved!=null&&saved.schema==1){
                 saved.language="en".equals(saved.language)?"en":"pt";
+                saved.microphone=NexusMicrophoneChoices.normalize(saved.microphone);
                 // Local microphone is session-scoped: never reopen it silently
                 // after restarting the game, regardless of the last saved flag.
                 saved.enabled=false;
@@ -80,6 +86,23 @@ final class NexusVoiceCasting {
 
     static synchronized boolean enabled(){load();return state.enabled;}
     static synchronized String language(){load();return state.language;}
+    static synchronized String selectedMicrophone(){
+        load();
+        return NexusMicrophoneChoices.normalize(state.microphone);
+    }
+    static String capturingMicrophone(){return capturingMicrophone;}
+    static synchronized void setMicrophone(String value){
+        load();
+        String selected=NexusMicrophoneChoices.normalize(value);
+        if(!NexusMicrophoneChoices.available(selected,NexusMicrophones.list()))
+            throw new IllegalArgumentException("Microfone desconectado. Atualize a lista.");
+        if(selected.equals(state.microphone))return;
+        state.microphone=selected;
+        save();
+        microphoneRevision++;
+        status="Microfone selecionado: "+NexusMicrophones.displayName(selected)+
+            (state.enabled?". Troca em andamento.":" (VoiceCast desligado).");
+    }
     static String status(){return status;}
     static String lastCommand(){return lastCommand;}
     static String lastOutcome(){return lastOutcome;}
@@ -179,18 +202,26 @@ final class NexusVoiceCasting {
 
     private static void captureLoop(){
         Model model=null;Recognizer recognizer=null;
-        long device=0L,loadedRevision=-1;
+        long device=0L,loadedRevision=-1,openedMicrophoneRevision=-1;
         ByteBuffer pcm=BufferUtils.createByteBuffer(SAMPLES_PER_CHUNK*2).order(ByteOrder.LITTLE_ENDIAN);
         byte[] samples=new byte[SAMPLES_PER_CHUNK*2];
         int spokenFrames=0;
         try{
             model=new Model(NexusVoiceModels.model(language()).toString());
             while(!closed&&state!=null&&state.enabled&&!Thread.currentThread().isInterrupted()){
-                if(!captureAllowed){
-                    if(device!=0L){ALC11.alcCaptureStop(device);ALC11.alcCaptureCloseDevice(device);device=0L;}
+                if(!captureAllowed||openedMicrophoneRevision!=microphoneRevision){
+                    // Close the old capture device before opening the new one.
+                    // Both operations stay on this same microphone thread.
+                    if(device!=0L){
+                        ALC11.alcCaptureStop(device);
+                        ALC11.alcCaptureCloseDevice(device);
+                        device=0L;
+                    }
+                    capturingMicrophone="";
                     if(recognizer!=null){recognizer.close();recognizer=null;loadedRevision=-1;}
                     spokenFrames=0;
-                    Thread.sleep(120);continue;
+                    openedMicrophoneRevision=microphoneRevision;
+                    if(!captureAllowed){Thread.sleep(120);continue;}
                 }
                 long currentRevision=revision;
                 if(recognizer==null||loadedRevision!=currentRevision){
@@ -204,16 +235,28 @@ final class NexusVoiceCasting {
                     spokenFrames=0;
                 }
                 if(device==0L){
-                    device=ALC11.alcCaptureOpenDevice((String)null,SAMPLE_RATE,
-                        AL10.AL_FORMAT_MONO16,SAMPLE_RATE);
-                    if(device==0L){
-                        status="Microfone indisponível. Verifique permissões ou outros aplicativos.";
-                        Thread.sleep(1600);continue;
+                    String requested=selectedMicrophone();
+                    // Never fall back to default if the selected device vanishes.
+                    if(!NexusMicrophones.isPresent(requested)){
+                        status="Microfone selecionado desconectado: "+
+                            requested+". Escolha outro em F8 > Combate > Microfone.";
+                        Thread.sleep(1200);
+                        continue;
                     }
+                    device=ALC11.alcCaptureOpenDevice(requested.isEmpty()?null:requested,
+                        SAMPLE_RATE,AL10.AL_FORMAT_MONO16,SAMPLE_RATE);
+                    if(device==0L){
+                        status="Não consegui abrir o microfone: "+
+                            NexusMicrophones.displayName(requested)+
+                            ". Verifique permissões do Windows ou se ele está em uso.";
+                        Thread.sleep(1600);
+                        continue;
+                    }
+                    capturingMicrophone=NexusMicrophones.displayName(requested);
                     ALC11.alcCaptureStart(device);
                     status=grammar.isEmpty()?
-                        "Microfone local pronto. Equipe feitiços no Iron's Spells.":
-                        "Ouvindo localmente: diga 'Nexus, execute [feitiço]'.";
+                        "Microfone: "+capturingMicrophone+". Equipe feitiços no Iron's Spells.":
+                        "Ouvindo em "+capturingMicrophone+". Diga 'Nexus, execute [feitiço]'.";
                 }
                 if(ALC10.alcGetInteger(device,ALC11.ALC_CAPTURE_SAMPLES)<SAMPLES_PER_CHUNK){
                     Thread.sleep(20);continue;
@@ -243,6 +286,7 @@ final class NexusVoiceCasting {
                 try{ALC11.alcCaptureStop(device);}catch(Throwable ignored){}
                 try{ALC11.alcCaptureCloseDevice(device);}catch(Throwable ignored){}
             }
+            capturingMicrophone="";
             if(recognizer!=null)try{recognizer.close();}catch(Throwable ignored){}
             if(model!=null)try{model.close();}catch(Throwable ignored){}
         }
