@@ -150,7 +150,7 @@ final class NexusVoiceCasting {
     }
 
     /** Spell indices are the exact list positions used by Iron's QuickCastPacket. */
-    private static List<NexusVoiceGrammar.Spell> equippedSpells(Player player){
+    static List<NexusVoiceGrammar.Spell> equippedSpells(Player player){
         List<NexusVoiceGrammar.Spell> result=new ArrayList<>();
         try{
             Class<?> manager=Class.forName("io.redspace.ironsspellbooks.api.magic.SpellSelectionManager");
@@ -318,7 +318,7 @@ final class NexusVoiceCasting {
             lastOutcome="Integração com Iron's Spells indisponível nesta versão.";
         }
     }
-    private static boolean clientIsCasting(){
+    static boolean clientIsCasting(){
         try{
             Class<?> data=Class.forName("io.redspace.ironsspellbooks.player.ClientMagicData");
             return Boolean.TRUE.equals(data.getMethod("isCasting").invoke(null));
