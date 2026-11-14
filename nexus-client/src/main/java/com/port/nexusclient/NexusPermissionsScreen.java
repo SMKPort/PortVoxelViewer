@@ -20,7 +20,8 @@ final class NexusPermissionsScreen extends Screen {
         new Entry("mind","Nexus Mind"),new Entry("autonomy","Autonomia RP"),
         new Entry("private","Canal privado"),new Entry("privateProactive","Iniciativa privada"),
         new Entry("speaker","Voz local (TTS)"),
-        new Entry("magic","Detecção mágica"),new Entry("combatHud","HUD de combate")
+        new Entry("magic","Detecção mágica"),new Entry("combatHud","HUD de combate"),
+        new Entry("voiceCasting","Conjuração offline")
     };
     private static final Entry[] MEMORIES={
         new Entry("privateMemory","Memória privada"),new Entry("privateFreedom","Livre-arbítrio RP"),
@@ -82,10 +83,18 @@ final class NexusPermissionsScreen extends Screen {
                 button->minecraft.setScreen(new NexusMemoryScreen(this)))
                 .bounds(x+6,buttonY,w-12,20).build());
         }
-        if(tab==Tab.GERAL)
+        if(tab==Tab.GERAL){
             addRenderableWidget(Button.builder(Component.literal("§6EDITAR POSIÇÃO E TAMANHO DO HUD"),
                 button->minecraft.setScreen(new NexusHudEditorScreen(this)))
-                .bounds(x+6,height>=350?221:210,w-12,20).build());
+                .bounds(x+6,height>=350?234:216,w-12,20).build());
+            if(height>=390)
+                addRenderableWidget(Button.builder(Component.literal("INSTALAR MODELO DE VOZ "+
+                    NexusVoiceCasting.language().toUpperCase()),button->{
+                    if(NexusVoiceModels.install(NexusVoiceCasting.language()))
+                        message="Download offline Vosk iniciado. Consulte /nexusclient voicecast status.";
+                    else message=NexusVoiceModels.status();
+                }).bounds(x+6,260,w-12,20).build());
+        }
         int footerY=height-34,btnW=(w-22)/3;
         addRenderableWidget(Button.builder(Component.literal("§aATIVAR TUDO"),b->{
             if(!confirm("all","",b,
@@ -143,9 +152,9 @@ final class NexusPermissionsScreen extends Screen {
         if(tab==Tab.GERAL){
             if(height>=385){
                 graphics.drawString(font,"O chat do Nexus usa a sua própria conta Minecraft.",
-                    x+8,252,MUTED,false);
+                    x+8,290,MUTED,false);
                 graphics.drawString(font,"Plasmo sem transcrição. F7 para posicionar o HUD.",
-                    x+8,266,MUTED,false);
+                    x+8,303,MUTED,false);
             }
         }else{
             graphics.drawString(font,"Memória privada: desligar aqui não apaga registros antigos.",
