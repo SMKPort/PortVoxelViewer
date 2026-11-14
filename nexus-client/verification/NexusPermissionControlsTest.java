@@ -53,6 +53,11 @@ public final class NexusPermissionControlsTest {
         check(NexusVoiceCasting.on,"Voice permission can be enabled explicitly");
         NexusPermissionControls.set("voiceCasting",false);
         check(!NexusVoiceCasting.on,"Voice permission can be revoked");
+        check(!NexusPermissionControls.enabled("autoHeal"),"Default auto Heal off");
+        NexusPermissionControls.set("autoHeal",true);
+        check(NexusAutoHeal.enabled,"Heal enabled only by a direct switch");
+        NexusPermissionControls.set("autoHeal",false);
+        check(!NexusAutoHeal.enabled,"Healing permission revocable");
         NexusPermissionControls.set("share",true);
         check(NexusSocial.share,"Sharing is a separate opt-in");
         NexusPermissionControls.set("share",false);
@@ -141,4 +146,10 @@ final class NexusVoiceCasting {
     static boolean enabled(){return on;}
     static void setEnabled(boolean enabled){on=enabled;}
     static String status(){return "offline"; }
+}
+
+final class NexusAutoHeal {
+    static boolean enabled;
+    static boolean enabled(){return enabled;}
+    static void setEnabled(boolean on){enabled=on;}
 }
