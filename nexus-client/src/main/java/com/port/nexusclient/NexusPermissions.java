@@ -20,6 +20,9 @@ final class NexusPermissions {
         ClientConfig.save();
         ClientLink.resetTelemetryBaseline();
         NexusMind.resetSession();
+        NexusHudSettings.enabled("combat",true);
+        NexusHudSettings.enabled("magic",true);
+        NexusArcaneSensor.enabled(true);
 
         NexusPrivateMind.enable(true);
         NexusPrivateMind.memory(true);
@@ -37,7 +40,7 @@ final class NexusPermissions {
         ClientLink.sendHearingState(); // Keep social/voice preferences in sync.
 
         NexusClientMod.notifyPlayer("Modo TOTAL ativado: chat, telemetria, mente, autonomia, "
-            + "canal privado, diário e proteção. TTS permanece opcional.");
+            + "HUD de combate, leitura mágica, canal privado e diário. TTS opcional.");
         NexusClientMod.notifyPlayer("As mensagens públicas saem da sua conta. "
             + "O diário pode ser consultado no painel privado; use permissions off para revogar.");
     }
@@ -51,6 +54,9 @@ final class NexusPermissions {
         ClientConfig.save();
         ClientLink.resetTelemetryBaseline();
         NexusMind.resetSession();
+        NexusHudSettings.enabled("combat",false);
+        NexusHudSettings.enabled("magic",false);
+        NexusArcaneSensor.enabled(false);
 
         NexusHearing.listen(false); // Legacy setting remains safely disabled.
         NexusSpeaker.enable(false);
@@ -73,6 +79,7 @@ final class NexusPermissions {
 
     static void status() {
         NexusClientMod.notifyPlayer("Geral: " + ClientLink.status());
+        NexusClientMod.notifyPlayer("HUD: combate "+(NexusHudSettings.get("combat").enabled?"ON":"OFF")+" | magia "+(NexusHudSettings.get("magic").enabled?"ON":"OFF"));
         NexusClientMod.notifyPlayer(NexusPrivateMind.status());
         NexusClientMod.notifyPlayer(NexusSocial.status());
         NexusClientMod.notifyPlayer(NexusSpeaker.status());
