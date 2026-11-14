@@ -100,3 +100,29 @@ test("compact navigation keeps core pages visible and advanced pages accessible"
  assert.ok(pageScript("app.js").includes("advancedItems.appendChild(item)"));
  assert.ok(pageScript("client.js").includes('!nav.querySelector(\'[data-page="cliente"]\')'));
 });
+
+
+test("Protocolo TS, Sequenciador e Emotes desaparecem de todas as páginas",()=>{
+ const index=pageScript("index.html");
+ const app=pageScript("app.js");
+ const upgrade=pageScript("upgrade.js");
+ const evolution=pageScript("evolution.js");
+ const client=pageScript("client.js");
+ const views=boot("client");
+ for(const retired of ["ts","sequencias","emotes"]){
+   assert.equal(Object.hasOwn(views,retired),false,"A página "+retired+" não pode existir");
+   assert.ok(!app.includes(retired+':"'),"A rota "+retired+" não pode existir");
+   assert.ok(!index.includes('data-page="'+retired+'"'),"Menu antigo "+retired);
+ }
+ const screens=[views.painel(),views.config(),views.ao_vivo(),views.armadura(),views.cliente()];
+ for(const html of screens){
+   assert.doesNotMatch(html,/Protocolo TS|SEQUENCIADOR|EDITAR EMOTES|ABRIR SEQUENCIADOR|Emotes reais/i);
+   assert.doesNotMatch(html,/data-(?:evo|rp)="(?:open-sequences|open-emotes|ts-open)"/);
+ }
+ assert.doesNotMatch(upgrade,/ts-open|ts-choice|ts-reveal|ts-reset|\btsEvents\b/);
+ assert.doesNotMatch(evolution,/rpEmotesForm|rpNewSequence|rpNewStep|triggerEmote|seq-run/);
+ assert.doesNotMatch(client,/Emotes reais/);
+ assert.ok(views.emergencia(),"O protocolo de emergência deve continuar funcionando");
+ assert.ok(views.rituais(),"Rituais devem continuar funcionando");
+ assert.ok(views.eventos(),"O painel de eventos deve continuar funcionando");
+});
