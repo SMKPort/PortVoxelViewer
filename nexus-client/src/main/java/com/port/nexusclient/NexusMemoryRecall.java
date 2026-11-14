@@ -14,12 +14,12 @@ final class NexusMemoryRecall {
     private record Ranked(Note note,int score){}
     private static final Set<String> STOP=Set.of(
         "para","porque","como","sobre","quando","onde","qual","quais","quem",
-        "estou","voce","voces","comigo","minha","meus","meu","suas","suas",
+        "estou","voce","voces","comigo","minha","meus","meu","suas",
         "esta","estao","essa","esse","isso","aquela","aquele","aquilo",
         "tinha","tenho","temos","sabia","lembra","lembrar","lembranca",
         "memoria","memorias","recorda","recordar","fale","conte","disse",
         "aqui","agora","daqui","depois","antes","todos","todas","dessa",
-        "deste","sobre","isso","mais","menos","nexus","port","ainda"
+        "deste","mais","menos","nexus","port","ainda"
     );
     private NexusMemoryRecall(){}
 
