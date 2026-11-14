@@ -141,11 +141,11 @@ final class NexusPermissionsScreen extends Screen {
             x+6,31,MUTED,false);
 
         if(tab==Tab.GERAL){
-            if(height>=310){
+            if(height>=385){
                 graphics.drawString(font,"O chat do Nexus usa a sua própria conta Minecraft.",
-                    x+8,190,MUTED,false);
-                graphics.drawString(font,"Audição e transcrição do Plasmo removidas.",
-                    x+8,215,MUTED,false);
+                    x+8,252,MUTED,false);
+                graphics.drawString(font,"Plasmo sem transcrição. F7 para posicionar o HUD.",
+                    x+8,266,MUTED,false);
             }
         }else{
             graphics.drawString(font,"Memória privada: desligar aqui não apaga registros antigos.",
