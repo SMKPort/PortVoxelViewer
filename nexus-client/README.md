@@ -1,5 +1,35 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
+## Correção 2.9.1: instalação do Vosk português
+
+A versão 2.9.0 rejeitava o arquivo oficial
+`vosk-model-small-pt-0.3.zip` com a mensagem **"Download incompleto:
+arquivos do Vosk ausentes"**, embora o download tivesse terminado. O modelo
+português usa o layout antigo de arquivos Vosk na raiz:
+`final.mdl`, `mfcc.conf`, `HCLr.fst` e `Gr.fst`.
+O inglês `vosk-model-small-en-us-0.15` usa `am/conf/graph`.
+
+A versão 2.9.1 reconhece **ambos os layouts**, exatamente como a
+biblioteca nativa do Vosk. O instalador valida a presença dos grafos e
+arquivos principais antes de ativar o modelo, e os testes de regressão
+rejeitam pacotes de fato incompletos. Nenhum dado de microfone é
+enviado à Render ou a APIs pagas.
+
+Depois de instalar o novo JAR e reiniciar o Minecraft, execute:
+
+```text
+/nexusclient voicecast model pt
+/nexusclient voicecast model install
+/nexusclient voicecast model status
+/nexusclient voicecast on
+```
+
+O instalador da versão anterior descartava o arquivo temporário quando
+acusava falha. Portanto, após atualizar para 2.9.1, **é preciso
+baixar o modelo novamente**, sem necessidade de mexer em pastas ou
+desativar antivírus. Para o Vosk português, o status final deve
+indicar **"estrutura legada portuguesa"**.
+
 ## Versão 2.9.0: Heal automático em emergências
 
 O Nexus agora pode usar **Heal** do **Iron's Spells n Spellbooks**
