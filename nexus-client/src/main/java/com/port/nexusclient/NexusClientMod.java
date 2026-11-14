@@ -357,8 +357,45 @@ public class NexusClientMod {
                             return 1;
                         }))))
             .then(Commands.literal("voicecast")
+                .then(Commands.literal("microphone")
+                    .executes(ctx->{
+                        Minecraft mc=Minecraft.getInstance();
+                        if(mc.player!=null)mc.setScreen(new NexusMicrophoneScreen(null));
+                        return 1;
+                    })
+                    .then(Commands.literal("list").executes(ctx->{
+                        var devices=NexusMicrophones.list();
+                        notifyPlayer("Microfone selecionado: "+NexusMicrophones.displayName(
+                            NexusVoiceCasting.selectedMicrophone()));
+                        notifyPlayer("Padrão: "+NexusMicrophones.systemDefault());
+                        if(devices.isEmpty())notifyPlayer(
+                            "Nenhum dispositivo enumerado. Verifique o microfone padrão do sistema.");
+                        for(int i=0;i<devices.size();i++)
+                            notifyPlayer((i+1)+": "+devices.get(i));
+                        return 1;
+                    }))
+                    .then(Commands.literal("default").executes(ctx->{
+                        NexusVoiceCasting.setMicrophone("");
+                        notifyPlayer("Microfone padrão do sistema selecionado.");
+                        return 1;
+                    }))
+                    .then(Commands.literal("select")
+                        .then(Commands.argument("name",StringArgumentType.greedyString())
+                            .executes(ctx->{
+                                try{
+                                    NexusVoiceCasting.setMicrophone(StringArgumentType.getString(ctx,"name"));
+                                    notifyPlayer("Microfone: "+NexusMicrophones.displayName(
+                                        NexusVoiceCasting.selectedMicrophone()));
+                                }catch(Exception ex){notifyPlayer("Microfone: "+ex.getMessage());}
+                                return 1;
+                            }))))
+                )
                 .then(Commands.literal("status").executes(ctx->{
                     notifyPlayer(NexusVoiceCasting.enabled()?"Conjuração de voz: ON":"Conjuração de voz: OFF");
+                    notifyPlayer("Microfone selecionado: "+NexusMicrophones.displayName(
+                        NexusVoiceCasting.selectedMicrophone())+
+                        " | Em uso: "+(NexusVoiceCasting.capturingMicrophone().isEmpty()?
+                            "nenhum":NexusVoiceCasting.capturingMicrophone()));
                     notifyPlayer("Idioma: "+NexusVoiceCasting.language()+
                         " | "+NexusVoiceCasting.status());
                     if(!NexusVoiceCasting.lastOutcome().isBlank())
