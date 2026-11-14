@@ -1,5 +1,6 @@
 {
   "key.nexusclient.private": "Canal privado do Nexus (N)",
   "key.nexusclient.permissions": "Central de permissões do Nexus (F8)",
-  "key.nexusclient.hud": "Editor do HUD do Nexus (F7)"
+  "key.nexusclient.hud": "Editor do HUD do Nexus (F7)",
+  "key.nexusclient.voicecast": "Ligar/desligar conjuração offline (F6)"
 }
