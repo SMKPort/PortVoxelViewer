@@ -23,6 +23,7 @@ final class NexusPermissions {
         NexusHudSettings.enabled("combat",true);
         NexusHudSettings.enabled("magic",true);
         NexusArcaneSensor.enabled(true);
+        NexusArcaneSensor.scanNearby(true);
 
         NexusPrivateMind.enable(true);
         NexusPrivateMind.memory(true);
@@ -56,6 +57,7 @@ final class NexusPermissions {
         NexusMind.resetSession();
         NexusHudSettings.enabled("combat",false);
         NexusHudSettings.enabled("magic",false);
+        NexusArcaneSensor.scanNearby(false);
         NexusArcaneSensor.enabled(false);
 
         NexusHearing.listen(false); // Legacy setting remains safely disabled.
