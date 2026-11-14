@@ -20,6 +20,7 @@ final class NexusPermissionControls {
             case "privateFreedom" -> NexusPrivateMind.freedomEnabled();
             case "magic" -> NexusArcaneSensor.settingEnabled();
             case "combatHud" -> NexusHudSettings.get("combat").enabled;
+            case "autoHeal" -> NexusAutoHeal.enabled();
             case "voiceCasting" -> NexusVoiceCasting.enabled();
             case "speaker" -> NexusSpeaker.settingEnabled();
             case "diary" -> NexusSocial.diaryEnabled();
@@ -66,6 +67,7 @@ final class NexusPermissionControls {
                 NexusHudSettings.enabled("magic",on);
             }
             case "combatHud" -> NexusHudSettings.enabled("combat",on);
+            case "autoHeal" -> NexusAutoHeal.setEnabled(on);
             case "voiceCasting" -> {
                 NexusVoiceCasting.setEnabled(on);
                 if(on&&!NexusVoiceCasting.enabled())
