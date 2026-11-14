@@ -389,7 +389,6 @@ public class NexusClientMod {
                                 }catch(Exception ex){notifyPlayer("Microfone: "+ex.getMessage());}
                                 return 1;
                             }))))
-                )
                 .then(Commands.literal("status").executes(ctx->{
                     notifyPlayer(NexusVoiceCasting.enabled()?"Conjuração de voz: ON":"Conjuração de voz: OFF");
                     notifyPlayer("Microfone selecionado: "+NexusMicrophones.displayName(
