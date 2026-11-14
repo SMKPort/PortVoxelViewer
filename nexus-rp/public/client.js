@@ -142,7 +142,7 @@ window.NexusRPClientUpgrade=function(rp,views){
    '<div class="kv"><span>Vida e dano</span><span class="value">Leitura do cliente</span></div>'+
    '<div class="kv"><span>Efeitos ativos</span><span class="value">Leitura do cliente</span></div>'+
    '<div class="kv"><span>Armadura / rituais</span><span class="value">Avisos e UI local</span></div>'+
-   '<div class="kv"><span>Emotes reais</span><span class="value">Exigem integração com o mod de emotes</span></div>'+
+
    '<div class="divider"></div><div class="notice">Mensagens enviadas pelo painel são transmitidas como mensagens normais do personagem e ficam sujeitas às regras, filtros e limites do servidor. Não é possível executar comandos de administrador ou modificar outros jogadores.</div>'+
    '<div class="buttons">'+button("open-events","MONITORAR EVENTOS","alt")+button("open-alerts","ALERTAS DO NEXUS","gold")+button("open-mind","NEXUS MIND 2.0","gold")+button("open-chat","ABRIR COMUNICADOR","alt")+'</div></section></div>'+
    '<section class="card" style="margin-top:16px"><div class="card-header"><h2>DIAGNÓSTICO DA API</h2></div>'+
