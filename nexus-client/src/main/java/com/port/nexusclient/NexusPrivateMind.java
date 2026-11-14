@@ -248,13 +248,14 @@ final class NexusPrivateMind {
     static synchronized void resetSession(){
         waiting=false;lastLifeRatio=Float.NaN;lastThought=0;
     }
-    private static void thought(String text){
+    private static void thought(String text){thought(text,true);}
+    private static void thought(String text,boolean notifyChat){
         if(!state.enabled||!state.autonomy||text==null||text.isBlank())return;
         long now=System.currentTimeMillis();
         if(now-lastThought<THOUGHT_COOLDOWN)return;
         lastThought=now;
         add("model",text,"observation");
-        NexusClientMod.notifyPlayer("§5[NEURAL · PRIVADO] §fNova observação. Abra com N.");
+        if(notifyChat)NexusClientMod.notifyPlayer("§5[NEURAL · PRIVADO] §fNova observação. Abra com N.");
     }
     /**
      * An observed local health transition can open a private RP topic.
@@ -269,7 +270,7 @@ final class NexusPrivateMind {
         float ratio=player.getHealth()/maximum;
         if(!Float.isNaN(lastLifeRatio)&&lastLifeRatio>0.38f&&ratio<=0.38f){
             state.caution=clamp(state.caution+1);
-            thought(NexusPrivateRules.dangerThought(ratio));
+            thought(NexusPrivateRules.dangerThought(ratio),false);
         }
         lastLifeRatio=ratio;
     }
@@ -289,7 +290,7 @@ final class NexusPrivateMind {
         if(!state.enabled||!state.autonomy||!ClientConfig.allowMind)return;
         if("damage".equals(type)||"death".equals(type)){
             String warning=NexusPrivateRules.dangerThought(ratio);
-            if(warning!=null)thought(warning);
+            if(warning!=null)thought(warning,false);
         }
     }
     static synchronized void noticeArcane(String kind,String observed){
