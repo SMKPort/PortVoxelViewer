@@ -16,6 +16,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.GameShuttingDownEvent;
 
 @Mod(value = NexusClientMod.MOD_ID, dist = Dist.CLIENT)
 public class NexusClientMod {
@@ -27,6 +28,8 @@ public class NexusClientMod {
         "key.nexusclient.permissions",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_F8,"key.categories.misc");
     private static final KeyMapping HUD_KEY=new KeyMapping(
         "key.nexusclient.hud",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_F7,"key.categories.misc");
+    private static final KeyMapping VOICE_CAST_KEY=new KeyMapping(
+        "key.nexusclient.voicecast",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_F6,"key.categories.misc");
     public NexusClientMod(IEventBus modBus) {
         modBus.addListener(this::onRegisterKeys);
         modBus.addListener(this::onRegisterHud);
@@ -35,12 +38,14 @@ public class NexusClientMod {
         NexusHearing.listen(false);
         NeoForge.EVENT_BUS.addListener(this::onTick);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
+        NeoForge.EVENT_BUS.addListener(this::onShutdown);
     }
 
     private void onRegisterKeys(RegisterKeyMappingsEvent event){
         event.register(PRIVATE_KEY);
         event.register(PERMISSIONS_KEY);
         event.register(HUD_KEY);
+        event.register(VOICE_CAST_KEY);
     }
 
     private void onRegisterHud(RegisterGuiLayersEvent event){
@@ -48,8 +53,13 @@ public class NexusClientMod {
             (graphics,partialTick)->NexusCombatHud.render(graphics));
     }
 
+    private void onShutdown(GameShuttingDownEvent event){
+        NexusVoiceCasting.shutdown();
+    }
+
     private void onTick(ClientTickEvent.Post event) {
         ClientLink.tick();
+        NexusVoiceCasting.tick();
         Minecraft mc=Minecraft.getInstance();
         while(PRIVATE_KEY.consumeClick()){
             if(mc.player!=null&&mc.screen==null)
@@ -62,6 +72,10 @@ public class NexusClientMod {
         while(HUD_KEY.consumeClick()){
             if(mc.player!=null&&mc.screen==null)
                 mc.setScreen(new NexusHudEditorScreen(null));
+        }
+        while(VOICE_CAST_KEY.consumeClick()){
+            if(mc.player!=null&&mc.screen==null)
+                NexusVoiceCasting.setEnabled(!NexusVoiceCasting.enabled());
         }
     }
 
@@ -309,6 +323,45 @@ public class NexusClientMod {
                     NexusSocial.clear();ClientLink.sendHearingState();
                     notifyPlayer("Memórias sociais apagadas. Histórico legado de voz permanece preservado no PC.");
                     return 1;}))))
+            .then(Commands.literal("voicecast")
+                .then(Commands.literal("status").executes(ctx->{
+                    notifyPlayer(NexusVoiceCasting.enabled()?"Conjuração de voz: ON":"Conjuração de voz: OFF");
+                    notifyPlayer("Idioma: "+NexusVoiceCasting.language()+
+                        " | "+NexusVoiceCasting.status());
+                    if(!NexusVoiceCasting.lastOutcome().isBlank())
+                        notifyPlayer("Última ação: "+NexusVoiceCasting.lastOutcome());
+                    return 1;
+                }))
+                .then(Commands.literal("on").executes(ctx->{
+                    NexusVoiceCasting.setEnabled(true);
+                    notifyPlayer(NexusVoiceCasting.status());return 1;
+                }))
+                .then(Commands.literal("off").executes(ctx->{
+                    NexusVoiceCasting.setEnabled(false);
+                    notifyPlayer(NexusVoiceCasting.status());return 1;
+                }))
+                .then(Commands.literal("model")
+                    .then(Commands.literal("install").executes(ctx->{
+                        if(NexusVoiceModels.install(NexusVoiceCasting.language()))
+                            notifyPlayer("Download solicitado do Vosk "+NexusVoiceCasting.language().toUpperCase()+
+                                ". Progresso no /nexusclient voicecast status.");
+                        else notifyPlayer(NexusVoiceModels.status());
+                        return 1;
+                    }))
+                    .then(Commands.literal("status").executes(ctx->{
+                        notifyPlayer("Modelo: "+NexusVoiceModels.status());return 1;
+                    }))
+                    .then(Commands.literal("pt").executes(ctx->{
+                        NexusVoiceCasting.setLanguage("pt");
+                        notifyPlayer("Português selecionado. Instale modelo com voicecast model install.");
+                        return 1;
+                    }))
+                    .then(Commands.literal("en").executes(ctx->{
+                        NexusVoiceCasting.setLanguage("en");
+                        notifyPlayer("Inglês selecionado. Instale modelo com voicecast model install.");
+                        return 1;
+                    })))
+            )
             .then(Commands.literal("voice")
                 .then(Commands.literal("status").executes(ctx -> {
                     notifyPlayer(NexusSpeaker.status());return 1;}))
