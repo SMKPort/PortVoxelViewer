@@ -148,38 +148,6 @@ public class NexusClientMod {
                     ClientConfig.allowAutonomy=false;ClientConfig.save();
                     notifyPlayer("Mensagens espontâneas desativadas.");return 1;
                 })))
-            .then(Commands.literal("arcane")
-                .then(Commands.literal("status").executes(ctx -> {
-                    notifyPlayer(NexusArcaneSensor.status());return 1;}))
-                .then(Commands.literal("on").executes(ctx -> {
-                    NexusArcaneSensor.enabled(true);ClientLink.sendArcaneState();
-                    notifyPlayer("Núcleo Arcano ativo. Aguardando leitura real do Iron's Spells.");
-                    return 1;}))
-                .then(Commands.literal("off").executes(ctx -> {
-                    NexusArcaneSensor.enabled(false);ClientLink.sendArcaneState();
-                    notifyPlayer("Núcleo Arcano desativado.");return 1;}))
-                .then(Commands.literal("history").executes(ctx -> {
-                    for(String entry:NexusArcaneSensor.history())notifyPlayer(entry);
-                    return 1;}))
-                .then(Commands.literal("nearby")
-                    .then(Commands.literal("on").executes(ctx -> {
-                        NexusArcaneSensor.scanNearby(true);ClientLink.sendArcaneState();
-                        notifyPlayer("Percepção mágica próxima ativada (até 24 blocos visíveis).");
-                        return 1;}))
-                    .then(Commands.literal("off").executes(ctx -> {
-                        NexusArcaneSensor.scanNearby(false);ClientLink.sendArcaneState();
-                        notifyPlayer("Percepção mágica próxima desativada.");
-                        return 1;})))
-                .then(Commands.literal("reactions")
-                    .then(Commands.literal("on").executes(ctx -> {
-                        try{
-                            NexusArcaneSensor.reactions(true);ClientLink.sendArcaneState();
-                            notifyPlayer("Respostas arcanas autorizadas. Exigem chat, mente e autonomia.");
-                        }catch(Exception error){notifyPlayer(error.getMessage());}return 1;}))
-                    .then(Commands.literal("off").executes(ctx -> {
-                        NexusArcaneSensor.reactions(false);ClientLink.sendArcaneState();
-                        notifyPlayer("Reações arcanas desativadas.");return 1;})))
-            )
             .then(Commands.literal("private")
                 .then(Commands.literal("open").executes(ctx->{
                     Minecraft mc=Minecraft.getInstance();
