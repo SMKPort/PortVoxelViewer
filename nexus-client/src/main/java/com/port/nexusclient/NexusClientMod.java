@@ -112,11 +112,13 @@ public class NexusClientMod {
                 .then(Commands.literal("magic")
                     .then(Commands.literal("on").executes(ctx->{
                         NexusArcaneSensor.enabled(true);
+                        NexusArcaneSensor.scanNearby(true);
                         NexusHudSettings.enabled("magic",true);
                         notifyPlayer("Leitura do Iron's Spells ativada no HUD.");return 1;
                     }))
                     .then(Commands.literal("off").executes(ctx->{
                         NexusHudSettings.enabled("magic",false);
+                        NexusArcaneSensor.scanNearby(false);
                         NexusArcaneSensor.enabled(false);
                         notifyPlayer("Detecção de magia desligada.");return 1;
                     }))))
