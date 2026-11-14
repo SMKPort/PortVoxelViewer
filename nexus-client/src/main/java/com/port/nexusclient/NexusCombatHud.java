@@ -12,7 +12,7 @@ import java.util.List;
 
 /** Purely visual combat and Iron's Spells HUD. Never emits chat or API requests. */
 final class NexusCombatHud {
-    private static final int WIDTH=212,BASE_HEIGHT=74,MAGIC_HEIGHT=97;
+    private static final int WIDTH=212,BASE_HEIGHT=96,MAGIC_HEIGHT=97;
     private static final int GOLD=0xFFE3BC76,RED=0xFFFF7777,WHITE=0xFFEDE0CF;
     private static final ArrayDeque<Alert> ALERTS=new ArrayDeque<>();
     private record Alert(String kind,String message,long expiresAt){}
@@ -56,7 +56,8 @@ final class NexusCombatHud {
     static void render(GuiGraphics graphics){
         Minecraft mc=Minecraft.getInstance();
         if(mc.player==null||mc.options.hideGui||mc.screen!=null)return;
-        if(NexusHudSettings.get("combat").enabled&&!active().isEmpty())
+        if(NexusHudSettings.get("combat").enabled&&
+           (!active().isEmpty()||NexusAutoHeal.enabled()))
             drawCombat(graphics,false);
         if(NexusHudSettings.get("magic").enabled&&
            (NexusArcaneSensor.settingEnabled()||NexusVoiceCasting.enabled()))
@@ -97,8 +98,14 @@ final class NexusCombatHud {
         int y=42;
         for(FormattedCharSequence line:mc.font.split(Component.literal(text),WIDTH-14)){
             g.drawString(mc.font,line,7,y,RED,false);
-            y+=10;if(y>BASE_HEIGHT-9)break;
+            y+=10;if(y>BASE_HEIGHT-26)break;
         }
+        String heal=preview?"AUTOCURA 35% (ON)":
+            (NexusAutoHeal.enabled()?
+                "AUTOCURA "+NexusAutoHeal.threshold()+"% (ON)":
+                "AUTOCURA (OFF)");
+        g.drawString(mc.font,heal,7,82,NexusAutoHeal.enabled()||preview?
+            0xFFA4DEAC:0xFFAA9795,false);
         g.pose().popPose();
     }
     private static void drawMagic(GuiGraphics g,boolean preview){
