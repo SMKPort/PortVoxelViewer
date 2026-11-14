@@ -383,9 +383,16 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
           return err(res,422,"Parâmetros narrativos inválidos.");
         if(typeof data.stance!=="string"||data.stance.length>240)
           return err(res,422,"Estado de decisão inválido.");
+        const notes=data.ownerMemories===undefined?[]:data.ownerMemories;
+        if(!Array.isArray(notes)||notes.length>6||notes.some(m=>
+          !m||typeof m!=="object"||typeof m.topic!=="string"||
+          typeof m.text!=="string"||m.topic.length<2||m.topic.length>80||
+          m.text.length<3||m.text.length>480))
+          return err(res,422,"Memórias manuais inválidas.");
         lastPrivateAt=Date.now();
         const result=await privateReply({
-          question:data.question,history:data.history,traits:t,stance:data.stance
+          question:data.question,history:data.history,traits:t,stance:data.stance,
+          ownerMemories:notes
         });
         send(res,200,{ok:true,reply:result.reply,model:result.model});return true;
       }catch(error){
