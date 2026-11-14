@@ -82,6 +82,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusPermissionControls.java \
             nexus-client/verification/NexusPermissionControlsTest.java
           java -ea -cp /tmp/nexus-menu-tests com.port.nexusclient.NexusPermissionControlsTest
+      - name: Test owner memory retrieval
+        run: |
+          mkdir -p /tmp/nexus-memory-tests
+          javac -encoding UTF-8 -d /tmp/nexus-memory-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusMemoryRecall.java \
+            nexus-client/verification/NexusMemoryRecallTest.java
+          java -ea -cp /tmp/nexus-memory-tests com.port.nexusclient.NexusMemoryRecallTest
       - name: Compile mod
         run: gradle -p nexus-client build --no-daemon --stacktrace
       - name: Upload JAR
