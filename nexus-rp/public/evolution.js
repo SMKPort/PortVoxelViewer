@@ -13,22 +13,16 @@ window.NexusRPEvolution=function(rp,views){
   ];
   if(!Array.isArray(S.armorProfiles))S.armorProfiles=profiles;
   else profiles.forEach(p=>{if(!S.armorProfiles.some(x=>x.name===p.name))S.armorProfiles.push(p);});
-  if(!Array.isArray(S.sequences))S.sequences=[
-    {id:"opening",name:"Manifestação Completa",steps:[{action:"desintegrar",delay:1100},{action:"recuperar",delay:900},{action:"remodelar",form:"Celestial",delay:1300},{action:"integrar",delay:1500}]},
-    {id:"battle",name:"Configuração de Combate",steps:[{action:"desintegrar",delay:900},{action:"remodelar",form:"Combate",delay:1400},{action:"integrar",delay:1000}]}
-  ];
   if(!S.emergency||typeof S.emergency!=="object")S.emergency={enabled:true,active:false,threshold:25,lastAt:""};
-  if(!S.emotes||typeof S.emotes!=="object")S.emotes={integrar:"",desintegrar:"",remodelar:"",reparar:"",ritual:"",emergencia:""};
   if(!S.gameEvents||typeof S.gameEvents!=="object")S.gameEvents={enabled:false,lastId:0,bootstrapped:false,damageFactor:5,healIntegrity:5,healEnergy:3,cursor:0,feed:[],lastSync:"",error:""};
   const G=S.gameEvents,EM=S.emergency;
   G.enabled=Boolean(G.enabled);G.remoteManaged=G.remoteManaged===true;G.lastId=Number(G.lastId)||0;G.damageFactor=clamp(G.damageFactor,1,10);G.healIntegrity=clamp(G.healIntegrity??5,0,10);G.healEnergy=clamp(G.healEnergy,0,15);if(!Array.isArray(G.feed))G.feed=[];
-  let chosenSequence=S.sequences[0]?.id||"", seqToken=0, seqStatus="",seqIndex=-1,pollBusy=false,lastStatus={},activeRefresh=null;
+  let pollBusy=false,lastStatus={},activeRefresh=null;
   const button=(act,title,style="alt",attrs="")=>'<button type="button" class="btn '+style+'" data-evo="'+E(act)+'" '+attrs+'>'+title+'</button>';
   const block=(label,contents)=>'<section class="card"><div class="card-header"><h2>'+E(label)+'</h2></div>'+contents+'</section>';
   const intro=(code,title,sub)=>'<div class="eyebrow">'+E(code)+'</div><h1 class="heading">'+E(title)+'</h1><p class="subheading">'+E(sub)+'</p>';
   const kv=(label,value)=>'<div class="kv"><span>'+E(label)+'</span><span class="value">'+E(value)+'</span></div>';
   const meter=n=>'<div class="meter"><span style="width:'+clamp(n,0,100)+'%"></span></div>';
-  const validFn=v=>!v||/^[a-z0-9_.-]{1,32}:[a-z0-9_./-]{1,90}$/.test(v);
   const activeProfile=()=>S.armorProfiles.find(p=>p.name===S.form)||S.armorProfiles[0];
   rp.allowedForms=()=>S.armorProfiles.map(p=>p.name);
   rp.formCost=name=>clamp(S.armorProfiles.find(p=>p.name===name)?.cost??9,0,50);
@@ -39,7 +33,6 @@ window.NexusRPEvolution=function(rp,views){
       EM.active=true;EM.lastAt=new Date().toISOString();
       log("CONTENÇÃO ATIVADA: integridade "+S.integrity+"%. Integração e remodelagem bloqueadas.","EMERGÊNCIA");
       toast("NEXUS EM CONTENÇÃO. Integridade crítica.");
-      triggerEmote("emergencia");
     }
     save();
   }
@@ -48,16 +41,11 @@ window.NexusRPEvolution=function(rp,views){
   const oldAdjust=rp.adjustIntegrity||(()=>{});
   rp.adjustIntegrity=value=>{oldAdjust(value);checkEmergency();};
   const oldAfterArmor=rp.afterArmor||(()=>{});
-  rp.afterArmor=kind=>{oldAfterArmor(kind);triggerEmote(kind);rp.checkAlerts();};
+  rp.afterArmor=kind=>{oldAfterArmor(kind);rp.checkAlerts();};
   const oldAfterRitual=rp.afterRitual||(()=>{});
-  rp.afterRitual=()=>{oldAfterRitual();triggerEmote("ritual");rp.checkAlerts();};
+  rp.afterRitual=()=>{oldAfterRitual();rp.checkAlerts();};
   const oldReset=rp.resetUpgrade||(()=>{});
-  rp.resetUpgrade=()=>{oldReset();S.armorProfiles=profiles.map(x=>({...x}));S.sequences=[];Object.assign(EM,{enabled:true,active:false,threshold:25,lastAt:""});S.emergency=EM;S.emotes={integrar:"",desintegrar:"",remodelar:"",reparar:"",ritual:"",emergencia:""};Object.assign(G,{enabled:false,lastId:0,bootstrapped:false,damageFactor:5,healIntegrity:5,healEnergy:3,cursor:0,feed:[],lastSync:"",error:""});S.gameEvents=G;seqToken++;save();};
-  function triggerEmote(kind){
-    const functionId=K(S.emotes?.[kind]);
-    if(!rp.isConnected()||!functionId)return;
-    rp.runFunctionId(functionId).then(()=>log("Função de emote executada: "+functionId,"EMOTE")).catch(err=>toast("Emote indisponível: "+err.message));
-  }
+  rp.resetUpgrade=()=>{oldReset();S.armorProfiles=profiles.map(x=>({...x}));Object.assign(EM,{enabled:true,active:false,threshold:25,lastAt:""});S.emergency=EM;Object.assign(G,{enabled:false,lastId:0,bootstrapped:false,damageFactor:5,healIntegrity:5,healEnergy:3,cursor:0,feed:[],lastSync:"",error:""});S.gameEvents=G;save();};
   function renderForms(){
     const items=S.armorProfiles.map((p,i)=>'<article class="rp-evo-form" style="--form-accent:'+E(p.color)+'"><div class="rp-evo-form-head"><strong>'+E(p.name)+'</strong><span>'+E(p.kind)+'</span></div>'+
       '<div class="rp-evo-values"><span>Holy Spellpower <b>+'+clamp(p.spell,0,60)+'%</b></span><span>Remodelagem <b>'+clamp(p.cost,0,50)+' EN</b></span></div>'+
@@ -82,37 +70,9 @@ window.NexusRPEvolution=function(rp,views){
     html=html.replace(/(<select id="armorForm">)([\s\S]*?)(<\/select>)/,(_all,a,b,c)=>a+b+extraOptions+c);
     return html+renderForms();
   };
-  const currentStep=()=>S.sequences.find(x=>x.id===chosenSequence)||S.sequences[0];
-  const ACTS=[["desintegrar","Desintegrar armadura"],["remodelar","Remodelar armadura"],["integrar","Integrar armadura"],["reparar","Reparar armadura"],["recuperar","Recuperar energia"],["emote","Executar emote configurado"],["esperar","Apenas aguardar"]];
-  function sequenceView(){
-    const current=currentStep();
-    const rows=(current?.steps||[]).map((step,i)=>{
-      const label=ACTS.find(x=>x[0]===step.action)?.[1]||step.action;
-      return '<div class="rp-evo-step"><div><strong>ETAPA '+(i+1)+' · '+E(label)+'</strong><small>Intervalo: '+clamp(step.delay,250,12000)/1000+' s'+(step.form?" · "+E(step.form):"")+'</small></div>'+
-      '<div class="buttons">'+button("seq-up","↑","ghost",'data-index="'+i+'"')+button("seq-down","↓","ghost",'data-index="'+i+'"')+
-      button("seq-remove","✕","ghost",'data-index="'+i+'"')+'</div></div>';
-    }).join("");
-    const names=S.armorProfiles.map(x=>'<option>'+E(x.name)+'</option>').join("");
-    return intro("NEXUS RP / AUTOMAÇÃO NARRATIVA","Sequenciador de Transformações","Crie sequências ordenadas para desintegrar placas, ajustar energia, remodelar a armadura e executar emotes configurados.")+
-    '<div class="grid two">'+
-    block("SEQUÊNCIAS SALVAS",
-      '<div class="field"><label for="rpSequenceList">SEQUÊNCIA ATIVA</label><select id="rpSequenceList">'+S.sequences.map(x=>'<option value="'+E(x.id)+'" '+(current?.id===x.id?"selected":"")+'>'+E(x.name)+'</option>').join("")+'</select></div>'+
-      '<form id="rpNewSequence" class="rp-new-sequence"><label class="field"><span class="field-label">CRIAR NOVA SEQUÊNCIA</span><input name="name" required maxlength="45" placeholder="Ex.: Forma de combate"></label><button class="btn gold" type="submit">+ CRIAR</button></form>'+
-      '<div class="rp-evo-status">'+(seqToken&&seqStatus?"ESTADO: "+E(seqStatus):"Nenhuma execução em andamento")+'</div>'+
-      '<div class="buttons">'+button("seq-run","▶ EXECUTAR","gold")+button("seq-stop","■ INTERROMPER","ghost")+
-      button("seq-delete","EXCLUIR SEQUÊNCIA","ghost")+'</div>')+
-    block("ETAPAS E INTERVALOS",
-      rows||'<div class="empty">Adicione a primeira etapa desta sequência.</div>'+
-      '<form id="rpNewStep" class="rp-evo-step-form"><label class="field"><span class="field-label">AÇÃO</span><select name="action">'+ACTS.map(([key,label])=>'<option value="'+key+'">'+label+'</option>').join("")+'</select></label>'+
-      '<label class="field"><span class="field-label">FORMA PARA REMODELAGEM</span><select name="form">'+names+'</select></label>'+
-      '<label class="field"><span class="field-label">INTERVALO (MILISSEGUNDOS)</span><input name="delay" type="number" min="250" max="12000" value="1250" required></label>'+
-      '<button type="submit" class="btn gold">+ ADICIONAR ETAPA</button></form>'+
-      '<p class="hint">As etapas só executam quando você toca em Executar. Não alteram o Minecraft sem a ponte configurada e os comandos correspondentes.</p>')+'</div>';
-  }
-  views.sequencias=sequenceView;
   const originalLive=views.ao_vivo;
   views.ao_vivo=()=>originalLive()+block("CONTROLES AVANÇADOS RP 1.2",
-    '<div class="buttons">'+button("open-sequences","SEQUENCIADOR","gold")+button("open-emergency","EMERGÊNCIA","alt")+button("open-events","EVENTOS DO JOGO","ghost")+"</div>");
+    '<div class="buttons">'+button("open-emergency","EMERGÊNCIA","alt")+button("open-events","EVENTOS DO JOGO","ghost")+"</div>");
   function emergencyView(){
     return intro("PROTEÇÃO DO NÚCLEO / CONTENÇÃO","Protocolo de Emergência","Bloqueia transformações quando a integridade está crítica e permite uma intervenção manual durante o RP.")+
     '<div class="grid two">'+block("ESTADO DE CONTENÇÃO",
@@ -184,17 +144,6 @@ window.NexusRPEvolution=function(rp,views){
       block("REGISTRO DE TELEMETRIA",'<div id="rpEventsFeed" aria-live="polite">'+feedMarkup()+'</div>')+'</div>';
   }
   views.eventos=eventView;
-  function emoteView(){
-    return intro("ANIMAÇÕES / INTEGRAÇÃO OPCIONAL","Emotes e Transformações","Vincule uma função do datapack ou mod para cada ação. O Nexus solicitará essa função ao servidor quando o comando ocorrer.")+
-    block("MAPEAMENTO DE EMOTES",
-      '<form id="rpEmotesForm" class="grid two">'+
-      [["integrar","INTEGRAR"],["desintegrar","DESINTEGRAR"],["remodelar","REMODELAR"],["reparar","REPARAR"],["ritual","RITUAL"],["emergencia","EMERGÊNCIA"]].map(([key,label])=>
-      '<label class="field"><span class="field-label">'+label+'</span><input name="'+key+'" maxlength="130" value="'+E(S.emotes[key]||"")+'" placeholder="nexus:emotes/'+key+'"></label>'
-      ).join("")+
-      '<button class="btn gold" type="submit">SALVAR MAPEAMENTOS</button></form>'+
-      '<p class="hint">O painel usa funções Minecraft no formato <code>namespace:caminho</code>. É necessário que o mod ou datapack realmente implemente cada função. O Armourer’s Workshop não terá animações acionadas automaticamente sem uma API/integração própria.</p>');
-  }
-  views.emotes=emoteView;
   // Append connection mode to the existing settings form, preserving its fields.
   const originalConfig=views.config;
   views.config=()=>{
@@ -209,16 +158,14 @@ window.NexusRPEvolution=function(rp,views){
       block("AGENTE E EVENTOS",'<p class="hint">A ponte segura recebe comandos e eventos por HTTPS. Instale o agente Python na máquina do servidor Minecraft, configure NEXUS_RP_AGENT_KEY e sua senha RCON localmente.</p>'+
       '<div class="buttons">'+button("open-events","GERENCIAR EVENTOS","gold")+
       button("bridge-status","TESTAR AGENTE","ghost")+'</div>')+
-      block("EMOTES E PROTOCOLOS",'<div class="buttons">'+button("open-emotes","EDITAR EMOTES","gold")+
-      button("open-emergency","PROTOCOLO DE EMERGÊNCIA","ghost")+
-      button("open-sequences","ABRIR SEQUENCIADOR","ghost")+'</div>');
+      block("CONTROLE DE EMERGÊNCIA",'<div class="buttons">'+button("open-emergency","PROTOCOLO DE EMERGÊNCIA","ghost")+'</div>');
   };
   // Register menu entries before the Configuration button.
   const configNav=document.querySelector('#nav [data-page="config"]');
   if(configNav){
     for(const [key,label,icon] of [
-      ["sequencias","Sequenciador","◇"],["eventos","Eventos do Jogo","⌁"],
-      ["emergencia","Emergência","⚠"],["emotes","Emotes","✦"]
+      ["eventos","Eventos do Jogo","⌁"],
+      ["emergencia","Emergência","⚠"]
     ]){
       const btn=document.createElement("button");
       btn.className="nav-button";btn.dataset.page=key;
@@ -335,40 +282,8 @@ window.NexusRPEvolution=function(rp,views){
   if(typeof document.addEventListener==="function")
     document.addEventListener("visibilitychange",()=>{if(shouldPoll())refreshEvents();});
   if(onEventsPage())setTimeout(()=>refreshEvents(),0);
-  function executeSequenceStep(step){
-    const kind=step.action;
-    if(["integrar","desintegrar","remodelar","reparar"].includes(kind)){
-      if(EM.active&&["integrar","remodelar"].includes(kind))throw Error("Transformação bloqueada pelo protocolo de emergência.");
-      if(kind==="remodelar"&&step.form){if(S.energy<rp.formCost(step.form))throw Error("Energia insuficiente para remodelar.");S.form=step.form;}
-      return rp.armorAction(kind);
-    }
-    if(kind==="recuperar"){
-      S.energy=clamp(S.energy+15,0,100);rp.checkAlerts?.();log("Sequência: núcleo recuperou 15 pontos de energia.","SEQUÊNCIA");save();rp.rerender();return;
-    }
-    if(kind==="emote"){triggerEmote("remodelar");return;}
-  }
-  async function runSequence(){
-    const chosen=currentStep();
-    if(!chosen||!chosen.steps?.length)return toast("Adicione etapas antes de executar.");
-    const ticket=++seqToken;seqStatus="INICIADA";seqIndex=-1;rp.rerender();
-    log("Sequência iniciada: "+chosen.name,"SEQUÊNCIA");
-    try{
-      for(let i=0;i<chosen.steps.length;i++){
-        if(seqToken!==ticket)break;
-        const step=chosen.steps[i];seqIndex=i;seqStatus="ETAPA "+(i+1)+" DE "+chosen.steps.length;rp.rerender();
-        await new Promise(resolve=>setTimeout(resolve,clamp(step.delay,250,12000)));
-        if(ticket!==seqToken)break;
-        await executeSequenceStep(step);
-      }
-      if(ticket===seqToken){seqStatus="CONCLUÍDA";log("Sequência concluída: "+chosen.name,"SEQUÊNCIA");}
-    }catch(err){
-      seqStatus="ERRO: "+(err.message||String(err)).slice(0,100);
-      toast(seqStatus);
-    }
-    rp.rerender();
-  }
   container.addEventListener("submit",async e=>{
-    if(!["rpFormCreator","rpNewSequence","rpNewStep","rpEmergencySettings","rpEventSettings","rpEmotesForm"].includes(e.target.id))return;
+    if(!["rpFormCreator","rpEmergencySettings","rpEventSettings"].includes(e.target.id))return;
     e.preventDefault();e.stopImmediatePropagation();
     const d=new FormData(e.target),form=e.target.id;
     if(form==="rpFormCreator"){
@@ -378,15 +293,6 @@ window.NexusRPEvolution=function(rp,views){
       if(S.armorProfiles.length>=20)return toast("Limite de 20 formas cadastradas.");
       S.armorProfiles.push({name,kind,spell:clamp(d.get("spell"),0,60),cost:clamp(d.get("cost"),0,50),color:K(d.get("color"))||"#d6aa6e",description:K(d.get("description")).slice(0,180),locked:false});
       log("Nova forma criada: "+name,"ARMADURA");
-    }else if(form==="rpNewSequence"){
-      const name=K(d.get("name")).slice(0,45);if(name.length<2)return toast("Nome muito curto.");
-      if(S.sequences.length>=30)return toast("Limite de 30 sequências.");
-      const id=uid();S.sequences.push({id,name,steps:[]});chosenSequence=id;log("Sequência criada: "+name,"ENGENHARIA");
-    }else if(form==="rpNewStep"){
-      const current=currentStep();if(!current)return toast("Crie uma sequência primeiro.");
-      if(current.steps.length>=20)return toast("Limite de 20 etapas por sequência.");
-      const action=K(d.get("action"));if(!ACTS.some(x=>x[0]===action))return toast("Ação desconhecida.");
-      const selected=K(d.get("form"));current.steps.push({action,delay:clamp(d.get("delay"),250,12000),form:S.armorProfiles.some(p=>p.name===selected)?selected:S.form});
     }else if(form==="rpEmergencySettings"){
       EM.enabled=d.has("enabled");EM.threshold=clamp(d.get("threshold"),5,80);checkEmergency();log("Protocolo de emergência configurado.","SISTEMA");
     }else if(form==="rpEventSettings"){
@@ -410,21 +316,14 @@ window.NexusRPEvolution=function(rp,views){
         }
       }
       if(shouldPoll())refreshEvents();
-    }else if(form==="rpEmotesForm"){
-      const saved={};for(const key of ["integrar","desintegrar","remodelar","reparar","ritual","emergencia"]){
-        const fn=K(d.get(key));if(!validFn(fn))return toast("Função inválida: "+key);saved[key]=fn;
-      }S.emotes=saved;log("Mapeamento de emotes atualizado.","EMOTES");
     }
     save();rp.rerender();toast("Configuração salva no Nexus RP.");
-  },true);
-  container.addEventListener("change",e=>{
-    if(e.target.id==="rpSequenceList"){chosenSequence=e.target.value;seqStatus="";rp.rerender();}
   },true);
   container.addEventListener("click",async e=>{
     const target=e.target.closest("[data-evo]");if(!target)return;
     e.preventDefault();e.stopImmediatePropagation();
     const action=target.dataset.evo;
-    if(action.startsWith("open-"))return switchNav({events:"eventos",emotes:"emotes",emergency:"emergencia",sequences:"sequencias"}[action.slice(5)]||action.slice(5));
+    if(action.startsWith("open-"))return switchNav({events:"eventos",emergency:"emergencia"}[action.slice(5)]||action.slice(5));
     if(action==="form-use"){
       const name=target.dataset.name;if(!S.armorProfiles.some(p=>p.name===name))return;
       if(EM.active)return toast("Protocolo de emergência ativo: remodelagem bloqueada.");
@@ -437,17 +336,7 @@ window.NexusRPEvolution=function(rp,views){
       S.armorProfiles=S.armorProfiles.filter(x=>x.name!==name);
       if(S.form===name)S.form="Celestial";save();rp.rerender();return;
     }
-    if(action==="seq-run")return runSequence();
-    if(action==="seq-stop"){seqToken++;seqStatus="INTERROMPIDA";rp.rerender();return;}
-    if(action==="seq-delete"){const current=currentStep();if(!current||!confirm("Excluir "+current.name+"?"))return;S.sequences=S.sequences.filter(s=>s.id!==current.id);chosenSequence=S.sequences[0]?.id||"";save();rp.rerender();return;}
-    if(["seq-up","seq-down","seq-remove"].includes(action)){
-      const current=currentStep();if(!current)return;const i=Number(target.dataset.index);
-      if(!Number.isInteger(i)||i<0||i>=current.steps.length)return;
-      if(action==="seq-remove")current.steps.splice(i,1);
-      else {const j=i+(action==="seq-up"?-1:1);if(j<0||j>=current.steps.length)return;[current.steps[i],current.steps[j]]=[current.steps[j],current.steps[i]];}
-      save();rp.rerender();return;
-    }
-    if(action==="emergency-activate"){EM.active=true;EM.lastAt=new Date().toISOString();log("Contenção acionada manualmente.","EMERGÊNCIA");triggerEmote("emergencia");save();rp.rerender();return;}
+    if(action==="emergency-activate"){EM.active=true;EM.lastAt=new Date().toISOString();log("Contenção acionada manualmente.","EMERGÊNCIA");save();rp.rerender();return;}
     if(action==="emergency-release"){
       if(S.integrity<=EM.threshold&&EM.enabled&&!confirm("Integridade abaixo do limiar. Liberar mesmo assim?"))return;
       EM.active=false;log("Contenção desativada manualmente.","EMERGÊNCIA");save();rp.rerender();return;
