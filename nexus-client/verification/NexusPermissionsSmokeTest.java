@@ -33,6 +33,7 @@ public final class NexusPermissionsSmokeTest {
         NexusCombatMacro.active=false;
         NexusBuffManager.active=false;
         NexusVoiceCasting.on=false;
+        NexusArcaneTravel.pending=false;
         NexusArcaneSensor.on=false;
         NexusHudSettings.combat=false;NexusHudSettings.magic=false;
     }
@@ -65,7 +66,9 @@ public final class NexusPermissionsSmokeTest {
         NexusAutoHeal.enabled=true;
         NexusCombatMacro.active=true;
         NexusBuffManager.active=true;
+        NexusArcaneTravel.pending=true;
         NexusPermissions.off();
+        check(!NexusArcaneTravel.pending, "Global off cancels pending Waystones requests.");
         check(!NexusBuffManager.active,"Global off revokes automatic buff permission.");
         check(!NexusCombatMacro.active,"Global off stops offensive macros.");
         check(!NexusAutoHeal.enabled,"Global off must stop automatic healing.");
@@ -204,4 +207,10 @@ final class NexusBuffManager {
     static boolean active;
     static void setEnabled(boolean on){active=on;}
     static String status(){return active?"buffs on":"buffs off";}
+}
+
+/** Stub for global-permissions tests only. */
+final class NexusArcaneTravel {
+    static boolean pending;
+    static String cancel(){pending=false;return "cancelled";}
 }
