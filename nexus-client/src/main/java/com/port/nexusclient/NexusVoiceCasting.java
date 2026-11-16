@@ -44,7 +44,7 @@ final class NexusVoiceCasting {
     private static final class State {
         int schema=1;
         boolean enabled=false;
-        String language="pt";
+        String language="auto";
         // Empty string = OS default. A missing named device must NOT silently
         // select another microphone.
         String microphone="";
@@ -75,7 +75,8 @@ final class NexusVoiceCasting {
         try{
             State saved=JSON.fromJson(Files.readString(SETTINGS,StandardCharsets.UTF_8),State.class);
             if(saved!=null&&saved.schema==1){
-                saved.language="en".equals(saved.language)?"en":"pt";
+                saved.language="en".equals(saved.language)?"en":
+                    "pt".equals(saved.language)?"pt":"auto";
                 saved.microphone=NexusMicrophoneChoices.normalize(saved.microphone);
                 // Local microphone is session-scoped: never reopen it silently
                 // after restarting the game, regardless of the last saved flag.
@@ -121,7 +122,9 @@ final class NexusVoiceCasting {
     static String diagnostics(){
         return "MIC "+(captureAllowed?"capturando":"suspenso/fechado")+
             " | Último dispositivo "+(lastOpenedMicrophone.isBlank()?"nenhum":lastOpenedMicrophone)+
-            " | Modelo "+(NexusVoiceModels.installed(language())?"OK":"ausente")+
+            " | Modelo "+(NexusVoiceModels.ready(language())
+                ?String.join("+",NexusVoiceModels.activeLanguages(language())).toUpperCase()
+                :"ausente")+
             " | Magias "+spellCount+" | Nível de áudio "+inputLevel+
             " | Áudio "+audioFrames+" blocos"+
             " | Frases "+finalPhrases+" | Comandos "+acceptedPhrases;
@@ -134,7 +137,7 @@ final class NexusVoiceCasting {
         var index=grammar;
         var command=NexusVoiceGrammar.recognize(phrase,index);
         if(command==null)return "Não reconhecido. Magias equipadas: "+spellCount+
-            ". Use 'Nexus, execute [feitiço]' ou 'Nexus, cancelar'.";
+            ". Use 'Nexus, Divine Smite' ou 'Nexus, cancelar'.";
         return command.cancel()?"Comando de cancelamento válido (nenhuma magia executada).":
             "Feitiço encontrado: "+command.spellId()+" no slot "+
             command.slot()+" (nenhuma magia executada).";
@@ -148,14 +151,15 @@ final class NexusVoiceCasting {
                !ModList.get().isLoaded("waystones")){
                 status="Ative Iron's Spells ou Waystones para usar comandos de voz.";return;
             }
-            if(!NexusVoiceModels.installed(state.language)){
-                status="Instale o modelo "+state.language.toUpperCase()+
-                    " com /nexusclient voicecast model install.";
+            if(!NexusVoiceModels.ready(state.language)){
+                status="Nenhum modelo Vosk compatível instalado. Use "
+                    +"/nexusclient voicecast model install.";
                 return;
             }
         }
         state.enabled=on;save();
-        status=on?"Voz ativada. Fale 'Nexus, execute Sunbeam'.":"Conjuração por voz desativada.";
+        status=on?"Voz ativada. Diga 'Nexus, Divine Smite' ou o nome de outra magia equipada."
+            :"Conjuração por voz desativada.";
         if(!on){
             captureAllowed=false;
             Thread old=worker;
@@ -164,8 +168,8 @@ final class NexusVoiceCasting {
     }
     static synchronized void setLanguage(String lang){
         load();
-        if(!"pt".equals(lang)&&!"en".equals(lang))
-            throw new IllegalArgumentException("Escolha pt ou en.");
+        if(!"pt".equals(lang)&&!"en".equals(lang)&&!"auto".equals(lang))
+            throw new IllegalArgumentException("Escolha pt, en ou auto.");
         if(state.language.equals(lang))return;
         state.enabled=false;
         captureAllowed=false;
@@ -184,7 +188,7 @@ final class NexusVoiceCasting {
             mc.screen==null&&mc.isWindowActive()&&
             (ModList.get().isLoaded("irons_spellbooks") ||
                 ModList.get().isLoaded("waystones"))&&
-            NexusVoiceModels.installed(state.language);
+            NexusVoiceModels.ready(state.language);
         captureAllowed=active;
         if(!active)return;
         long now=System.currentTimeMillis();
@@ -230,47 +234,59 @@ final class NexusVoiceCasting {
         return List.copyOf(result);
     }
 
+    private record AudioResult(String language,String json) {}
+
+    /**
+     * One microphone, one or two completely local Vosk recognizers.
+     * AUTO uses PT and EN when installed; neither model sends audio over the network.
+     */
     private static void captureLoop(){
-        Model model=null;Recognizer recognizer=null;
+        Map<String,Model> models=new LinkedHashMap<>();
+        Map<String,Recognizer> recognizers=new LinkedHashMap<>();
         long device=0L,loadedRevision=-1,openedMicrophoneRevision=-1;
         ByteBuffer pcm=BufferUtils.createByteBuffer(SAMPLES_PER_CHUNK*2).order(ByteOrder.LITTLE_ENDIAN);
         byte[] samples=new byte[SAMPLES_PER_CHUNK*2];
         int spokenFrames=0;
         try{
-            model=new Model(NexusVoiceModels.model(language()).toString());
+            List<String> available=NexusVoiceModels.activeLanguages(language());
+            if(available.isEmpty())throw new IllegalStateException("Nenhum modelo Vosk instalado.");
+            for(String lang:available)models.put(lang,
+                new Model(NexusVoiceModels.model(lang).toString()));
+
             while(!closed&&state!=null&&state.enabled&&!Thread.currentThread().isInterrupted()){
                 if(!captureAllowed||openedMicrophoneRevision!=microphoneRevision){
-                    // Close the old capture device before opening the new one.
-                    // Both operations stay on this same microphone thread.
                     if(device!=0L){
                         ALC11.alcCaptureStop(device);
                         ALC11.alcCaptureCloseDevice(device);
                         device=0L;
                     }
                     capturingMicrophone="";
-                    if(recognizer!=null){recognizer.close();recognizer=null;loadedRevision=-1;}
+                    for(Recognizer existing:recognizers.values())existing.close();
+                    recognizers.clear();loadedRevision=-1;
                     spokenFrames=0;
                     openedMicrophoneRevision=microphoneRevision;
                     if(!captureAllowed){Thread.sleep(120);continue;}
                 }
                 long currentRevision=revision;
-                if(recognizer==null||loadedRevision!=currentRevision){
-                    if(recognizer!=null)recognizer.close();
-                    Map<String,NexusVoiceGrammar.Spell> snapshot=grammar;
+                if(recognizers.isEmpty()||loadedRevision!=currentRevision){
+                    for(Recognizer existing:recognizers.values())existing.close();
+                    recognizers.clear();
                     JsonArray phrases=new JsonArray();
-                    List<String> terms=new ArrayList<>(NexusVoiceGrammar.vocabulary(snapshot));
+                    List<String> terms=new ArrayList<>(NexusVoiceGrammar.vocabulary(grammar));
                     terms.remove("[unk]");
                     terms.addAll(travelVoicePhrases);
                     terms.add("[unk]");
-                    for(String phrase:terms)phrases.add(phrase);
-                    recognizer=new Recognizer(model,SAMPLE_RATE,phrases.toString());
-                    recognizer.setWords(true);
-                    loadedRevision=currentRevision;
-                    spokenFrames=0;
+                    for(String phrase:new java.util.LinkedHashSet<>(terms))phrases.add(phrase);
+                    for(var entry:models.entrySet()){
+                        Recognizer recognizer=new Recognizer(entry.getValue(),SAMPLE_RATE,
+                            phrases.toString());
+                        recognizer.setWords(true);
+                        recognizers.put(entry.getKey(),recognizer);
+                    }
+                    loadedRevision=currentRevision;spokenFrames=0;
                 }
                 if(device==0L){
                     String requested=selectedMicrophone();
-                    // Never fall back to default if the selected device vanishes.
                     if(!NexusMicrophones.isPresent(requested)){
                         status="Microfone selecionado desconectado: "+
                             requested+". Escolha outro em F8 > Combate > Microfone.";
@@ -289,9 +305,11 @@ final class NexusVoiceCasting {
                     capturingMicrophone=NexusMicrophones.displayName(requested);
                     lastOpenedMicrophone=capturingMicrophone;
                     ALC11.alcCaptureStart(device);
-                    status=grammar.isEmpty() && travelVoicePhrases.isEmpty()?
-                        "Microfone: "+capturingMicrophone+". Equipe feitiços ou ative destinos.":
-                        "Ouvindo em "+capturingMicrophone+". Diga 'Nexus, execute [feitiço]'.";
+                    status=grammar.isEmpty()&&travelVoicePhrases.isEmpty()
+                        ?"Microfone: "+capturingMicrophone+". Equipe magias ou cadastre destinos."
+                        :"Ouvindo em "+capturingMicrophone+" ["
+                            +String.join("+",models.keySet()).toUpperCase()
+                            +"]. Diga 'Nexus, Divine Smite'.";
                 }
                 if(ALC10.alcGetInteger(device,ALC11.ALC_CAPTURE_SAMPLES)<SAMPLES_PER_CHUNK){
                     Thread.sleep(20);continue;
@@ -307,10 +325,30 @@ final class NexusVoiceCasting {
                 }
                 inputLevel=(int)Math.min(32767,Math.sqrt(meanSquares/SAMPLES_PER_CHUNK));
                 if(inputLevel>240)spokenFrames++;
-                if(recognizer.acceptWaveForm(samples,samples.length)){
-                    String result=recognizer.getResult();
-                    int frames=spokenFrames;spokenFrames=0;
-                    onFinal(result,frames);
+
+                // If either language detects an utterance boundary, flush both.
+                // Select one intent once, instead of casting twice.
+                Map<String,String> completed=new LinkedHashMap<>();
+                for(var entry:recognizers.entrySet()){
+                    if(entry.getValue().acceptWaveForm(samples,samples.length))
+                        completed.put(entry.getKey(),entry.getValue().getResult());
+                }
+                if(!completed.isEmpty()){
+                    for(var entry:recognizers.entrySet()){
+                        if(!completed.containsKey(entry.getKey()))
+                            completed.put(entry.getKey(),entry.getValue().getFinalResult());
+                    }
+                    List<AudioResult> results=new ArrayList<>();
+                    for(var entry:completed.entrySet())
+                        results.add(new AudioResult(entry.getKey(),entry.getValue()));
+                    onFinalCandidates(results,spokenFrames);
+                    spokenFrames=0;
+                    // getFinalResult ends that segment; recreate recognizers in dual mode.
+                    if(models.size()>1){
+                        for(Recognizer existing:recognizers.values())existing.close();
+                        recognizers.clear();
+                        loadedRevision=-1;
+                    }
                 }
             }
         }catch(InterruptedException ignored){
@@ -324,44 +362,66 @@ final class NexusVoiceCasting {
                 try{ALC11.alcCaptureCloseDevice(device);}catch(Throwable ignored){}
             }
             capturingMicrophone="";
-            if(recognizer!=null)try{recognizer.close();}catch(Throwable ignored){}
-            if(model!=null)try{model.close();}catch(Throwable ignored){}
+            for(Recognizer existing:recognizers.values())
+                try{existing.close();}catch(Throwable ignored){}
+            for(Model model:models.values())
+                try{model.close();}catch(Throwable ignored){}
         }
     }
 
-    private static void onFinal(String json,int spokenFrames){
+    /**
+     * Deterministic arbitration: accept only equipped spells or registered
+     * travel intents, confidence checked, with cross-language conflicts rejected.
+     */
+    private static void onFinalCandidates(List<AudioResult> recognized,int spokenFrames){
         if(!captureAllowed)return;
         finalPhrases++;
         try{
-            JsonObject result=JsonParser.parseString(json).getAsJsonObject();
-            String phrase=result.has("text")?result.get("text").getAsString():"";
-            if(!phrase.isBlank())lastTranscript=phrase;
-            float confidence=confidence(result);
-            lastConfidence=confidence;
             if(spokenFrames<MIN_VOICE_FRAMES){
                 lastDecision="Frase muito curta ou microfone com volume baixo.";
                 return;
             }
-            if(phrase.isBlank()){
-                lastDecision="O microfone capturou áudio, mas o Vosk não encontrou palavras.";
+            List<NexusVoiceCandidatePolicy.Candidate> eligible=new ArrayList<>();
+            String bestTranscript="";
+            float bestScore=-1;
+            for(AudioResult audio:recognized){
+                if(audio.json()==null)continue;
+                JsonObject result=JsonParser.parseString(audio.json()).getAsJsonObject();
+                String phrase=result.has("text")?result.get("text").getAsString():"";
+                float confidence=confidence(result);
+                if(!phrase.isBlank()&&confidence>bestScore){
+                    bestTranscript=phrase;bestScore=confidence;
+                }
+                NexusVoiceGrammar.Command spell=NexusVoiceGrammar.recognize(phrase,grammar);
+                NexusTravelPolicy.VoiceIntent travel=NexusTravelPolicy.interpretVoice(
+                    phrase,travelVoicePhrases);
+                if(spell!=null){
+                    String action=spell.cancel()?"cancel":
+                        "spell:"+spell.spellId()+":"+spell.slot();
+                    eligible.add(new NexusVoiceCandidatePolicy.Candidate(
+                        audio.language(),phrase,action,confidence));
+                }else if(travel!=null){
+                    eligible.add(new NexusVoiceCandidatePolicy.Candidate(
+                        audio.language(),phrase,
+                        "travel:"+travel.action()+":"+travel.destination(),confidence));
+                }
+            }
+            var selected=NexusVoiceCandidatePolicy.choose(eligible,MIN_CONFIDENCE);
+            if(!selected.accepted()){
+                lastTranscript=bestTranscript;
+                lastConfidence=Math.max(0,bestScore);
+                lastDecision=selected.reason();
                 return;
             }
-            Map<String,NexusVoiceGrammar.Spell> lookup=grammar;
-            NexusVoiceGrammar.Command command=NexusVoiceGrammar.recognize(phrase,lookup);
+            String phrase=selected.winner().spoken();
+            lastTranscript=phrase;
+            lastConfidence=selected.winner().confidence();
+            NexusVoiceGrammar.Command spell=NexusVoiceGrammar.recognize(phrase,grammar);
             NexusTravelPolicy.VoiceIntent travel=NexusTravelPolicy.interpretVoice(
                 phrase,travelVoicePhrases);
-            if(command==null&&travel==null){
-                lastDecision="Frase ouvida, porém fora dos comandos equipados do Nexus.";
-                return;
-            }
-            if(confidence<MIN_CONFIDENCE){
-                lastDecision="Comando identificado, porém confiança insuficiente ("+
-                    Math.round(confidence*100)+"%).";
-                return;
-            }
             acceptedPhrases++;
             if(travel!=null){
-                lastDecision="Comando de viagem reconhecido. Verificando confirmação local...";
+                lastDecision=selected.reason()+" Verificando viagem...";
                 Minecraft.getInstance().execute(()->{
                     if(!enabled()||!captureAllowed||Minecraft.getInstance().screen!=null)return;
                     long now=System.currentTimeMillis();
@@ -371,10 +431,10 @@ final class NexusVoiceCasting {
                     lastOutcome=NexusArcaneTravel.status();
                     lastDecision=lastOutcome;
                 });
-                return;
+            }else if(spell!=null){
+                lastDecision=selected.reason()+" Solicitando conjuração...";
+                Minecraft.getInstance().execute(()->dispatch(spell));
             }
-            lastDecision="Comando aceito. Solicitando conjuração ao jogo...";
-            Minecraft.getInstance().execute(()->dispatch(command));
         }catch(Exception error){
             lastDecision="Erro ao interpretar resultado local: "+error.getClass().getSimpleName();
         }
