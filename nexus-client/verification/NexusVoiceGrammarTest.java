@@ -18,6 +18,9 @@ public final class NexusVoiceGrammarTest {
         var withArticle=NexusVoiceGrammar.recognize("Nexus, execute o Sunbeam!",index);
         check(withArticle!=null&&!withArticle.cancel()&&withArticle.slot()==2,
             "Brazilian Portuguese article in spoken command");
+        var portuguese=NexusVoiceGrammar.recognize("Nexus, execute o raio solar!",index);
+        check(portuguese!=null&&portuguese.spellId().endsWith(":sunbeam"),
+            "Portuguese Sunbeam alias works even if English words are absent from PT model");
         var sunVariant=NexusVoiceGrammar.recognize("Néxus, executa sun beam",index);
         check(sunVariant!=null&&sunVariant.spellId().endsWith(":sunbeam"),
             "Portuguese wake phrase and spaced English spell name");
