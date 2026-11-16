@@ -139,6 +139,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusBuffPolicy.java \
             nexus-client/verification/NexusBuffPolicyTest.java
           java -ea -cp /tmp/nexus-buff-tests com.port.nexusclient.NexusBuffPolicyTest
+      - name: Test Arcane Travel client-side safety and Portuguese commands
+        run: |
+          mkdir -p /tmp/nexus-travel-tests
+          javac -encoding UTF-8 -d /tmp/nexus-travel-tests \\
+            nexus-client/src/main/java/com/port/nexusclient/NexusTravelPolicy.java \\
+            nexus-client/verification/NexusTravelPolicyTest.java
+          java -ea -cp /tmp/nexus-travel-tests com.port.nexusclient.NexusTravelPolicyTest
       - name: Compile mod
         run: gradle -p nexus-client build --no-daemon --stacktrace
       - name: Upload JAR
