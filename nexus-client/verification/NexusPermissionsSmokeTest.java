@@ -31,6 +31,7 @@ public final class NexusPermissionsSmokeTest {
         NexusSpeaker.active=false;
         NexusAutoHeal.enabled=false;
         NexusCombatMacro.active=false;
+        NexusBuffManager.active=false;
         NexusVoiceCasting.on=false;
         NexusArcaneSensor.on=false;
         NexusHudSettings.combat=false;NexusHudSettings.magic=false;
@@ -53,6 +54,7 @@ public final class NexusPermissionsSmokeTest {
         check(!NexusAutoHeal.enabled,
             "Global enable must not spend Heal mana without separate authorization.");
         check(!NexusCombatMacro.active,"Global enable must not activate offensive macros.");
+        check(!NexusBuffManager.active,"Global enable must not consume buffs.");
         check(NexusArcaneSensor.on&&NexusHudSettings.combat&&NexusHudSettings.magic,
             "HUD and client-side magic readings are included in global enable.");
         check(!NexusHearing.listening && !NexusHearing.memory &&
@@ -62,7 +64,9 @@ public final class NexusPermissionsSmokeTest {
         NexusVoiceCasting.on=true;
         NexusAutoHeal.enabled=true;
         NexusCombatMacro.active=true;
+        NexusBuffManager.active=true;
         NexusPermissions.off();
+        check(!NexusBuffManager.active,"Global off revokes automatic buff permission.");
         check(!NexusCombatMacro.active,"Global off stops offensive macros.");
         check(!NexusAutoHeal.enabled,"Global off must stop automatic healing.");
         check(!NexusVoiceCasting.on,"Disable everything closes the local microphone.");
@@ -194,4 +198,10 @@ final class NexusCombatMacro {
     static boolean active;
     static void setEnabled(boolean on){active=on;}
     static String status(){return active?"macro on":"macro off";}
+}
+
+final class NexusBuffManager {
+    static boolean active;
+    static void setEnabled(boolean on){active=on;}
+    static String status(){return active?"buffs on":"buffs off";}
 }
