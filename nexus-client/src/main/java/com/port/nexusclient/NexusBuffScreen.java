@@ -66,7 +66,7 @@ final class NexusBuffScreen extends Screen {
                 e.mode.equals(NexusBuffManager.COMBAT)?"MUDAR PARA MANUAL":"MUDAR PARA COMBATE"),
                 b->mode()).bounds(x+12+half,height-97,half,20).build());
             addRenderableWidget(Button.builder(Component.literal(e.allowSingle?
-                "§cÚLTIMA UNIDADE: PERMITIDA":"§aPROTEGER ÚLTIMA UNIDADE"),
+                "§cÚLTIMA: PERMITIDA (PROTEGER)":"§aÚLTIMA: PROTEGIDA (LIBERAR)"),
                 b->lastUnit()).bounds(x+6,height-73,half,20).build());
             addRenderableWidget(Button.builder(Component.literal("§cAPAGAR CADASTRO"),
                 b->delete()).bounds(x+12+half,height-73,half,20).build());
