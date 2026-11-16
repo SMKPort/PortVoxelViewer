@@ -60,8 +60,7 @@ final class NexusTravelPolicy {
             out.add(wake + " cancelar viagem");
             int count = 0;
             if (destinationLabels != null) {
-                for (String label : destinationLabels.stream()
-                        .sorted(Comparator.naturalOrder()).toList()) {
+                for (String label : destinationLabels) {
                     String normalized = normalize(label);
                     if (normalized.length() < 2 || normalized.length() > 48) continue;
                     if (count++ >= 40) break;
