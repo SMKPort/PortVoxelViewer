@@ -112,6 +112,10 @@ final class NexusPermissionsScreen extends Screen {
                 addRenderableWidget(Button.builder(Component.literal("§6CONFIGURAR MACROS DE COMBATE"),
                     button->minecraft.setScreen(new NexusMacroScreen(this)))
                     .bounds(x+6,250,w-12,20).build());
+            if(height>=395)
+                addRenderableWidget(Button.builder(Component.literal("§6GERENCIAR BUFFS DA HOTBAR"),
+                    button->minecraft.setScreen(new NexusBuffScreen(this)))
+                    .bounds(x+6,279,w-12,20).build());
         }
         int footerY=height-34,btnW=(w-22)/3;
         addRenderableWidget(Button.builder(Component.literal("§aATIVAR TUDO"),b->{
@@ -188,9 +192,9 @@ final class NexusPermissionsScreen extends Screen {
                 graphics.drawString(font,
                     "Heal equipado obrigatório. Intervalo mínimo: 35 segundos.",
                     x+8,177,MUTED,false);
-            if(height>=365)
+            if(height>=420)
                 graphics.drawString(font,shortText(NexusAutoHeal.lastOutcome(),w-16),
-                    x+8,250,WHITE,false);
+                    x+8,310,WHITE,false);
         }else{
             graphics.drawString(font,"Memória privada: desligar não apaga registros antigos.",
                 x+8,169,MUTED,false);
