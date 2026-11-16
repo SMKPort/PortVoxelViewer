@@ -96,6 +96,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusVoiceGrammar.java \
             nexus-client/verification/NexusVoiceGrammarTest.java
           java -ea -cp /tmp/nexus-voice-tests com.port.nexusclient.NexusVoiceGrammarTest
+      - name: Test bilingual offline recognition decisions
+        run: |
+          mkdir -p /tmp/nexus-bilingual-tests
+          javac -encoding UTF-8 -d /tmp/nexus-bilingual-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusVoiceCandidatePolicy.java \
+            nexus-client/verification/NexusVoiceCandidatePolicyTest.java
+          java -ea -cp /tmp/nexus-bilingual-tests com.port.nexusclient.NexusVoiceCandidatePolicyTest
       - name: Test explicit auto Heal policy
         run: |
           mkdir -p /tmp/nexus-autoheal-tests
