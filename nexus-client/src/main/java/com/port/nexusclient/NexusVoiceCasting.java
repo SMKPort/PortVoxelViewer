@@ -61,7 +61,7 @@ final class NexusVoiceCasting {
     private static long lastDispatch,scanAt;
     private static volatile long revision;
     private static volatile long microphoneRevision;
-    private static volatile String capturingMicrophone="";
+    private static volatile String capturingMicrophone="",lastOpenedMicrophone="";
     private static volatile List<NexusVoiceGrammar.Spell> owned=List.of();
     private static volatile Map<String,NexusVoiceGrammar.Spell> grammar=Map.of();
     private NexusVoiceCasting(){}
@@ -117,7 +117,8 @@ final class NexusVoiceCasting {
     static String spellError(){return spellError;}
     static int spellCount(){return spellCount;}
     static String diagnostics(){
-        return "MIC "+(capturingMicrophone.isBlank()?"fechado":capturingMicrophone)+
+        return "MIC "+(captureAllowed?"capturando":"suspenso/fechado")+
+            " | Último dispositivo "+(lastOpenedMicrophone.isBlank()?"nenhum":lastOpenedMicrophone)+
             " | Modelo "+(NexusVoiceModels.installed(language())?"OK":"ausente")+
             " | Magias "+spellCount+" | Nível de áudio "+inputLevel+
             " | Áudio "+audioFrames+" blocos"+
@@ -272,6 +273,7 @@ final class NexusVoiceCasting {
                         continue;
                     }
                     capturingMicrophone=NexusMicrophones.displayName(requested);
+                    lastOpenedMicrophone=capturingMicrophone;
                     ALC11.alcCaptureStart(device);
                     status=grammar.isEmpty()?
                         "Microfone: "+capturingMicrophone+". Equipe feitiços no Iron's Spells.":
