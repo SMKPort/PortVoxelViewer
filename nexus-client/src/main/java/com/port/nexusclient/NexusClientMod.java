@@ -463,6 +463,33 @@ public class NexusClientMod {
                     NexusVoiceCasting.setEnabled(false);
                     notifyPlayer(NexusVoiceCasting.status());return 1;
                 }))
+                .then(Commands.literal("diagnose").executes(ctx->{
+                    notifyPlayer("VOICECAST: "+(NexusVoiceCasting.enabled()?"ATIVO":"DESLIGADO"));
+                    notifyPlayer(NexusVoiceCasting.diagnostics());
+                    notifyPlayer(NexusVoiceCasting.recognitionReport());
+                    notifyPlayer("Estado: "+NexusVoiceCasting.status());
+                    if(!NexusVoiceCasting.spellError().isBlank())
+                        notifyPlayer("Falha na lista de magias: "+NexusVoiceCasting.spellError());
+                    if(!NexusVoiceCasting.lastOutcome().isBlank())
+                        notifyPlayer("Última solicitação: "+NexusVoiceCasting.lastOutcome());
+                    return 1;
+                }))
+                .then(Commands.literal("check")
+                    .then(Commands.argument("phrase",StringArgumentType.greedyString())
+                    .executes(ctx->{
+                        String phrase=StringArgumentType.getString(ctx,"phrase");
+                        notifyPlayer(NexusVoiceCasting.checkPhrase(phrase));
+                        return 1;
+                    })))
+                .then(Commands.literal("spells").executes(ctx->{
+                    var player=Minecraft.getInstance().player;
+                    if(player==null)return 0;
+                    var spells=NexusVoiceCasting.equippedSpells(player);
+                    notifyPlayer("Magias disponíveis para voz: "+spells.size());
+                    for(var spell:spells.stream().limit(12).toList())
+                        notifyPlayer("Slot "+spell.slot()+" = "+spell.id());
+                    return 1;
+                }))
                 .then(Commands.literal("model")
                     .then(Commands.literal("install").executes(ctx->{
                         if(NexusVoiceModels.install(NexusVoiceCasting.language()))
