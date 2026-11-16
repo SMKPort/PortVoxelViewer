@@ -54,7 +54,12 @@ final class NexusVoiceCasting {
     private static volatile Thread worker;
     private static volatile String status="Desativado",lastCommand="",lastOutcome="";
     private static volatile long lastAt;
-    private static long lastDispatch,scanAt,revision;
+    private static volatile String lastTranscript="",lastDecision="Nenhuma frase analisada.",spellError="";
+    private static volatile float lastConfidence;
+    private static volatile int spellCount;
+    private static volatile long audioFrames,finalPhrases,acceptedPhrases;
+    private static long lastDispatch,scanAt;
+    private static volatile long revision;
     private static volatile long microphoneRevision;
     private static volatile String capturingMicrophone="";
     private static volatile List<NexusVoiceGrammar.Spell> owned=List.of();
@@ -107,6 +112,29 @@ final class NexusVoiceCasting {
     static String lastCommand(){return lastCommand;}
     static String lastOutcome(){return lastOutcome;}
     static long lastAt(){return lastAt;}
+    static String lastTranscript(){return lastTranscript;}
+    static String lastDecision(){return lastDecision;}
+    static String spellError(){return spellError;}
+    static int spellCount(){return spellCount;}
+    static String diagnostics(){
+        return "MIC "+(capturingMicrophone.isBlank()?"fechado":capturingMicrophone)+
+            " | Modelo "+(NexusVoiceModels.installed(language())?"OK":"ausente")+
+            " | Magias "+spellCount+" | Áudio "+audioFrames+" blocos"+
+            " | Frases "+finalPhrases+" | Comandos "+acceptedPhrases;
+    }
+    static String recognitionReport(){
+        return "Ouvido: "+(lastTranscript.isBlank()?"(nada)":lastTranscript)+
+            " | Confiança "+Math.round(lastConfidence*100)+"% | "+lastDecision;
+    }
+    static String checkPhrase(String phrase){
+        var index=grammar;
+        var command=NexusVoiceGrammar.recognize(phrase,index);
+        if(command==null)return "Não reconhecido. Magias equipadas: "+spellCount+
+            ". Use 'Nexus, execute [feitiço]' ou 'Nexus, cancelar'.";
+        return command.cancel()?"Comando de cancelamento válido (nenhuma magia executada).":
+            "Feitiço encontrado: "+command.spellId()+" no slot "+
+            command.slot()+" (nenhuma magia executada).";
+    }
 
     static synchronized void setEnabled(boolean on){
         load();
@@ -181,10 +209,12 @@ final class NexusVoiceCasting {
             Class<?> spellClass=Class.forName("io.redspace.ironsspellbooks.api.spells.AbstractSpell");
             Object instance=manager.getConstructor(Player.class).newInstance(player);
             result.addAll(NexusSpellAccess.listEquipped(instance,spellData,spellClass));
+            spellError="";
         }catch(Throwable exception){
-            // Fails closed. Cannot voice-cast with an unknown spell selection API.
-            status="Não consegui ler os feitiços equipados do Iron's Spells.";
+            // This is a separate diagnostic: never overwrite an audio failure.
+            spellError=exception.getClass().getSimpleName()+": "+exception.getMessage();
         }
+        spellCount=result.size();
         return List.copyOf(result);
     }
 
@@ -252,6 +282,7 @@ final class NexusVoiceCasting {
                 pcm.clear();
                 ALC11.alcCaptureSamples(device,pcm,SAMPLES_PER_CHUNK);
                 pcm.position(0);pcm.get(samples);
+                audioFrames++;
                 double meanSquares=0;
                 for(int i=0;i<samples.length;i+=2){
                     int value=(short)((samples[i]&0xff)|((samples[i+1]&0xff)<<8));
@@ -281,17 +312,39 @@ final class NexusVoiceCasting {
     }
 
     private static void onFinal(String json,int spokenFrames){
-        if(spokenFrames<MIN_VOICE_FRAMES||!captureAllowed)return;
+        if(!captureAllowed)return;
+        finalPhrases++;
         try{
             JsonObject result=JsonParser.parseString(json).getAsJsonObject();
             String phrase=result.has("text")?result.get("text").getAsString():"";
+            if(!phrase.isBlank())lastTranscript=phrase;
+            float confidence=confidence(result);
+            lastConfidence=confidence;
+            if(spokenFrames<MIN_VOICE_FRAMES){
+                lastDecision="Frase muito curta ou microfone com volume baixo.";
+                return;
+            }
+            if(phrase.isBlank()){
+                lastDecision="O microfone capturou áudio, mas o Vosk não encontrou palavras.";
+                return;
+            }
             Map<String,NexusVoiceGrammar.Spell> lookup=grammar;
             NexusVoiceGrammar.Command command=NexusVoiceGrammar.recognize(phrase,lookup);
-            if(command==null)return;
-            float confidence=confidence(result);
-            if(confidence<MIN_CONFIDENCE)return;
+            if(command==null){
+                lastDecision="Frase ouvida, porém fora dos comandos equipados do Nexus.";
+                return;
+            }
+            if(confidence<MIN_CONFIDENCE){
+                lastDecision="Comando identificado, porém confiança insuficiente ("+
+                    Math.round(confidence*100)+"%).";
+                return;
+            }
+            acceptedPhrases++;
+            lastDecision="Comando aceito. Solicitando conjuração ao jogo...";
             Minecraft.getInstance().execute(()->dispatch(command));
-        }catch(Exception ignored){}
+        }catch(Exception error){
+            lastDecision="Erro ao interpretar resultado local: "+error.getClass().getSimpleName();
+        }
     }
     private static float confidence(JsonObject json){
         if(!json.has("result")||!json.get("result").isJsonArray())return 0f;
@@ -312,7 +365,10 @@ final class NexusVoiceCasting {
         Minecraft mc=Minecraft.getInstance();
         if(!enabled()||mc.player==null||mc.level==null||mc.screen!=null)return;
         long now=System.currentTimeMillis();
-        if(now-lastDispatch<COMMAND_DELAY_MS)return;
+        if(now-lastDispatch<COMMAND_DELAY_MS){
+            lastDecision="Comando descartado pelo intervalo mínimo de 1,5s.";
+            return;
+        }
         lastDispatch=now;
         lastAt=now;lastCommand=command.phrase();
         try{
@@ -326,6 +382,7 @@ final class NexusVoiceCasting {
                 Object packet=type.getConstructor(boolean.class).newInstance(true);
                 PacketDistributor.sendToServer((CustomPacketPayload)packet);
                 lastOutcome="Cancelamento solicitado ao Iron's Spells.";
+                lastDecision=lastOutcome;
                 return;
             }
             if(clientIsCasting()){
@@ -346,8 +403,11 @@ final class NexusVoiceCasting {
             PacketDistributor.sendToServer((CustomPacketPayload)packet);
             lastOutcome="Conjuração solicitada: "+command.spellId().split(":")[1]+
                 " (mana e cooldown validados pelo servidor).";
+            lastDecision=lastOutcome;
         }catch(Throwable error){
-            lastOutcome="Integração com Iron's Spells indisponível nesta versão.";
+            lastOutcome="Integração com Iron's Spells indisponível: "+
+                error.getClass().getSimpleName();
+            lastDecision=lastOutcome;
         }
     }
     static boolean clientIsCasting(){
