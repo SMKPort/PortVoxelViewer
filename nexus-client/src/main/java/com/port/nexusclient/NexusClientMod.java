@@ -72,6 +72,7 @@ public class NexusClientMod {
         NexusAutoHeal.tick();
         NexusCombatMacro.tick();
         NexusBuffManager.tick();
+        NexusArcaneTravel.tick();
         Minecraft mc=Minecraft.getInstance();
         while(PRIVATE_KEY.consumeClick()){
             if(mc.player!=null&&mc.screen==null)
@@ -150,6 +151,61 @@ public class NexusClientMod {
                         NexusArcaneSensor.enabled(false);
                         notifyPlayer("Detecção de magia desligada.");return 1;
                     }))))
+            .then(Commands.literal("travel")
+                .then(Commands.literal("menu").executes(ctx -> {
+                    Minecraft mc=Minecraft.getInstance();
+                    if(mc.player!=null)mc.setScreen(new NexusTravelScreen(null));
+                    return 1;
+                }))
+                .then(Commands.literal("status").executes(ctx -> {
+                    notifyPlayer(NexusArcaneTravel.pendingStatus());
+                    notifyPlayer(NexusArcaneTravel.status());
+                    return 1;
+                }))
+                .then(Commands.literal("list").executes(ctx -> {
+                    var destinations=NexusArcaneTravel.known();
+                    notifyPlayer("Waystones ativadas/visíveis: "+destinations.size()
+                        +". Abra /nexusclient travel menu para navegar.");
+                    for(var target:destinations.stream().limit(16).toList())
+                        notifyPlayer(target.name()+" ["+target.dimension()+"] "
+                            +target.x()+" "+target.y()+" "+target.z());
+                    return 1;
+                }))
+                .then(Commands.literal("favorites").executes(ctx -> {
+                    var favorites=NexusArcaneTravel.favoritesSummary();
+                    if(favorites.isEmpty())notifyPlayer("Nenhum favorito salvo neste mundo.");
+                    else for(String item:favorites)notifyPlayer(item);
+                    return 1;
+                }))
+                .then(Commands.literal("favorite")
+                    .then(Commands.argument("alias",StringArgumentType.string())
+                    .then(Commands.argument("destination",StringArgumentType.greedyString())
+                        .executes(ctx -> {
+                            notifyPlayer(NexusArcaneTravel.favorite(
+                                StringArgumentType.getString(ctx,"alias"),
+                                StringArgumentType.getString(ctx,"destination")));
+                            return 1;
+                        }))))
+                .then(Commands.literal("remove")
+                    .then(Commands.argument("alias",StringArgumentType.greedyString())
+                        .executes(ctx -> {
+                            notifyPlayer(NexusArcaneTravel.removeFavorite(
+                                StringArgumentType.getString(ctx,"alias")));
+                            return 1;
+                        })))
+                .then(Commands.literal("go")
+                    .then(Commands.argument("destination",StringArgumentType.greedyString())
+                        .executes(ctx -> {
+                            notifyPlayer(NexusArcaneTravel.request(
+                                StringArgumentType.getString(ctx,"destination")));
+                            return 1;
+                        })))
+                .then(Commands.literal("confirm").executes(ctx -> {
+                    notifyPlayer(NexusArcaneTravel.confirm());return 1;
+                }))
+                .then(Commands.literal("cancel").executes(ctx -> {
+                    notifyPlayer(NexusArcaneTravel.cancel());return 1;
+                })))
             .then(Commands.literal("memory")
                 .then(Commands.literal("open").executes(ctx->{
                     Minecraft mc=Minecraft.getInstance();
