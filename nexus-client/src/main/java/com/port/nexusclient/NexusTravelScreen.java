@@ -13,6 +13,7 @@ final class NexusTravelScreen extends Screen {
     private static final int GOLD=0xFFE9BB68,WHITE=0xFFE8E2D8,MUTED=0xFFB9ABA4;
     private final Screen parent;
     private int page;
+    private int knownCount;
     private String aliasInput="";
     private String message="Clique em um destino para solicitar a viagem.";
     private EditBox aliasBox;
@@ -27,6 +28,7 @@ final class NexusTravelScreen extends Screen {
     @Override protected void init(){
         int x=left(),w=panelW(),top=82,step=25;
         List<NexusTravelPolicy.Destination> destinations=NexusArcaneTravel.known();
+        knownCount=destinations.size();
         int perPage=Math.max(2,Math.min(9,(height-163)/step));
         int pages=Math.max(1,(destinations.size()+perPage-1)/perPage);
         page=Math.max(0,Math.min(page,pages-1));
@@ -86,7 +88,7 @@ final class NexusTravelScreen extends Screen {
         graphics.fill(left()-5,8,left()+panelW()+5,height-8,0xF0140E15);
         graphics.fill(left()-5,8,left()+panelW()+5,11,0xFFE2B55C);
         graphics.drawCenteredString(font,"NEXUS ATERNA | ARCANE TRAVEL",width/2,18,GOLD);
-        graphics.drawCenteredString(font,"Waystones ativadas: "+NexusArcaneTravel.known().size()+
+        graphics.drawCenteredString(font,"Waystones ativadas: "+knownCount+
             " | Só via menu autorizado do Waystones",width/2,35,MUTED);
         int statusY=height-99;
         graphics.drawString(font,shortLabel(message,panelW()-20),left()+10,statusY,WHITE,false);
