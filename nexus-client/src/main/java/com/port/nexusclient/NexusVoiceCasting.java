@@ -64,6 +64,8 @@ final class NexusVoiceCasting {
     private static volatile String capturingMicrophone="",lastOpenedMicrophone="";
     private static volatile List<NexusVoiceGrammar.Spell> owned=List.of();
     private static volatile Map<String,NexusVoiceGrammar.Spell> grammar=Map.of();
+    // Updated on the client thread; read-only snapshot for the Vosk worker.
+    private static volatile List<String> travelVoicePhrases=List.of();
     private NexusVoiceCasting(){}
 
     private static synchronized void load(){
@@ -142,8 +144,9 @@ final class NexusVoiceCasting {
         load();
         if(closed)return;
         if(on){
-            if(!ModList.get().isLoaded("irons_spellbooks")){
-                status="Iron's Spells não instalado.";return;
+            if(!ModList.get().isLoaded("irons_spellbooks") &&
+               !ModList.get().isLoaded("waystones")){
+                status="Ative Iron's Spells ou Waystones para usar comandos de voz.";return;
             }
             if(!NexusVoiceModels.installed(state.language)){
                 status="Instale o modelo "+state.language.toUpperCase()+
@@ -179,14 +182,21 @@ final class NexusVoiceCasting {
         Minecraft mc=Minecraft.getInstance();
         boolean active=state.enabled&&mc.player!=null&&mc.level!=null&&
             mc.screen==null&&mc.isWindowActive()&&
-            ModList.get().isLoaded("irons_spellbooks")&&
+            (ModList.get().isLoaded("irons_spellbooks") ||
+                ModList.get().isLoaded("waystones"))&&
             NexusVoiceModels.installed(state.language);
         captureAllowed=active;
         if(!active)return;
         long now=System.currentTimeMillis();
         if(now-scanAt>=900){
             scanAt=now;
-            List<NexusVoiceGrammar.Spell> recent=equippedSpells(mc.player);
+            List<String> destinations=NexusArcaneTravel.voiceVocabulary();
+            if(!destinations.equals(travelVoicePhrases)){
+                travelVoicePhrases=destinations;
+                revision++;
+            }
+            List<NexusVoiceGrammar.Spell> recent=ModList.get().isLoaded("irons_spellbooks")
+                ? equippedSpells(mc.player):List.of();
             if(!recent.equals(owned)){
                 owned=recent;
                 grammar=NexusVoiceGrammar.phrases(recent);
@@ -248,7 +258,11 @@ final class NexusVoiceCasting {
                     if(recognizer!=null)recognizer.close();
                     Map<String,NexusVoiceGrammar.Spell> snapshot=grammar;
                     JsonArray phrases=new JsonArray();
-                    for(String phrase:NexusVoiceGrammar.vocabulary(snapshot))phrases.add(phrase);
+                    List<String> terms=new ArrayList<>(NexusVoiceGrammar.vocabulary(snapshot));
+                    terms.remove("[unk]");
+                    terms.addAll(travelVoicePhrases);
+                    terms.add("[unk]");
+                    for(String phrase:terms)phrases.add(phrase);
                     recognizer=new Recognizer(model,SAMPLE_RATE,phrases.toString());
                     recognizer.setWords(true);
                     loadedRevision=currentRevision;
@@ -275,8 +289,8 @@ final class NexusVoiceCasting {
                     capturingMicrophone=NexusMicrophones.displayName(requested);
                     lastOpenedMicrophone=capturingMicrophone;
                     ALC11.alcCaptureStart(device);
-                    status=grammar.isEmpty()?
-                        "Microfone: "+capturingMicrophone+". Equipe feitiços no Iron's Spells.":
+                    status=grammar.isEmpty() && travelVoicePhrases.isEmpty()?
+                        "Microfone: "+capturingMicrophone+". Equipe feitiços ou ative destinos.":
                         "Ouvindo em "+capturingMicrophone+". Diga 'Nexus, execute [feitiço]'.";
                 }
                 if(ALC10.alcGetInteger(device,ALC11.ALC_CAPTURE_SAMPLES)<SAMPLES_PER_CHUNK){
@@ -334,7 +348,9 @@ final class NexusVoiceCasting {
             }
             Map<String,NexusVoiceGrammar.Spell> lookup=grammar;
             NexusVoiceGrammar.Command command=NexusVoiceGrammar.recognize(phrase,lookup);
-            if(command==null){
+            NexusTravelPolicy.VoiceIntent travel=NexusTravelPolicy.interpretVoice(
+                phrase,travelVoicePhrases);
+            if(command==null&&travel==null){
                 lastDecision="Frase ouvida, porém fora dos comandos equipados do Nexus.";
                 return;
             }
@@ -344,6 +360,19 @@ final class NexusVoiceCasting {
                 return;
             }
             acceptedPhrases++;
+            if(travel!=null){
+                lastDecision="Comando de viagem reconhecido. Verificando confirmação local...";
+                Minecraft.getInstance().execute(()->{
+                    if(!enabled()||!captureAllowed||Minecraft.getInstance().screen!=null)return;
+                    long now=System.currentTimeMillis();
+                    if(now-lastDispatch<COMMAND_DELAY_MS)return;
+                    lastDispatch=now;lastAt=now;lastCommand=phrase;
+                    NexusArcaneTravel.handleVoice(travel);
+                    lastOutcome=NexusArcaneTravel.status();
+                    lastDecision=lastOutcome;
+                });
+                return;
+            }
             lastDecision="Comando aceito. Solicitando conjuração ao jogo...";
             Minecraft.getInstance().execute(()->dispatch(command));
         }catch(Exception error){
