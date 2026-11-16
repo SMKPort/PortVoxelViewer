@@ -180,25 +180,7 @@ final class NexusVoiceCasting {
             Class<?> spellData=Class.forName("io.redspace.ironsspellbooks.api.spells.SpellData");
             Class<?> spellClass=Class.forName("io.redspace.ironsspellbooks.api.spells.AbstractSpell");
             Object instance=manager.getConstructor(Player.class).newInstance(player);
-            // Iron's Spells 1.21.1 has getAllSpells(), NOT getSpellCount().
-            // The old reflective lookup always threw NoSuchMethodException,
-            // leaving the voice grammar empty and disabling all QuickCasts.
-            Object entries=manager.getMethod("getAllSpells").invoke(instance);
-            if(!(entries instanceof List<?> options))
-                throw new IllegalStateException("getAllSpells não retornou uma lista.");
-            int count=Math.min(128,options.size());
-            Method dataAt=manager.getMethod("getSpellData",int.class);
-            Method getSpell=spellData.getMethod("getSpell");
-            Method spellId=spellClass.getMethod("getSpellId");
-            for(int i=0;i<count;i++){
-                Object data=dataAt.invoke(instance,i);
-                if(data==null)continue;
-                Object spell=getSpell.invoke(data);
-                if(spell==null)continue;
-                String id=String.valueOf(spellId.invoke(spell));
-                if(id.matches("[a-z0-9_.-]+:[a-z0-9_./-]+"))
-                    result.add(new NexusVoiceGrammar.Spell(id,i));
-            }
+            result.addAll(NexusSpellAccess.listEquipped(instance,spellData,spellClass));
         }catch(Throwable exception){
             // Fails closed. Cannot voice-cast with an unknown spell selection API.
             status="Não consegui ler os feitiços equipados do Iron's Spells.";
