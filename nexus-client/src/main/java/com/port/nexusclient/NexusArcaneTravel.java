@@ -232,7 +232,7 @@ final class NexusArcaneTravel {
     static synchronized List<String> voiceVocabulary(){
         if(!NexusWaystoneBridge.present())return List.of();
         LinkedHashSet<String> names=new LinkedHashSet<>();
-        for(var value:aliases().keySet())names.add(value);
+        aliases().keySet().stream().sorted().forEach(names::add);
         for(var target:known())names.add(target.name());
         return NexusTravelPolicy.voicePhrases(names);
     }
