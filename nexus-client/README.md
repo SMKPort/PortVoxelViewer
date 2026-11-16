@@ -1,5 +1,71 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
+## Nexus Aterna 3.0.0-alpha.2 | VoiceCast direto e bilíngue (PT+EN)
+
+### Falar o nome da magia, sem "execute" e sem traduções manuais
+
+As magias **equipadas** no Iron's Spells entram automaticamente na gramática
+por seus identificadores. Por exemplo,
+`irons_spellbooks:divine_smite` vira `Divine Smite`,
+`irons_spellbooks:fire_bolt` vira `Fire Bolt` e magias adicionadas
+por outros mods também são incluídas quando detectadas na roda de magias.
+
+```text
+Nexus, Divine Smite
+Nexus, Sunbeam
+Nexus, Fire Bolt
+Nexus, Healing Circle
+Nexus, cancelar
+```
+
+O formato antigo `Nexus, execute Divine Smite` continua funcionando.
+Não é necessário cadastrar uma tradução de cada feitiço. O nome vem do
+identificador da magia equipada, e não de um dicionário manual. Se o nome
+mostrado na tela for muito diferente do identificador, o Nexus poderá
+precisar de um alias específico numa atualização posterior. Magias não
+equipadas ou nomes ambíguos nunca são conjurados automaticamente.
+
+### Modo AUTO: reconhecimento offline em português e inglês
+
+- Acesse **F8 > COMBATE > MODO** para alternar `AUTO`, `EN` e `PT`.
+- Em `AUTO`, se os modelos Vosk PT e EN estiverem instalados, os dois
+  analisam o **mesmo microfone local**. Um seletor compara os comandos
+  reconhecidos e rejeita resultados contraditórios. Só um comando pode
+  disparar por frase.
+- Se apenas um modelo estiver instalado, o modo AUTO usa esse modelo
+  até que o outro seja instalado. **Para melhorar nomes ingleses,
+  instale o modelo EN.** Os downloads são opt-in, pela interface ou
+  pelos comandos abaixo. Mais de um modelo usa mais RAM/CPU.
+- Uma configuração antiga com idioma `pt` permanece `pt` até você
+  escolher `auto`. Nenhum microfone é ativado automaticamente ao
+  abrir o Minecraft.
+
+```text
+/nexusclient voicecast model auto
+/nexusclient voicecast model install en
+/nexusclient voicecast model install pt
+/nexusclient voicecast on
+/nexusclient voicecast spells
+/nexusclient voicecast check Nexus Divine Smite
+/nexusclient voicecast diagnose
+```
+
+Depois de instalar os modelos, altere o modo para AUTO antes de ativar a
+voz. O comando `check` testa o índice sem conjurar. Na sessão, use F6
+para desligar ou reativar o microfone.
+
+A gravação fica somente em memória durante a detecção e não é
+transmitida ao Render ou à IA remota. O Nexus envia apenas a solicitação
+normal de `QuickCastPacket` ao servidor quando a frase corresponde a
+um feitiço equipado, com cooldown mínimo e permissão de voz já ativa.
+Mana, cooldowns e permissão final continuam sendo validados pelo
+Iron's Spells/servidor.
+
+> O teste automatizado prova o mapeamento e a arbitragem de comandos.
+> A acurácia real com sotaque, ruído e áudio do jogo precisa ser testada
+> dentro do Somake, especialmente usando o modelo Vosk pequeno.
+
+
 ## Nexus Aterna 3.0 (branch de desenvolvimento): Arcane Travel com Waystones
 
 O **Arcane Travel** integra o Nexus ao Waystones 1.21.1 NeoForge, de forma
