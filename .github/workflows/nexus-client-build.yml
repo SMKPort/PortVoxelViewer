@@ -1,7 +1,7 @@
 name: Nexus Aterna Client NeoForge 1.21.1
 on:
   push:
-    branches: [nexus-aterna-rp]
+    branches: [nexus-aterna-rp, 'nexus-aterna-3.0']
     paths:
       - 'nexus-client/**'
       - '.github/workflows/nexus-client-build.yml'
