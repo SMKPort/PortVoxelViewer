@@ -1,5 +1,72 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
+## Nexus Aterna 3.0 (branch de desenvolvimento): Arcane Travel com Waystones
+
+O **Arcane Travel** integra o Nexus ao Waystones 1.21.1 NeoForge, de forma
+opcional e exclusivamente client-side. As demais funções da 2.9.4 permanecem
+inalteradas. O Nexus lê a lista de Waystones **ativadas e sincronizadas com o
+cliente**, e também os destinos apresentados no menu oficial de seleção.
+A lista não inclui waystones secretas do servidor.
+
+### No jogo
+
+- Abra `F8 > MEMÓRIAS > ARCANE TRAVEL | WAYSTONES` para ver os destinos.
+- Clique num destino para solicitar e depois em **CONFIRMAR**.
+- O Nexus tentará abrir a tela oficial de seleção quando o botão de inventário
+  estiver habilitado no modo **ANY**. Caso contrário, abra uma Waystone ou
+  use um item normal do Waystones para abrir a seleção em até 90 segundos.
+- O destino deve estar **presente no menu enviado pelo servidor**. O Nexus só
+  envia o pacote `SelectWaystoneMessage` existente do Waystones. O servidor
+  é responsável por validar custos, cooldowns e permissão do teleporte.
+- A viagem é solicitada apenas **uma vez**. "Solicitado" não significa que
+  o servidor concluiu o teleporte.
+
+### Comandos de chat do cliente
+
+```text
+/nexusclient travel menu
+/nexusclient travel list
+/nexusclient travel favorites
+/nexusclient travel favorite casa "Casa do Port"
+/nexusclient travel favorite oficina "Oficina Arcana"
+/nexusclient travel remove casa
+/nexusclient travel go casa
+/nexusclient travel confirm
+/nexusclient travel cancel
+/nexusclient travel status
+```
+
+O favorito associa um apelido a um UUID de Waystone disponível no cliente.
+Eles ficam em `config/nexus-waystones.json`, separados por hash do endereço do
+servidor ou nome do mundo single-player. Não é feito upload para Render.
+Favoritos sem Waystone disponível não permitem teleporte.
+
+Com **F6** e modelo Vosk PT instalado, experimente:
+```text
+Nexus, me leve para casa
+Nexus, confirmar viagem
+Nexus, cancelar viagem
+```
+A voz exige frases correspondentes aos destinos conhecidos ou favoritos.
+O reconhecimento é local; a confirmação deve acontecer em até 45 segundos
+do pedido. O microfone não é ativado automaticamente e o VoiceCast não pode
+interagir com a lista de seleção enquanto menus estiverem abertos, por isso
+a confirmação deve ser feita **antes** de abrir o menu oficial.
+
+### Segurança e limitações
+
+- Acesso ao Waystones é opcional e via reflexão (sem adicionar mod obrigatório).
+- Sem Waystones: nenhum crash e nenhuma tentativa de teleporte.
+- Os menus do Waystones só abrem automaticamente se a opção de inventário
+  estiver em **ANY**, porque outros modos podem realizar viagens diretas sem
+  exibir a lista de destinos. Nunca presumimos essa permissão.
+- `/nexusclient permissions off` cancela pedidos pendentes.
+- Alterar de mundo/servidor, expirar o prazo ou abrir seleção sem o destino
+  disponível cancela a ação.
+- A API é de Waystones 1.21.1 e poderá variar entre builds. **Ainda precisa
+  ser validada no Somake** com um destino real. A aprovação do CI confirma
+  compilação e regras unitárias, não aprovação do servidor.
+
 ## Nexus Client 2.9.4: VoiceCast corrigido e gerenciador de buffs
 
 ### Correção de conjuração por voz
