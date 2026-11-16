@@ -602,14 +602,32 @@ public class NexusClientMod {
                 }))
                 .then(Commands.literal("model")
                     .then(Commands.literal("install").executes(ctx->{
-                        if(NexusVoiceModels.install(NexusVoiceCasting.language()))
-                            notifyPlayer("Download solicitado do Vosk "+NexusVoiceCasting.language().toUpperCase()+
-                                ". Progresso no /nexusclient voicecast status.");
+                        String requested=NexusVoiceModels.nextMissing(NexusVoiceCasting.language());
+                        if(requested.isEmpty())notifyPlayer("Modelos PT e EN já estão instalados.");
+                        else if(NexusVoiceModels.install(requested))
+                            notifyPlayer("Download solicitado do Vosk "+requested.toUpperCase()
+                                +". Instale o outro modelo para reconhecer PT+EN simultaneamente.");
                         else notifyPlayer(NexusVoiceModels.status());
                         return 1;
+                    })
+                    .then(Commands.literal("en").executes(ctx->{
+                        notifyPlayer(NexusVoiceModels.install("en")?
+                            "Instalação do modelo inglês solicitada.":NexusVoiceModels.status());
+                        return 1;
                     }))
+                    .then(Commands.literal("pt").executes(ctx->{
+                        notifyPlayer(NexusVoiceModels.install("pt")?
+                            "Instalação do modelo português solicitada.":NexusVoiceModels.status());
+                        return 1;
+                    })))
                     .then(Commands.literal("status").executes(ctx->{
                         notifyPlayer("Modelo: "+NexusVoiceModels.status());return 1;
+                    }))
+                    .then(Commands.literal("auto").executes(ctx->{
+                        NexusVoiceCasting.setLanguage("auto");
+                        notifyPlayer("Modo automático PT+EN selecionado. Instale os dois modelos "
+                            +"em /nexusclient voicecast model install para usar os dois idiomas.");
+                        return 1;
                     }))
                     .then(Commands.literal("pt").executes(ctx->{
                         NexusVoiceCasting.setLanguage("pt");
