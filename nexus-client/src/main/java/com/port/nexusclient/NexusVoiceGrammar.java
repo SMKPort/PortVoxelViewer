@@ -34,6 +34,11 @@ final class NexusVoiceGrammar {
         // Common English spell names spoken with a Brazilian Portuguese accent.
         if(spellId.endsWith(":sunbeam")){
             result.add("sun beam");result.add("san bim");
+            result.add("raio solar");result.add("raio de sol");
+        }else if(spellId.endsWith(":heal")){
+            result.add("cura");result.add("curar");
+        }else if(spellId.endsWith(":divine_smite")){
+            result.add("julgamento divino");result.add("golpe divino");
         }
         return List.copyOf(result);
     }
