@@ -1,5 +1,102 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
+## Nexus Client 2.9.4: VoiceCast corrigido e gerenciador de buffs
+
+### Correção de conjuração por voz
+
+A versão 2.9.3 acessava um método **inexistente** da API do
+Iron's Spells 1.21.1: `SpellSelectionManager.getSpellCount()`.
+O método dessa versão é **`getAllSpells()`**. A exceção era
+silenciada e o vocabulário ficava sem feitiços equipados, impedindo
+Sunbeam, Heal e Divine Smite de serem encontrados pelo Nexus.
+
+A versão 2.9.4 usa um adaptador reflexivo testado contra a API pública
+`getAllSpells()/getSpellData()` e ignora feitiços bloqueados e slots
+vazios. Os testes incluem um gerenciador propositalmente **sem**
+`getSpellCount()` para impedir que esse erro volte.
+
+Para usar com o modelo gratuito Vosk PT, foram adicionados nomes
+alternativos em português. Exemplos:
+```text
+Nexus, execute Sunbeam
+Nexus, execute raio solar
+Nexo, execute cura
+Nexus, execute julgamento divino
+Nexus, cancelar
+```
+Os nomes alternativos só são reconhecidos se a magia correspondente
+estiver **equipada** no índice do Iron's Spells. Não executam ações
+ou magias extras.
+
+**Diagnóstico no jogo:**
+```text
+/nexusclient voicecast status
+/nexusclient voicecast diagnose
+/nexusclient voicecast spells
+/nexusclient voicecast check Nexus execute Sunbeam
+```
+O comando `check` testa a frase sem lançar magia e informa qual slot
+seria usado. O `diagnose` diferencia modelo indisponível, microfone
+fechado, quantidade de magias detectadas, nível atual do áudio, frases
+reconhecidas pelo Vosk, confiança e último motivo de recusa. Essas
+informações ficam **locais ao Minecraft**, sem gravar áudio ou enviar
+transcrição ao servidor Render. O comando de diagnóstico só mostra os
+resultados já recebidos pelo cliente. Para testar a captura, ative o
+VoiceCast com **F6**, feche menus, fale e execute `diagnose`.
+
+Mesmo com a correção da API, a exatidão do Vosk e a aceitação do
+QuickCast no seu servidor precisam ser verificadas dentro do jogo.
+O status "conjuração solicitada" não garante que o servidor autorizou
+o feitiço; mana e cooldown continuam sendo validados pelo Iron's Spells.
+
+### Buffs: cadastrar pelo item segurado
+
+Os itens do print foram fornecidos apenas como **referência visual**.
+Não é seguro identificar IDs de itens de mods por pixels, por isso
+o Nexus oferece cadastro no próprio inventário.
+
+Abra **F8 > Combate > GERENCIAR BUFFS DA HOTBAR** ou use:
+```text
+/nexusclient buffs menu
+/nexusclient buffs add manual
+/nexusclient buffs add combat
+/nexusclient buffs list
+/nexusclient buffs use 1
+/nexusclient buffs on
+/nexusclient buffs off
+```
+
+Segure cada consumível na hotbar antes de registrar. O Nexus salva
+o ID real e os componentes, incluindo as características específicas
+de poções com cores/efeitos diferentes, em
+`config/nexus-buffs.json`.
+
+O modo **MANUAL** permite solicitar o uso de um item autorizado.
+No modo **COMBATE**, o Nexus só tenta usar um item autorizado depois
+de um ataque, e somente quando a automação estiver explicitamente
+ligada. Ele verifica efeitos positivos de poções, cooldown do item,
+janela de combate e se você já está usando outra coisa. Há um intervalo
+mínimo de dois minutos entre usos automáticos do mesmo item e, no
+máximo, dois buffs automáticos por período de combate.
+
+Por padrão, o Nexus **não gasta a última unidade** de um consumível
+automaticamente. Existe uma permissão explícita por item caso o
+Port queira autorizar isso. Itens não cadastrados jamais entram no
+gerenciador. O cliente procura os itens apenas nas nove posições da
+hotbar e usa o mecanismo normal de clique direito, sujeito ao servidor.
+Tenta restaurar o slot anterior após a utilização.
+
+**Limites:** acessórios passivos e itens que precisam ser equipados
+em slots de outros mods não podem ser ativados pelo gerenciador
+genérico de clique direito. Buffs de mods com ativações especiais
+podem exigir integração própria. As configurações de buffs automáticos
+começam desligadas e não são ativadas por "Ativar tudo".
+`/nexusclient permissions off` também os desativa.
+
+**Teste necessário:** a compilação Java e os testes de lógica não
+substituem um teste no seu modpack. Comece com um frasco sem efeitos
+nocivos, primeiro no modo manual, antes de autorizar o uso automático.
+
 ## Nexus Client 2.9.3: macros arcanas e Julgamento Divino
 
 O Nexus ganhou a primeira macro de combate configurável, chamada
