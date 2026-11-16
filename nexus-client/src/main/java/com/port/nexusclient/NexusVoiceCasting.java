@@ -180,7 +180,13 @@ final class NexusVoiceCasting {
             Class<?> spellData=Class.forName("io.redspace.ironsspellbooks.api.spells.SpellData");
             Class<?> spellClass=Class.forName("io.redspace.ironsspellbooks.api.spells.AbstractSpell");
             Object instance=manager.getConstructor(Player.class).newInstance(player);
-            int count=Math.max(0,Math.min(128,(int)manager.getMethod("getSpellCount").invoke(instance)));
+            // Iron's Spells 1.21.1 has getAllSpells(), NOT getSpellCount().
+            // The old reflective lookup always threw NoSuchMethodException,
+            // leaving the voice grammar empty and disabling all QuickCasts.
+            Object entries=manager.getMethod("getAllSpells").invoke(instance);
+            if(!(entries instanceof List<?> options))
+                throw new IllegalStateException("getAllSpells não retornou uma lista.");
+            int count=Math.min(128,options.size());
             Method dataAt=manager.getMethod("getSpellData",int.class);
             Method getSpell=spellData.getMethod("getSpell");
             Method spellId=spellClass.getMethod("getSpellId");
