@@ -56,7 +56,7 @@ final class NexusVoiceCasting {
     private static volatile long lastAt;
     private static volatile String lastTranscript="",lastDecision="Nenhuma frase analisada.",spellError="";
     private static volatile float lastConfidence;
-    private static volatile int spellCount;
+    private static volatile int spellCount,inputLevel;
     private static volatile long audioFrames,finalPhrases,acceptedPhrases;
     private static long lastDispatch,scanAt;
     private static volatile long revision;
@@ -119,7 +119,8 @@ final class NexusVoiceCasting {
     static String diagnostics(){
         return "MIC "+(capturingMicrophone.isBlank()?"fechado":capturingMicrophone)+
             " | Modelo "+(NexusVoiceModels.installed(language())?"OK":"ausente")+
-            " | Magias "+spellCount+" | Áudio "+audioFrames+" blocos"+
+            " | Magias "+spellCount+" | Nível de áudio "+inputLevel+
+            " | Áudio "+audioFrames+" blocos"+
             " | Frases "+finalPhrases+" | Comandos "+acceptedPhrases;
     }
     static String recognitionReport(){
@@ -288,7 +289,8 @@ final class NexusVoiceCasting {
                     int value=(short)((samples[i]&0xff)|((samples[i+1]&0xff)<<8));
                     meanSquares+=(double)value*value;
                 }
-                if(Math.sqrt(meanSquares/SAMPLES_PER_CHUNK)>240)spokenFrames++;
+                inputLevel=(int)Math.min(32767,Math.sqrt(meanSquares/SAMPLES_PER_CHUNK));
+                if(inputLevel>240)spokenFrames++;
                 if(recognizer.acceptWaveForm(samples,samples.length)){
                     String result=recognizer.getResult();
                     int frames=spokenFrames;spokenFrames=0;
