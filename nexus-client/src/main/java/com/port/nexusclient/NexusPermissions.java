@@ -47,6 +47,8 @@ final class NexusPermissions {
     }
 
     static void off() {
+        // Stop pending trips even if voice/memory flags were previously authorized.
+        NexusArcaneTravel.cancel();
         // Stop capture and outgoing messages before changing secondary settings.
         ClientConfig.allowChat = false;
         ClientConfig.allowTelemetry = false;
