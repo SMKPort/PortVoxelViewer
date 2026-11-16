@@ -24,7 +24,7 @@ public final class NexusTravelPolicyTest {
             "Unique partial match may be suggested.");
         check(!NexusTravelPolicy.resolve("desatualizado",list,aliases).found(),
             "Stale favorites must not teleport to an unknown destination.");
-        check(!NexusTravelPolicy.resolve("c",list,Map.of()).found(),
+        check(!NexusTravelPolicy.resolve("inexistente",list,Map.of()).found(),
             "Unmatched destination must be rejected.");
         var duplicateNames=List.of(casa,new NexusTravelPolicy.Destination(duplicate,"Casa do Port",
             "minecraft:overworld",900,80,900));
