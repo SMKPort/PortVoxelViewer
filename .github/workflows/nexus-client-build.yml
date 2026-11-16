@@ -124,6 +124,14 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusMacroPolicy.java \
             nexus-client/verification/NexusMacroPolicyTest.java
           java -ea -cp /tmp/nexus-macro-tests com.port.nexusclient.NexusMacroPolicyTest
+      - name: Test real Iron's Spells 1.21 spell wheel reflection
+        run: |
+          mkdir -p /tmp/nexus-spellwheel-tests
+          javac -encoding UTF-8 -d /tmp/nexus-spellwheel-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusVoiceGrammar.java \
+            nexus-client/src/main/java/com/port/nexusclient/NexusSpellAccess.java \
+            nexus-client/verification/NexusSpellAccessTest.java
+          java -ea -cp /tmp/nexus-spellwheel-tests com.port.nexusclient.NexusSpellAccessTest
       - name: Compile mod
         run: gradle -p nexus-client build --no-daemon --stacktrace
       - name: Upload JAR
