@@ -85,6 +85,12 @@ final class NexusPermissionsScreen extends Screen {
                 button->minecraft.setScreen(new NexusMemoryScreen(this)))
                 .bounds(x+6,buttonY,w-12,20).build());
         }
+        if(tab==Tab.MEMORIAS&&height>=310){
+            int buttonY=height>=340?268:244;
+            addRenderableWidget(Button.builder(Component.literal("§6ARCANE TRAVEL | WAYSTONES"),
+                button->minecraft.setScreen(new NexusTravelScreen(this)))
+                .bounds(x+6,buttonY,w-12,20).build());
+        }
         if(tab==Tab.COMBATE){
             int y=145;
             if(height>=230){
