@@ -48,6 +48,31 @@ public final class NexusMacroSequencePolicyTest {
             10_000,6_000,true),"Do not interrupt a spell currently casting.");
         check(NexusMacroSequencePolicy.canRequest(16_001,16_000,
             10_000,6_000,false),"May request the next spell after the shared interval.");
+        check(NexusMacroSequencePolicy.DEFAULT_INTERVAL_SECONDS==6,
+            "Macros antigos preservam intervalo padrão de seis segundos.");
+        check(NexusMacroSequencePolicy.normalizedInterval(0)==6,
+            "Um campo legado ausente deve migrar para seis segundos.");
+        check(NexusMacroSequencePolicy.intervalMs(2)==2_000L,
+            "Intervalo configurado de dois segundos deve ter efeito real.");
+        check(NexusMacroSequencePolicy.intervalMs(3)==3_000L,
+            "Intervalo configurado de três segundos deve ter efeito real.");
+        check(NexusMacroSequencePolicy.intervalMs(30)==30_000L,
+            "Intervalo máximo de trinta segundos deve ser aceito.");
+        check(!NexusMacroSequencePolicy.validInterval(1)&&
+            !NexusMacroSequencePolicy.validInterval(31),
+            "Intervalos fora do limite são rejeitados.");
+        check(NexusMacroSequencePolicy.validInterval(2)&&
+            NexusMacroSequencePolicy.validInterval(30),
+            "Extremos do intervalo são válidos.");
+        check(!NexusMacroSequencePolicy.canRequest(12_900,13_000,
+            10_000,2_000,false),
+            "Três segundos configurados nunca autorizam lançamento antecipado.");
+        check(NexusMacroSequencePolicy.canRequest(13_000,13_000,
+            10_000,2_000,false),
+            "Sequência pode avançar após três segundos mesmo com antigo padrão 6s.");
+        check(!NexusMacroSequencePolicy.canRequest(13_000,13_000,
+            10_000,6_000,false),
+            "Proteção antiga de 6s seria bloqueio e não deve ser usada na fila.");
         check(!NexusMacroSequencePolicy.expired(15_000,10_000),
             "Short queued sequence remains active.");
         check(NexusMacroSequencePolicy.expired(131_000,10_000),
