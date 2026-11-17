@@ -32,6 +32,10 @@ public final class NexusPermissionsSmokeTest {
         NexusAutoHeal.enabled=false;
         NexusBlessing.enabled=false;
         NexusCombatMacro.active=false;
+        NexusCognition.monitor=false;
+        NexusCognition.emergency=false;
+        NexusCombatInsights.enabled=false;
+        NexusNarrativeJournal.auto=false;
         NexusVoiceCasting.on=false;
         NexusArcaneTravel.pending=false;
         NexusArcaneSensor.on=false;
@@ -55,6 +59,8 @@ public final class NexusPermissionsSmokeTest {
         check(!NexusAutoHeal.enabled,
             "Global enable must not spend Heal mana without separate authorization.");
         check(!NexusCombatMacro.active,"Global enable must not activate offensive macros.");
+        check(!NexusCognition.monitor&&!NexusCognition.emergency,
+            "Global enable must not arm emergency automation without consent.");
         check(NexusArcaneSensor.on&&NexusHudSettings.combat&&NexusHudSettings.magic,
             "HUD and client-side magic readings are included in global enable.");
         check(!NexusHearing.listening && !NexusHearing.memory &&
@@ -65,10 +71,17 @@ public final class NexusPermissionsSmokeTest {
         NexusAutoHeal.enabled=true;
         NexusBlessing.enabled=true;
         NexusCombatMacro.active=true;
+        NexusCognition.monitor=true;NexusCognition.emergency=true;
+        NexusCombatInsights.enabled=true;
+        NexusNarrativeJournal.auto=true;
         NexusArcaneTravel.pending=true;
         NexusPermissions.off();
         check(!NexusArcaneTravel.pending, "Global off cancels pending Waystones requests.");
         check(!NexusCombatMacro.active,"Global off stops offensive macros.");
+        check(!NexusCognition.monitor&&!NexusCognition.emergency,
+            "Global off revokes Nexus 4 contextual emergency permissions.");
+        check(!NexusCombatInsights.enabled&&!NexusNarrativeJournal.auto,
+            "Global off revokes diagnostic and automated journal logging.");
         check(!NexusAutoHeal.enabled,"Global off must stop automatic healing.");
         check(!NexusBlessing.enabled,"Global off must stop automatic Blessing renewals.");
         check(!NexusVoiceCasting.on,"Disable everything closes the local microphone.");
@@ -213,4 +226,19 @@ final class NexusBlessing {
     static boolean enabled;
     static void setEnabled(boolean on){enabled=on;}
     static String summary(){return enabled?"Blessing ON":"Blessing OFF";}
+}
+
+/** Stand-ins for Nexus 4 opt-in modules in isolated global permission tests. */
+final class NexusCognition {
+    static boolean monitor,emergency;
+    static void off(){monitor=false;emergency=false;}
+    static String status(){return "nexus4";}
+}
+final class NexusCombatInsights {
+    static boolean enabled;
+    static void setEnabled(boolean on){enabled=on;}
+}
+final class NexusNarrativeJournal {
+    static boolean auto;
+    static void autoCritical(boolean on){auto=on;}
 }
