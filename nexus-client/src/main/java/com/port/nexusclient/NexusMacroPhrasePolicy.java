@@ -16,7 +16,8 @@ final class NexusMacroPhrasePolicy {
     private static final List<String> WAKE=List.of("nexus","nexo","nexos");
     private static final Set<String> RESERVED=Set.of(
         "cancelar","cancele","cancel","execute","executa","lance","cast",
-        "ativar","ativar macro","macro","stop","parar");
+        "ativar","ativar macro","macro","stop","parar",
+        "situacao atual","relatorio de situacao");
     private NexusMacroPhrasePolicy(){}
 
     static String normalize(String text){
