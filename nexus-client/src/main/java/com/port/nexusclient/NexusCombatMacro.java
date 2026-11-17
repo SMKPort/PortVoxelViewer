@@ -308,6 +308,10 @@ final class NexusCombatMacro {
         return lastOutcome="Ordem atualizada: "+String.join(" > ",current.sequence);
     }
     static synchronized boolean running(){return running!=null;}
+    static synchronized boolean dispatchedRecently(long now,long gapMillis){
+        return lastAnyCastAt>=0&&now>=lastAnyCastAt&&
+            now-lastAnyCastAt<gapMillis;
+    }
     static synchronized String queueStatus(){
         if(running==null)return "Nenhuma sequência em execução.";
         return "Sequência "+running.macroKey+": "+running.index+"/"+running.spells.size()+
