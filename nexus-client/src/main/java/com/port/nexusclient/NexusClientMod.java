@@ -442,6 +442,20 @@ public class NexusClientMod {
                         return 1;
                     }))))
             .then(Commands.literal("buffs")
+                .then(Commands.literal("inventory")
+                    .then(Commands.literal("on").executes(ctx->{
+                        NexusBuffManager.inventoryEnabled(true);
+                        notifyPlayer(NexusBuffManager.status());return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx->{
+                        NexusBuffManager.inventoryEnabled(false);
+                        notifyPlayer(NexusBuffManager.status());return 1;
+                    }))
+                    .then(Commands.literal("status").executes(ctx->{
+                        notifyPlayer("Busca de buffs no inventário: "+
+                            (NexusBuffManager.inventoryEnabled()?"ON":"OFF"));
+                        notifyPlayer(NexusBuffManager.status());return 1;
+                    })))
                 .then(Commands.literal("menu").executes(ctx->{
                     Minecraft mc=Minecraft.getInstance();
                     if(mc.player!=null)mc.setScreen(new NexusBuffScreen(null));
