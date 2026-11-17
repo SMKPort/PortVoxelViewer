@@ -57,13 +57,10 @@ public class NexusClientMod {
 
     private void onShutdown(GameShuttingDownEvent event){
         NexusVoiceCasting.shutdown();
-        NexusBuffManager.shutdown();
     }
 
     private void onAttackEntity(AttackEntityEvent event){
         NexusCombatMacro.onAttack(event);
-        if(Minecraft.getInstance().player==event.getEntity())
-            NexusBuffManager.markCombat();
     }
 
     private void onTick(ClientTickEvent.Post event) {
@@ -71,7 +68,6 @@ public class NexusClientMod {
         NexusVoiceCasting.tick();
         NexusAutoHeal.tick();
         NexusCombatMacro.tick();
-        NexusBuffManager.tick();
         NexusBlessing.tick();
         NexusArcaneTravel.tick();
         Minecraft mc=Minecraft.getInstance();
@@ -439,70 +435,6 @@ public class NexusClientMod {
                             NexusCombatMacro.setSpell(StringArgumentType.getString(ctx,"id"));
                             notifyPlayer("Feitiço da macro: "+NexusCombatMacro.spell());
                         }catch(Exception ex){notifyPlayer(ex.getMessage());}
-                        return 1;
-                    }))))
-            .then(Commands.literal("buffs")
-                .then(Commands.literal("inventory")
-                    .then(Commands.literal("on").executes(ctx->{
-                        NexusBuffManager.inventoryEnabled(true);
-                        notifyPlayer(NexusBuffManager.status());return 1;
-                    }))
-                    .then(Commands.literal("off").executes(ctx->{
-                        NexusBuffManager.inventoryEnabled(false);
-                        notifyPlayer(NexusBuffManager.status());return 1;
-                    }))
-                    .then(Commands.literal("status").executes(ctx->{
-                        notifyPlayer("Busca de buffs no inventário: "+
-                            (NexusBuffManager.inventoryEnabled()?"ON":"OFF"));
-                        notifyPlayer(NexusBuffManager.status());return 1;
-                    })))
-                .then(Commands.literal("menu").executes(ctx->{
-                    Minecraft mc=Minecraft.getInstance();
-                    if(mc.player!=null)mc.setScreen(new NexusBuffScreen(null));
-                    return 1;
-                }))
-                .then(Commands.literal("status").executes(ctx->{
-                    notifyPlayer((NexusBuffManager.enabled()?"Buffs automáticos ON":"Buffs automáticos OFF")+
-                        " | "+NexusBuffManager.status());return 1;
-                }))
-                .then(Commands.literal("list").executes(ctx->{
-                    var items=NexusBuffManager.entries();
-                    notifyPlayer("Buffs autorizados: "+items.size()+"/8.");
-                    for(var e:items)
-                        notifyPlayer("#"+e.id+" ["+e.mode+"] "+e.name+" ("+e.itemId+")");
-                    return 1;
-                }))
-                .then(Commands.literal("add")
-                    .then(Commands.literal("combat").executes(ctx->{
-                        try{var e=NexusBuffManager.registerHeld(NexusBuffManager.COMBAT);
-                            notifyPlayer("Buff "+e.name+" cadastrado para combate.");}
-                        catch(Exception e){notifyPlayer(e.getMessage());}
-                        return 1;
-                    }))
-                    .then(Commands.literal("manual").executes(ctx->{
-                        try{var e=NexusBuffManager.registerHeld(NexusBuffManager.MANUAL);
-                            notifyPlayer("Buff "+e.name+" cadastrado para uso manual.");}
-                        catch(Exception e){notifyPlayer(e.getMessage());}
-                        return 1;
-                    })))
-                .then(Commands.literal("on").executes(ctx->{
-                    NexusBuffManager.setEnabled(true);
-                    notifyPlayer("Buffs automáticos ON. Só itens cadastrados serão usados.");
-                    return 1;
-                }))
-                .then(Commands.literal("off").executes(ctx->{
-                    NexusBuffManager.setEnabled(false);
-                    notifyPlayer("Buffs automáticos OFF.");return 1;
-                }))
-                .then(Commands.literal("use")
-                    .then(Commands.argument("id",
-                        com.mojang.brigadier.arguments.LongArgumentType.longArg(1))
-                    .executes(ctx->{
-                        try{
-                            long id=com.mojang.brigadier.arguments.LongArgumentType.getLong(ctx,"id");
-                            NexusBuffManager.useNow(id);
-                            notifyPlayer(NexusBuffManager.status());
-                        }catch(Exception e){notifyPlayer(e.getMessage());}
                         return 1;
                     }))))
             .then(Commands.literal("blessing")
