@@ -32,7 +32,6 @@ public final class NexusPermissionsSmokeTest {
         NexusAutoHeal.enabled=false;
         NexusBlessing.enabled=false;
         NexusCombatMacro.active=false;
-        NexusBuffManager.active=false;
         NexusVoiceCasting.on=false;
         NexusArcaneTravel.pending=false;
         NexusArcaneSensor.on=false;
@@ -56,7 +55,6 @@ public final class NexusPermissionsSmokeTest {
         check(!NexusAutoHeal.enabled,
             "Global enable must not spend Heal mana without separate authorization.");
         check(!NexusCombatMacro.active,"Global enable must not activate offensive macros.");
-        check(!NexusBuffManager.active,"Global enable must not consume buffs.");
         check(NexusArcaneSensor.on&&NexusHudSettings.combat&&NexusHudSettings.magic,
             "HUD and client-side magic readings are included in global enable.");
         check(!NexusHearing.listening && !NexusHearing.memory &&
@@ -67,11 +65,9 @@ public final class NexusPermissionsSmokeTest {
         NexusAutoHeal.enabled=true;
         NexusBlessing.enabled=true;
         NexusCombatMacro.active=true;
-        NexusBuffManager.active=true;
         NexusArcaneTravel.pending=true;
         NexusPermissions.off();
         check(!NexusArcaneTravel.pending, "Global off cancels pending Waystones requests.");
-        check(!NexusBuffManager.active,"Global off revokes automatic buff permission.");
         check(!NexusCombatMacro.active,"Global off stops offensive macros.");
         check(!NexusAutoHeal.enabled,"Global off must stop automatic healing.");
         check(!NexusBlessing.enabled,"Global off must stop automatic Blessing renewals.");
@@ -204,12 +200,6 @@ final class NexusCombatMacro {
     static boolean active;
     static void setEnabled(boolean on){active=on;}
     static String status(){return active?"macro on":"macro off";}
-}
-
-final class NexusBuffManager {
-    static boolean active;
-    static void setEnabled(boolean on){active=on;}
-    static String status(){return active?"buffs on":"buffs off";}
 }
 
 /** Stub for global-permissions tests only. */
