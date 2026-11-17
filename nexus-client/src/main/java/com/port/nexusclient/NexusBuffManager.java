@@ -303,12 +303,11 @@ final class NexusBuffManager {
         if(!inventoryEnabled()||mc.player==null||mc.gameMode==null||
             mc.player.containerMenu!=mc.player.inventoryMenu)return;
         int selected=mc.player.getInventory().selected;
-        int target=-1;
-        // Preserve the player's selected weapon/tool if possible.
-        for(int i=8;i>=0;i--)if(i!=selected&&
-            mc.player.getInventory().getItem(i).isEmpty()){target=i;break;}
-        if(target<0)for(int i=8;i>=0;i--)
-            if(i!=selected){target=i;break;}
+        if(!NexusBuffInventoryPolicy.mainInventoryIndex(slot))return;
+        boolean[] emptySlots=new boolean[9];
+        for(int i=0;i<9;i++)
+            emptySlots[i]=mc.player.getInventory().getItem(i).isEmpty();
+        int target=NexusBuffInventoryPolicy.reserveHotbar(emptySlots,selected);
         if(target<0)return;
         ItemStack old=mc.player.getInventory().getItem(target).copy();
         // Only the 9..35 main-inventory slots are eligible. No armor/offhand.
@@ -390,7 +389,10 @@ final class NexusBuffManager {
             // Never overwrite a slot another mod/player changed during use.
             boolean expectedBuff=hotbar.isEmpty()||
                 op.fingerprint.equals(fingerprint(hotbar));
-            if(!sameStack(source,op.displaced)||!expectedBuff){
+            if(!NexusBuffInventoryPolicy.safeRestore(
+                sameStack(source,op.displaced),expectedBuff,
+                mc.player.getInventory().selected==op.originalSelected,
+                mc.player.containerMenu==mc.player.inventoryMenu)){
                 swap=null;
                 status="Slots alterados durante o uso. Restauração automática "
                     +"cancelada para proteger o inventário.";
