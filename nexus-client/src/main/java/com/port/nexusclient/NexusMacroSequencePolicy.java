@@ -7,8 +7,22 @@ import java.util.List;
 /** Pure rules for an explicitly approved, ordered combo spell sequence. */
 final class NexusMacroSequencePolicy {
     static final int MAX_SPELLS=6;
-    static final long BETWEEN_CASTS_MS=6_000L;
+    static final long BETWEEN_CASTS_MS=6_000L; // historical default
+    static final int DEFAULT_INTERVAL_SECONDS=6;
+    static final int MIN_INTERVAL_SECONDS=2, MAX_INTERVAL_SECONDS=30;
     static final long MAX_SEQUENCE_MS=120_000L;
+
+    static boolean validInterval(int seconds){
+        return seconds>=MIN_INTERVAL_SECONDS&&seconds<=MAX_INTERVAL_SECONDS;
+    }
+    /** Missing legacy field is 0 in some deserializers: restore old 6s behavior. */
+    static int normalizedInterval(int seconds){
+        if(seconds==0)return DEFAULT_INTERVAL_SECONDS;
+        return Math.max(MIN_INTERVAL_SECONDS,Math.min(MAX_INTERVAL_SECONDS,seconds));
+    }
+    static long intervalMs(int seconds){
+        return normalizedInterval(seconds)*1_000L;
+    }
     private NexusMacroSequencePolicy(){}
 
     static boolean validSequence(List<String> spells,String anchorSpell){
