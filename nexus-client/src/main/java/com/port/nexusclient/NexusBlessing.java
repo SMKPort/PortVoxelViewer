@@ -187,6 +187,10 @@ final class NexusBlessing {
             if(rule.spellId.equals(id))return rule;
         return null;
     }
+    static synchronized boolean dispatchedRecently(long now,long gapMillis){
+        return lastAnyAttemptAt>0&&now>=lastAnyAttemptAt&&
+            now-lastAnyAttemptAt<gapMillis;
+    }
     static synchronized boolean enabled(){
         load();
         Rule rule=selected();
