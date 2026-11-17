@@ -1,5 +1,50 @@
 # Nexus Aterna RP
 
+## Atualização visual 4.0 | Arcane Command Center
+
+A central web do Nexus Aterna foi redesenhada para acompanhar a evolução
+do mod **Nexus Aterna Client 4.0**. A identidade continua preta, vermelha
+e dourada, com maior contraste, componentes responsivos e ajustes para
+celular. As funções existentes continuam disponíveis.
+
+### Novidades do site
+
+- **Dashboard 4.0:** introdução visual do Nexus, quatro indicadores
+  narrativos (integridade RP, energia RP, armadura e status da conexão
+  verificada), núcleo animado e registro da oficina.
+- **Protocolos inteligentes:** atalhos para copiar os comandos
+  \`/nexusclient situacao\`, \`/nexusclient cognition menu\`,
+  \`/nexusclient journal menu\` e
+  \`/nexusclient cognition insights status\`.
+- **Busca rápida \`Ctrl + K\` (ou \`/\` fora de campos de texto):** abre
+  a paleta de módulos, acessível também pelo botão do cabeçalho e pelo
+  dock móvel. Enter abre o módulo; Esc fecha.
+- **Navegação móvel:** cinco atalhos persistentes para início, voz,
+  client, chat e busca. Respeita preferência por movimento reduzido.
+- **Nexus Client:** apresentação da 4.0 com comandos seguros para copiar,
+  status de pareamento e diagnóstico da API existentes preservados.
+- **Privacidade e compatibilidade:** sem guardar novas credenciais,
+  sem adicionar chamadas de rede pela busca rápida e sem acionar
+  protocolos ou gastar mana pelo painel web.
+
+**Limitação deliberada:** o site apresenta os atalhos e seus próprios
+indicadores **narrativos**. A leitura de vida e mana reais, o protocolo
+de emergência e o diário 4.0 são funções do **mod local**, não
+funcionalidades executadas remotamente pela página. Mesmo quando
+pareado, o painel não deve afirmar que executou ações não
+confirmadas pelo Minecraft.
+
+### Implementação
+
+Os recursos visuais vivem em \`public/v4-shell.css\` e
+\`public/v4-shell.js\`. A rota HTTP existente passou a permitir apenas
+esses dois arquivos extras dentro de sua lista explícita de
+arquivos estáticos. O restante das regras do servidor foi preservado.
+Testes: \`tests/v4-ui.test.js\`, \`tests/client-ui.test.js\` e
+\`tests/http-routes.test.js\`, executados no GitHub Actions
+\`Nexus Aterna RP checks\`.
+
+
 **Novo painel web separado do Nexus Aterna Web 2.0.**
 
 - Site próprio: https://nexus-aterna-rp.onrender.com
