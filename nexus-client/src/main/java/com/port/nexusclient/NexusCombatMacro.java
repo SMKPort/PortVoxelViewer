@@ -367,11 +367,14 @@ final class NexusCombatMacro {
             for(Macro other:config.macros)
                 if(other!=macro&&phrase.equals(NexusMacroPhrasePolicy.activation(other.voicePhrase)))
                     return lastOutcome="Outra macro já utiliza essa frase.";
-            var spellCommands=NexusVoiceGrammar.phrases(
-                NexusVoiceCasting.equippedSpells(Minecraft.getInstance().player));
-            for(String wake:List.of("nexus","nexo","nexos"))
-                if(spellCommands.containsKey(wake+" "+phrase))
-                    return lastOutcome="Frase já ativa o comando direto de uma magia. Escolha outra.";
+            Minecraft mc=Minecraft.getInstance();
+            if(mc.player!=null){
+                var spellCommands=NexusVoiceGrammar.phrases(
+                    NexusVoiceCasting.equippedSpells(mc.player));
+                for(String wake:List.of("nexus","nexo","nexos"))
+                    if(spellCommands.containsKey(wake+" "+phrase))
+                        return lastOutcome="Frase já ativa uma magia direta. Escolha outra.";
+            }
         }
         macro.voicePhrase=phrase;save();
         return lastOutcome=phrase.isBlank()?"Frase de voz removida.":
@@ -401,15 +404,16 @@ final class NexusCombatMacro {
                 out.put(macro.spell,macro.voicePhrase);
         return NexusMacroPhrasePolicy.index(out);
     }
-    static synchronized String activateByVoice(String id){
+    static synchronized String activateByVoice(String id,String spoken){
         load();
         Minecraft mc=Minecraft.getInstance();
         Macro macro=find(id);
         long now=System.currentTimeMillis();
         if(!NexusVoiceCasting.enabled())
             return "Ative o VoiceCast (F6) antes de usar frases.";
-        if(macro==null||!macro.enabled||macro.voicePhrase.isBlank())
-            return "Macro não está autorizada ou não possui frase cadastrada.";
+        if(macro==null||!macro.enabled||macro.voicePhrase.isBlank()||
+           !NexusMacroPhrasePolicy.activation(spoken).equals(macro.voicePhrase))
+            return "Macro não autorizada ou frase de ativação alterada.";
         if(mc.player==null||mc.level==null||mc.screen!=null||
            !mc.player.isAlive()||mc.player.isSpectator()||!mc.isWindowActive())
             return "Não é possível ativar macro neste momento.";
