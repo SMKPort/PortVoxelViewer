@@ -37,17 +37,19 @@ final class NexusCombatMacro {
     private static final Path FILE=FMLPaths.CONFIGDIR.get().resolve("nexus-combat-macros.json");
     private static final String DEFAULT_SPELL="irons_spellbooks:divine_smite";
     private static final int DEFAULT_HITS=3,DEFAULT_WINDOW=5;
-    private static final long SHARED_GAP_MS=6_000L;
+    private static final long SHARED_GAP_MS=6_000L; // between separate combo triggers
+    private static final long MIN_CAST_GAP_MS=2_000L; // minimum safe gap inside sequences
 
     private static final class Macro {
         String spell=DEFAULT_SPELL;
         int hits=DEFAULT_HITS;
         int windowSeconds=DEFAULT_WINDOW;
+        int intervalSeconds=NexusMacroSequencePolicy.DEFAULT_INTERVAL_SECONDS;
         boolean enabled=false;
         List<String> sequence=new ArrayList<>(); // ordered spell chain, first = macro key
     }
     private static final class Settings {
-        int schema=3;
+        int schema=4;
         String selectedSpell="";
         List<Macro> macros=new ArrayList<>();
     }
@@ -59,8 +61,8 @@ final class NexusCombatMacro {
         int windowSeconds=DEFAULT_WINDOW;
         String spell=DEFAULT_SPELL;
     }
-    record View(String spell,boolean enabled,int hits,int windowSeconds,int progress,
-                List<String> sequence){}
+    record View(String spell,boolean enabled,int hits,int windowSeconds,
+                int intervalSeconds,int progress,List<String> sequence){}
     private static Settings config;
     private static boolean readOnly;
     private static final Map<String,NexusMacroPolicy.State> STATES=new HashMap<>();
@@ -73,6 +75,7 @@ final class NexusCombatMacro {
         final UUID playerId;
         final Object level;
         final long startedAt;
+        final long intervalMillis;
         int index;
         long notBefore;
         Running(Macro macro,LivingEntity target,Player player,long now){
@@ -82,6 +85,7 @@ final class NexusCombatMacro {
             playerId=player.getUUID();
             level=player.level();
             startedAt=now;notBefore=now;
+            intervalMillis=NexusMacroSequencePolicy.intervalMs(macro.intervalSeconds);
         }
     }
     private static Running running;
@@ -115,13 +119,14 @@ final class NexusCombatMacro {
                 if(!Files.exists(backup))
                     Files.copy(FILE,backup,StandardCopyOption.COPY_ATTRIBUTES);
                 lastOutcome="Macro anterior migrada. Configurações preservadas.";
-            }else if(schema==2||schema==3){
+            }else if(schema==2||schema==3||schema==4){
                 incoming=JSON.fromJson(source,Settings.class);
-                if(schema==2){
-                    Path backup=FILE.resolveSibling("nexus-combat-macros-v2-backup.json");
+                if(schema<4){
+                    Path backup=FILE.resolveSibling("nexus-combat-macros-v"+
+                        schema+"-backup.json");
                     if(!Files.exists(backup))
                         Files.copy(FILE,backup,StandardCopyOption.COPY_ATTRIBUTES);
-                    incoming.schema=3;
+                    incoming.schema=4;
                 }
             }else throw new IllegalStateException("Versão de configuração incompatível.");
             validate(incoming);
@@ -142,6 +147,8 @@ final class NexusCombatMacro {
                 throw new IllegalArgumentException("Magias duplicadas ou inválidas.");
             macro.hits=Math.max(2,Math.min(6,macro.hits));
             macro.windowSeconds=Math.max(2,Math.min(10,macro.windowSeconds));
+            macro.intervalSeconds=NexusMacroSequencePolicy.normalizedInterval(
+                macro.intervalSeconds);
             if(macro.sequence==null||macro.sequence.isEmpty())
                 macro.sequence=new ArrayList<>(List.of(macro.spell));
             if(!NexusMacroSequencePolicy.validSequence(macro.sequence,macro.spell))
@@ -195,8 +202,8 @@ final class NexusCombatMacro {
     static synchronized List<View> entries(){
         load();
         return config.macros.stream()
-            .map(m->new View(m.spell,m.enabled,m.hits,m.windowSeconds,state(m).hits,
-                List.copyOf(m.sequence)))
+            .map(m->new View(m.spell,m.enabled,m.hits,m.windowSeconds,
+                m.intervalSeconds,state(m).hits,List.copyOf(m.sequence)))
             .toList();
     }
     static synchronized List<String> candidates(){
@@ -252,6 +259,10 @@ final class NexusCombatMacro {
     static synchronized int windowSeconds(){
         load();Macro m=selected();return m==null?DEFAULT_WINDOW:m.windowSeconds;
     }
+    static synchronized int intervalSeconds(){
+        load();Macro m=selected();return m==null?
+            NexusMacroSequencePolicy.DEFAULT_INTERVAL_SECONDS:m.intervalSeconds;
+    }
     static synchronized String spell(){
         load();Macro m=selected();return m==null?"":m.spell;
     }
@@ -263,7 +274,8 @@ final class NexusCombatMacro {
         load();
         return "Macros "+enabledCount()+"/"+config.macros.size()+
             " ativas | Selecionada: "+(spell().isBlank()?"nenhuma":spell())+
-            " | "+hits()+" golpes em "+windowSeconds()+"s | "+lastOutcome;
+            " | "+hits()+" golpes em "+windowSeconds()+
+            "s | intervalo "+intervalSeconds()+"s | "+lastOutcome;
     }
 
     static synchronized List<String> sequence(){
@@ -358,6 +370,17 @@ final class NexusCombatMacro {
         if(macro==null)throw new IllegalStateException("Cadastre uma macro primeiro.");
         macro.windowSeconds=seconds;reset();save();
         lastOutcome="Janela de "+macro.spell+": "+seconds+" segundos.";
+    }
+    static synchronized void setIntervalSeconds(int seconds){
+        load();
+        if(!NexusMacroSequencePolicy.validInterval(seconds))
+            throw new IllegalArgumentException("Intervalo: 2 a 30 segundos.");
+        Macro current=selected();
+        if(current==null)throw new IllegalStateException("Cadastre uma macro primeiro.");
+        current.intervalSeconds=seconds;
+        reset();save();
+        lastOutcome="Intervalo entre as magias de "+current.spell+
+            ": "+seconds+" segundo(s).";
     }
     static synchronized void setSpell(String id){
         load();
@@ -468,8 +491,8 @@ final class NexusCombatMacro {
             return;
         }
         if(!NexusMacroSequencePolicy.canRequest(now,task.notBefore,lastAnyCastAt,
-            SHARED_GAP_MS,NexusVoiceCasting.clientIsCasting()))return;
-        if(NexusBlessing.dispatchedRecently(now,SHARED_GAP_MS))return;
+            MIN_CAST_GAP_MS,NexusVoiceCasting.clientIsCasting()))return;
+        if(NexusBlessing.dispatchedRecently(now,MIN_CAST_GAP_MS))return;
 
         String nextSpell=task.spells.get(task.index);
         // A preflight failure stops the rest of the sequence instead of
@@ -486,7 +509,7 @@ final class NexusCombatMacro {
                 " conjurações solicitadas ao servidor.";
             NexusCombatHud.show("macro",lastOutcome);
         }else{
-            task.notBefore=now+NexusMacroSequencePolicy.BETWEEN_CASTS_MS;
+            task.notBefore=now+task.intervalMillis;
             lastOutcome="Macro "+task.macroKey+": "+task.index+"/"+
                 task.spells.size()+" solicitada(s). Próxima: "+
                 task.spells.get(task.index)+".";
