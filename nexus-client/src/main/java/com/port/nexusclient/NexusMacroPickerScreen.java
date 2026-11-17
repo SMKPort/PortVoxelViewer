@@ -13,11 +13,17 @@ import java.util.stream.Collectors;
 final class NexusMacroPickerScreen extends Screen {
     private static final int GOLD=0xFFE9BB68,WHITE=0xFFECE1D3,MUTED=0xFFAE9DA6;
     private final Screen parent;
+    private final boolean appendToMacro;
     private int page;
     private String message="Escolha uma magia equipada. A macro começa desligada.";
     NexusMacroPickerScreen(Screen parent){
-        super(Component.literal("Nexus Aterna | Adicionar macro"));
+        this(parent,false);
+    }
+    NexusMacroPickerScreen(Screen parent,boolean appendToMacro){
+        super(Component.literal(appendToMacro?
+            "Nexus Aterna | Adicionar magia ao combo":"Nexus Aterna | Adicionar macro"));
         this.parent=parent;
+        this.appendToMacro=appendToMacro;
     }
     private int pane(){return Math.min(550,width-20);}
     private int left(){return (width-pane())/2;}
@@ -40,12 +46,15 @@ final class NexusMacroPickerScreen extends Screen {
         page=Math.max(0,Math.min(page,pages()-1));
         for(int i=page*6;i<Math.min(equipped.size(),(page+1)*6);i++){
             String id=equipped.get(i);
-            boolean already=registered.contains(id);
+            boolean already=appendToMacro?NexusCombatMacro.sequence().contains(id):
+                registered.contains(id);
             String title=(already?"§a✓ ":"§6+ ")+friendly(id)+"  §7["+id+"]";
             addRenderableWidget(Button.builder(Component.literal(shorten(title,w-43)),b->{
                 try{
-                    message=NexusCombatMacro.addSpell(id);
-                    if(NexusCombatMacro.spell().equals(id))
+                    message=appendToMacro?NexusCombatMacro.addToSequence(id):
+                        NexusCombatMacro.addSpell(id);
+                    if(appendToMacro?NexusCombatMacro.sequence().contains(id):
+                        NexusCombatMacro.spell().equals(id))
                         minecraft.setScreen(new NexusMacroScreen(parent));
                 }catch(Exception error){message=error.getMessage();}
             }).bounds(x+7,79+(i%6)*28,w-14,22).build());
@@ -65,8 +74,12 @@ final class NexusMacroPickerScreen extends Screen {
         int x=left(),w=pane();
         g.fill(x-5,6,x+w+5,height-6,0xEF0D0A14);
         g.fill(x-5,6,x+w+5,9,GOLD);
-        g.drawCenteredString(font,"+ ADICIONAR MACRO DE COMBATE",width/2,20,GOLD);
-        g.drawString(font,"Só magias equipadas; nenhuma conjuração ao cadastrar.",
+        g.drawCenteredString(font,appendToMacro?
+            "+ MAGIA NA SEQUÊNCIA":" + ADICIONAR MACRO DE COMBATE",
+            width/2,20,GOLD);
+        g.drawString(font,appendToMacro?
+            "Selecione a próxima magia. A ordem será preservada.":
+            "Só magias equipadas; nenhuma conjuração ao cadastrar.",
             x+7,48,MUTED,false);
         g.drawString(font,"Magias disponíveis: "+options().size(),x+7,64,WHITE,false);
         if(options().isEmpty())
