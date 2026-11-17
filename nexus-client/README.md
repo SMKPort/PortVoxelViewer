@@ -1,5 +1,31 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
+## Nexus Aterna 3.0.0-alpha.8 | Intervalo ajustável entre magias
+
+O intervalo entre as **magias da MESMA macro** agora pode ser configurado
+**por macro**, de **2 a 30 segundos**, com **6 segundos por padrão**.
+Isso afeta apenas a próxima etapa da sequência, não a janela de
+tempo para acertar os golpes iniciais.
+
+### Configurar
+
+- No jogo, abra **F8 > Combate > Configurar Macros** e selecione a macro.
+  Entre em **Sequência / Intervalo** e use os botões **-1s** e **+1s**.
+  Em interfaces muito pequenas, prefira o comando do chat.
+- Comando: `/nexusclient macro interval 3`, com 3 como exemplo.
+  `/nexusclient macro status` mostra o intervalo da macro selecionada.
+- A nova opção é salva em `config/nexus-combat-macros.json`.
+  Configurações schema 1, 2 e 3 são migradas para schema 4,
+  com preservação dos combos e cópia de segurança do original.
+
+Uma macro com **Divine Smite > outra magia** e intervalo 3s
+solicita o primeiro feitiço após o combo e só tenta o segundo
+**ao menos três segundos depois**, respeitando conjuração em andamento,
+mana, cooldown, alcance e aceitação pelo servidor. Intervalo é um
+prazo mínimo e não garante que a magia será lançada exatamente nesse instante.
+Regras para gatilho de golpes e renovações automáticas do Blessing não mudam.
+
+
 ## Nexus Aterna 3.0.0-alpha.7 | Várias magias no MESMO macro
 
 Um **macro de combate** agora suporta uma **sequência ordenada de até 6 magias
@@ -15,7 +41,7 @@ de vezes. Não depende do VoiceCast.
    Escolha quantas magias extras desejar (até seis no total). A ordem de
    cadastro determina a ordem de solicitação ao servidor.
 4. Configure golpes (2–6), janela do combo (2–10s) e ative a macro.
-5. Em interfaces maiores, **EDITAR SEQUÊNCIA** permite reorganizar ou
+5. Em interfaces maiores, **SEQUÊNCIA / INTERVALO** permite reorganizar ou
    remover as magias extras. A primeira magia identifica a macro e
    só pode ser substituída pelo comando `macro spell <id>` ou removendo
    a macro inteira.
@@ -31,12 +57,12 @@ Gatilho: 3 golpes no mesmo alvo em 5 segundos
 ```
 
 Quando o cliente observa os três golpes, solicita o primeiro feitiço usando
-a QuickCastPacket legítima. Aguarda pelo menos **6 segundos** e o fim de
+a QuickCastPacket legítima. Aguarda o intervalo **configurado** (padrão 6s) e o fim de
 qualquer conjuração em andamento antes de solicitar o próximo.
 Todas as etapas ainda exigem a magia equipada, mana, cooldown e autorização
 do servidor. A sequência é cancelada se o alvo morrer, sair do alcance,
 o jogador trocar de mundo/abrir menus, ou uma conjuração falhar no pré-teste.
-O limite total de execução é **120 segundos**. O cliente pode solicitar
+O limite máximo de execução é **210 segundos**. O cliente pode solicitar
 feitiços, mas não pode afirmar que o servidor efetivamente executou
 cada um até ser testado no Somake.
 
