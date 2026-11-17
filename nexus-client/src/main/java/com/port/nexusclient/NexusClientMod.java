@@ -399,9 +399,52 @@ public class NexusClientMod {
                 .then(Commands.literal("status").executes(ctx->{
                     notifyPlayer(NexusCombatMacro.status());return 1;
                 }))
+                .then(Commands.literal("list").executes(ctx->{
+                    var macros=NexusCombatMacro.entries();
+                    if(macros.isEmpty())notifyPlayer("Nenhuma macro de combate cadastrada.");
+                    for(var macro:macros)notifyPlayer(
+                        (macro.enabled()?"[ON] ":"[OFF] ")+macro.spell()+
+                        " | "+macro.hits()+" golpes | "+macro.windowSeconds()+"s");
+                    return 1;
+                }))
+                .then(Commands.literal("spells").executes(ctx->{
+                    var spells=NexusCombatMacro.candidates();
+                    if(spells.isEmpty())notifyPlayer("Nenhuma magia equipada detectada.");
+                    else for(String id:spells.stream().limit(40).toList())
+                        notifyPlayer("Equipada: "+id);
+                    return 1;
+                }))
+                .then(Commands.literal("add")
+                    .then(Commands.argument("id",StringArgumentType.word()).executes(ctx->{
+                        try{notifyPlayer(NexusCombatMacro.addSpell(
+                            StringArgumentType.getString(ctx,"id")));}
+                        catch(Exception error){notifyPlayer(error.getMessage());}
+                        return 1;
+                    })))
+                .then(Commands.literal("select")
+                    .then(Commands.argument("id",StringArgumentType.word()).executes(ctx->{
+                        try{notifyPlayer(NexusCombatMacro.selectSpell(
+                            StringArgumentType.getString(ctx,"id")));}
+                        catch(Exception error){notifyPlayer(error.getMessage());}
+                        return 1;
+                    })))
+                .then(Commands.literal("remove")
+                    .then(Commands.argument("id",StringArgumentType.word()).executes(ctx->{
+                        try{notifyPlayer(NexusCombatMacro.removeSpell(
+                            StringArgumentType.getString(ctx,"id")));}
+                        catch(Exception error){notifyPlayer(error.getMessage());}
+                        return 1;
+                    })))
                 .then(Commands.literal("on").executes(ctx->{
                     try{
-                        NexusCombatMacro.setEnabled(true);
+                        NexusCombatMacro.setSelectedEnabled(true);
+                        notifyPlayer(NexusCombatMacro.status());
+                    }catch(Exception ex){notifyPlayer(ex.getMessage());}
+                    return 1;
+                }))
+                .then(Commands.literal("disable").executes(ctx->{
+                    try{
+                        NexusCombatMacro.setSelectedEnabled(false);
                         notifyPlayer(NexusCombatMacro.status());
                     }catch(Exception ex){notifyPlayer(ex.getMessage());}
                     return 1;
@@ -414,26 +457,31 @@ public class NexusClientMod {
                     .then(Commands.argument("count",
                         com.mojang.brigadier.arguments.IntegerArgumentType.integer(2,6))
                     .executes(ctx->{
-                        int count=com.mojang.brigadier.arguments.IntegerArgumentType
-                            .getInteger(ctx,"count");
-                        NexusCombatMacro.setHits(count);
-                        notifyPlayer("Macro: "+count+" golpes no mesmo alvo.");return 1;
+                        try{
+                            int count=com.mojang.brigadier.arguments.IntegerArgumentType
+                                .getInteger(ctx,"count");
+                            NexusCombatMacro.setHits(count);
+                            notifyPlayer("Macro selecionada: "+count+" golpes.");
+                        }catch(Exception error){notifyPlayer(error.getMessage());}
+                        return 1;
                     })))
                 .then(Commands.literal("window")
                     .then(Commands.argument("seconds",
                         com.mojang.brigadier.arguments.IntegerArgumentType.integer(2,10))
                     .executes(ctx->{
-                        int seconds=com.mojang.brigadier.arguments.IntegerArgumentType
-                            .getInteger(ctx,"seconds");
-                        NexusCombatMacro.setWindow(seconds);
-                        notifyPlayer("Macro: janela de "+seconds+" segundos.");return 1;
+                        try{
+                            int seconds=com.mojang.brigadier.arguments.IntegerArgumentType
+                                .getInteger(ctx,"seconds");
+                            NexusCombatMacro.setWindow(seconds);
+                            notifyPlayer("Macro selecionada: "+seconds+" segundos.");
+                        }catch(Exception error){notifyPlayer(error.getMessage());}
+                        return 1;
                     })))
                 .then(Commands.literal("spell")
-                    .then(Commands.argument("id",StringArgumentType.word())
-                    .executes(ctx->{
+                    .then(Commands.argument("id",StringArgumentType.word()).executes(ctx->{
                         try{
                             NexusCombatMacro.setSpell(StringArgumentType.getString(ctx,"id"));
-                            notifyPlayer("Feitiço da macro: "+NexusCombatMacro.spell());
+                            notifyPlayer("Magia da macro selecionada: "+NexusCombatMacro.spell());
                         }catch(Exception ex){notifyPlayer(ex.getMessage());}
                         return 1;
                     }))))
