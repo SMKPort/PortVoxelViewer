@@ -66,6 +66,8 @@ final class NexusVoiceCasting {
     private static volatile Map<String,NexusVoiceGrammar.Spell> grammar=Map.of();
     // Updated on the client thread; read-only snapshot for the Vosk worker.
     private static volatile List<String> travelVoicePhrases=List.of();
+    // Only macros explicitly enabled with a registered activation phrase.
+    private static volatile Map<String,String> macroVoicePhrases=Map.of();
     private NexusVoiceCasting(){}
 
     private static synchronized void load(){
@@ -134,13 +136,17 @@ final class NexusVoiceCasting {
             " | Confiança "+Math.round(lastConfidence*100)+"% | "+lastDecision;
     }
     static String checkPhrase(String phrase){
-        var index=grammar;
-        var command=NexusVoiceGrammar.recognize(phrase,index);
-        if(command==null)return "Não reconhecido. Magias equipadas: "+spellCount+
-            ". Use 'Nexus, Divine Smite' ou 'Nexus, cancelar'.";
-        return command.cancel()?"Comando de cancelamento válido (nenhuma magia executada).":
+        var command=NexusVoiceGrammar.recognize(phrase,grammar);
+        if(command!=null)return command.cancel()?
+            "Comando de cancelamento válido (sem executar).":
             "Feitiço encontrado: "+command.spellId()+" no slot "+
-            command.slot()+" (nenhuma magia executada).";
+                command.slot()+" (sem executar).";
+        var travel=NexusTravelPolicy.interpretVoice(phrase,travelVoicePhrases);
+        if(travel!=null)return "Comando de Waystones identificado (sem executar).";
+        String macro=NexusMacroPhrasePolicy.interpret(phrase,macroVoicePhrases);
+        if(macro!=null)return "Frase reconhecida para macro "+macro+
+            " (simulação: nenhuma magia executada).";
+        return "Frase não reconhecida. Diga Nexus seguido da frase cadastrada.";
     }
 
     static synchronized void setEnabled(boolean on){
@@ -197,6 +203,11 @@ final class NexusVoiceCasting {
             List<String> destinations=NexusArcaneTravel.voiceVocabulary();
             if(!destinations.equals(travelVoicePhrases)){
                 travelVoicePhrases=destinations;
+                revision++;
+            }
+            Map<String,String> currentMacros=NexusCombatMacro.voicePhrases();
+            if(!currentMacros.equals(macroVoicePhrases)){
+                macroVoicePhrases=currentMacros;
                 revision++;
             }
             List<NexusVoiceGrammar.Spell> recent=ModList.get().isLoaded("irons_spellbooks")
@@ -275,6 +286,7 @@ final class NexusVoiceCasting {
                     List<String> terms=new ArrayList<>(NexusVoiceGrammar.vocabulary(grammar));
                     terms.remove("[unk]");
                     terms.addAll(travelVoicePhrases);
+                    terms.addAll(macroVoicePhrases.keySet());
                     terms.add("[unk]");
                     for(String phrase:new java.util.LinkedHashSet<>(terms))phrases.add(phrase);
                     for(var entry:models.entrySet()){
@@ -395,6 +407,7 @@ final class NexusVoiceCasting {
                 NexusVoiceGrammar.Command spell=NexusVoiceGrammar.recognize(phrase,grammar);
                 NexusTravelPolicy.VoiceIntent travel=NexusTravelPolicy.interpretVoice(
                     phrase,travelVoicePhrases);
+                String macro=NexusMacroPhrasePolicy.interpret(phrase,macroVoicePhrases);
                 if(spell!=null){
                     String action=spell.cancel()?"cancel":
                         "spell:"+spell.spellId()+":"+spell.slot();
@@ -404,6 +417,9 @@ final class NexusVoiceCasting {
                     eligible.add(new NexusVoiceCandidatePolicy.Candidate(
                         audio.language(),phrase,
                         "travel:"+travel.action()+":"+travel.destination(),confidence));
+                }else if(macro!=null){
+                    eligible.add(new NexusVoiceCandidatePolicy.Candidate(
+                        audio.language(),phrase,"macro:"+macro,confidence));
                 }
             }
             var selected=NexusVoiceCandidatePolicy.choose(eligible,MIN_CONFIDENCE);
@@ -419,8 +435,19 @@ final class NexusVoiceCasting {
             NexusVoiceGrammar.Command spell=NexusVoiceGrammar.recognize(phrase,grammar);
             NexusTravelPolicy.VoiceIntent travel=NexusTravelPolicy.interpretVoice(
                 phrase,travelVoicePhrases);
+            String macro=NexusMacroPhrasePolicy.interpret(phrase,macroVoicePhrases);
             acceptedPhrases++;
-            if(travel!=null){
+            if(spell==null&&travel==null&&macro!=null){
+                lastDecision=selected.reason()+" Verificando macro personalizada...";
+                Minecraft.getInstance().execute(()->{
+                    if(!enabled()||!captureAllowed||Minecraft.getInstance().screen!=null)return;
+                    long now=System.currentTimeMillis();
+                    if(now-lastDispatch<COMMAND_DELAY_MS)return;
+                    lastDispatch=now;lastAt=now;lastCommand=phrase;
+                    lastOutcome=NexusCombatMacro.activateByVoice(macro,phrase);
+                    lastDecision=lastOutcome;
+                });
+            }else if(travel!=null){
                 lastDecision=selected.reason()+" Verificando viagem...";
                 Minecraft.getInstance().execute(()->{
                     if(!enabled()||!captureAllowed||Minecraft.getInstance().screen!=null)return;
