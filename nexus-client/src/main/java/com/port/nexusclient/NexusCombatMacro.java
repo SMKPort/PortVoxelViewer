@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -46,10 +47,15 @@ final class NexusCombatMacro {
         int windowSeconds=DEFAULT_WINDOW;
         int intervalSeconds=NexusMacroSequencePolicy.DEFAULT_INTERVAL_SECONDS;
         boolean enabled=false;
+        String voicePhrase="";
+        String startPhrase="Protocolo de combate iniciado.";
+        String finishPhrase="Sequência de conjurações solicitada.";
+        boolean announceHud=true;
+        boolean announceChat=true;
         List<String> sequence=new ArrayList<>(); // ordered spell chain, first = macro key
     }
     private static final class Settings {
-        int schema=4;
+        int schema=5;
         String selectedSpell="";
         List<Macro> macros=new ArrayList<>();
     }
@@ -62,7 +68,9 @@ final class NexusCombatMacro {
         String spell=DEFAULT_SPELL;
     }
     record View(String spell,boolean enabled,int hits,int windowSeconds,
-                int intervalSeconds,int progress,List<String> sequence){}
+                int intervalSeconds,int progress,List<String> sequence,
+                String voicePhrase,String startPhrase,String finishPhrase,
+                boolean announceHud,boolean announceChat){}
     private static Settings config;
     private static boolean readOnly;
     private static final Map<String,NexusMacroPolicy.State> STATES=new HashMap<>();
@@ -119,14 +127,14 @@ final class NexusCombatMacro {
                 if(!Files.exists(backup))
                     Files.copy(FILE,backup,StandardCopyOption.COPY_ATTRIBUTES);
                 lastOutcome="Macro anterior migrada. Configurações preservadas.";
-            }else if(schema==2||schema==3||schema==4){
+            }else if(schema==2||schema==3||schema==4||schema==5){
                 incoming=JSON.fromJson(source,Settings.class);
-                if(schema<4){
+                if(schema<5){
                     Path backup=FILE.resolveSibling("nexus-combat-macros-v"+
                         schema+"-backup.json");
                     if(!Files.exists(backup))
                         Files.copy(FILE,backup,StandardCopyOption.COPY_ATTRIBUTES);
-                    incoming.schema=4;
+                    incoming.schema=5;
                 }
             }else throw new IllegalStateException("Versão de configuração incompatível.");
             validate(incoming);
@@ -153,6 +161,18 @@ final class NexusCombatMacro {
                 macro.sequence=new ArrayList<>(List.of(macro.spell));
             if(!NexusMacroSequencePolicy.validSequence(macro.sequence,macro.spell))
                 throw new IllegalArgumentException("Sequência de magias inválida.");
+            if(macro.voicePhrase==null)macro.voicePhrase="";
+            if(macro.startPhrase==null)macro.startPhrase="Protocolo de combate iniciado.";
+            if(macro.finishPhrase==null)macro.finishPhrase="Sequência de conjurações solicitada.";
+            if(!macro.voicePhrase.isBlank()&&
+                !NexusMacroPhrasePolicy.validActivation(macro.voicePhrase))
+                throw new IllegalArgumentException("Frase de ativação inválida.");
+            if(!NexusMacroPhrasePolicy.validAnnouncement(macro.startPhrase)||
+               !NexusMacroPhrasePolicy.validAnnouncement(macro.finishPhrase))
+                throw new IllegalArgumentException("Anúncio de macro inválido.");
+            macro.voicePhrase=NexusMacroPhrasePolicy.activation(macro.voicePhrase);
+            macro.startPhrase=NexusMacroPhrasePolicy.announcement(macro.startPhrase);
+            macro.finishPhrase=NexusMacroPhrasePolicy.announcement(macro.finishPhrase);
         }
         if(!value.selectedSpell.isBlank()&&!ids.contains(value.selectedSpell))
             value.selectedSpell="";
@@ -203,7 +223,8 @@ final class NexusCombatMacro {
         load();
         return config.macros.stream()
             .map(m->new View(m.spell,m.enabled,m.hits,m.windowSeconds,
-                m.intervalSeconds,state(m).hits,List.copyOf(m.sequence)))
+                m.intervalSeconds,state(m).hits,List.copyOf(m.sequence),
+                m.voicePhrase,m.startPhrase,m.finishPhrase,m.announceHud,m.announceChat))
             .toList();
     }
     static synchronized List<String> candidates(){
@@ -318,6 +339,117 @@ final class NexusCombatMacro {
         java.util.Collections.swap(current.sequence,from,to);
         reset();save();
         return lastOutcome="Ordem atualizada: "+String.join(" > ",current.sequence);
+    }
+    static synchronized String voicePhrase(){
+        load(); Macro macro=selected();return macro==null?"":macro.voicePhrase;
+    }
+    static synchronized String startPhrase(){
+        load(); Macro macro=selected();return macro==null?"":macro.startPhrase;
+    }
+    static synchronized String finishPhrase(){
+        load(); Macro macro=selected();return macro==null?"":macro.finishPhrase;
+    }
+    static synchronized boolean announceHud(){
+        load(); Macro macro=selected();return macro!=null&&macro.announceHud;
+    }
+    static synchronized boolean announceChat(){
+        load(); Macro macro=selected();return macro!=null&&macro.announceChat;
+    }
+    static synchronized String setVoicePhrase(String text){
+        load();
+        if(readOnly)return lastOutcome;
+        Macro macro=selected();
+        if(macro==null)return lastOutcome="Selecione uma macro.";
+        String phrase=NexusMacroPhrasePolicy.activation(text);
+        if(!phrase.isBlank()&&!NexusMacroPhrasePolicy.validActivation(phrase))
+            return lastOutcome="Frase inválida (4 a 55 caracteres, sem comandos reservados).";
+        if(!phrase.isBlank()){
+            for(Macro other:config.macros)
+                if(other!=macro&&phrase.equals(NexusMacroPhrasePolicy.activation(other.voicePhrase)))
+                    return lastOutcome="Outra macro já utiliza essa frase.";
+            var spellCommands=NexusVoiceGrammar.phrases(
+                NexusVoiceCasting.equippedSpells(Minecraft.getInstance().player));
+            for(String wake:List.of("nexus","nexo","nexos"))
+                if(spellCommands.containsKey(wake+" "+phrase))
+                    return lastOutcome="Frase já ativa o comando direto de uma magia. Escolha outra.";
+        }
+        macro.voicePhrase=phrase;save();
+        return lastOutcome=phrase.isBlank()?"Frase de voz removida.":
+            "Fale 'Nexus, "+phrase+"' para ativar esta macro com VoiceCast ligado.";
+    }
+    static synchronized String setAnnouncements(String start,String finish,
+                                                 boolean hud,boolean chat){
+        load();
+        if(readOnly)return lastOutcome;
+        Macro macro=selected();
+        if(macro==null)return lastOutcome="Selecione uma macro.";
+        if(!NexusMacroPhrasePolicy.validAnnouncement(start)||
+            !NexusMacroPhrasePolicy.validAnnouncement(finish))
+            return lastOutcome="Cada mensagem deve ter até 160 caracteres.";
+        macro.startPhrase=NexusMacroPhrasePolicy.announcement(start);
+        macro.finishPhrase=NexusMacroPhrasePolicy.announcement(finish);
+        macro.announceHud=hud;macro.announceChat=chat;
+        save();
+        return lastOutcome="Frases do Nexus salvas. HUD "+(hud?"ON":"OFF")+
+            ", chat local "+(chat?"ON":"OFF")+".";
+    }
+    static synchronized Map<String,String> voicePhrases(){
+        load();
+        Map<String,String> out=new java.util.LinkedHashMap<>();
+        for(Macro macro:config.macros)
+            if(macro.enabled&&!macro.voicePhrase.isBlank())
+                out.put(macro.spell,macro.voicePhrase);
+        return NexusMacroPhrasePolicy.index(out);
+    }
+    static synchronized String activateByVoice(String id){
+        load();
+        Minecraft mc=Minecraft.getInstance();
+        Macro macro=find(id);
+        long now=System.currentTimeMillis();
+        if(!NexusVoiceCasting.enabled())
+            return "Ative o VoiceCast (F6) antes de usar frases.";
+        if(macro==null||!macro.enabled||macro.voicePhrase.isBlank())
+            return "Macro não está autorizada ou não possui frase cadastrada.";
+        if(mc.player==null||mc.level==null||mc.screen!=null||
+           !mc.player.isAlive()||mc.player.isSpectator()||!mc.isWindowActive())
+            return "Não é possível ativar macro neste momento.";
+        if(running!=null)return "Uma sequência de macro já está em andamento.";
+        if(!NexusMacroRosterPolicy.mayTrigger(now,lastAnyCastAt,SHARED_GAP_MS))
+            return "Aguarde o intervalo de segurança entre macros.";
+        if(NexusVoiceCasting.clientIsCasting())
+            return "Conjuração em andamento. Aguarde para iniciar a macro.";
+        if(!candidates().contains(macro.spell))
+            return "A primeira magia da macro precisa estar equipada.";
+        // Voice macros may cast while aiming at a creature, but don't require a
+        // successful melee hit. Server determines valid spell targets as usual.
+        LivingEntity target=null;
+        if(mc.hitResult instanceof net.minecraft.world.phys.EntityHitResult hit
+           &&hit.getEntity() instanceof LivingEntity living&&living.isAlive()&&
+           mc.player.distanceToSqr(living)<=20&&mc.player.hasLineOfSight(living))
+            target=living;
+        for(var streak:STATES.values())streak.resetCombo();
+        pending=null;
+        running=new Running(macro,target,mc.player,now);
+        announce(macro,macro.startPhrase);
+        lastOutcome="Macro ativada por voz: "+macro.spell+".";
+        runSequence(mc.player,now);
+        return lastOutcome;
+    }
+    private static void announce(Macro macro,String phrase){
+        if(phrase==null||phrase.isBlank())return;
+        String shown="[Nexus Aterna] "+phrase;
+        if(macro.announceHud)NexusCombatHud.show("macro",shown);
+        Minecraft mc=Minecraft.getInstance();
+        if(macro.announceChat&&mc.player!=null)
+            mc.player.displayClientMessage(Component.literal("§6[Nexus Aterna] §f"+phrase),false);
+        // Existing TTS remains entirely optional, including any configured API usage.
+        if(NexusSpeaker.settingEnabled())NexusSpeaker.onSpeech(phrase,0);
+    }
+    private static void announceRunning(boolean complete){
+        Running task=running;
+        Macro macro=task==null?null:find(task.macroKey);
+        if(macro!=null)announce(macro,complete?macro.finishPhrase:
+            "Sequência cancelada: "+lastOutcome);
     }
     static synchronized boolean running(){return running!=null;}
     static synchronized boolean dispatchedRecently(long now,long gapMillis){
@@ -464,6 +596,7 @@ final class NexusCombatMacro {
         if(winner!=null){
             for(var state:STATES.values())state.resetCombo();
             running=new Running(winner,target,mc.player,now);
+            announce(winner,winner.startPhrase);
             lastOutcome="Combo concluído! Iniciando "+winner.sequence.size()+
                 " magia(s): "+winner.spell+".";
             NexusCombatHud.show("macro",lastOutcome);
@@ -483,8 +616,8 @@ final class NexusCombatMacro {
         }
         if(task.index>=task.spells.size()){running=null;return;}
         LivingEntity target=task.target;
-        if(!target.isAlive()||player.distanceToSqr(target)>20||
-            !player.hasLineOfSight(target)){
+        if(target!=null&&(!target.isAlive()||player.distanceToSqr(target)>20||
+            !player.hasLineOfSight(target))){
             running=null;
             lastOutcome="Sequência cancelada: alvo fora do alcance ou derrotado.";
             NexusCombatHud.show("macro",lastOutcome);
@@ -504,6 +637,7 @@ final class NexusCombatMacro {
         task.index++;
         lastAnyCastAt=now;
         if(task.index>=task.spells.size()){
+            announceRunning(true);
             running=null;
             lastOutcome="Macro "+task.macroKey+": todas as "+task.spells.size()+
                 " conjurações solicitadas ao servidor.";
