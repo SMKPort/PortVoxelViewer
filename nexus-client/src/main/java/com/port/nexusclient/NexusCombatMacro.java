@@ -97,6 +97,7 @@ final class NexusCombatMacro {
         }
     }
     private static Running running;
+    private static boolean emergencySuspended;
     private static long lastAnyCastAt=-1,lastInfoAt;
     private static String lastOutcome="Macros desligadas. Use F8 > Combate > Configurar Macros.";
 
@@ -417,6 +418,7 @@ final class NexusCombatMacro {
         if(mc.player==null||mc.level==null||mc.screen!=null||
            !mc.player.isAlive()||mc.player.isSpectator()||!mc.isWindowActive())
             return "Não é possível ativar macro neste momento.";
+        if(emergencySuspended)return "Macros suspensas por emergência. Libere manualmente primeiro.";
         if(running!=null)return "Uma sequência de macro já está em andamento.";
         if(!NexusMacroRosterPolicy.mayTrigger(now,lastAnyCastAt,SHARED_GAP_MS))
             return "Aguarde o intervalo de segurança entre macros.";
@@ -434,6 +436,7 @@ final class NexusCombatMacro {
         for(var streak:STATES.values())streak.resetCombo();
         pending=null;
         running=new Running(macro,target,mc.player,now);
+        NexusCombatInsights.record(macro.spell,"start","","Frase de voz reconhecida.");
         announce(macro,macro.startPhrase);
         lastOutcome="Macro ativada por voz: "+macro.spell+".";
         runSequence(mc.player,now);
@@ -456,6 +459,21 @@ final class NexusCombatMacro {
             "Sequência cancelada: "+lastOutcome);
     }
     static synchronized boolean running(){return running!=null;}
+    static synchronized boolean emergencySuspended(){return emergencySuspended;}
+    static synchronized void suspendForEmergency(){
+        if(emergencySuspended)return;
+        emergencySuspended=true;
+        if(running!=null)
+            NexusCombatInsights.record(running.macroKey,"cancel","","Emergência: macro suspensa.");
+        reset();
+        lastOutcome="Macros ofensivas SUSPENSAS por risco crítico. Use /nexusclient cognition resume.";
+        NexusCombatHud.show("macro",lastOutcome);
+    }
+    static synchronized void resumeFromEmergency(){
+        emergencySuspended=false;
+        reset();
+        lastOutcome="Macros liberadas novamente pelo jogador.";
+    }
     static synchronized boolean dispatchedRecently(long now,long gapMillis){
         return lastAnyCastAt>=0&&now>=lastAnyCastAt&&
             now-lastAnyCastAt<gapMillis;
@@ -470,6 +488,7 @@ final class NexusCombatMacro {
     static synchronized void setEnabled(boolean on){
         load();
         if(!on){
+            emergencySuspended=false;
             for(Macro macro:config.macros)macro.enabled=false;
             reset();save();
             lastOutcome="Todas as macros desligadas.";
@@ -549,7 +568,8 @@ final class NexusCombatMacro {
     static synchronized void shutdown(){reset();lastAnyCastAt=-1;}
     static synchronized void onAttack(AttackEntityEvent event){
         Minecraft mc=Minecraft.getInstance();
-        if(!enabled()||running!=null||mc.player==null||event.getEntity()!=mc.player||
+        if(!enabled()||emergencySuspended||running!=null||mc.player==null||
+            event.getEntity()!=mc.player||
             mc.level==null||mc.screen!=null||!mc.isWindowActive())return;
         if(!(event.getTarget() instanceof LivingEntity living)||!living.isAlive()||
             living==mc.player)return;
@@ -561,7 +581,7 @@ final class NexusCombatMacro {
     }
 
     static synchronized void tick(){
-        if(!enabled()){running=null;pending=null;return;}
+        if(!enabled()||emergencySuspended){running=null;pending=null;return;}
         Minecraft mc=Minecraft.getInstance();
         if(mc.player==null||mc.level==null||mc.screen!=null||
             !mc.isWindowActive()||!mc.player.isAlive()||mc.player.isSpectator()){
@@ -600,6 +620,7 @@ final class NexusCombatMacro {
         if(winner!=null){
             for(var state:STATES.values())state.resetCombo();
             running=new Running(winner,target,mc.player,now);
+            NexusCombatInsights.record(winner.spell,"start","","Combo confirmado.");
             announce(winner,winner.startPhrase);
             lastOutcome="Combo concluído! Iniciando "+winner.sequence.size()+
                 " magia(s): "+winner.spell+".";
@@ -614,6 +635,8 @@ final class NexusCombatMacro {
         Minecraft mc=Minecraft.getInstance();
         if(!enabled()||player!=mc.player||!task.playerId.equals(player.getUUID())||
             task.level!=mc.level||NexusMacroSequencePolicy.expired(now,task.startedAt)){
+            NexusCombatInsights.record(task.macroKey,"cancel","",
+                "Mundo alterado, jogador inválido ou tempo esgotado.");
             running=null;
             lastOutcome="Sequência cancelada: mundo alterado ou tempo esgotado.";
             return;
@@ -622,6 +645,8 @@ final class NexusCombatMacro {
         LivingEntity target=task.target;
         if(target!=null&&(!target.isAlive()||player.distanceToSqr(target)>20||
             !player.hasLineOfSight(target))){
+            NexusCombatInsights.record(task.macroKey,"cancel","",
+                "Alvo fora do alcance ou derrotado.");
             running=null;
             lastOutcome="Sequência cancelada: alvo fora do alcance ou derrotado.";
             NexusCombatHud.show("macro",lastOutcome);
@@ -635,12 +660,17 @@ final class NexusCombatMacro {
         // A preflight failure stops the rest of the sequence instead of
         // silently changing spell order or spamming server packets.
         if(!attemptCast(player,nextSpell)){
+            NexusCombatInsights.record(task.macroKey,"blocked",nextSpell,lastOutcome);
             running=null;
             return;
         }
+        NexusCombatInsights.record(task.macroKey,"request",nextSpell,
+            "QuickCast solicitado. Efeito não confirmado pelo cliente.");
         task.index++;
         lastAnyCastAt=now;
         if(task.index>=task.spells.size()){
+            NexusCombatInsights.record(task.macroKey,"complete","",
+                "Todas as etapas solicitadas ao servidor; efeitos não confirmados.");
             announceRunning(true);
             running=null;
             lastOutcome="Macro "+task.macroKey+": todas as "+task.spells.size()+

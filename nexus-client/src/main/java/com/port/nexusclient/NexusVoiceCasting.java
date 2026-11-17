@@ -68,6 +68,9 @@ final class NexusVoiceCasting {
     private static volatile List<String> travelVoicePhrases=List.of();
     // Only macros explicitly enabled with a registered activation phrase.
     private static volatile Map<String,String> macroVoicePhrases=Map.of();
+    private static final List<String> SITUATION_PHRASES=List.of(
+        "nexus situacao atual","nexo situacao atual","nexos situacao atual",
+        "nexus relatorio de situacao","nexo relatorio de situacao");
     private NexusVoiceCasting(){}
 
     private static synchronized void load(){
@@ -136,6 +139,8 @@ final class NexusVoiceCasting {
             " | Confiança "+Math.round(lastConfidence*100)+"% | "+lastDecision;
     }
     static String checkPhrase(String phrase){
+        if(SITUATION_PHRASES.contains(NexusVoiceGrammar.normalize(phrase)))
+            return "Nexus 4.0: comando Situação atual reconhecido (sem executar).";
         var command=NexusVoiceGrammar.recognize(phrase,grammar);
         if(command!=null)return command.cancel()?
             "Comando de cancelamento válido (sem executar).":
@@ -287,6 +292,7 @@ final class NexusVoiceCasting {
                     terms.remove("[unk]");
                     terms.addAll(travelVoicePhrases);
                     terms.addAll(macroVoicePhrases.keySet());
+                    terms.addAll(SITUATION_PHRASES);
                     terms.add("[unk]");
                     for(String phrase:new java.util.LinkedHashSet<>(terms))phrases.add(phrase);
                     for(var entry:models.entrySet()){
@@ -408,7 +414,12 @@ final class NexusVoiceCasting {
                 NexusTravelPolicy.VoiceIntent travel=NexusTravelPolicy.interpretVoice(
                     phrase,travelVoicePhrases);
                 String macro=NexusMacroPhrasePolicy.interpret(phrase,macroVoicePhrases);
-                if(spell!=null){
+                boolean situation=SITUATION_PHRASES.contains(
+                    NexusVoiceGrammar.normalize(phrase));
+                if(situation){
+                    eligible.add(new NexusVoiceCandidatePolicy.Candidate(
+                        audio.language(),phrase,"nexus4:situation",confidence));
+                }else if(spell!=null){
                     String action=spell.cancel()?"cancel":
                         "spell:"+spell.spellId()+":"+spell.slot();
                     eligible.add(new NexusVoiceCandidatePolicy.Candidate(
@@ -436,8 +447,23 @@ final class NexusVoiceCasting {
             NexusTravelPolicy.VoiceIntent travel=NexusTravelPolicy.interpretVoice(
                 phrase,travelVoicePhrases);
             String macro=NexusMacroPhrasePolicy.interpret(phrase,macroVoicePhrases);
+            boolean situation=SITUATION_PHRASES.contains(
+                NexusVoiceGrammar.normalize(phrase));
             acceptedPhrases++;
-            if(spell==null&&travel==null&&macro!=null){
+            if(situation){
+                lastDecision=selected.reason()+" Situação 4.0 solicitada...";
+                Minecraft.getInstance().execute(()->{
+                    if(!enabled()||!captureAllowed||Minecraft.getInstance().screen!=null)
+                        return;
+                    long now=System.currentTimeMillis();
+                    if(now-lastDispatch<COMMAND_DELAY_MS)return;
+                    lastDispatch=now;lastAt=now;lastCommand=phrase;
+                    for(String line:NexusCognition.report())
+                        NexusClientMod.notifyPlayer(line);
+                    lastOutcome="Nexus 4.0: relatório contextual apresentado localmente.";
+                    lastDecision=lastOutcome;
+                });
+            }else if(spell==null&&travel==null&&macro!=null){
                 lastDecision=selected.reason()+" Verificando macro personalizada...";
                 Minecraft.getInstance().execute(()->{
                     if(!enabled()||!captureAllowed||Minecraft.getInstance().screen!=null)return;

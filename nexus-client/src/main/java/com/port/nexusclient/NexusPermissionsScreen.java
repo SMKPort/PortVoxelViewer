@@ -134,6 +134,12 @@ final class NexusPermissionsScreen extends Screen {
                     button->minecraft.setScreen(new NexusBlessingScreen(this)))
                     .bounds(x+12+half,250,half,20).build());
             }
+            if(height>=365){
+                addRenderableWidget(Button.builder(Component.literal(
+                    "§6NEXUS 4.0 | CONSCIÊNCIA CONTEXTUAL"),
+                    button->minecraft.setScreen(new NexusCognitionScreen(this)))
+                    .bounds(x+6,281,w-12,20).build());
+            }
         }
         int footerY=height-34,btnW=(w-22)/3;
         addRenderableWidget(Button.builder(Component.literal("§aATIVAR TUDO"),b->{

@@ -66,6 +66,8 @@ public class NexusClientMod {
     private void onTick(ClientTickEvent.Post event) {
         ClientLink.tick();
         NexusVoiceCasting.tick();
+        // Apply emergency authorization before offensive macros can dispatch.
+        NexusCognition.tick();
         NexusAutoHeal.tick();
         NexusCombatMacro.tick();
         NexusBlessing.tick();
@@ -120,6 +122,149 @@ public class NexusClientMod {
                     NexusPermissions.status();
                     return 1;
                 })))
+            .then(Commands.literal("situation").executes(ctx->{
+                for(String line:NexusCognition.report())notifyPlayer(line);
+                return 1;
+            }))
+            .then(Commands.literal("situacao").executes(ctx->{
+                for(String line:NexusCognition.report())notifyPlayer(line);
+                return 1;
+            }))
+            .then(Commands.literal("cognition")
+                .executes(ctx->{
+                    for(String line:NexusCognition.report())notifyPlayer(line);
+                    return 1;
+                })
+                .then(Commands.literal("menu").executes(ctx->{
+                    Minecraft mc=Minecraft.getInstance();
+                    if(mc.player!=null)mc.setScreen(new NexusCognitionScreen(null));
+                    return 1;
+                }))
+                .then(Commands.literal("situation").executes(ctx->{
+                    for(String line:NexusCognition.report())notifyPlayer(line);
+                    return 1;
+                }))
+                .then(Commands.literal("status").executes(ctx->{
+                    notifyPlayer(NexusCognition.status());
+                    notifyPlayer(NexusCombatInsights.status());
+                    notifyPlayer(NexusNarrativeJournal.status());
+                    return 1;
+                }))
+                .then(Commands.literal("monitor")
+                    .then(Commands.literal("on").executes(ctx->{
+                        NexusCognition.monitor(true);notifyPlayer(NexusCognition.status());
+                        return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx->{
+                        NexusCognition.monitor(false);notifyPlayer(NexusCognition.status());
+                        return 1;
+                    })))
+                .then(Commands.literal("emergency")
+                    .then(Commands.literal("on").executes(ctx->{
+                        NexusCognition.emergency(true);notifyPlayer(NexusCognition.status());
+                        return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx->{
+                        NexusCognition.emergency(false);notifyPlayer(NexusCognition.status());
+                        return 1;
+                    })))
+                .then(Commands.literal("threshold")
+                    .then(Commands.argument("percent",
+                        com.mojang.brigadier.arguments.IntegerArgumentType.integer(10,60))
+                        .executes(ctx->{
+                            int value=com.mojang.brigadier.arguments.IntegerArgumentType
+                                .getInteger(ctx,"percent");
+                            NexusCognition.threshold(value);
+                            notifyPlayer(NexusCognition.status());return 1;
+                        })))
+                .then(Commands.literal("resume").executes(ctx->{
+                    NexusCombatMacro.resumeFromEmergency();
+                    notifyPlayer("Suspensão das macros ofensivas encerrada pelo jogador.");
+                    return 1;
+                }))
+                .then(Commands.literal("off").executes(ctx->{
+                    NexusCognition.off();
+                    notifyPlayer("Nexus 4.0: monitor e emergência desligados.");
+                    return 1;
+                }))
+                .then(Commands.literal("recall")
+                    .then(Commands.argument("topic",StringArgumentType.greedyString())
+                        .executes(ctx->{
+                            notifyPlayer(NexusCognition.recall(
+                                StringArgumentType.getString(ctx,"topic")));
+                            return 1;
+                        })))
+                .then(Commands.literal("insights")
+                    .then(Commands.literal("on").executes(ctx->{
+                        NexusCombatInsights.setEnabled(true);
+                        notifyPlayer(NexusCombatInsights.status());return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx->{
+                        NexusCombatInsights.setEnabled(false);
+                        notifyPlayer(NexusCombatInsights.status());return 1;
+                    }))
+                    .then(Commands.literal("status").executes(ctx->{
+                        notifyPlayer(NexusCombatInsights.status());
+                        notifyPlayer(NexusCombatInsights.suggestion());return 1;
+                    }))
+                    .then(Commands.literal("recent").executes(ctx->{
+                        for(String line:NexusCombatInsights.recent(8))notifyPlayer(line);
+                        return 1;
+                    }))
+                    .then(Commands.literal("clear").executes(ctx->{
+                        NexusCombatInsights.clear();
+                        notifyPlayer("Histórico local de macros apagado.");return 1;
+                    }))))
+            .then(Commands.literal("journal")
+                .then(Commands.literal("menu").executes(ctx->{
+                    Minecraft mc=Minecraft.getInstance();
+                    if(mc.player!=null)mc.setScreen(new NexusNarrativeScreen(null));
+                    return 1;
+                }))
+                .then(Commands.literal("add")
+                    .then(Commands.argument("entry",StringArgumentType.greedyString())
+                        .executes(ctx->{
+                            String value=StringArgumentType.getString(ctx,"entry");
+                            int divider=value.indexOf('|');
+                            if(divider<0)notifyPlayer("Formato: /nexusclient journal add Título | descrição");
+                            else try{
+                                notifyPlayer(NexusNarrativeJournal.add(
+                                    value.substring(0,divider),value.substring(divider+1)));
+                            }catch(Exception error){notifyPlayer(error.getMessage());}
+                            return 1;
+                        })))
+                .then(Commands.literal("recent").executes(ctx->{
+                    for(String line:NexusNarrativeJournal.latest(8))notifyPlayer(line);
+                    return 1;
+                }))
+                .then(Commands.literal("status").executes(ctx->{
+                    notifyPlayer(NexusNarrativeJournal.status());return 1;
+                }))
+                .then(Commands.literal("recall")
+                    .then(Commands.argument("topic",StringArgumentType.greedyString())
+                        .executes(ctx->{
+                            for(String line:NexusNarrativeJournal.recall(
+                                StringArgumentType.getString(ctx,"topic"),8))
+                                notifyPlayer(line);
+                            return 1;
+                        })))
+                .then(Commands.literal("delete")
+                    .then(Commands.argument("id",
+                        com.mojang.brigadier.arguments.LongArgumentType.longArg(1))
+                        .executes(ctx->{
+                            long id=com.mojang.brigadier.arguments.LongArgumentType
+                                .getLong(ctx,"id");
+                            notifyPlayer(NexusNarrativeJournal.delete(id));return 1;
+                        })))
+                .then(Commands.literal("auto")
+                    .then(Commands.literal("on").executes(ctx->{
+                        NexusNarrativeJournal.autoCritical(true);
+                        notifyPlayer(NexusNarrativeJournal.status());return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx->{
+                        NexusNarrativeJournal.autoCritical(false);
+                        notifyPlayer(NexusNarrativeJournal.status());return 1;
+                    }))))
             .then(Commands.literal("hud")
                 .then(Commands.literal("edit").executes(ctx->{
                     Minecraft mc=Minecraft.getInstance();

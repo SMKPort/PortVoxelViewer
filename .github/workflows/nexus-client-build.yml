@@ -1,7 +1,7 @@
 name: Nexus Aterna Client NeoForge 1.21.1
 on:
   push:
-    branches: [nexus-aterna-rp, 'nexus-aterna-3.0']
+    branches: [nexus-aterna-rp, 'nexus-aterna-3.0', 'nexus-aterna-4.0']
     paths:
       - 'nexus-client/**'
       - '.github/workflows/nexus-client-build.yml'
@@ -139,6 +139,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusMicrophoneChoices.java \
             nexus-client/verification/NexusMicrophoneChoicesTest.java
           java -ea -cp /tmp/nexus-microphone-tests com.port.nexusclient.NexusMicrophoneChoicesTest
+      - name: Test Nexus 4.0 situational reasoning and consent boundaries
+        run: |
+          mkdir -p /tmp/nexus-4-cognition-tests
+          javac -encoding UTF-8 -d /tmp/nexus-4-cognition-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusCognitionPolicy.java \
+            nexus-client/verification/NexusCognitionPolicyTest.java
+          java -ea -cp /tmp/nexus-4-cognition-tests com.port.nexusclient.NexusCognitionPolicyTest
       - name: Test custom macro voice phrases and local announcements
         run: |
           mkdir -p /tmp/nexus-macro-voice-tests
