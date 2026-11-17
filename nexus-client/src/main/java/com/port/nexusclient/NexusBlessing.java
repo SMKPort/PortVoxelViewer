@@ -40,7 +40,7 @@ import java.util.Set;
 final class NexusBlessing {
     private static final Gson JSON=new GsonBuilder().setPrettyPrinting().create();
     private static final Path FILE=FMLPaths.CONFIGDIR.get().resolve("nexus-blessing.json");
-    private static final int MAX_SPELLS=8;
+    private static final int MAX_SPELLS=NexusUpkeepRosterPolicy.MAX_SPELLS;
     private static final long GLOBAL_CAST_GAP_MS=4_000L;
 
     private static final class Rule {
@@ -252,8 +252,10 @@ final class NexusBlessing {
             save();
             return status="Magia já cadastrada. Selecionada: "+spellId;
         }
-        if(config.spells.size()>=MAX_SPELLS)
-            return status="Limite de "+MAX_SPELLS+" magias de manutenção.";
+        if(!NexusUpkeepRosterPolicy.mayAdd(spellId,
+            config.spells.stream().map(rule->rule.spellId).toList(),candidates()))
+            return status="Limite, duplicata ou magia não equipada.";
+
         Rule rule=new Rule();
         rule.spellId=spellId;
         config.spells.add(rule);
@@ -326,7 +328,7 @@ final class NexusBlessing {
             return status="Equipe "+rule.spellId+" primeiro.";
         if(rule.effects.isEmpty())
             return status="Aprenda o efeito de "+rule.spellId+" antes de ligar.";
-        if(rule.realm.isBlank()||!rule.realm.equals(realm()))
+        if(!NexusUpkeepRosterPolicy.mayEnable(true,rule.effects,rule.realm,realm()))
             return status="Aprenda "+rule.spellId+" neste servidor/mundo antes de ligar.";
         rule.enabled=true;
         save();
@@ -466,9 +468,9 @@ final class NexusBlessing {
         if(config.spells.stream().noneMatch(rule->rule.enabled))return;
         if(mc.screen!=null||!mc.isWindowActive()||player.isSpectator()||
            !player.isAlive()||!ModList.get().isLoaded("irons_spellbooks")||
-           NexusBuffManager.busy()||player.isUsingItem()||
-           NexusVoiceCasting.clientIsCasting()||
-           now-lastAnyAttemptAt<GLOBAL_CAST_GAP_MS)return;
+           !NexusUpkeepRosterPolicy.mayDispatch(now,lastAnyAttemptAt,
+               GLOBAL_CAST_GAP_MS,NexusVoiceCasting.clientIsCasting(),
+               NexusBuffManager.busy()||player.isUsingItem()))return;
         String scope=realm();
         if(scope.isBlank())return;
         // Read equipped list once per second, not once for every tracked spell.
