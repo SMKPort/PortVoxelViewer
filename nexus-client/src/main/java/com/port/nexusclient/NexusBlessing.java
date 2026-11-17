@@ -109,8 +109,9 @@ final class NexusBlessing {
                     loaded.selectedId=old.spellId;
                 }
                 // Copy original before the first schema 2 write.
-                Files.copy(FILE,FILE.resolveSibling("nexus-blessing-v1-backup.json"),
-                    StandardCopyOption.COPY_ATTRIBUTES);
+                Path backup=FILE.resolveSibling("nexus-blessing-v1-backup.json");
+                if(!Files.exists(backup))
+                    Files.copy(FILE,backup,StandardCopyOption.COPY_ATTRIBUTES);
                 status="Blessing existente migrado para múltiplas magias.";
             }else if(version==2){
                 loaded=JSON.fromJson(source,Config.class);
