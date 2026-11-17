@@ -62,7 +62,6 @@ final class NexusPermissions {
         NexusArcaneSensor.scanNearby(false);
         NexusArcaneSensor.enabled(false);
 
-        NexusBuffManager.setEnabled(false);
         NexusCombatMacro.setEnabled(false);
         NexusAutoHeal.setEnabled(false);
         NexusBlessing.setEnabled(false);
@@ -93,7 +92,6 @@ final class NexusPermissions {
         NexusClientMod.notifyPlayer(NexusSocial.status());
         NexusClientMod.notifyPlayer(NexusSpeaker.status());
         NexusClientMod.notifyPlayer("Voz offline: "+NexusVoiceCasting.status());
-        NexusClientMod.notifyPlayer("Buffs: "+NexusBuffManager.status());
         NexusClientMod.notifyPlayer(NexusCombatMacro.status());
         NexusClientMod.notifyPlayer(NexusBlessing.summary());
         NexusClientMod.notifyPlayer("Cura automática: "+(NexusAutoHeal.enabled()?"ON":"OFF")+
