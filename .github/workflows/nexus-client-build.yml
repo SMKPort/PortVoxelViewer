@@ -103,6 +103,14 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusVoiceCandidatePolicy.java \
             nexus-client/verification/NexusVoiceCandidatePolicyTest.java
           java -ea -cp /tmp/nexus-bilingual-tests com.port.nexusclient.NexusVoiceCandidatePolicyTest
+      - name: Test multi-spell upkeep registration and safe scheduling
+        run: |
+          mkdir -p /tmp/nexus-upkeep-tests
+          javac -encoding UTF-8 -d /tmp/nexus-upkeep-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusBlessingPolicy.java \
+            nexus-client/src/main/java/com/port/nexusclient/NexusUpkeepRosterPolicy.java \
+            nexus-client/verification/NexusUpkeepRosterPolicyTest.java
+          java -ea -cp /tmp/nexus-upkeep-tests com.port.nexusclient.NexusUpkeepRosterPolicyTest
       - name: Test automatic Blessing expiry and learning safeguards
         run: |
           mkdir -p /tmp/nexus-blessing-tests
