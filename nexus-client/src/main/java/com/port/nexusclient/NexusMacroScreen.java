@@ -78,7 +78,7 @@ final class NexusMacroScreen extends Screen {
             addRenderableWidget(Button.builder(Component.literal("+ 1s"),
                 b->window(1)).bounds(x+13+half,306,half,20).build());
             if(height>=420){
-                addRenderableWidget(Button.builder(Component.literal("§6EDITAR SEQUÊNCIA"),
+                addRenderableWidget(Button.builder(Component.literal("§6SEQUÊNCIA / INTERVALO"),
                     b->minecraft.setScreen(new NexusMacroSequenceScreen(parent)))
                     .bounds(x+7,347,half,20).build());
                 addRenderableWidget(Button.builder(Component.literal("§cREMOVER MACRO"),
@@ -144,7 +144,8 @@ final class NexusMacroScreen extends Screen {
                 "): "+String.join(" > ",NexusCombatMacro.sequence()),w-14),
                 x+7,257,GOLD,false);
             g.drawString(font,"Golpes: "+NexusCombatMacro.hits()+" (2 a 6)"+
-                " | Janela: "+NexusCombatMacro.windowSeconds()+"s (2 a 10)",
+                " | Janela: "+NexusCombatMacro.windowSeconds()+"s (2 a 10)"+
+                " | Intervalo: "+NexusCombatMacro.intervalSeconds()+"s",
                 x+7,294,WHITE,false);
             if(height>=430)
                 g.drawString(font,shorten("Progresso: "+NexusCombatMacro.progress()+
