@@ -30,7 +30,6 @@ final class NexusMacroSequenceScreen extends Screen {
         List<String> spells=NexusCombatMacro.sequence();
         for(int i=0;i<Math.min(spells.size(),6);i++){
             final String id=spells.get(i);
-            final int order=i;
             int y=85+i*34;
             addRenderableWidget(Button.builder(Component.literal(
                 fit((i+1)+". "+id+(i==0?" [INÍCIO]":""),w-145)),b->{})
@@ -48,6 +47,14 @@ final class NexusMacroSequenceScreen extends Screen {
                     b->remove(id)).bounds(x+w-53,y,37,22).build());
             }
         }
+        int lastSpellBottom=spells.isEmpty()?85:
+            85+(Math.min(spells.size(),6)-1)*34+22;
+        if(height-106>=lastSpellBottom+6){
+            addRenderableWidget(Button.builder(Component.literal("− 1s"),
+                b->changeInterval(-1)).bounds(x+7,height-106,69,20).build());
+            addRenderableWidget(Button.builder(Component.literal("+ 1s"),
+                b->changeInterval(1)).bounds(x+83,height-106,69,20).build());
+        }
         addRenderableWidget(Button.builder(Component.literal("§6+ ADICIONAR MAGIA"),
             b->minecraft.setScreen(new NexusMacroPickerScreen(parent,true)))
             .bounds(x+7,height-62,w-116,22).build());
@@ -62,6 +69,16 @@ final class NexusMacroSequenceScreen extends Screen {
         message=NexusCombatMacro.removeFromSequence(id);
         rebuildWidgets();
     }
+    private void changeInterval(int delta){
+        try{
+            int next=Math.max(NexusMacroSequencePolicy.MIN_INTERVAL_SECONDS,
+                Math.min(NexusMacroSequencePolicy.MAX_INTERVAL_SECONDS,
+                    NexusCombatMacro.intervalSeconds()+delta));
+            NexusCombatMacro.setIntervalSeconds(next);
+            message=NexusCombatMacro.lastOutcome();
+            rebuildWidgets();
+        }catch(Exception error){message=error.getMessage();}
+    }
     @Override public void onClose(){minecraft.setScreen(new NexusMacroScreen(parent));}
     @Override public boolean isPauseScreen(){return false;}
     @Override public void render(GuiGraphics g,int mx,int my,float partialTick){
@@ -73,8 +90,15 @@ final class NexusMacroSequenceScreen extends Screen {
             x+7,44,WHITE,false);
         g.drawString(font,"Magias na sequência: "+NexusCombatMacro.sequenceSize()+"/6",
             x+7,61,MUTED,false);
-        if(height>=380)
-            g.drawString(font,fit(message,w-14),x+7,height-90,MUTED,false);
+        g.drawString(font,"Intervalo: "+NexusCombatMacro.intervalSeconds()+"s (2–30)",
+            x+Math.max(185,w-192),61,GOLD,false);
+        int lastBottom=NexusCombatMacro.sequenceSize()==0?85:
+            85+(Math.min(NexusCombatMacro.sequenceSize(),6)-1)*34+22;
+        if(height-106>=lastBottom+6)
+            g.drawString(font,"Entre magias: "+NexusCombatMacro.intervalSeconds()+"s",
+                x+165,height-100,WHITE,false);
+        if(height>=Math.max(375,lastBottom+116))
+            g.drawString(font,fit(message,w-14),x+7,height-83,MUTED,false);
         super.render(g,mx,my,partialTick);
     }
 }
