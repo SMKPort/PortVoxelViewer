@@ -1,5 +1,68 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
+## Nexus Aterna 3.0.0-alpha.3 | Blessing automático
+
+O Nexus agora monitora **efeitos positivos reais do jogador**, aprendidos a partir
+de uma conjuração manual de Blessing. Quando algum efeito estiver terminando,
+pode solicitar automaticamente a magia equipada usando a QuickCastPacket
+normal do Iron's Spells, com autorização prévia do jogador.
+
+**Não presumir a magia:** o Iron's Spells contém `blessing_of_life`, que é
+uma cura direcionada e não necessariamente o Blessing de buff do Somake.
+O ID real da magia deve ser identificado pela lista equipada.
+
+### Configurar pela primeira vez
+
+1. Equipe Blessing no jogo. Execute `/nexusclient blessing spells` para
+   procurar uma magia equipada cujo ID contenha `bless`.
+2. Se a magia não terminar exatamente em `:blessing`, cadastre o ID completo
+   com `/nexusclient blessing spell modid:identificador`.
+3. Digite `/nexusclient blessing learn` e lance a magia manualmente em si
+   durante os próximos 30 segundos. Não use poções ou outras magias durante
+   essa janela. A detecção grava apenas efeitos positivos novos ou renovados.
+4. Verifique `/nexusclient blessing status`. Aprender não ativa a automação.
+5. Ative conscientemente com `/nexusclient blessing on`.
+
+Alternativa: `/nexusclient blessing effects` lista os efeitos positivos ativos.
+Se a aprendizagem não identificar uma renovação, é possível vincular um
+efeito positivo real que já esteja ativo usando
+`/nexusclient blessing effect modid:efeito`. Isso substitui a lista aprendida.
+
+### Como funciona
+
+- Antecedência padrão de 12 segundos, ajustável de 3 a 60 segundos com
+  `/nexusclient blessing seconds 15`.
+- Também tenta renovar quando um efeito aprendido já não está presente.
+- O Blessing deve permanecer equipado. O usuário precisa estar vivo,
+  no mesmo mundo/servidor em que aprendeu, sem GUI e sem outra conjuração.
+- Valida mana e cooldown no cliente e usa apenas o pacote oficial do
+  Iron's Spells. O servidor continua sendo a autoridade final.
+- Mantém pelo menos 60 segundos entre solicitações automáticas,
+  inclusive depois de uma tentativa recusada.
+- Desativado por padrão. `/nexusclient blessing off` e
+  `/nexusclient permissions off` desativam essa automação.
+- Configurações locais em `config/nexus-blessing.json`.
+- Interface F8 > Combate > BLESSING | RENOVAÇÃO AUTOMÁTICA (GUI alta).
+
+### Comandos
+
+```text
+/nexusclient blessing spells
+/nexusclient blessing spell modid:blessing
+/nexusclient blessing learn
+/nexusclient blessing effects
+/nexusclient blessing status
+/nexusclient blessing seconds 12
+/nexusclient blessing on
+/nexusclient blessing off
+```
+
+**Limite conhecido:** um buff de duração interna não sincronizado como
+`MobEffect` pode não ser detectado. Isso exigiria uma integração específica
+com a implementação real da magia no modpack Somake. É necessário
+testar o reaproveitamento automático no próprio servidor.
+
+
 ## Nexus Aterna 3.0.0-alpha.2 | VoiceCast direto e bilíngue (PT+EN)
 
 ### Falar o nome da magia, sem "execute" e sem traduções manuais
