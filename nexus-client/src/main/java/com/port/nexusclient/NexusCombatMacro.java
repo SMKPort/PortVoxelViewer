@@ -44,9 +44,10 @@ final class NexusCombatMacro {
         int hits=DEFAULT_HITS;
         int windowSeconds=DEFAULT_WINDOW;
         boolean enabled=false;
+        List<String> sequence=new ArrayList<>(); // ordered spell chain, first = macro key
     }
     private static final class Settings {
-        int schema=2;
+        int schema=3;
         String selectedSpell="";
         List<Macro> macros=new ArrayList<>();
     }
@@ -58,12 +59,32 @@ final class NexusCombatMacro {
         int windowSeconds=DEFAULT_WINDOW;
         String spell=DEFAULT_SPELL;
     }
-    record View(String spell,boolean enabled,int hits,int windowSeconds,int progress){}
+    record View(String spell,boolean enabled,int hits,int windowSeconds,int progress,
+                List<String> sequence){}
     private static Settings config;
     private static boolean readOnly;
     private static final Map<String,NexusMacroPolicy.State> STATES=new HashMap<>();
     private record Pending(LivingEntity target,int hurtAtAttack,long expiresAt,UUID playerId){}
     private static Pending pending;
+    private static final class Running {
+        final String macroKey;
+        final List<String> spells;
+        final LivingEntity target;
+        final UUID playerId;
+        final Object level;
+        final long startedAt;
+        int index;
+        long notBefore;
+        Running(Macro macro,LivingEntity target,Player player,long now){
+            macroKey=macro.spell;
+            spells=List.copyOf(macro.sequence);
+            this.target=target;
+            playerId=player.getUUID();
+            level=player.level();
+            startedAt=now;notBefore=now;
+        }
+    }
+    private static Running running;
     private static long lastAnyCastAt=-1,lastInfoAt;
     private static String lastOutcome="Macros desligadas. Use F8 > Combate > Configurar Macros.";
 
@@ -87,14 +108,21 @@ final class NexusCombatMacro {
                 migrated.hits=saved.hits;
                 migrated.windowSeconds=saved.windowSeconds;
                 migrated.enabled=saved.enabled;
+                migrated.sequence=new ArrayList<>(List.of(saved.spell));
                 incoming.macros.add(migrated);
                 incoming.selectedSpell=saved.spell;
                 Path backup=FILE.resolveSibling("nexus-combat-macros-v1-backup.json");
                 if(!Files.exists(backup))
                     Files.copy(FILE,backup,StandardCopyOption.COPY_ATTRIBUTES);
                 lastOutcome="Macro anterior migrada. Configurações preservadas.";
-            }else if(schema==2){
+            }else if(schema==2||schema==3){
                 incoming=JSON.fromJson(source,Settings.class);
+                if(schema==2){
+                    Path backup=FILE.resolveSibling("nexus-combat-macros-v2-backup.json");
+                    if(!Files.exists(backup))
+                        Files.copy(FILE,backup,StandardCopyOption.COPY_ATTRIBUTES);
+                    incoming.schema=3;
+                }
             }else throw new IllegalStateException("Versão de configuração incompatível.");
             validate(incoming);
             config=incoming;
@@ -114,6 +142,10 @@ final class NexusCombatMacro {
                 throw new IllegalArgumentException("Magias duplicadas ou inválidas.");
             macro.hits=Math.max(2,Math.min(6,macro.hits));
             macro.windowSeconds=Math.max(2,Math.min(10,macro.windowSeconds));
+            if(macro.sequence==null||macro.sequence.isEmpty())
+                macro.sequence=new ArrayList<>(List.of(macro.spell));
+            if(!NexusMacroSequencePolicy.validSequence(macro.sequence,macro.spell))
+                throw new IllegalArgumentException("Sequência de magias inválida.");
         }
         if(!value.selectedSpell.isBlank()&&!ids.contains(value.selectedSpell))
             value.selectedSpell="";
@@ -163,7 +195,8 @@ final class NexusCombatMacro {
     static synchronized List<View> entries(){
         load();
         return config.macros.stream()
-            .map(m->new View(m.spell,m.enabled,m.hits,m.windowSeconds,state(m).hits))
+            .map(m->new View(m.spell,m.enabled,m.hits,m.windowSeconds,state(m).hits,
+                List.copyOf(m.sequence)))
             .toList();
     }
     static synchronized List<String> candidates(){
@@ -188,6 +221,7 @@ final class NexusCombatMacro {
             return lastOutcome="Limite de "+NexusMacroRosterPolicy.MAX_MACROS+" macros.";
         Macro added=new Macro();
         added.spell=normalized;
+        added.sequence=new ArrayList<>(List.of(normalized));
         config.macros.add(added);
         config.selectedSpell=normalized;
         reset();
@@ -230,6 +264,54 @@ final class NexusCombatMacro {
         return "Macros "+enabledCount()+"/"+config.macros.size()+
             " ativas | Selecionada: "+(spell().isBlank()?"nenhuma":spell())+
             " | "+hits()+" golpes em "+windowSeconds()+"s | "+lastOutcome;
+    }
+
+    static synchronized List<String> sequence(){
+        load();
+        Macro current=selected();
+        return current==null?List.of():List.copyOf(current.sequence);
+    }
+    static synchronized int sequenceSize(){return sequence().size();}
+    static synchronized String addToSequence(String spellId){
+        load();
+        if(readOnly)return lastOutcome;
+        Macro current=selected();
+        if(current==null)return lastOutcome="Selecione uma macro primeiro.";
+        String normalized=spellId==null?"":spellId.toLowerCase(Locale.ROOT).trim();
+        if(!NexusMacroSequencePolicy.canAppend(normalized,current.sequence,candidates()))
+            return lastOutcome="Magia não equipada, duplicada ou limite de 6 por macro.";
+        current.sequence.add(normalized);
+        reset();save();
+        return lastOutcome="Adicionada à sequência de "+current.spell+": "+normalized+
+            " ("+current.sequence.size()+" magias).";
+    }
+    static synchronized String removeFromSequence(String spellId){
+        load();
+        if(readOnly)return lastOutcome;
+        Macro current=selected();
+        if(current==null||!NexusMacroSequencePolicy.canRemove(spellId,current.sequence))
+            return lastOutcome="Selecione uma magia extra (não a primeira da macro).";
+        current.sequence.remove(spellId);
+        reset();save();
+        return lastOutcome="Removida da sequência: "+spellId;
+    }
+    static synchronized String moveInSequence(String spellId,int direction){
+        load();
+        if(readOnly)return lastOutcome;
+        Macro current=selected();
+        if(current==null||direction==0)return lastOutcome="Selecione uma macro e direção.";
+        int from=current.sequence.indexOf(spellId),to=from+direction;
+        if(from<1||to<1||to>=current.sequence.size())
+            return lastOutcome="Primeira magia fixa. Reordene apenas magias extras.";
+        java.util.Collections.swap(current.sequence,from,to);
+        reset();save();
+        return lastOutcome="Ordem atualizada: "+String.join(" > ",current.sequence);
+    }
+    static synchronized boolean running(){return running!=null;}
+    static synchronized String queueStatus(){
+        if(running==null)return "Nenhuma sequência em execução.";
+        return "Sequência "+running.macroKey+": "+running.index+"/"+running.spells.size()+
+            " magias solicitadas.";
     }
 
     /** Backwards-compatible: /macro on affects selected; global off disables ALL. */
@@ -289,6 +371,7 @@ final class NexusCombatMacro {
             throw new IllegalArgumentException("Esta magia já tem uma macro.");
         String old=macro.spell;
         macro.spell=normalized;
+        macro.sequence.set(0,normalized);
         config.selectedSpell=normalized;
         STATES.remove(old);
         reset();save();
@@ -297,13 +380,13 @@ final class NexusCombatMacro {
 
     static synchronized void reset(){
         pending=null;
+        running=null;
         for(NexusMacroPolicy.State s:STATES.values())s.resetAll();
-        lastAnyCastAt=-1;
     }
-    static synchronized void shutdown(){reset();}
+    static synchronized void shutdown(){reset();lastAnyCastAt=-1;}
     static synchronized void onAttack(AttackEntityEvent event){
         Minecraft mc=Minecraft.getInstance();
-        if(!enabled()||mc.player==null||event.getEntity()!=mc.player||
+        if(!enabled()||running!=null||mc.player==null||event.getEntity()!=mc.player||
             mc.level==null||mc.screen!=null||!mc.isWindowActive())return;
         if(!(event.getTarget() instanceof LivingEntity living)||!living.isAlive()||
             living==mc.player)return;
@@ -315,29 +398,28 @@ final class NexusCombatMacro {
     }
 
     static synchronized void tick(){
-        if(!enabled())return;
+        if(!enabled()){running=null;pending=null;return;}
         Minecraft mc=Minecraft.getInstance();
         if(mc.player==null||mc.level==null||mc.screen!=null||
-            !mc.isWindowActive()||mc.player.isSpectator()){
-            pending=null;
+            !mc.isWindowActive()||!mc.player.isAlive()||mc.player.isSpectator()){
+            pending=null;running=null;
             for(var state:STATES.values())state.resetCombo();
             return;
         }
+        long now=System.currentTimeMillis();
+        if(running!=null){runSequence(mc.player,now);return;}
         Pending attempt=pending;
         if(attempt==null)return;
-        long now=System.currentTimeMillis();
         LivingEntity target=attempt.target();
         if(now>attempt.expiresAt()||!target.isAlive()||target.level()!=mc.level||
             !attempt.playerId().equals(mc.player.getUUID())){
             pending=null;return;
         }
+        // Require server-visible hurt feedback rather than merely a mouse click.
         if(target.hurtTime<=attempt.hurtAtAttack()||target.hurtTime<5)return;
         pending=null;
         if(!NexusMacroRosterPolicy.mayTrigger(now,lastAnyCastAt,SHARED_GAP_MS))
             return;
-        // Order is explicit list order: first eligible trigger wins per hit.
-        // Reset all combos after a trigger so 2 and 3-hit macros don't
-        // accidentally produce consecutive casts for one attack series.
         Macro winner=null;
         for(Macro macro:config.macros){
             if(!macro.enabled)continue;
@@ -353,44 +435,85 @@ final class NexusCombatMacro {
             }
         }
         if(winner!=null){
-            // Rate limit packet dispatch even if the remote server denies it.
-            lastAnyCastAt=now;
             for(var state:STATES.values())state.resetCombo();
-            attemptCast(mc.player,target,winner);
+            running=new Running(winner,target,mc.player,now);
+            lastOutcome="Combo concluído! Iniciando "+winner.sequence.size()+
+                " magia(s): "+winner.spell+".";
+            NexusCombatHud.show("macro",lastOutcome);
+            runSequence(mc.player,now);
         }
     }
 
-    private static void attemptCast(Player player,LivingEntity target,Macro macro){
+    private static void runSequence(Player player,long now){
+        Running task=running;
+        if(task==null)return;
+        Minecraft mc=Minecraft.getInstance();
+        if(!enabled()||player!=mc.player||!task.playerId.equals(player.getUUID())||
+            task.level!=mc.level||NexusMacroSequencePolicy.expired(now,task.startedAt)){
+            running=null;
+            lastOutcome="Sequência cancelada: mundo alterado ou tempo esgotado.";
+            return;
+        }
+        if(task.index>=task.spells.size()){running=null;return;}
+        LivingEntity target=task.target;
         if(!target.isAlive()||player.distanceToSqr(target)>20||
             !player.hasLineOfSight(target)){
-            lastOutcome="Alvo distante ou fora de visão. Combo cancelado.";
-            NexusCombatHud.show("macro",lastOutcome);return;
+            running=null;
+            lastOutcome="Sequência cancelada: alvo fora do alcance ou derrotado.";
+            NexusCombatHud.show("macro",lastOutcome);
+            return;
         }
-        if(NexusVoiceCasting.clientIsCasting()){
-            lastOutcome="Você já está conjurando. Combo cancelado.";
-            NexusCombatHud.show("macro",lastOutcome);return;
+        if(!NexusMacroSequencePolicy.canRequest(now,task.notBefore,lastAnyCastAt,
+            SHARED_GAP_MS,NexusVoiceCasting.clientIsCasting()))return;
+        if(NexusBlessing.dispatchedRecently(now,SHARED_GAP_MS))return;
+
+        String nextSpell=task.spells.get(task.index);
+        // A preflight failure stops the rest of the sequence instead of
+        // silently changing spell order or spamming server packets.
+        if(!attemptCast(player,nextSpell)){
+            running=null;
+            return;
         }
-        NexusVoiceGrammar.Spell option=null;
+        task.index++;
+        lastAnyCastAt=now;
+        if(task.index>=task.spells.size()){
+            running=null;
+            lastOutcome="Macro "+task.macroKey+": todas as "+task.spells.size()+
+                " conjurações solicitadas ao servidor.";
+            NexusCombatHud.show("macro",lastOutcome);
+        }else{
+            task.notBefore=now+NexusMacroSequencePolicy.BETWEEN_CASTS_MS;
+            lastOutcome="Macro "+task.macroKey+": "+task.index+"/"+
+                task.spells.size()+" solicitada(s). Próxima: "+
+                task.spells.get(task.index)+".";
+            NexusCombatHud.show("macro",lastOutcome);
+        }
+    }
+
+    private static boolean attemptCast(Player player,String spellId){
+        NexusVoiceGrammar.Spell chosen=null;
         for(NexusVoiceGrammar.Spell entry:NexusVoiceCasting.equippedSpells(player))
-            if(macro.spell.equals(entry.id())){option=entry;break;}
-        if(option==null){
-            lastOutcome="Macro: "+macro.spell+" não está equipada.";
-            NexusCombatHud.show("macro",lastOutcome);return;
+            if(spellId.equals(entry.id())){chosen=entry;break;}
+        if(chosen==null){
+            lastOutcome="Sequência cancelada: "+spellId+" não está equipada.";
+            NexusCombatHud.show("macro",lastOutcome);return false;
         }
         try{
-            if(!canCast(player,option.slot(),macro.spell)){
-                lastOutcome="Macro "+macro.spell+": mana, cooldown ou feitiço indisponível.";
-                NexusCombatHud.show("macro",lastOutcome);return;
+            if(!canCast(player,chosen.slot(),spellId)){
+                lastOutcome="Sequência cancelada: "+spellId+
+                    " em cooldown, mana insuficiente ou magia indisponível.";
+                NexusCombatHud.show("macro",lastOutcome);return false;
             }
             Class<?> packetType=Class.forName(
                 "io.redspace.ironsspellbooks.network.casting.QuickCastPacket");
-            Object payload=packetType.getConstructor(int.class).newInstance(option.slot());
+            Object payload=packetType.getConstructor(int.class).newInstance(chosen.slot());
             PacketDistributor.sendToServer((CustomPacketPayload)payload);
-            lastOutcome="Combo concluído! "+macro.spell+" solicitado.";
+            lastOutcome="Macro: "+spellId+" solicitado ao servidor.";
             NexusCombatHud.show("macro",lastOutcome);
+            return true;
         }catch(Throwable error){
-            lastOutcome="Macro não conseguiu solicitar "+macro.spell+".";
-            NexusCombatHud.show("macro",lastOutcome);
+            lastOutcome="Macro não conseguiu solicitar "+spellId+".";
+            NexusCombatHud.show("macro",lastOutcome);return false;
         }
     }
 
