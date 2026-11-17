@@ -1,5 +1,62 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
+
+## Nexus Aterna 3.0.0-alpha.9 | Frases de ativação e anúncio em macros
+
+Cada macro de combate pode ter **dois tipos de frases independentes**:
+
+- **O jogador diz:** uma frase exata com palavra de chamada, por exemplo
+  "Nexus, iniciar julgamento divino". Com o VoiceCast habilitado pelo jogador
+  (F6), essa frase solicita a execução da **mesma sequência de magias**
+  já configurada para o gatilho de golpes. Não precisa acertar o combo antes.
+- **O Nexus anuncia:** uma mensagem personalizável ao **iniciar** e outra
+  ao **concluir a solicitação das magias**. O usuário escolhe mostrar no
+  **HUD** e/ou **chat local**. Mensagens não são enviadas ao servidor
+  como mensagens de jogador. Se a voz sintetizada do Nexus já foi
+  explicitamente ativada em suas configurações, ela também pode anunciar
+  essas frases (essa função de áudio é opcional e pode usar a integração
+  de voz configurada).
+
+A configuração está em **F8 > Combate > Configurar Macros > FRASES / VOZ**.
+O editor permite definir uma frase falada, o texto de início, o texto de
+conclusão, e alternar mensagens locais para HUD/chat.
+
+### Comandos
+
+```text
+/nexusclient macro select irons_spellbooks:divine_smite
+/nexusclient macro phrase iniciar julgamento divino
+/nexusclient macro announce-start Protocolo Julgamento Divino iniciado.
+/nexusclient macro announce-finish Sequência celestial solicitada.
+/nexusclient macro on
+/nexusclient macro voicecheck Nexus iniciar julgamento divino
+/nexusclient macro clear-phrase
+```
+
+As frases são reconhecidas pelo mecanismo Vosk offline existente:
+é preciso **ativar voluntariamente o microfone**, pronunciar o wake word
+"Nexus" (variantes "Nexo"/"Nexos"), ter confiança suficiente e não ter
+ambiguidades entre os idiomas. Frases especiais como "Nexus, cancelar"
+não podem ser cadastradas e frases idênticas entre macros são recusadas.
+Por segurança, nenhuma frase de macro é executada fora de mundo,
+enquanto há outra macro em andamento, com o VoiceCast desligado ou sem
+a macro estar autorizada. A sequência continua respeitando magia equipada,
+mana, cooldown, 2–30s de intervalo configurado, e o servidor valida
+cada solicitação. Em execução por voz, caso haja alvo sob a mira, esse
+alvo é acompanhado. Sem alvo sob a mira, o servidor decide se cada
+feitiço pode ser utilizado na direção atual.
+
+As configurações de combate são migradas do esquema anterior para
+`schema=5` com cópia de segurança de arquivos antigos. Frases
+faladas são opcionais e começam vazias, para evitar ativações acidentais.
+Os anúncios padrões são locais e personalizáveis. O sistema de golpes
+continua disponível normalmente e o gerenciador de itens-buff não retorna.
+
+**Limites:** o estado "concluída" significa que todas as conjurações
+foram **solicitadas** ao servidor, não garantia de que seus efeitos
+foram aplicados. Teste no Somake antes de considerar a feature estável.
+
+
 ## Nexus Aterna 3.0.0-alpha.8 | Intervalo ajustável entre magias
 
 O intervalo entre as **magias da MESMA macro** agora pode ser configurado
