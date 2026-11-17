@@ -404,7 +404,8 @@ public class NexusClientMod {
                     if(macros.isEmpty())notifyPlayer("Nenhuma macro de combate cadastrada.");
                     for(var macro:macros)notifyPlayer(
                         (macro.enabled()?"[ON] ":"[OFF] ")+macro.spell()+
-                        " | "+macro.hits()+" golpes | "+macro.windowSeconds()+"s | "+
+                        " | "+macro.hits()+" golpes | "+macro.windowSeconds()+
+                        "s | intervalo "+macro.intervalSeconds()+"s | "+
                         String.join(" > ",macro.sequence()));
                     return 1;
                 }))
@@ -497,6 +498,18 @@ public class NexusClientMod {
                                 .getInteger(ctx,"count");
                             NexusCombatMacro.setHits(count);
                             notifyPlayer("Macro selecionada: "+count+" golpes.");
+                        }catch(Exception error){notifyPlayer(error.getMessage());}
+                        return 1;
+                    })))
+                .then(Commands.literal("interval")
+                    .then(Commands.argument("seconds",
+                        com.mojang.brigadier.arguments.IntegerArgumentType.integer(2,30))
+                    .executes(ctx->{
+                        try{
+                            int seconds=com.mojang.brigadier.arguments.IntegerArgumentType
+                                .getInteger(ctx,"seconds");
+                            NexusCombatMacro.setIntervalSeconds(seconds);
+                            notifyPlayer(NexusCombatMacro.lastOutcome());
                         }catch(Exception error){notifyPlayer(error.getMessage());}
                         return 1;
                     })))
