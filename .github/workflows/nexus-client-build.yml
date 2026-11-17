@@ -139,6 +139,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusMicrophoneChoices.java \
             nexus-client/verification/NexusMicrophoneChoicesTest.java
           java -ea -cp /tmp/nexus-microphone-tests com.port.nexusclient.NexusMicrophoneChoicesTest
+      - name: Test custom macro voice phrases and local announcements
+        run: |
+          mkdir -p /tmp/nexus-macro-voice-tests
+          javac -encoding UTF-8 -d /tmp/nexus-macro-voice-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusMacroPhrasePolicy.java \
+            nexus-client/verification/NexusMacroPhrasePolicyTest.java
+          java -ea -cp /tmp/nexus-macro-voice-tests com.port.nexusclient.NexusMacroPhrasePolicyTest
       - name: Test ordered multi-spell combo sequences
         run: |
           mkdir -p /tmp/nexus-macro-sequence-tests
