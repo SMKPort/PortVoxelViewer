@@ -63,6 +63,9 @@ final class NexusPermissions {
         NexusArcaneSensor.enabled(false);
 
         NexusCombatMacro.setEnabled(false);
+        NexusCognition.off();
+        NexusCombatInsights.setEnabled(false);
+        NexusNarrativeJournal.autoCritical(false);
         NexusAutoHeal.setEnabled(false);
         NexusBlessing.setEnabled(false);
         NexusVoiceCasting.setEnabled(false);
@@ -93,6 +96,7 @@ final class NexusPermissions {
         NexusClientMod.notifyPlayer(NexusSpeaker.status());
         NexusClientMod.notifyPlayer("Voz offline: "+NexusVoiceCasting.status());
         NexusClientMod.notifyPlayer(NexusCombatMacro.status());
+        NexusClientMod.notifyPlayer(NexusCognition.status());
         NexusClientMod.notifyPlayer(NexusBlessing.summary());
         NexusClientMod.notifyPlayer("Cura automática: "+(NexusAutoHeal.enabled()?"ON":"OFF")+
             " | "+NexusAutoHeal.threshold()+"% | "+NexusAutoHeal.lastOutcome());
