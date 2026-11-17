@@ -66,10 +66,11 @@ public class NexusClientMod {
     private void onTick(ClientTickEvent.Post event) {
         ClientLink.tick();
         NexusVoiceCasting.tick();
+        // Apply emergency authorization before offensive macros can dispatch.
+        NexusCognition.tick();
         NexusAutoHeal.tick();
         NexusCombatMacro.tick();
         NexusBlessing.tick();
-        NexusCognition.tick();
         NexusArcaneTravel.tick();
         Minecraft mc=Minecraft.getInstance();
         while(PRIVATE_KEY.consumeClick()){
