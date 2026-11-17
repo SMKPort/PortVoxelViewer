@@ -404,7 +404,8 @@ public class NexusClientMod {
                     if(macros.isEmpty())notifyPlayer("Nenhuma macro de combate cadastrada.");
                     for(var macro:macros)notifyPlayer(
                         (macro.enabled()?"[ON] ":"[OFF] ")+macro.spell()+
-                        " | "+macro.hits()+" golpes | "+macro.windowSeconds()+"s");
+                        " | "+macro.hits()+" golpes | "+macro.windowSeconds()+"s | "+
+                        String.join(" > ",macro.sequence()));
                     return 1;
                 }))
                 .then(Commands.literal("spells").executes(ctx->{
@@ -418,6 +419,40 @@ public class NexusClientMod {
                     .then(Commands.argument("id",StringArgumentType.word()).executes(ctx->{
                         try{notifyPlayer(NexusCombatMacro.addSpell(
                             StringArgumentType.getString(ctx,"id")));}
+                        catch(Exception error){notifyPlayer(error.getMessage());}
+                        return 1;
+                    })))
+                .then(Commands.literal("sequence").executes(ctx->{
+                    notifyPlayer("Sequência de "+NexusCombatMacro.spell()+": "+
+                        String.join(" > ",NexusCombatMacro.sequence()));
+                    notifyPlayer(NexusCombatMacro.queueStatus());
+                    return 1;
+                }))
+                .then(Commands.literal("append")
+                    .then(Commands.argument("id",StringArgumentType.word()).executes(ctx->{
+                        try{notifyPlayer(NexusCombatMacro.addToSequence(
+                            StringArgumentType.getString(ctx,"id")));}
+                        catch(Exception error){notifyPlayer(error.getMessage());}
+                        return 1;
+                    })))
+                .then(Commands.literal("remove-spell")
+                    .then(Commands.argument("id",StringArgumentType.word()).executes(ctx->{
+                        try{notifyPlayer(NexusCombatMacro.removeFromSequence(
+                            StringArgumentType.getString(ctx,"id")));}
+                        catch(Exception error){notifyPlayer(error.getMessage());}
+                        return 1;
+                    })))
+                .then(Commands.literal("move-up")
+                    .then(Commands.argument("id",StringArgumentType.word()).executes(ctx->{
+                        try{notifyPlayer(NexusCombatMacro.moveInSequence(
+                            StringArgumentType.getString(ctx,"id"),-1));}
+                        catch(Exception error){notifyPlayer(error.getMessage());}
+                        return 1;
+                    })))
+                .then(Commands.literal("move-down")
+                    .then(Commands.argument("id",StringArgumentType.word()).executes(ctx->{
+                        try{notifyPlayer(NexusCombatMacro.moveInSequence(
+                            StringArgumentType.getString(ctx,"id"),1));}
                         catch(Exception error){notifyPlayer(error.getMessage());}
                         return 1;
                     })))
