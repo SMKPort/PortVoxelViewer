@@ -492,27 +492,61 @@ public class NexusClientMod {
                         return 1;
                     }))))
             .then(Commands.literal("blessing")
-                .then(Commands.literal("status").executes(ctx->{
-                    notifyPlayer(NexusBlessing.summary());return 1;
-                }))
-                .then(Commands.literal("spells").executes(ctx->{
-                    var candidates=NexusBlessing.candidates();
-                    if(candidates.isEmpty())
-                        notifyPlayer("Nenhuma magia com 'bless' no ID está equipada.");
-                    else for(String id:candidates)notifyPlayer("Possível Blessing: "+id);
-                    notifyPlayer("Use /nexusclient voicecast spells para listar todas.");
+                .then(Commands.literal("menu").executes(ctx->{
+                    Minecraft mc=Minecraft.getInstance();
+                    if(mc.player!=null)mc.setScreen(new NexusBlessingScreen(null));
                     return 1;
                 }))
+                .then(Commands.literal("status").executes(ctx->{
+                    notifyPlayer(NexusBlessing.summary());
+                    notifyPlayer(NexusBlessing.selectedRemaining());
+                    return 1;
+                }))
+                .then(Commands.literal("list").executes(ctx->{
+                    var rules=NexusBlessing.entries();
+                    if(rules.isEmpty())notifyPlayer("Nenhuma magia de manutenção cadastrada.");
+                    for(var rule:rules)notifyPlayer(
+                        (rule.enabled()?"[ON] ":"[OFF] ")+rule.spellId()+
+                        " | "+rule.thresholdSeconds()+"s | "+rule.effects().size()+" efeito(s)");
+                    return 1;
+                }))
+                .then(Commands.literal("spells").executes(ctx->{
+                    var options=NexusBlessing.candidates();
+                    if(options.isEmpty())notifyPlayer("Nenhuma magia equipada detectada.");
+                    else for(String id:options.stream().limit(40).toList())
+                        notifyPlayer("Equipada: "+id);
+                    return 1;
+                }))
+                .then(Commands.literal("add")
+                    .then(Commands.argument("id",StringArgumentType.word()).executes(ctx->{
+                        notifyPlayer(NexusBlessing.addSpell(
+                            StringArgumentType.getString(ctx,"id")));
+                        return 1;
+                    })))
+                .then(Commands.literal("select")
+                    .then(Commands.argument("id",StringArgumentType.word()).executes(ctx->{
+                        notifyPlayer(NexusBlessing.selectSpell(
+                            StringArgumentType.getString(ctx,"id")));
+                        return 1;
+                    })))
+                .then(Commands.literal("remove")
+                    .then(Commands.argument("id",StringArgumentType.word()).executes(ctx->{
+                        notifyPlayer(NexusBlessing.removeSpell(
+                            StringArgumentType.getString(ctx,"id")));
+                        return 1;
+                    })))
                 .then(Commands.literal("effects").executes(ctx->{
-                    for(String line:NexusBlessing.effectsStatus())
-                        notifyPlayer(line);
+                    for(String line:NexusBlessing.effectsStatus())notifyPlayer(line);
                     return 1;
                 }))
                 .then(Commands.literal("learn").executes(ctx->{
                     notifyPlayer(NexusBlessing.learn());return 1;
                 }))
                 .then(Commands.literal("on").executes(ctx->{
-                    notifyPlayer(NexusBlessing.setEnabled(true));return 1;
+                    notifyPlayer(NexusBlessing.setSelectedEnabled(true));return 1;
+                }))
+                .then(Commands.literal("disable").executes(ctx->{
+                    notifyPlayer(NexusBlessing.setSelectedEnabled(false));return 1;
                 }))
                 .then(Commands.literal("off").executes(ctx->{
                     notifyPlayer(NexusBlessing.setEnabled(false));return 1;
@@ -521,18 +555,21 @@ public class NexusClientMod {
                     .then(Commands.argument("value",
                         com.mojang.brigadier.arguments.IntegerArgumentType.integer(3,60))
                         .executes(ctx->{
-                            int secs=com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx,"value");
-                            notifyPlayer(NexusBlessing.setThreshold(secs));return 1;
+                            int seconds=com.mojang.brigadier.arguments.IntegerArgumentType
+                                .getInteger(ctx,"value");
+                            notifyPlayer(NexusBlessing.setThreshold(seconds));return 1;
                         })))
                 .then(Commands.literal("spell")
                     .then(Commands.argument("id",StringArgumentType.word()).executes(ctx->{
-                        String id=StringArgumentType.getString(ctx,"id");
-                        notifyPlayer(NexusBlessing.setSpell(id));return 1;
+                        notifyPlayer(NexusBlessing.setSpell(
+                            StringArgumentType.getString(ctx,"id")));
+                        return 1;
                     })))
                 .then(Commands.literal("effect")
                     .then(Commands.argument("id",StringArgumentType.word()).executes(ctx->{
-                        String id=StringArgumentType.getString(ctx,"id");
-                        notifyPlayer(NexusBlessing.trackEffect(id));return 1;
+                        notifyPlayer(NexusBlessing.trackEffect(
+                            StringArgumentType.getString(ctx,"id")));
+                        return 1;
                     }))))
             .then(Commands.literal("autoheal")
                 .then(Commands.literal("status").executes(ctx->{
