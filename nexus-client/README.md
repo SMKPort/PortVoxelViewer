@@ -1,6 +1,107 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
 
+## Nexus Aterna 4.0.0-alpha.1 | Consciência contextual e memória narrativa
+
+**Nova branch:** \`nexus-aterna-4.0\`. A versão 3.0 alpha.9 continua intacta na sua
+branch. Esta primeira versão 4.0 usa **dados reais sincronizados do cliente**
+e **não finge saber** o que o servidor não informa.
+
+### 1. Situação atual: contexto real
+
+Abra **F8 > Combate > Nexus 4.0** ou digite:
+
+\`\`\`text
+/nexusclient situacao
+/nexusclient situation
+/nexusclient cognition menu
+/nexusclient cognition status
+\`\`\`
+
+O Nexus compara vida atual e máxima, comida, mana (apenas quando o sensor
+do Iron's Spells fornece leitura), posição/dimensão, estado da macro,
+autorização da cura e integridade **RP local** do Nexus, quando configurada.
+A resposta diferencia valores desconhecidos de valores zero.
+
+Com VoiceCast offline ativado voluntariamente (F6), também é possível dizer
+**"Nexus, situação atual"** ou **"Nexus, relatório de situação"**.
+As respostas aparecem no **seu chat local**, sem enviar mensagem ao servidor,
+nem chamar IA remota.
+
+### 2. Protocolo de emergência autorizado
+
+O monitor inicia **desligado**; o protocolo para suspender macros começa
+**desligado** e exige uma autorização separada.
+Se ambos estiverem ativos e a vida cruzar o limite configurado,
+o Nexus emite aviso privado e **interrompe/suspende macros ofensivas**.
+Não gasta mana, não lança magias, não move o personagem e não toma
+controle do jogador. A cura automática mantém a permissão independente da 3.0.
+
+\`\`\`text
+/nexusclient cognition monitor on
+/nexusclient cognition emergency on
+/nexusclient cognition threshold 25
+/nexusclient cognition resume
+/nexusclient cognition off
+\`\`\`
+
+As macros só são retomadas quando o jogador usa **Retomar Macros**
+ou o comando \`resume\`. As automações não são ligadas pelo
+"Ativar tudo". **Desligar tudo** revoga as novas permissões
+sem apagar as memórias anteriores.
+
+### 3. Memória narrativa
+
+\`\`\`text
+/nexusclient journal menu
+/nexusclient journal add Conselho Celestial | Decidimos a sentença de Zadkiel.
+/nexusclient journal recent
+/nexusclient journal recall Conselho Celestial
+/nexusclient journal delete 1
+/nexusclient cognition recall oficina
+\`\`\`
+
+O diário possui títulos, detalhes e busca local por palavras-chave.
+Ele complementa as **memórias manuais anteriores**, não as sobrescreve.
+O Nexus só lembra o que já foi cadastrado, ou o que o cliente
+registrou **com autorização explícita**.
+A captura automática de um evento crítico é opcional:
+\`/nexusclient journal auto on\` e \`off\`.
+Não grava áudio de terceiros e não transmite o diário ao servidor.
+
+### 4. Aprendizado por histórico das macros
+
+\`\`\`text
+/nexusclient cognition insights on
+/nexusclient cognition insights status
+/nexusclient cognition insights recent
+/nexusclient cognition insights clear
+/nexusclient cognition insights off
+\`\`\`
+
+Histórico local autorizado separadamente, com até 120 eventos.
+Distingue **solicitação de feitiço** de confirmação do servidor:
+registra começo, pedidos, bloqueios, cancelamentos e conclusão de fila.
+Se há bloqueios repetidos por mana ou cooldown, o Nexus **sugere**
+ajustar sequências e intervalos. Não altera macros sozinho.
+O histórico permanece local em \`config/nexus-combat-insights.json\`.
+
+### Compatibilidade
+
+- NeoForge 1.21.1; mantém todas as funcionalidades da alpha.9
+  (magias em sequência, VoiceCast, anúncios, Blessing, Heal, HUD, Waystones).
+- Sem retorno do sistema antigo de buffs por itens ou integração de
+  áudio com Plasmo Voice.
+- Os dados da 4.0 ficam separados em \`config/nexus-cognition.json\`,
+  \`config/nexus-narrative-journal.json\` e
+  \`config/nexus-combat-insights.json\`.
+- Monitoramento, emergência, histórico e diário automático são
+  **opt-in**. A análise manual funciona mesmo sem ativar monitoramento.
+- Esta é uma **alpha**. O build CI valida compilação e regras locais,
+  enquanto a integração em jogo precisa de novos testes no Somake.
+
+
+
 ## Nexus Aterna 3.0.0-alpha.9 | Frases de ativação e anúncio em macros
 
 Cada macro de combate pode ter **dois tipos de frases independentes**:
