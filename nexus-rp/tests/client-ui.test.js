@@ -52,8 +52,13 @@ test("Nexus Client uses no RCON fields and exposes code pairing",()=>{
  assert.ok(pair.includes('data-nexus-client="settings"'));
  assert.ok(pair.includes("GERAR CÓDIGO DE PAREAMENTO"));
  assert.ok(pair.includes("TESTAR API E MOSTRAR DETALHES"));
- assert.ok(pair.includes("PAINEL 2.0"));
+ assert.ok(pair.includes("CONSOLE 4.0"));
  assert.ok(pair.includes("DIAGNÓSTICO DA API"));
+ assert.ok(pair.includes("NEXUS 4.0 · PROTOCOLOS NO JOGO"));
+ assert.ok(pair.includes('data-v4-copy="/nexusclient situacao"'));
+ assert.ok(pair.includes('data-v4-copy="/nexusclient cognition menu"'));
+ assert.ok(pair.includes('data-v4-copy="/nexusclient journal menu"'));
+ assert.ok(pair.includes('data-v4-copy="/nexusclient cognition insights status"'));
 });
 test("RCON fields remain available only in RCON mode",()=>{
  const html=boot("public").config();
