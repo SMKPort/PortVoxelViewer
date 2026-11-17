@@ -223,7 +223,6 @@ public final class MainActivity extends Activity {
             }
             b.append("Bibliotecas: ").append(app.nativeLibraryDir).append('\n');
             b.append("Dados privados: ").append(app.dataDir).append('\n');
-            b.append("Dados credenciais: ").append(app.credentialProtectedDataDir).append('\n');
             b.append("\nTESTES DE ACESSO\n");
             access(b, app.sourceDir);
             access(b, app.dataDir);
