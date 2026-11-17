@@ -21,7 +21,7 @@ final class NexusBuffScreen extends Screen {
     }
     private int panelWidth(){return Math.min(width-20,550);}
     private int left(){return (width-panelWidth())/2;}
-    private int perPage(){return Math.max(1,Math.min(5,(height-262)/27));}
+    private int perPage(){return Math.max(1,Math.min(4,(height-295)/27));}
     private int pages(){return Math.max(1,(NexusBuffManager.entries().size()+perPage()-1)/perPage());}
     private NexusBuffManager.Entry selected(){
         for(var e:NexusBuffManager.entries())if(e.id==selectedId)return e;
@@ -38,12 +38,20 @@ final class NexusBuffScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal(NexusBuffManager.enabled()?
             "§aAUTOMAÇÃO ON  (DESLIGAR)":"§cAUTOMAÇÃO OFF  (LIGAR)"),
             b->toggle()).bounds(x+6,76,w-12,20).build());
+        addRenderableWidget(Button.builder(Component.literal(NexusBuffManager.inventoryEnabled()?
+            "§aINVENTÁRIO ON  (BUSCAR BUFFS EM OUTRAS LINHAS)":
+            "§cINVENTÁRIO OFF  (BUSCAR BUFFS EM OUTRAS LINHAS)"),
+            b->{
+                NexusBuffManager.inventoryEnabled(!NexusBuffManager.inventoryEnabled());
+                message=NexusBuffManager.status();
+                reopen();
+            }).bounds(x+6,104,w-12,20).build());
 
         List<NexusBuffManager.Entry> entries=NexusBuffManager.entries();
         page=Math.max(0,Math.min(page,pages()-1));
         for(int i=page*perPage();i<Math.min(entries.size(),(page+1)*perPage());i++){
             var e=entries.get(i);
-            int row=113+(i%perPage())*27;
+            int row=138+(i%perPage())*27;
             String title=(e.id==selectedId?"§6● ":"§f")+
                 e.name+"  ["+(e.mode.equals(NexusBuffManager.COMBAT)?"AUTO":"MANUAL")+"]";
             addRenderableWidget(Button.builder(Component.literal(shorten(title,w-32)),
@@ -136,7 +144,7 @@ final class NexusBuffScreen extends Screen {
         g.fill(x-5,8,x+w+5,11,GOLD);
         g.drawCenteredString(font,"NEXUS ATERNA | GERENCIADOR DE BUFFS",width/2,20,GOLD);
         g.drawString(font,"Lista de buffs permitidos: "+NexusBuffManager.entries().size()+
-            "/8   |   página "+(page+1)+"/"+pages(),x+7,100,MUTED,false);
+            "/8   |   página "+(page+1)+"/"+pages(),x+7,128,MUTED,false);
         if(selected()!=null){
             g.drawString(font,shorten("Selecionado: "+selected().itemId,w-104),
                 x+95,height-121,WHITE,false);
