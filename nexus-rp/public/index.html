@@ -2,14 +2,15 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0c090e"><meta name="description" content="Nexus Aterna RP, terminal narrativo e comunicador Minecraft de Port Morningstar.">
-<title>NEXUS ATERNA | Roleplay Console 3.5</title>
+<meta name="theme-color" content="#0c090e"><meta name="color-scheme" content="dark"><meta name="description" content="Nexus Aterna RP, terminal narrativo e comunicador Minecraft de Port Morningstar.">
+<title>NEXUS ATERNA 4.0 | Arcane Command Center</title>
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="manifest" href="/manifest.webmanifest"><link rel="stylesheet" href="/styles.css?v=2.4">
 <link rel="stylesheet" href="/upgrade.css?v=2.4">
 <link rel="stylesheet" href="/evolution.css?v=2.4">
 <link rel="stylesheet" href="/voice.css?v=2.4">
 <link rel="stylesheet" href="/alerts.css?v=2.8">
+<link rel="stylesheet" href="/v4-shell.css?v=4.0.1">
 <script src="/views.js?v=2.4" defer></script>
 <script src="/upgrade.js?v=2.4" defer></script>
 <script src="/evolution.js?v=2.7" defer></script>
@@ -18,11 +19,12 @@
 <script src="/alerts.js?v=2.8" defer></script>
 <script src="/mind2.js?v=3.1" defer></script>
 <script src="/app.js?v=3.3" defer></script>
+<script src="/v4-shell.js?v=4.0.1" defer></script>
 </head>
 <body>
 <div class="layout">
 <aside class="sidebar" id="sidebar" aria-label="Navegação">
- <a class="brand" href="#painel"><span class="brand-symbol">✦</span><span><strong>NEXUS <i>ATERNA</i></strong><small>ROLEPLAY CONSOLE 3.0 · MINECRAFT</small></span></a>
+ <a class="brand" href="#painel"><span class="brand-symbol">✦</span><span><strong>NEXUS <i>ATERNA</i></strong><small>ARCANE COMMAND CENTER · 4.0</small></span></a>
  <div class="navigation-title">INTERFACE DO PORT</div>
  <nav id="nav">
   <button class="nav-button active" data-page="painel"><span>◈</span> Visão geral</button>
@@ -40,17 +42,33 @@
     </div>
   </details>
  </nav>
- <div class="sidebar-bottom"><div class="oper-status"><span class="light"></span><span id="sideConnection">NARRATIVA LOCAL</span></div><div class="line-mini"><span>IDENTIDADE</span><strong>PORT MORNINGSTAR</strong></div><div class="line-mini"><span>MODO</span><strong>ROLEPLAY</strong></div><div class="sidebar-version">ATERNA RP / 3.0</div></div>
+ <div class="sidebar-bottom"><div class="oper-status"><span class="light"></span><span id="sideConnection">NARRATIVA LOCAL</span></div><div class="line-mini"><span>IDENTIDADE</span><strong>PORT MORNINGSTAR</strong></div><div class="line-mini"><span>MODO</span><strong>ROLEPLAY</strong></div><div class="sidebar-version">ATERNA RP / 4.0 · AD AETERNUM</div></div>
 </aside>
 <div class="screen">
  <header class="topbar">
   <button id="menuToggle" class="icon-btn menu-toggle" aria-label="Abrir menu">☰</button>
   <div class="crumb">ATERNA <span>/</span> <strong id="pageLabel">NÚCLEO</strong></div>
-  <div class="top-right"><a class="voice-top-link" href="#voz" aria-label="Ir para Voz do Nexus">🎙 <span>Voz do Nexus</span></a><span class="top-status" id="topStatus"><span class="light"></span> MODO LOCAL</span><button class="top-gear" id="openSettings" title="Configurações" aria-label="Abrir configurações">⚙</button></div>
+  <div class="top-right"><span class="v4-top-version">NEXUS 4.0</span><button id="v4QuickLaunch" class="v4-command-launcher" type="button" aria-label="Abrir busca rápida e comandos" title="Buscar módulos e comandos (Ctrl+K)">⌕ <span class="v4-launcher-text">BUSCA RÁPIDA</span><kbd>Ctrl K</kbd></button><a class="voice-top-link" href="#voz" aria-label="Ir para Voz do Nexus">🎙 <span>Voz do Nexus</span></a><span class="top-status" id="topStatus"><span class="light"></span> MODO LOCAL</span><button class="top-gear" id="openSettings" title="Configurações" aria-label="Abrir configurações">⚙</button></div>
  </header>
- <main id="content" class="main" aria-live="polite"></main>
+ <main id="content" class="main" aria-live="polite" tabindex="-1"></main>
  <footer class="footer"><span>✦ PORT MORNINGSTAR HERNANDES</span><span id="time">NEXUS ATERNA</span><span>ARCANE ENGINEERING DIVISION</span></footer>
 </div>
+</div>
+<nav class="v4-mobile-dock" aria-label="Acesso rápido no celular">
+  <button type="button" data-v4-route="painel" class="active"><span aria-hidden="true">◈</span>INÍCIO</button>
+  <button type="button" data-v4-route="voz"><span aria-hidden="true">◉</span>VOZ</button>
+  <button type="button" data-v4-route="cliente"><span aria-hidden="true">⬡</span>CLIENT</button>
+  <button type="button" data-v4-route="chat"><span aria-hidden="true">▤</span>CHAT</button>
+  <button type="button" data-v4-open aria-label="Mais módulos e comandos"><span aria-hidden="true">⌕</span>BUSCAR</button>
+</nav>
+<div id="v4CommandDialog" class="v4-dialog" role="dialog" aria-modal="true" aria-labelledby="v4DialogTitle" hidden>
+  <div class="v4-dialog-backdrop" aria-hidden="true"></div>
+  <div class="v4-dialog-panel">
+    <div class="v4-dialog-head"><div><strong id="v4DialogTitle">Terminal de comando</strong><small>NEXUS ATERNA / NAVEGAÇÃO RÁPIDA</small></div><button type="button" id="v4CommandClose" class="v4-dialog-close" aria-label="Fechar busca">ESC</button></div>
+    <input id="v4CommandInput" type="search" autocomplete="off" spellcheck="false" maxlength="100" placeholder="Buscar módulos, macros ou comandos..." aria-label="Buscar módulos e comandos">
+    <div id="v4CommandResults" role="listbox" aria-label="Resultados de busca"></div>
+    <div class="v4-dialog-foot">↑ ↓ navega · Enter abre · Esc fecha · os comandos do mod são apenas copiados</div>
+  </div>
 </div>
 <div id="overlay" class="mobile-overlay" hidden></div>
 <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
