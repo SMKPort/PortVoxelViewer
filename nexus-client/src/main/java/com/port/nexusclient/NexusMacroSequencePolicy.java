@@ -10,7 +10,8 @@ final class NexusMacroSequencePolicy {
     static final long BETWEEN_CASTS_MS=6_000L; // historical default
     static final int DEFAULT_INTERVAL_SECONDS=6;
     static final int MIN_INTERVAL_SECONDS=2, MAX_INTERVAL_SECONDS=30;
-    static final long MAX_SEQUENCE_MS=120_000L;
+    // Five gaps of up to 30s plus room for lengthy server-side casts.
+    static final long MAX_SEQUENCE_MS=210_000L;
 
     static boolean validInterval(int seconds){
         return seconds>=MIN_INTERVAL_SECONDS&&seconds<=MAX_INTERVAL_SECONDS;
