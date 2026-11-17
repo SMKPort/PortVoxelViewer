@@ -1,5 +1,69 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
+## Nexus Aterna 3.0.0-alpha.4 | + ADICIONAR MAGIA (manutenção de efeitos)
+
+O **Blessing** agora faz parte de um gerenciador de até **8 magias de manutenção**.
+Abra **F8 > Combate > Magias | Manutenção Automática** ou execute
+`/nexusclient blessing menu`. Clique **+ ADICIONAR MAGIA** para ver as
+magias realmente equipadas no Iron's Spells.
+
+Cada magia possui seu próprio estado ON/OFF, lista de efeitos positivos
+aprendidos, antecedência de renovação (3 a 60 segundos) e intervalo de
+pelo menos 60 segundos entre tentativas. O limite de espaçamento entre
+**magias diferentes** é 4 segundos, para evitar ações simultâneas.
+
+### Configuração de cada magia
+
+1. Clique **+ ADICIONAR MAGIA**, escolha um feitiço equipado. Ele começa
+   desligado e sem efeitos associados.
+2. Selecione a magia na lista, pressione **APRENDER EFEITO (30s)**, feche
+   o menu e conjure manualmente **essa mesma magia em você**.
+3. O Nexus observa efeitos benéficos novos ou renovados. Evite outras
+   poções e magias durante o aprendizado.
+4. Se o efeito detectado estiver correto, volte ao menu e clique
+   **DESLIGADA (LIGAR)**. Configure a antecedência se desejar.
+5. Repita para outras magias. Cada uma se renova quando o próprio efeito
+   está perto do fim ou desaparece. Magias sem efeito observável não podem
+   ser ativadas automaticamente.
+
+### Comandos
+
+```text
+/nexusclient blessing menu
+/nexusclient blessing spells
+/nexusclient blessing add modid:magia
+/nexusclient blessing list
+/nexusclient blessing select modid:magia
+/nexusclient blessing learn
+/nexusclient blessing seconds 12
+/nexusclient blessing on
+/nexusclient blessing disable
+/nexusclient blessing remove modid:magia
+/nexusclient blessing off
+/nexusclient blessing status
+```
+
+`on`, `disable`, `learn` e `seconds` atuam **somente na magia selecionada**.
+`off` desliga **todas** e também é acionado por `/nexusclient permissions off`.
+O comando antigo `blessing spell modid:magia` continua disponível e agora
+adiciona/seleciona a magia em vez de apagar o registro anterior.
+
+### Compatibilidade e segurança
+
+O arquivo `config/nexus-blessing.json` é atualizado do formato único
+da alpha.3 (schema 1) para o formato múltiplo (schema 2). Antes da
+primeira migração, o original é copiado para
+`config/nexus-blessing-v1-backup.json`. O Blessing já cadastrado,
+seus efeitos e a autorização anterior são preservados.
+
+O Nexus só usa `QuickCastPacket` da seleção de magias equipada.
+Mana, cooldown e permissões são validados pelo Iron's Spells/servidor.
+Não usa comandos de administrador, não cria buffs no cliente e não exige
+servidor modificado. A eficácia depende de a magia realmente conceder
+um efeito benéfico com duração visível para o cliente. Builds e servidores
+reais precisam ser testados em jogo.
+
+
 ## Nexus Aterna 3.0.0-alpha.3 | Blessing automático
 
 O Nexus agora monitora **efeitos positivos reais do jogador**, aprendidos a partir
