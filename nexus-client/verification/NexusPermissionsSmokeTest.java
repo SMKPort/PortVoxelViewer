@@ -30,6 +30,7 @@ public final class NexusPermissionsSmokeTest {
         NexusSocial.share=false;
         NexusSpeaker.active=false;
         NexusAutoHeal.enabled=false;
+        NexusBlessing.enabled=false;
         NexusCombatMacro.active=false;
         NexusBuffManager.active=false;
         NexusVoiceCasting.on=false;
@@ -64,6 +65,7 @@ public final class NexusPermissionsSmokeTest {
         NexusPermissions.status();
         NexusVoiceCasting.on=true;
         NexusAutoHeal.enabled=true;
+        NexusBlessing.enabled=true;
         NexusCombatMacro.active=true;
         NexusBuffManager.active=true;
         NexusArcaneTravel.pending=true;
@@ -72,6 +74,7 @@ public final class NexusPermissionsSmokeTest {
         check(!NexusBuffManager.active,"Global off revokes automatic buff permission.");
         check(!NexusCombatMacro.active,"Global off stops offensive macros.");
         check(!NexusAutoHeal.enabled,"Global off must stop automatic healing.");
+        check(!NexusBlessing.enabled,"Global off must stop automatic Blessing renewals.");
         check(!NexusVoiceCasting.on,"Disable everything closes the local microphone.");
         check(!ClientConfig.allowChat && !ClientConfig.allowTelemetry
             && !ClientConfig.allowMind && !ClientConfig.allowAutonomy,
@@ -213,4 +216,11 @@ final class NexusBuffManager {
 final class NexusArcaneTravel {
     static boolean pending;
     static String cancel(){pending=false;return "cancelled";}
+}
+
+/** Stand-in only for isolated permission tests, not the Minecraft mod. */
+final class NexusBlessing {
+    static boolean enabled;
+    static void setEnabled(boolean on){enabled=on;}
+    static String summary(){return enabled?"Blessing ON":"Blessing OFF";}
 }
