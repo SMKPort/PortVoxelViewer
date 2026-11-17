@@ -423,6 +423,45 @@ public class NexusClientMod {
                         catch(Exception error){notifyPlayer(error.getMessage());}
                         return 1;
                     })))
+                .then(Commands.literal("phrase")
+                    .then(Commands.argument("text",StringArgumentType.greedyString())
+                        .executes(ctx->{
+                            notifyPlayer(NexusCombatMacro.setVoicePhrase(
+                                StringArgumentType.getString(ctx,"text")));
+                            return 1;
+                        })))
+                .then(Commands.literal("clear-phrase").executes(ctx->{
+                    notifyPlayer(NexusCombatMacro.setVoicePhrase(""));
+                    return 1;
+                }))
+                .then(Commands.literal("announce-start")
+                    .then(Commands.argument("text",StringArgumentType.greedyString())
+                        .executes(ctx->{
+                            notifyPlayer(NexusCombatMacro.setAnnouncements(
+                                StringArgumentType.getString(ctx,"text"),
+                                NexusCombatMacro.finishPhrase(),
+                                NexusCombatMacro.announceHud(),NexusCombatMacro.announceChat()));
+                            return 1;
+                        })))
+                .then(Commands.literal("announce-finish")
+                    .then(Commands.argument("text",StringArgumentType.greedyString())
+                        .executes(ctx->{
+                            notifyPlayer(NexusCombatMacro.setAnnouncements(
+                                NexusCombatMacro.startPhrase(),
+                                StringArgumentType.getString(ctx,"text"),
+                                NexusCombatMacro.announceHud(),NexusCombatMacro.announceChat()));
+                            return 1;
+                        })))
+                .then(Commands.literal("voicecheck")
+                    .then(Commands.argument("text",StringArgumentType.greedyString())
+                        .executes(ctx->{
+                            String spoken=StringArgumentType.getString(ctx,"text");
+                            String key=NexusMacroPhrasePolicy.interpret(spoken,
+                                NexusCombatMacro.voicePhrases());
+                            notifyPlayer(key==null?"Frase não identificada. Diga Nexus + frase cadastrada.":
+                                "Frase reconhecida para macro "+key+" (sem executar).");
+                            return 1;
+                        })))
                 .then(Commands.literal("sequence").executes(ctx->{
                     notifyPlayer("Sequência de "+NexusCombatMacro.spell()+": "+
                         String.join(" > ",NexusCombatMacro.sequence()));
