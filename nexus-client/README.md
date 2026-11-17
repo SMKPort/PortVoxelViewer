@@ -1,5 +1,74 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
+## Nexus Aterna 3.0.0-alpha.7 | Várias magias no MESMO macro
+
+Um **macro de combate** agora suporta uma **sequência ordenada de até 6 magias
+equipadas**, executada em etapas após acertar o mesmo alvo o número configurado
+de vezes. Não depende do VoiceCast.
+
+### Pelo F8
+
+1. Abra **F8 > Combate > Configurar Macros**.
+2. Selecione sua macro anterior de `Divine Smite` ou crie uma com
+   **+ ADICIONAR MACRO** e escolha uma magia equipada.
+3. Dentro da macro selecionada, clique **+ MAGIA NESTA MACRO**.
+   Escolha quantas magias extras desejar (até seis no total). A ordem de
+   cadastro determina a ordem de solicitação ao servidor.
+4. Configure golpes (2–6), janela do combo (2–10s) e ative a macro.
+5. Em interfaces maiores, **EDITAR SEQUÊNCIA** permite reorganizar ou
+   remover as magias extras. A primeira magia identifica a macro e
+   só pode ser substituída pelo comando `macro spell <id>` ou removendo
+   a macro inteira.
+
+### Exemplo
+
+```text
+Nexus > Macro: Julgamento Divino
+Gatilho: 3 golpes no mesmo alvo em 5 segundos
+1. irons_spellbooks:divine_smite
+2. irons_spellbooks:heal
+3. modid:outra_magia_equipada
+```
+
+Quando o cliente observa os três golpes, solicita o primeiro feitiço usando
+a QuickCastPacket legítima. Aguarda pelo menos **6 segundos** e o fim de
+qualquer conjuração em andamento antes de solicitar o próximo.
+Todas as etapas ainda exigem a magia equipada, mana, cooldown e autorização
+do servidor. A sequência é cancelada se o alvo morrer, sair do alcance,
+o jogador trocar de mundo/abrir menus, ou uma conjuração falhar no pré-teste.
+O limite total de execução é **120 segundos**. O cliente pode solicitar
+feitiços, mas não pode afirmar que o servidor efetivamente executou
+cada um até ser testado no Somake.
+
+### Comandos
+
+```text
+/nexusclient macro menu
+/nexusclient macro add irons_spellbooks:divine_smite
+/nexusclient macro select irons_spellbooks:divine_smite
+/nexusclient macro append irons_spellbooks:heal
+/nexusclient macro sequence
+/nexusclient macro hits 3
+/nexusclient macro window 5
+/nexusclient macro on
+/nexusclient macro remove-spell irons_spellbooks:heal
+/nexusclient macro move-up modid:outra_magia
+/nexusclient macro move-down modid:outra_magia
+/nexusclient macro disable
+/nexusclient macro off
+```
+
+`macro on` e `macro disable` afetam apenas a macro selecionada;
+`macro off` desativa todas. O sistema também permite múltiplos macros
+independentes (cada um com sua própria sequência). Somente uma sequência
+pode executar por vez.
+
+Config antiga em `config/nexus-combat-macros.json` é migrada de schema 1
+ou 2 para schema 3. Faz backup `nexus-combat-macros-v1-backup.json`
+ou `nexus-combat-macros-v2-backup.json`, conforme origem. O gatilho
+Divine Smite existente é preservado como a primeira etapa do seu macro.
+
+
 
 ## Nexus Aterna 3.0.0-alpha.6 | Remoção dos buffs de itens
 
