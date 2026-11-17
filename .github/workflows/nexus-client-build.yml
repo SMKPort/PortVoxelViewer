@@ -103,6 +103,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusVoiceCandidatePolicy.java \
             nexus-client/verification/NexusVoiceCandidatePolicyTest.java
           java -ea -cp /tmp/nexus-bilingual-tests com.port.nexusclient.NexusVoiceCandidatePolicyTest
+      - name: Test automatic Blessing expiry and learning safeguards
+        run: |
+          mkdir -p /tmp/nexus-blessing-tests
+          javac -encoding UTF-8 -d /tmp/nexus-blessing-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusBlessingPolicy.java \
+            nexus-client/verification/NexusBlessingPolicyTest.java
+          java -ea -cp /tmp/nexus-blessing-tests com.port.nexusclient.NexusBlessingPolicyTest
       - name: Test explicit auto Heal policy
         run: |
           mkdir -p /tmp/nexus-autoheal-tests
