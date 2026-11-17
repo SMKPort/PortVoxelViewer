@@ -65,6 +65,7 @@ final class NexusPermissions {
         NexusBuffManager.setEnabled(false);
         NexusCombatMacro.setEnabled(false);
         NexusAutoHeal.setEnabled(false);
+        NexusBlessing.setEnabled(false);
         NexusVoiceCasting.setEnabled(false);
         NexusHearing.listen(false); // Legacy setting remains safely disabled.
         NexusSpeaker.enable(false);
@@ -94,6 +95,7 @@ final class NexusPermissions {
         NexusClientMod.notifyPlayer("Voz offline: "+NexusVoiceCasting.status());
         NexusClientMod.notifyPlayer("Buffs: "+NexusBuffManager.status());
         NexusClientMod.notifyPlayer(NexusCombatMacro.status());
+        NexusClientMod.notifyPlayer(NexusBlessing.summary());
         NexusClientMod.notifyPlayer("Cura automática: "+(NexusAutoHeal.enabled()?"ON":"OFF")+
             " | "+NexusAutoHeal.threshold()+"% | "+NexusAutoHeal.lastOutcome());
     }
