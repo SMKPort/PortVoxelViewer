@@ -126,18 +126,30 @@ final class NexusPermissionsScreen extends Screen {
                     b->minecraft.setScreen(new NexusMicrophoneScreen(this)))
                     .bounds(x+16+2*third,220,third,20).build());
             }
-            if(height>=420){
-                addRenderableWidget(Button.builder(Component.literal("§6MAGIAS | MANUTENÇÃO AUTOMÁTICA"),
-                    button->minecraft.setScreen(new NexusBlessingScreen(this)))
-                    .bounds(x+6,281,w-12,20).build());
-            }
             if(height>=320){
-                addRenderableWidget(Button.builder(Component.literal("§6CONFIGURAR MACROS"),
-                    button->minecraft.setScreen(new NexusMacroScreen(this)))
-                    .bounds(x+6,250,half,20).build());
-                addRenderableWidget(Button.builder(Component.literal("§6GERENCIAR BUFFS"),
-                    button->minecraft.setScreen(new NexusBuffScreen(this)))
-                    .bounds(x+12+half,250,half,20).build());
+                if(height<390){
+                    // Compact layouts keep all three managers reachable in one row.
+                    int third=(w-26)/3;
+                    addRenderableWidget(Button.builder(Component.literal("§6MACROS"),
+                        button->minecraft.setScreen(new NexusMacroScreen(this)))
+                        .bounds(x+6,250,third,20).build());
+                    addRenderableWidget(Button.builder(Component.literal("§6BUFFS"),
+                        button->minecraft.setScreen(new NexusBuffScreen(this)))
+                        .bounds(x+11+third,250,third,20).build());
+                    addRenderableWidget(Button.builder(Component.literal("§6+ MAGIAS"),
+                        button->minecraft.setScreen(new NexusBlessingScreen(this)))
+                        .bounds(x+16+2*third,250,third,20).build());
+                }else{
+                    addRenderableWidget(Button.builder(Component.literal("§6CONFIGURAR MACROS"),
+                        button->minecraft.setScreen(new NexusMacroScreen(this)))
+                        .bounds(x+6,250,half,20).build());
+                    addRenderableWidget(Button.builder(Component.literal("§6GERENCIAR BUFFS"),
+                        button->minecraft.setScreen(new NexusBuffScreen(this)))
+                        .bounds(x+12+half,250,half,20).build());
+                    addRenderableWidget(Button.builder(Component.literal("§6+ MAGIAS | MANUTENÇÃO AUTOMÁTICA"),
+                        button->minecraft.setScreen(new NexusBlessingScreen(this)))
+                        .bounds(x+6,282,w-12,20).build());
+                }
             }
         }
         int footerY=height-34,btnW=(w-22)/3;
