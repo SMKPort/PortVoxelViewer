@@ -154,6 +154,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusSpellAccess.java \
             nexus-client/verification/NexusSpellAccessTest.java
           java -ea -cp /tmp/nexus-spellwheel-tests com.port.nexusclient.NexusSpellAccessTest
+      - name: Test safe inventory-to-hotbar buff swapping
+        run: |
+          mkdir -p /tmp/nexus-inventory-buff-tests
+          javac -encoding UTF-8 -d /tmp/nexus-inventory-buff-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusBuffInventoryPolicy.java \
+            nexus-client/verification/NexusBuffInventoryPolicyTest.java
+          java -ea -cp /tmp/nexus-inventory-buff-tests com.port.nexusclient.NexusBuffInventoryPolicyTest
       - name: Test approved hotbar buff safety policy
         run: |
           mkdir -p /tmp/nexus-buff-tests
