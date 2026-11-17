@@ -72,6 +72,7 @@ public class NexusClientMod {
         NexusAutoHeal.tick();
         NexusCombatMacro.tick();
         NexusBuffManager.tick();
+        NexusBlessing.tick();
         NexusArcaneTravel.tick();
         Minecraft mc=Minecraft.getInstance();
         while(PRIVATE_KEY.consumeClick()){
@@ -489,6 +490,49 @@ public class NexusClientMod {
                             notifyPlayer(NexusBuffManager.status());
                         }catch(Exception e){notifyPlayer(e.getMessage());}
                         return 1;
+                    }))))
+            .then(Commands.literal("blessing")
+                .then(Commands.literal("status").executes(ctx->{
+                    notifyPlayer(NexusBlessing.summary());return 1;
+                }))
+                .then(Commands.literal("spells").executes(ctx->{
+                    var candidates=NexusBlessing.candidates();
+                    if(candidates.isEmpty())
+                        notifyPlayer("Nenhuma magia com 'bless' no ID está equipada.");
+                    else for(String id:candidates)notifyPlayer("Possível Blessing: "+id);
+                    notifyPlayer("Use /nexusclient voicecast spells para listar todas.");
+                    return 1;
+                }))
+                .then(Commands.literal("effects").executes(ctx->{
+                    for(String line:NexusBlessing.effectsStatus())
+                        notifyPlayer(line);
+                    return 1;
+                }))
+                .then(Commands.literal("learn").executes(ctx->{
+                    notifyPlayer(NexusBlessing.learn());return 1;
+                }))
+                .then(Commands.literal("on").executes(ctx->{
+                    notifyPlayer(NexusBlessing.setEnabled(true));return 1;
+                }))
+                .then(Commands.literal("off").executes(ctx->{
+                    notifyPlayer(NexusBlessing.setEnabled(false));return 1;
+                }))
+                .then(Commands.literal("seconds")
+                    .then(Commands.argument("value",
+                        com.mojang.brigadier.arguments.IntegerArgumentType.integer(3,60))
+                        .executes(ctx->{
+                            int secs=com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx,"value");
+                            notifyPlayer(NexusBlessing.setThreshold(secs));return 1;
+                        })))
+                .then(Commands.literal("spell")
+                    .then(Commands.argument("id",StringArgumentType.word()).executes(ctx->{
+                        String id=StringArgumentType.getString(ctx,"id");
+                        notifyPlayer(NexusBlessing.setSpell(id));return 1;
+                    })))
+                .then(Commands.literal("effect")
+                    .then(Commands.argument("id",StringArgumentType.word()).executes(ctx->{
+                        String id=StringArgumentType.getString(ctx,"id");
+                        notifyPlayer(NexusBlessing.trackEffect(id));return 1;
                     }))))
             .then(Commands.literal("autoheal")
                 .then(Commands.literal("status").executes(ctx->{
