@@ -470,7 +470,7 @@ final class NexusBlessing {
            !player.isAlive()||!ModList.get().isLoaded("irons_spellbooks")||
            !NexusUpkeepRosterPolicy.mayDispatch(now,lastAnyAttemptAt,
                GLOBAL_CAST_GAP_MS,NexusVoiceCasting.clientIsCasting(),
-               NexusBuffManager.busy()||player.isUsingItem()))return;
+               player.isUsingItem()))return;
         String scope=realm();
         if(scope.isBlank())return;
         // Read equipped list once per second, not once for every tracked spell.
