@@ -78,11 +78,15 @@ final class NexusMacroScreen extends Screen {
             addRenderableWidget(Button.builder(Component.literal("+ 1s"),
                 b->window(1)).bounds(x+13+half,306,half,20).build());
             if(height>=420){
-                addRenderableWidget(Button.builder(Component.literal("§6SEQUÊNCIA / INTERVALO"),
+                int third=(w-28)/3;
+                addRenderableWidget(Button.builder(Component.literal("§6SEQUÊNCIA"),
                     b->minecraft.setScreen(new NexusMacroSequenceScreen(parent)))
-                    .bounds(x+7,347,half,20).build());
+                    .bounds(x+7,347,third,20).build());
+                addRenderableWidget(Button.builder(Component.literal("§6FRASES / VOZ"),
+                    b->minecraft.setScreen(new NexusMacroPhrasesScreen(parent)))
+                    .bounds(x+14+third,347,third,20).build());
                 addRenderableWidget(Button.builder(Component.literal("§cREMOVER MACRO"),
-                    b->remove()).bounds(x+13+half,347,half,20).build());
+                    b->remove()).bounds(x+21+2*third,347,third,20).build());
             }
         }
         addRenderableWidget(Button.builder(Component.literal("VOLTAR"),b->onClose())
