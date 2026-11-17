@@ -46,6 +46,16 @@ test("HTTP real: pareamento, mensagem e ACK não derrubam o servidor",async()=>{
       await new Promise(r=>setTimeout(r,75));
     }
     assert.ok(ready,"HTTP server não iniciou: "+output);
+    const shellCss=await fetch(base+"/v4-shell.css?v=4.0.1");
+    assert.equal(shellCss.status,200,"New Nexus 4.0 styles must be served");
+    assert.match(shellCss.headers.get("content-type")||"",/text\/css/);
+    assert.match(await shellCss.text(),/\.v4-hero/);
+    const shellJs=await fetch(base+"/v4-shell.js?v=4.0.1");
+    assert.equal(shellJs.status,200,"New Nexus 4.0 quick navigation must be served");
+    assert.match(shellJs.headers.get("content-type")||"",/text\/javascript/);
+    assert.match(await shellJs.text(),/v4QuickLaunch/);
+    const forbidden=await request(base+"/.env");
+    assert.equal(forbidden.status,404,"Static allowlist must remain restrictive");
     const unauthorized=await request(base+"/api/client/pair/new","POST","wrong",{});
     assert.equal(unauthorized.status,401);
     const created=await request(base+"/api/client/pair/new","POST",KEY,{});
