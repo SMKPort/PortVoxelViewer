@@ -9,6 +9,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.neoforged.fml.loading.FMLPaths;
 
@@ -23,9 +24,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Owner-approved item uses from hotbar only. The only action is the ordinary
- * Minecraft right-click useItem, which the server validates. It never changes
- * the player's inventory, sends chat or makes an AI/network API call.
+ * Owner-approved item uses from hotbar or (with separate opt-in) main inventory.
+ * The optional swap uses the VANILLA inventory menu ClickType.SWAP (not the
+ * Hotbar Swapper keybind or a custom packet). Server validates the click/use.
+ * On successful use the old hotbar stack is put back using the same click.
  */
 final class NexusBuffManager {
     private static final Gson JSON=new GsonBuilder().setPrettyPrinting().create();
@@ -45,6 +47,7 @@ final class NexusBuffManager {
         int schema=1;
         long nextId=1;
         boolean enabled=false;
+        boolean searchInventory=false; // separate owner opt-in, off by default
         List<Entry> entries=new ArrayList<>();
     }
     private static Settings settings;
@@ -53,6 +56,25 @@ final class NexusBuffManager {
     private static int usesThisCombat;
     private static long queuedManual=-1;
     private static Active active;
+    private static InventorySwap swap;
+    private enum SwapPhase { ARRIVAL, USING, RESTORE, VERIFY_RESTORED }
+    private static final class InventorySwap {
+        final long id;
+        final int source,hotbar,originalSelected;
+        final ItemStack displaced;
+        final String fingerprint;
+        final boolean manual;
+        final long started;
+        long phaseStarted;
+        SwapPhase phase=SwapPhase.ARRIVAL;
+        InventorySwap(Entry e,int src,int target,int selected,ItemStack prior,
+                      boolean manual,long now){
+            id=e.id;source=src;hotbar=target;originalSelected=selected;
+            displaced=prior.copy();fingerprint=e.signature;
+            this.manual=manual;started=now;phaseStarted=now;
+        }
+        void phase(SwapPhase next,long now){phase=next;phaseStarted=now;}
+    }
     private static volatile String status="Nenhum buff ativo. Registre um item da hotbar.";
 
     private record Active(long entryId,int originalSlot,int buffSlot,
@@ -104,6 +126,14 @@ final class NexusBuffManager {
     }
 
     static synchronized boolean enabled(){load();return settings.enabled;}
+    static synchronized boolean inventoryEnabled(){load();return settings.searchInventory;}
+    static synchronized void inventoryEnabled(boolean on){
+        load();
+        settings.searchInventory=on;
+        save();
+        status=on?"Busca de buffs no inventário ativada. Trocas temporárias permitidas.":
+            "Busca no inventário desligada. Buffs restritos à hotbar.";
+    }
     static synchronized void setEnabled(boolean on){
         load();settings.enabled=on;save();
         if(!on){queuedManual=-1;stopActive();status="Buffs automáticos desativados.";}
@@ -113,7 +143,7 @@ final class NexusBuffManager {
         load();return List.copyOf(settings.entries);
     }
     static String status(){return status;}
-    static boolean busy(){return active!=null;}
+    static boolean busy(){return active!=null||swap!=null;}
 
     static synchronized Entry registerHeld(String mode){
         load();
@@ -159,6 +189,7 @@ final class NexusBuffManager {
         if(!settings.entries.removeIf(e->e.id==id))
             throw new IllegalArgumentException("Buff não cadastrado.");
         if(active!=null&&active.entryId==id)stopActive();
+        if(swap!=null&&swap.id==id)status="Item removido. A troca pendente será restaurada.";
         LAST_USE.remove(id);save();status="Cadastro de buff removido.";
     }
     private static Entry find(long id){
@@ -183,6 +214,9 @@ final class NexusBuffManager {
         if(mc.player==null)return -1;
         for(int i=0;i<9;i++)
             if(matches(e,mc.player.getInventory().getItem(i)))return i;
+        if(inventoryEnabled())
+            for(int i=9;i<36;i++)
+                if(matches(e,mc.player.getInventory().getItem(i)))return i;
         return -1;
     }
     private static boolean needsPotionEffect(ItemStack stack){
@@ -224,6 +258,7 @@ final class NexusBuffManager {
             return;
         }
         long now=System.currentTimeMillis();
+        if(swap!=null){updateInventorySwap(now);return;}
         if(active!=null){updateActive(now);return;}
         if(mc.screen!=null||!mc.isWindowActive()||mc.player.isSpectator()||
             !mc.player.isAlive()||mc.player.isUsingItem()||
@@ -235,10 +270,11 @@ final class NexusBuffManager {
             Entry e;
             try{e=find(id);}catch(Exception ex){status=ex.getMessage();return;}
             int slot=slotOf(e);
-            if(slot<0){status="Item "+e.name+" não encontrado na hotbar.";return;}
+            if(slot<0){status="Item "+e.name+" não encontrado na hotbar"+
+                (inventoryEnabled()?" ou inventário.":". Ative BUSCAR NO INVENTÁRIO para permitir.");return;}
             long last=LAST_USE.getOrDefault(e.id,-1L);
             if(NexusBuffPolicy.manualEligible(true,false,now,last))
-                begin(e,slot,true,now);
+                useFromSlot(e,slot,true,now);
             return;
         }
         if(!settings.enabled||lastCombatAt<0||
@@ -254,9 +290,131 @@ final class NexusBuffManager {
             if(NexusBuffPolicy.autoEligible(true,true,true,last,
                 needsPotionEffect(stack),false,now,used,
                 NexusBuffPolicy.AUTO_COOLDOWN_MS,usesThisCombat)){
-                begin(e,slot,false,now);
+                useFromSlot(e,slot,false,now);
                 return;
             }
+        }
+    }
+
+    /** A main-inventory item needs one confirmed vanilla swap before use. */
+    private static void useFromSlot(Entry e,int slot,boolean manual,long now){
+        if(slot<9){begin(e,slot,manual,now);return;}
+        Minecraft mc=Minecraft.getInstance();
+        if(!inventoryEnabled()||mc.player==null||mc.gameMode==null||
+            mc.player.containerMenu!=mc.player.inventoryMenu)return;
+        int selected=mc.player.getInventory().selected;
+        int target=-1;
+        // Preserve the player's selected weapon/tool if possible.
+        for(int i=8;i>=0;i--)if(i!=selected&&
+            mc.player.getInventory().getItem(i).isEmpty()){target=i;break;}
+        if(target<0)for(int i=8;i>=0;i--)
+            if(i!=selected){target=i;break;}
+        if(target<0)return;
+        ItemStack old=mc.player.getInventory().getItem(target).copy();
+        // Only the 9..35 main-inventory slots are eligible. No armor/offhand.
+        try{
+            swap=new InventorySwap(e,slot,target,selected,old,manual,now);
+            // This uses the same Minecraft inventory-click protocol that ordinary
+            // client-side hotbar switching mods use. Server retains authority.
+            mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId,
+                slot,target,ClickType.SWAP,mc.player);
+            lastAttemptAt=now;
+            status="Trocando temporariamente o item "+e.name+
+                " do inventário para hotbar. Aguardando confirmação.";
+        }catch(Throwable failure){
+            swap=null;
+            status="Falha ao trocar inventário. Nenhum buff utilizado.";
+        }
+    }
+
+    private static boolean sameStack(ItemStack a,ItemStack b){
+        if(a.isEmpty()||b.isEmpty())return a.isEmpty()&&b.isEmpty();
+        return a.getCount()==b.getCount()&&a.getItem()==b.getItem()&&
+            fingerprint(a).equals(fingerprint(b));
+    }
+
+    private static void updateInventorySwap(long now){
+        InventorySwap op=swap;
+        if(op==null)return;
+        Minecraft mc=Minecraft.getInstance();
+        if(mc.player==null||mc.level==null||mc.gameMode==null){
+            // Never emit a stale inventory packet after a disconnect.
+            stopActive();swap=null;return;
+        }
+        ItemStack hotbar=mc.player.getInventory().getItem(op.hotbar);
+        ItemStack source=mc.player.getInventory().getItem(op.source);
+        if(op.phase==SwapPhase.ARRIVAL){
+            if(now-op.phaseStarted<400)return; // allow server sync to settle
+            if(sameStack(source,op.displaced)&&
+                !hotbar.isEmpty()&&op.fingerprint.equals(fingerprint(hotbar))){
+                if(mc.screen!=null||!mc.isWindowActive()||
+                    mc.player.containerMenu!=mc.player.inventoryMenu){
+                    op.phase(SwapPhase.RESTORE,now);return;
+                }
+                Entry registered=null;
+                try{registered=find(op.id);}catch(Exception ignored){}
+                if(registered!=null){
+                    op.phase(SwapPhase.USING,now);
+                    begin(registered,op.hotbar,op.manual,now);
+                    if(active==null)op.phase(SwapPhase.RESTORE,now);
+                }else op.phase(SwapPhase.RESTORE,now);
+                return;
+            }
+            if(now-op.started>3_000){
+                swap=null;
+                status="Troca não confirmada. Confira slots e item manualmente; "
+                    +"nenhum uso foi solicitado.";
+            }
+            return;
+        }
+        if(op.phase==SwapPhase.USING){
+            if(active!=null){updateActive(now);return;}
+            op.phase(SwapPhase.RESTORE,now);
+            return;
+        }
+        if(op.phase==SwapPhase.RESTORE){
+            // Wait for a long-duration item to finish and for client/server sync.
+            if(now-op.phaseStarted<300||mc.player.isUsingItem())return;
+            if(mc.screen!=null||!mc.isWindowActive()||
+                mc.player.containerMenu!=mc.player.inventoryMenu||
+                mc.player.getInventory().selected!=op.originalSelected){
+                if(now-op.phaseStarted>10_000){
+                    swap=null;
+                    status="Restauração pausada. Volte aos slots normais manualmente; "
+                        +"o Nexus não sobrescreveu suas alterações.";
+                }
+                return;
+            }
+            source=mc.player.getInventory().getItem(op.source);
+            hotbar=mc.player.getInventory().getItem(op.hotbar);
+            // Never overwrite a slot another mod/player changed during use.
+            boolean expectedBuff=hotbar.isEmpty()||
+                op.fingerprint.equals(fingerprint(hotbar));
+            if(!sameStack(source,op.displaced)||!expectedBuff){
+                swap=null;
+                status="Slots alterados durante o uso. Restauração automática "
+                    +"cancelada para proteger o inventário.";
+                return;
+            }
+            try{
+                mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId,
+                    op.source,op.hotbar,ClickType.SWAP,mc.player);
+                op.phase(SwapPhase.VERIFY_RESTORED,now);
+            }catch(Throwable failure){
+                swap=null;
+                status="Não consegui devolver a hotbar. Verifique os slots.";
+            }
+            return;
+        }
+        if(op.phase==SwapPhase.VERIFY_RESTORED){
+            if(now-op.phaseStarted<400)return;
+            hotbar=mc.player.getInventory().getItem(op.hotbar);
+            if(sameStack(hotbar,op.displaced)){
+                status="Buff utilizado e hotbar restaurada.";
+            }else{
+                status="Restauração não confirmada pelo cliente. Confira a hotbar.";
+            }
+            swap=null;
         }
     }
 
