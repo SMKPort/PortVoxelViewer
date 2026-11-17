@@ -44,18 +44,44 @@ return '<form id="functionForm">'+[
 ].map(([key,label])=>field(key,label,f[key]||"","text","placeholder='nexus:armadura/"+key+"'")).join("")+'<div class="buttons"><button class="btn gold" type="submit">SALVAR FUNÇÕES</button>'+b("datapack-preset","USAR FUNÇÕES DO DATAPACK","ghost")+'</div></form>';
 }
 return {
-painel(){return h("INTERFACE DE ROLEPLAY / NÚCLEO","Nexus Aterna","O sistema narrativo do braço direito de Port. Energia, integridade e comandos que podem ser transmitidos ao Minecraft.")+
-'<div class="grid four">'+
-'<div class="card metric"><small>INTEGRIDADE</small><strong>'+S.integrity+'%</strong><p>Estrutura do braço</p></div>'+
-'<div class="card metric"><small>ENERGIA</small><strong>'+S.energy+'%</strong><p>Reserva arcana</p></div>'+
-'<div class="card metric"><small>ARMADURA</small><strong>'+(S.armor==="integrada"?"ATIVA":"DISPERSA")+'</strong><p>Placas do Nexus</p></div>'+
-'<div class="card metric"><small>CONEXÃO</small><strong>'+(rp.isConnected()?"ONLINE":"LOCAL")+'</strong><p>'+E(rp.isConnected()?"Minecraft RCON":"Modo narrativa")+'</p></div></div>'+
-'<h2 class="section-title">Centro de operações</h2><div class="hero-columns">'+core+card("REGISTROS DA OFICINA",logView())+'</div>'+
-'<h2 class="section-title">Comandos imediatos</h2><div class="buttons">'+b("go-chat","▣ MENSAGEM NO CHAT","gold")+b("go-armadura","⚙ ARMADURA")+b("go-rituais","✧ RITUAIS")+b("go-config","⛭ CONFIGURAR","ghost")+'</div>'+
-'<h2 class="section-title">Monitor narrativo</h2>'+card("INTEGRIDADE E ENERGIA",'<div class="grid two">'+
-'<div><div class="stat-edit"><span>INTEGRIDADE</span><strong id="integrityLabel">'+S.integrity+'%</strong></div><input id="integritySlider" type="range" min="0" max="100" value="'+S.integrity+'">'+meter(S.integrity,true)+'</div>'+
-'<div><div class="stat-edit"><span>ENERGIA ARCANA</span><strong id="energyLabel">'+S.energy+'%</strong></div><input id="energySlider" type="range" min="0" max="100" value="'+S.energy+'">'+meter(S.energy)+'</div></div><p class="hint">Os valores são fictícios e podem ser ajustados conforme os acontecimentos do roleplay.</p>')+
-'<div class="notice">Este painel é uma nova interface separada do Nexus 2.0 completo. Alterações feitas aqui não afetam o aplicativo anterior.</div>';}
+painel(){
+const connected=rp.isConnected();
+const mode=S.config.connectionMode==="client"?"Nexus Client":S.config.connectionMode==="agent"?"Agente HTTPS":"RCON";
+const feature=(symbol,title,desc,command)=>
+  '<article class="v4-feature"><span class="v4-feature-icon" aria-hidden="true">'+symbol+'</span>'+
+  '<h3>'+E(title)+'</h3><p>'+E(desc)+'</p>'+
+  '<button type="button" data-v4-copy="'+E(command)+'" aria-label="Copiar comando '+E(title)+'">COPIAR COMANDO ↗</button></article>';
+return '<section class="v4-hero" aria-labelledby="v4HeroTitle">'+
+  '<div class="v4-hero-content">'+
+  '<div class="v4-edition">NÚCLEO ARCANO / SISTEMA 4.0</div>'+
+  '<h1 id="v4HeroTitle">O próximo estágio<br>do <em>Nexus Aterna.</em></h1>'+
+  '<p>A central de operações de Port Morningstar. Controle o universo narrativo, acesse o Nexus Client e acompanhe os sistemas de combate e memória que você autorizou no jogo.</p>'+
+  '<div class="v4-hero-actions">'+b("go-cliente","⬡ ABRIR NEXUS CLIENT","gold")+b("go-voz","◉ VOZ DO NEXUS","ghost")+'</div>'+
+  '<div class="v4-hero-meta"><span>NEOFORGE 1.21.1</span><span>CONSCIÊNCIA CONTEXTUAL</span><span>AD AETERNUM</span></div>'+
+  '</div><div class="v4-insignia" aria-hidden="true"><span class="v4-ring"></span><span class="v4-ring"></span><span class="v4-ring"></span><span class="v4-glyph">✦</span><span class="v4-orbit-label">ARCANE PROTOCOL 4.0</span></div></section>'+
+  '<div class="v4-section-head"><div><small>01 / TELEMETRIA NARRATIVA</small><h2>Painel de controle</h2><p>Os indicadores de energia e integridade abaixo são valores de roleplay definidos por você.</p></div></div>'+
+  '<div class="grid four v4-metrics">'+
+  '<div class="card metric"><small>INTEGRIDADE RP</small><strong>'+E(S.integrity)+'%</strong><p>Estrutura narrativa do braço</p></div>'+
+  '<div class="card metric"><small>ENERGIA ARCANA RP</small><strong>'+E(S.energy)+'%</strong><p>Reserva fictícia do Nexus</p></div>'+
+  '<div class="card metric"><small>ARMADURA</small><strong>'+(S.armor==="integrada"?"ATIVA":"DISPERSA")+'</strong><p>Estado narrativo das placas</p></div>'+
+  '<div class="card metric"><small>CONEXÃO</small><strong>'+(connected?"ONLINE":"LOCAL")+'</strong><p>'+E(connected?mode+" verificado":"Não verificada nesta sessão")+'</p></div></div>'+
+  '<div class="v4-section-head"><div><small>02 / NEXUS CLIENT 4.0</small><h2>Protocolos inteligentes</h2><p>Copie o comando e execute no Minecraft com o mod atualizado.</p></div>'+
+  '<div class="v4-section-actions">'+b("go-cliente","STATUS E PAREAMENTO","ghost")+'</div></div>'+
+  '<div class="v4-feature-grid">'+
+  feature("◉","Situação atual","Vida e mana observáveis, localização e situação das macros.","/nexusclient situacao")+
+  feature("✚","Protocolo de emergência","Configuração de alertas e suspensão autorizada de macros ofensivas.","/nexusclient cognition menu")+
+  feature("▤","Memória narrativa","Registre e consulte acontecimentos no diário privado do mod.","/nexusclient journal menu")+
+  feature("⌁","Histórico de combate","Consulte falhas e sugestões das macros, quando autorizado.","/nexusclient cognition insights status")+
+  '</div><p class="v4-fineprint">As funções 4.0 acima são executadas no mod do Minecraft. Este site apenas oferece os comandos de acesso. Os indicadores RP não substituem os sensores reais do jogo.</p>'+
+  '<div class="v4-section-head"><div><small>03 / CONTROLE DE ENGENHARIA</small><h2>Centro de operações</h2><p>Monitor narrativo e últimos registros da oficina arcana.</p></div></div>'+
+  '<div class="hero-columns">'+core+card("REGISTROS DA OFICINA",logView())+'</div>'+
+  '<div class="v4-section-head"><div><small>04 / ATALHOS</small><h2>Comandos imediatos</h2></div></div>'+
+  '<div class="buttons">'+b("go-chat","▣ MENSAGEM NO CHAT","gold")+b("go-armadura","⚙ ARMADURA")+b("go-rituais","✧ RITUAIS")+b("go-config","⛭ CONFIGURAR","ghost")+'</div>'+
+  '<div class="v4-section-head"><div><small>05 / INDICADORES MANUAIS</small><h2>Ajuste narrativo</h2></div></div>'+
+  card("INTEGRIDADE E ENERGIA",'<div class="grid two">'+
+  '<div><div class="stat-edit"><span>INTEGRIDADE RP</span><strong id="integrityLabel">'+E(S.integrity)+'%</strong></div><input id="integritySlider" aria-label="Integridade narrativa" type="range" min="0" max="100" value="'+E(S.integrity)+'">'+meter(S.integrity,true)+'</div>'+
+  '<div><div class="stat-edit"><span>ENERGIA ARCANA RP</span><strong id="energyLabel">'+E(S.energy)+'%</strong></div><input id="energySlider" aria-label="Energia arcana narrativa" type="range" min="0" max="100" value="'+E(S.energy)+'">'+meter(S.energy)+'</div></div><p class="hint">Valores fictícios para o roleplay. A vida e a mana reais são consultadas no jogo pela função Situação atual.</p>');
+}
 ,
 chat(){const messages=S.chat.slice(-30).map(x=>'<div class="chat-entry '+E(x.status)+'"><small>'+E(x.status==="sent"?"ENTREGUE AO MINECRAFT":x.status==="failed"?"FALHOU":"NARRATIVA LOCAL")+' · '+rp.date(x.at)+'</small><p>'+E(x.text)+'</p></div>').join("");
 const t=[["Ativação","Núcleo sincronizado"],["Alerta","Oscilação de integridade detectada"],["Engenharia","Remodelando armadura"],["Ritual","Iniciando canalização ritualística"]];
