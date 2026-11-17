@@ -75,8 +75,10 @@ public final class NexusMacroSequencePolicyTest {
             "Proteção antiga de 6s seria bloqueio e não deve ser usada na fila.");
         check(!NexusMacroSequencePolicy.expired(15_000,10_000),
             "Short queued sequence remains active.");
-        check(NexusMacroSequencePolicy.expired(131_000,10_000),
-            "Stale queued cast must expire.");
+        check(!NexusMacroSequencePolicy.expired(160_000,10_000),
+            "Six spells at the configured 30s gap must fit within sequence lifetime.");
+        check(NexusMacroSequencePolicy.expired(221_000,10_000),
+            "Stale queued cast must expire after safe maximum lifetime.");
         System.out.println("NexusMacroSequencePolicyTest OK");
     }
 }
