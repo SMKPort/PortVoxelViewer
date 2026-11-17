@@ -331,54 +331,6 @@ QuickCast no seu servidor precisam ser verificadas dentro do jogo.
 O status "conjuração solicitada" não garante que o servidor autorizou
 o feitiço; mana e cooldown continuam sendo validados pelo Iron's Spells.
 
-### Buffs: cadastrar pelo item segurado
-
-Os itens do print foram fornecidos apenas como **referência visual**.
-Não é seguro identificar IDs de itens de mods por pixels, por isso
-o Nexus oferece cadastro no próprio inventário.
-
-Abra **F8 > Combate > GERENCIAR BUFFS DA HOTBAR** ou use:
-```text
-/nexusclient buffs menu
-/nexusclient buffs add manual
-/nexusclient buffs add combat
-/nexusclient buffs list
-/nexusclient buffs use 1
-/nexusclient buffs on
-/nexusclient buffs off
-```
-
-Segure cada consumível na hotbar antes de registrar. O Nexus salva
-o ID real e os componentes, incluindo as características específicas
-de poções com cores/efeitos diferentes, em
-`config/nexus-buffs.json`.
-
-O modo **MANUAL** permite solicitar o uso de um item autorizado.
-No modo **COMBATE**, o Nexus só tenta usar um item autorizado depois
-de um ataque, e somente quando a automação estiver explicitamente
-ligada. Ele verifica efeitos positivos de poções, cooldown do item,
-janela de combate e se você já está usando outra coisa. Há um intervalo
-mínimo de dois minutos entre usos automáticos do mesmo item e, no
-máximo, dois buffs automáticos por período de combate.
-
-Por padrão, o Nexus **não gasta a última unidade** de um consumível
-automaticamente. Existe uma permissão explícita por item caso o
-Port queira autorizar isso. Itens não cadastrados jamais entram no
-gerenciador. O cliente procura os itens apenas nas nove posições da
-hotbar e usa o mecanismo normal de clique direito, sujeito ao servidor.
-Tenta restaurar o slot anterior após a utilização.
-
-**Limites:** acessórios passivos e itens que precisam ser equipados
-em slots de outros mods não podem ser ativados pelo gerenciador
-genérico de clique direito. Buffs de mods com ativações especiais
-podem exigir integração própria. As configurações de buffs automáticos
-começam desligadas e não são ativadas por "Ativar tudo".
-`/nexusclient permissions off` também os desativa.
-
-**Teste necessário:** a compilação Java e os testes de lógica não
-substituem um teste no seu modpack. Comece com um frasco sem efeitos
-nocivos, primeiro no modo manual, antes de autorizar o uso automático.
-
 ## Nexus Client 2.9.3: macros arcanas e Julgamento Divino
 
 O Nexus ganhou a primeira macro de combate configurável, chamada
