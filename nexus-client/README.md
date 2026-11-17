@@ -1,5 +1,53 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
+## Nexus Aterna 3.0.0-alpha.5 | Buffs de inventário, sem voz
+
+Os buffs cadastrados podem ser buscados **nos 27 slots de inventário
+principal**, além dos 9 slots da hotbar. A função não usa reconhecimento
+de voz e não precisa controlar o atalho do Hotbar Swapper.
+
+### Ativar
+
+1. Segure o item na hotbar e cadastre em F8 > Combate > Gerenciar Buffs,
+   como **manual** ou **combate**. Depois pode guardá-lo no inventário.
+2. Ative o botão **INVENTÁRIO OFF (BUSCAR BUFFS EM OUTRAS LINHAS)**
+   no mesmo menu. A opção é independente da automação e vem desligada.
+3. Faça um primeiro teste manual com `/nexusclient buffs list` e
+   `/nexusclient buffs use <id>`. Feche o menu para deixar o Nexus agir.
+4. Para itens de combate, habilite `/nexusclient buffs on` e provoque
+   um ataque de teste. O Nexus só usa itens explicitamente cadastrados.
+
+### Como a troca acontece
+
+Quando o item está fora da hotbar, o cliente procura um slot temporário
+(priorizando slots vazios e evitando o selecionado), usa um clique padrão
+do **Inventário do Minecraft** (`ClickType.SWAP`, validado pelo servidor),
+aguarda a sincronização, tenta usar o item pelo fluxo normal de clique direito
+e, ao terminar, tenta devolver a hotbar ao estado anterior.
+
+Se o item, a hotbar ou o menu mudou inesperadamente, o Nexus prefere
+**não sobrescrever os itens** e indica que o jogador deve conferir os slots.
+Não faz swap de armaduras, offhand ou inventário de containers abertos.
+O modo 'inventário' é opcional, e o comando
+`/nexusclient buffs inventory off` o desativa.
+
+```text
+/nexusclient buffs inventory on
+/nexusclient buffs inventory off
+/nexusclient buffs inventory status
+/nexusclient buffs status
+/nexusclient buffs list
+/nexusclient buffs use 1
+```
+
+**Compatibilidade Born in Chaos:** este recurso resolve somente **localizar
+e alcançar** itens cadastrados fora da hotbar. Alguns itens podem exigir
+interação com bloco/alvo ou lógica diferente de um clique direito comum.
+Esses itens ainda precisam de um diagnóstico e um adaptador específico.
+Como o mod é exclusivamente client-side, o servidor pode recusar uma
+troca ou o uso. Teste com um item comum antes de confiar em combate real.
+
+
 ## Nexus Aterna 3.0.0-alpha.4 | + ADICIONAR MAGIA (manutenção de efeitos)
 
 O **Blessing** agora faz parte de um gerenciador de até **8 magias de manutenção**.
