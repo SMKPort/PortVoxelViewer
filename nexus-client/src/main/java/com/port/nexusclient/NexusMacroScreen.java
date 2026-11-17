@@ -66,8 +66,9 @@ final class NexusMacroScreen extends Screen {
             addRenderableWidget(Button.builder(Component.literal(NexusCombatMacro.selectedEnabled()?
                 "§aATIVA (DESLIGAR)":"§cDESLIGADA (LIGAR)"),b->toggle())
                 .bounds(x+7,231,half,21).build());
-            addRenderableWidget(Button.builder(Component.literal("§cREMOVER MACRO"),
-                b->remove()).bounds(x+13+half,231,half,21).build());
+            addRenderableWidget(Button.builder(Component.literal("§6+ MAGIA NESTA MACRO"),
+                b->minecraft.setScreen(new NexusMacroPickerScreen(parent,true)))
+                .bounds(x+13+half,231,half,21).build());
             addRenderableWidget(Button.builder(Component.literal("− GOLPE"),
                 b->hits(-1)).bounds(x+7,269,half,20).build());
             addRenderableWidget(Button.builder(Component.literal("+ GOLPE"),
@@ -76,6 +77,13 @@ final class NexusMacroScreen extends Screen {
                 b->window(-1)).bounds(x+7,306,half,20).build());
             addRenderableWidget(Button.builder(Component.literal("+ 1s"),
                 b->window(1)).bounds(x+13+half,306,half,20).build());
+            if(height>=420){
+                addRenderableWidget(Button.builder(Component.literal("§6EDITAR SEQUÊNCIA"),
+                    b->minecraft.setScreen(new NexusMacroSequenceScreen(parent)))
+                    .bounds(x+7,347,half,20).build());
+                addRenderableWidget(Button.builder(Component.literal("§cREMOVER MACRO"),
+                    b->remove()).bounds(x+13+half,347,half,20).build());
+            }
         }
         addRenderableWidget(Button.builder(Component.literal("VOLTAR"),b->onClose())
             .bounds(x+w-100,height-30,92,20).build());
@@ -132,15 +140,18 @@ final class NexusMacroScreen extends Screen {
         if(!NexusCombatMacro.spell().isBlank()){
             g.drawString(font,shorten("Selecionada: "+NexusCombatMacro.spell(),w-14),
                 x+7,215,GOLD,false);
+            g.drawString(font,shorten("Sequência ("+NexusCombatMacro.sequenceSize()+
+                "): "+String.join(" > ",NexusCombatMacro.sequence()),w-14),
+                x+7,257,GOLD,false);
             g.drawString(font,"Golpes: "+NexusCombatMacro.hits()+" (2 a 6)"+
-                "   |   Janela: "+NexusCombatMacro.windowSeconds()+"s (2 a 10)",
-                x+7,255,WHITE,false);
-            if(height>=425)
+                " | Janela: "+NexusCombatMacro.windowSeconds()+"s (2 a 10)",
+                x+7,294,WHITE,false);
+            if(height>=430)
                 g.drawString(font,shorten("Progresso: "+NexusCombatMacro.progress()+
-                    "/"+NexusCombatMacro.hits()+" no mesmo alvo",w-14),
-                    x+7,339,GOLD,false);
+                    "/"+NexusCombatMacro.hits()+" | "+NexusCombatMacro.queueStatus(),w-14),
+                    x+7,336,MUTED,false);
         }
-        if(height>=390){
+        if(height>=470){
             g.drawString(font,shorten(message,w-14),x+7,height-67,WHITE,false);
             g.drawString(font,shorten(NexusCombatMacro.lastOutcome(),w-14),
                 x+7,height-51,MUTED,false);
