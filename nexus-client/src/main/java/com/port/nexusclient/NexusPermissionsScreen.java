@@ -126,6 +126,11 @@ final class NexusPermissionsScreen extends Screen {
                     b->minecraft.setScreen(new NexusMicrophoneScreen(this)))
                     .bounds(x+16+2*third,220,third,20).build());
             }
+            if(height>=420){
+                addRenderableWidget(Button.builder(Component.literal("§6BLESSING | RENOVAÇÃO AUTOMÁTICA"),
+                    button->minecraft.setScreen(new NexusBlessingScreen(this)))
+                    .bounds(x+6,281,w-12,20).build());
+            }
             if(height>=320){
                 addRenderableWidget(Button.builder(Component.literal("§6CONFIGURAR MACROS"),
                     button->minecraft.setScreen(new NexusMacroScreen(this)))
