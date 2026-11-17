@@ -127,7 +127,7 @@ final class NexusPermissionsScreen extends Screen {
                     .bounds(x+16+2*third,220,third,20).build());
             }
             if(height>=420){
-                addRenderableWidget(Button.builder(Component.literal("§6BLESSING | RENOVAÇÃO AUTOMÁTICA"),
+                addRenderableWidget(Button.builder(Component.literal("§6MAGIAS | MANUTENÇÃO AUTOMÁTICA"),
                     button->minecraft.setScreen(new NexusBlessingScreen(this)))
                     .bounds(x+6,281,w-12,20).build());
             }
