@@ -472,7 +472,8 @@ final class NexusBlessing {
         if(config.spells.stream().noneMatch(rule->rule.enabled))return;
         if(mc.screen!=null||!mc.isWindowActive()||player.isSpectator()||
            !player.isAlive()||!ModList.get().isLoaded("irons_spellbooks")||
-           NexusCombatMacro.running()||
+           (NexusCombatMacro.running()||
+            NexusCombatMacro.dispatchedRecently(now,6_000L))||
            !NexusUpkeepRosterPolicy.mayDispatch(now,lastAnyAttemptAt,
                GLOBAL_CAST_GAP_MS,NexusVoiceCasting.clientIsCasting(),
                player.isUsingItem()))return;
