@@ -1,6 +1,87 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
 
+## Nexus Aterna 4.0.0-alpha.1 | O Despertar
+
+Primeiro módulo de **consciência contextual baseada em dados reais**, sem
+afirmar acesso a informações que o cliente não consegue observar.
+A evolução preserva as macros, as frases de ativação, a manutenção Blessing,
+as memórias manuais, o VoiceCast e a cura automática validados na 3.0.
+
+### Consulta situacional
+
+- Diga **"Nexus, situação atual"**, **"Nexus, estado atual"** ou
+  **"Nexus, avaliar situação"** com F6/VoiceCast explicitamente ligado.
+- Comando sem microfone: `/nexusclient situacao` ou
+  `/nexusclient awakening report`.
+- Via F8: **Combate > NEXUS 4.0 | O DESPERTAR > ANALISAR SITUAÇÃO**.
+
+O Nexus informa **vida medida pelo cliente**, **mana apenas se houver leitura
+recente e válida do Iron's Spells**, quantidade de macros ativas, sequência
+de macro em andamento, renovação de magia e cura automática. Classifica
+risco vital de modo determinístico e sugere recuar quando necessário.
+A segurança do entorno **não é considerada confirmada** só porque nada
+foi detectado. Se a leitura estiver indisponível, o Nexus diz isso.
+A resposta aparece apenas em **chat local e HUD**. Voz sintetizada só
+será usada se o TTS existente já estiver autorizado e configurado.
+
+### Memória narrativa
+
+- Diga **"Nexus, recordar memórias"** ou **"Nexus, minhas memórias"**:
+  consulta os últimos três registros manuais.
+- `/nexusclient awakening recall <assunto>` recupera até três memórias
+  relevantes com o motor determinístico de busca já existente.
+- Continue registrando e corrigindo memórias em F8 > MEMÓRIAS,
+  `/nexusclient memory add "assunto" texto` e na interface de memórias.
+
+O Nexus apenas cita **registros existentes**. Ele não inventa episódios
+de roleplay e não trata informações da ficção como leituras reais.
+
+### Proteção contextual opt-in
+
+**Desligada por padrão**. Não altera permanentemente nenhuma macro.
+
+```text
+/nexusclient awakening status
+/nexusclient awakening protect on
+/nexusclient awakening threshold 35
+/nexusclient awakening warnings on
+/nexusclient awakening protect off
+```
+
+Quando a vida real cair a 35% (limiar ajustável de 15% a 60%),
+o Nexus pode **interromper e suspender macros de combate** até a vida
+ultrapassar o limite configurado em 5 pontos percentuais. O Heal
+automático continua independente e **não é ativado sem autorização**.
+O sistema não interfere em comandos manuais do jogador, não altera
+as permissões do servidor e não concede privilégios especiais.
+
+### Diário contextual local opt-in
+
+```text
+/nexusclient awakening journal on
+/nexusclient awakening journal recent
+/nexusclient awakening journal off
+/nexusclient awakening journal clear confirm
+```
+
+Registra, somente quando autorizado, **eventos de risco, recuperação
+e consultas situacionais** em `config/nexus-awakening.json`, até 60
+registros. Não grava conversas, coordenadas ou nomes de outros jogadores.
+O diário é distinto das memórias manuais e pode ser apagado sem apagá-las.
+O comando de permissões **DESLIGAR TUDO** desativa proteção, avisos e
+novas gravações do diário, preservando memórias existentes.
+
+### Limitações de alpha.1
+
+Este módulo não é uma IA consciente nem tem acesso ao servidor Somake.
+O sistema de contexto é determinístico, de base local, e os protocolos
+de proteção são explicitamente permitidos. Testar no Somake continua
+necessário, mesmo depois do build da CI, para verificar as leituras
+reais e o áudio do VoiceCast.
+
+
+
 ## Nexus Aterna 3.0.0-alpha.9 | Frases de ativação e anúncio em macros
 
 Cada macro de combate pode ter **dois tipos de frases independentes**:
