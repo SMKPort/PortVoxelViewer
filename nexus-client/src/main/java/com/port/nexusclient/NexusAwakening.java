@@ -88,6 +88,10 @@ final class NexusAwakening {
             " | limiar "+settings.criticalPercent+"%"+
             " | proteção em curso "+(held?"SIM":"NÃO");
     }
+    static synchronized boolean protectionEnabled(){load();return settings.protection;}
+    static synchronized boolean warningsEnabled(){load();return settings.warnings;}
+    static synchronized boolean journalEnabled(){load();return settings.journal;}
+    static synchronized int criticalPercent(){load();return settings.criticalPercent;}
     static synchronized String protection(boolean enabled){
         load();settings.protection=enabled;held=false;save();
         return enabled?"Proteção autorizada. Macros ofensivas serão suspensas em vida crítica. "+
