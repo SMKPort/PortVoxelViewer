@@ -231,7 +231,13 @@ final class NexusAwakening {
         showLocal("Ameaças na região: não posso confirmar a segurança da área "+
             "apenas com os dados do cliente.",false,false);
         String advice=NexusAwakeningPolicy.suggestion(risk,NexusAutoHeal.enabled());
-        showLocal(advice,true,spoken);
+        showLocal(advice,true,false);
+        if(spoken&&NexusSpeaker.settingEnabled()){
+            String voiced="Port. "+health+" "+mana+" "+
+                NexusCombatMacro.enabledCount()+" macros ativas. "+advice;
+            if(voiced.length()>290)voiced=voiced.substring(0,290);
+            NexusSpeaker.onSpeech(voiced,0);
+        }
         record("report","Consulta situacional manual. "+health+" "+mana);
     }
     private static synchronized int settingsCritical(){load();return settings.criticalPercent;}
