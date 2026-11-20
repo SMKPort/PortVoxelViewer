@@ -66,6 +66,7 @@ public class NexusClientMod {
     private void onTick(ClientTickEvent.Post event) {
         ClientLink.tick();
         NexusVoiceCasting.tick();
+        NexusAwakening.tick(); // opt-in HP guard before combat automation
         NexusAutoHeal.tick();
         NexusCombatMacro.tick();
         NexusBlessing.tick();
@@ -203,6 +204,60 @@ public class NexusClientMod {
                 .then(Commands.literal("cancel").executes(ctx -> {
                     notifyPlayer(NexusArcaneTravel.cancel());return 1;
                 })))
+            .then(Commands.literal("awakening")
+                .then(Commands.literal("status").executes(ctx->{
+                    notifyPlayer(NexusAwakening.status());return 1;
+                }))
+                .then(Commands.literal("report").executes(ctx->{
+                    NexusAwakening.report(false);return 1;
+                }))
+                .then(Commands.literal("protect")
+                    .then(Commands.literal("on").executes(ctx->{
+                        notifyPlayer(NexusAwakening.protection(true));return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx->{
+                        notifyPlayer(NexusAwakening.protection(false));return 1;
+                    })))
+                .then(Commands.literal("warnings")
+                    .then(Commands.literal("on").executes(ctx->{
+                        notifyPlayer(NexusAwakening.warnings(true));return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx->{
+                        notifyPlayer(NexusAwakening.warnings(false));return 1;
+                    })))
+                .then(Commands.literal("threshold")
+                    .then(Commands.argument("percent",
+                        com.mojang.brigadier.arguments.IntegerArgumentType.integer(15,60))
+                        .executes(ctx->{
+                            int amount=com.mojang.brigadier.arguments.IntegerArgumentType
+                                .getInteger(ctx,"percent");
+                            notifyPlayer(NexusAwakening.threshold(amount));return 1;
+                        })))
+                .then(Commands.literal("journal")
+                    .then(Commands.literal("on").executes(ctx->{
+                        notifyPlayer(NexusAwakening.journal(true));return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx->{
+                        notifyPlayer(NexusAwakening.journal(false));return 1;
+                    }))
+                    .then(Commands.literal("recent").executes(ctx->{
+                        for(String item:NexusAwakening.journalEntries())notifyPlayer(item);
+                        return 1;
+                    }))
+                    .then(Commands.literal("clear")
+                        .then(Commands.literal("confirm").executes(ctx->{
+                            notifyPlayer(NexusAwakening.clearJournal());return 1;
+                        }))))
+                .then(Commands.literal("recall").executes(ctx->{
+                    NexusAwakening.recall("",false);return 1;
+                }).then(Commands.argument("topic",StringArgumentType.greedyString())
+                    .executes(ctx->{
+                        NexusAwakening.recall(StringArgumentType.getString(ctx,"topic"),false);
+                        return 1;
+                    }))))
+            .then(Commands.literal("situacao").executes(ctx->{
+                NexusAwakening.report(false);return 1;
+            }))
             .then(Commands.literal("memory")
                 .then(Commands.literal("open").executes(ctx->{
                     Minecraft mc=Minecraft.getInstance();
