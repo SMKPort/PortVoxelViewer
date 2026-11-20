@@ -417,6 +417,8 @@ final class NexusCombatMacro {
         if(mc.player==null||mc.level==null||mc.screen!=null||
            !mc.player.isAlive()||mc.player.isSpectator()||!mc.isWindowActive())
             return "Não é possível ativar macro neste momento.";
+        if(NexusAwakening.blockOffense(mc.player))
+            return "Protocolo de proteção ativo: macro ofensiva suspensa até a recuperação.";
         if(running!=null)return "Uma sequência de macro já está em andamento.";
         if(!NexusMacroRosterPolicy.mayTrigger(now,lastAnyCastAt,SHARED_GAP_MS))
             return "Aguarde o intervalo de segurança entre macros.";
@@ -550,7 +552,8 @@ final class NexusCombatMacro {
     static synchronized void onAttack(AttackEntityEvent event){
         Minecraft mc=Minecraft.getInstance();
         if(!enabled()||running!=null||mc.player==null||event.getEntity()!=mc.player||
-            mc.level==null||mc.screen!=null||!mc.isWindowActive())return;
+            mc.level==null||mc.screen!=null||!mc.isWindowActive()||
+            NexusAwakening.blockOffense(mc.player))return;
         if(!(event.getTarget() instanceof LivingEntity living)||!living.isAlive()||
             living==mc.player)return;
         if(mc.player.isSpectator()||mc.player.distanceToSqr(living)>25||
@@ -561,8 +564,16 @@ final class NexusCombatMacro {
     }
 
     static synchronized void tick(){
-        if(!enabled()){running=null;pending=null;return;}
         Minecraft mc=Minecraft.getInstance();
+        if(mc.player!=null&&NexusAwakening.blockOffense(mc.player)){
+            if(running!=null){
+                lastOutcome="Macro interrompida pelo protocolo de proteção da vida.";
+                NexusCombatHud.show("macro",lastOutcome);
+            }
+            reset();
+            return;
+        }
+        if(!enabled()){running=null;pending=null;return;}
         if(mc.player==null||mc.level==null||mc.screen!=null||
             !mc.isWindowActive()||!mc.player.isAlive()||mc.player.isSpectator()){
             pending=null;running=null;
