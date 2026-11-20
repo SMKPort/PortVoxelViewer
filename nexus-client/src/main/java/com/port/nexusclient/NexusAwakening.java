@@ -150,7 +150,8 @@ final class NexusAwakening {
     static synchronized boolean blockOffense(Player player){
         load();
         if(!settings.protection||player==null||!player.isAlive())return false;
-        var reading=read(player);
+        var reading=new NexusAwakeningPolicy.Reading(
+            player.getHealth(),player.getMaxHealth(),-1,false);
         if(NexusAwakeningPolicy.holdOffense(true,reading,settings.criticalPercent))return true;
         return held&&!NexusAwakeningPolicy.releaseOffense(
             true,reading,settings.criticalPercent);
