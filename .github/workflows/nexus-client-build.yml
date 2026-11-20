@@ -1,7 +1,7 @@
 name: Nexus Aterna Client NeoForge 1.21.1
 on:
   push:
-    branches: [nexus-aterna-rp]
+    branches: [nexus-aterna-rp, 'nexus-aterna-3.0']
     paths:
       - 'nexus-client/**'
       - '.github/workflows/nexus-client-build.yml'
@@ -96,6 +96,28 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusVoiceGrammar.java \
             nexus-client/verification/NexusVoiceGrammarTest.java
           java -ea -cp /tmp/nexus-voice-tests com.port.nexusclient.NexusVoiceGrammarTest
+      - name: Test bilingual offline recognition decisions
+        run: |
+          mkdir -p /tmp/nexus-bilingual-tests
+          javac -encoding UTF-8 -d /tmp/nexus-bilingual-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusVoiceCandidatePolicy.java \
+            nexus-client/verification/NexusVoiceCandidatePolicyTest.java
+          java -ea -cp /tmp/nexus-bilingual-tests com.port.nexusclient.NexusVoiceCandidatePolicyTest
+      - name: Test multi-spell upkeep registration and safe scheduling
+        run: |
+          mkdir -p /tmp/nexus-upkeep-tests
+          javac -encoding UTF-8 -d /tmp/nexus-upkeep-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusBlessingPolicy.java \
+            nexus-client/src/main/java/com/port/nexusclient/NexusUpkeepRosterPolicy.java \
+            nexus-client/verification/NexusUpkeepRosterPolicyTest.java
+          java -ea -cp /tmp/nexus-upkeep-tests com.port.nexusclient.NexusUpkeepRosterPolicyTest
+      - name: Test automatic Blessing expiry and learning safeguards
+        run: |
+          mkdir -p /tmp/nexus-blessing-tests
+          javac -encoding UTF-8 -d /tmp/nexus-blessing-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusBlessingPolicy.java \
+            nexus-client/verification/NexusBlessingPolicyTest.java
+          java -ea -cp /tmp/nexus-blessing-tests com.port.nexusclient.NexusBlessingPolicyTest
       - name: Test explicit auto Heal policy
         run: |
           mkdir -p /tmp/nexus-autoheal-tests
@@ -117,6 +139,28 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusMicrophoneChoices.java \
             nexus-client/verification/NexusMicrophoneChoicesTest.java
           java -ea -cp /tmp/nexus-microphone-tests com.port.nexusclient.NexusMicrophoneChoicesTest
+      - name: Test Nexus 4.0 grounded situational reasoning and opt-in safety
+        run: |
+          mkdir -p /tmp/nexus-awakening-tests
+          javac -encoding UTF-8 -d /tmp/nexus-awakening-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusAwakeningPolicy.java \
+            nexus-client/verification/NexusAwakeningPolicyTest.java
+          java -ea -cp /tmp/nexus-awakening-tests com.port.nexusclient.NexusAwakeningPolicyTest
+      - name: Test custom macro voice phrases and local announcements
+        run: |
+          mkdir -p /tmp/nexus-macro-voice-tests
+          javac -encoding UTF-8 -d /tmp/nexus-macro-voice-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusMacroPhrasePolicy.java \
+            nexus-client/verification/NexusMacroPhrasePolicyTest.java
+          java -ea -cp /tmp/nexus-macro-voice-tests com.port.nexusclient.NexusMacroPhrasePolicyTest
+      - name: Test ordered multi-spell combo sequences
+        run: |
+          mkdir -p /tmp/nexus-macro-sequence-tests
+          javac -encoding UTF-8 -d /tmp/nexus-macro-sequence-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusMacroRosterPolicy.java \
+            nexus-client/src/main/java/com/port/nexusclient/NexusMacroSequencePolicy.java \
+            nexus-client/verification/NexusMacroSequencePolicyTest.java
+          java -ea -cp /tmp/nexus-macro-sequence-tests com.port.nexusclient.NexusMacroSequencePolicyTest
       - name: Test target-specific combat macros
         run: |
           mkdir -p /tmp/nexus-macro-tests
@@ -132,13 +176,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusSpellAccess.java \
             nexus-client/verification/NexusSpellAccessTest.java
           java -ea -cp /tmp/nexus-spellwheel-tests com.port.nexusclient.NexusSpellAccessTest
-      - name: Test approved hotbar buff safety policy
+      - name: Test Arcane Travel client-side safety and Portuguese commands
         run: |
-          mkdir -p /tmp/nexus-buff-tests
-          javac -encoding UTF-8 -d /tmp/nexus-buff-tests \
-            nexus-client/src/main/java/com/port/nexusclient/NexusBuffPolicy.java \
-            nexus-client/verification/NexusBuffPolicyTest.java
-          java -ea -cp /tmp/nexus-buff-tests com.port.nexusclient.NexusBuffPolicyTest
+          mkdir -p /tmp/nexus-travel-tests
+          javac -encoding UTF-8 -d /tmp/nexus-travel-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusTravelPolicy.java \
+            nexus-client/verification/NexusTravelPolicyTest.java
+          java -ea -cp /tmp/nexus-travel-tests com.port.nexusclient.NexusTravelPolicyTest
       - name: Compile mod
         run: gradle -p nexus-client build --no-daemon --stacktrace
       - name: Upload JAR

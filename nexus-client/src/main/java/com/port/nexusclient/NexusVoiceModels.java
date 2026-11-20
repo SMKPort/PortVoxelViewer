@@ -10,6 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -30,6 +32,26 @@ final class NexusVoiceModels {
     }
     static boolean installed(String lang){
         return NexusVoiceModelLayout.valid(model(lang));
+    }
+    /**
+     * AUTO works with any installed model, and with PT+EN simultaneously
+     * when both have been installed explicitly by the owner.
+     */
+    static List<String> activeLanguages(String selected){
+        if(!"auto".equals(selected))
+            return installed(selected)?List.of(selected):List.of();
+        List<String> result=new ArrayList<>();
+        if(installed("pt"))result.add("pt");
+        if(installed("en"))result.add("en");
+        return List.copyOf(result);
+    }
+    static boolean ready(String selected){return !activeLanguages(selected).isEmpty();}
+    static String nextMissing(String selected){
+        if(!"auto".equals(selected))return selected;
+        // English first so bare English spell names work without translations.
+        if(!installed("en"))return "en";
+        if(!installed("pt"))return "pt";
+        return "";
     }
     static String status(){return state;}
     static boolean downloading(){return BUSY.get();}

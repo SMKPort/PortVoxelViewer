@@ -1,5 +1,520 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
+
+## Nexus Aterna 4.0.0-alpha.1 | O Despertar
+
+Primeiro módulo de **consciência contextual baseada em dados reais**, sem
+afirmar acesso a informações que o cliente não consegue observar.
+A evolução preserva as macros, as frases de ativação, a manutenção Blessing,
+as memórias manuais, o VoiceCast e a cura automática validados na 3.0.
+
+### Consulta situacional
+
+- Diga **"Nexus, situação atual"**, **"Nexus, estado atual"** ou
+  **"Nexus, avaliar situação"** com F6/VoiceCast explicitamente ligado.
+- Comando sem microfone: `/nexusclient situacao` ou
+  `/nexusclient awakening report`.
+- Via F8: **Combate > NEXUS 4.0 | O DESPERTAR > ANALISAR SITUAÇÃO**.
+
+O Nexus informa **vida medida pelo cliente**, **mana apenas se houver leitura
+recente e válida do Iron's Spells**, quantidade de macros ativas, sequência
+de macro em andamento, renovação de magia e cura automática. Classifica
+risco vital de modo determinístico e sugere recuar quando necessário.
+A segurança do entorno **não é considerada confirmada** só porque nada
+foi detectado. Se a leitura estiver indisponível, o Nexus diz isso.
+A resposta aparece apenas em **chat local e HUD**. Voz sintetizada só
+será usada se o TTS existente já estiver autorizado e configurado.
+
+### Memória narrativa
+
+- Diga **"Nexus, recordar memórias"** ou **"Nexus, minhas memórias"**:
+  consulta os últimos três registros manuais.
+- `/nexusclient awakening recall <assunto>` recupera até três memórias
+  relevantes com o motor determinístico de busca já existente.
+- Continue registrando e corrigindo memórias em F8 > MEMÓRIAS,
+  `/nexusclient memory add "assunto" texto` e na interface de memórias.
+
+O Nexus apenas cita **registros existentes**. Ele não inventa episódios
+de roleplay e não trata informações da ficção como leituras reais.
+
+### Proteção contextual opt-in
+
+**Desligada por padrão**. Não altera permanentemente nenhuma macro.
+
+```text
+/nexusclient awakening status
+/nexusclient awakening protect on
+/nexusclient awakening threshold 35
+/nexusclient awakening warnings on
+/nexusclient awakening protect off
+```
+
+Quando a vida real cair a 35% (limiar ajustável de 15% a 60%),
+o Nexus pode **interromper e suspender macros de combate** até a vida
+ultrapassar o limite configurado em 5 pontos percentuais. O Heal
+automático continua independente e **não é ativado sem autorização**.
+O sistema não interfere em comandos manuais do jogador, não altera
+as permissões do servidor e não concede privilégios especiais.
+
+### Diário contextual local opt-in
+
+```text
+/nexusclient awakening journal on
+/nexusclient awakening journal recent
+/nexusclient awakening journal off
+/nexusclient awakening journal clear confirm
+```
+
+Registra, somente quando autorizado, **eventos de risco, recuperação
+e consultas situacionais** em `config/nexus-awakening.json`, até 60
+registros. Não grava conversas, coordenadas ou nomes de outros jogadores.
+O diário é distinto das memórias manuais e pode ser apagado sem apagá-las.
+O comando de permissões **DESLIGAR TUDO** desativa proteção, avisos e
+novas gravações do diário, preservando memórias existentes.
+
+### Limitações de alpha.1
+
+Este módulo não é uma IA consciente nem tem acesso ao servidor Somake.
+O sistema de contexto é determinístico, de base local, e os protocolos
+de proteção são explicitamente permitidos. Testar no Somake continua
+necessário, mesmo depois do build da CI, para verificar as leituras
+reais e o áudio do VoiceCast.
+
+
+
+## Nexus Aterna 3.0.0-alpha.9 | Frases de ativação e anúncio em macros
+
+Cada macro de combate pode ter **dois tipos de frases independentes**:
+
+- **O jogador diz:** uma frase exata com palavra de chamada, por exemplo
+  "Nexus, iniciar julgamento divino". Com o VoiceCast habilitado pelo jogador
+  (F6), essa frase solicita a execução da **mesma sequência de magias**
+  já configurada para o gatilho de golpes. Não precisa acertar o combo antes.
+- **O Nexus anuncia:** uma mensagem personalizável ao **iniciar** e outra
+  ao **concluir a solicitação das magias**. O usuário escolhe mostrar no
+  **HUD** e/ou **chat local**. Mensagens não são enviadas ao servidor
+  como mensagens de jogador. Se a voz sintetizada do Nexus já foi
+  explicitamente ativada em suas configurações, ela também pode anunciar
+  essas frases (essa função de áudio é opcional e pode usar a integração
+  de voz configurada).
+
+A configuração está em **F8 > Combate > Configurar Macros > FRASES / VOZ**.
+O editor permite definir uma frase falada, o texto de início, o texto de
+conclusão, e alternar mensagens locais para HUD/chat.
+
+### Comandos
+
+```text
+/nexusclient macro select irons_spellbooks:divine_smite
+/nexusclient macro phrase iniciar julgamento divino
+/nexusclient macro announce-start Protocolo Julgamento Divino iniciado.
+/nexusclient macro announce-finish Sequência celestial solicitada.
+/nexusclient macro on
+/nexusclient macro voicecheck Nexus iniciar julgamento divino
+/nexusclient macro clear-phrase
+```
+
+As frases são reconhecidas pelo mecanismo Vosk offline existente:
+é preciso **ativar voluntariamente o microfone**, pronunciar o wake word
+"Nexus" (variantes "Nexo"/"Nexos"), ter confiança suficiente e não ter
+ambiguidades entre os idiomas. Frases especiais como "Nexus, cancelar"
+não podem ser cadastradas e frases idênticas entre macros são recusadas.
+Por segurança, nenhuma frase de macro é executada fora de mundo,
+enquanto há outra macro em andamento, com o VoiceCast desligado ou sem
+a macro estar autorizada. A sequência continua respeitando magia equipada,
+mana, cooldown, 2–30s de intervalo configurado, e o servidor valida
+cada solicitação. Em execução por voz, caso haja alvo sob a mira, esse
+alvo é acompanhado. Sem alvo sob a mira, o servidor decide se cada
+feitiço pode ser utilizado na direção atual.
+
+As configurações de combate são migradas do esquema anterior para
+`schema=5` com cópia de segurança de arquivos antigos. Frases
+faladas são opcionais e começam vazias, para evitar ativações acidentais.
+Os anúncios padrões são locais e personalizáveis. O sistema de golpes
+continua disponível normalmente e o gerenciador de itens-buff não retorna.
+
+**Limites:** o estado "concluída" significa que todas as conjurações
+foram **solicitadas** ao servidor, não garantia de que seus efeitos
+foram aplicados. Teste no Somake antes de considerar a feature estável.
+
+
+## Nexus Aterna 3.0.0-alpha.8 | Intervalo ajustável entre magias
+
+O intervalo entre as **magias da MESMA macro** agora pode ser configurado
+**por macro**, de **2 a 30 segundos**, com **6 segundos por padrão**.
+Isso afeta apenas a próxima etapa da sequência, não a janela de
+tempo para acertar os golpes iniciais.
+
+### Configurar
+
+- No jogo, abra **F8 > Combate > Configurar Macros** e selecione a macro.
+  Entre em **Sequência / Intervalo** e use os botões **-1s** e **+1s**.
+  Em interfaces muito pequenas, prefira o comando do chat.
+- Comando: `/nexusclient macro interval 3`, com 3 como exemplo.
+  `/nexusclient macro status` mostra o intervalo da macro selecionada.
+- A nova opção é salva em `config/nexus-combat-macros.json`.
+  Configurações schema 1, 2 e 3 são migradas para schema 4,
+  com preservação dos combos e cópia de segurança do original.
+
+Uma macro com **Divine Smite > outra magia** e intervalo 3s
+solicita o primeiro feitiço após o combo e só tenta o segundo
+**ao menos três segundos depois**, respeitando conjuração em andamento,
+mana, cooldown, alcance e aceitação pelo servidor. Intervalo é um
+prazo mínimo e não garante que a magia será lançada exatamente nesse instante.
+Regras para gatilho de golpes e renovações automáticas do Blessing não mudam.
+
+
+## Nexus Aterna 3.0.0-alpha.7 | Várias magias no MESMO macro
+
+Um **macro de combate** agora suporta uma **sequência ordenada de até 6 magias
+equipadas**, executada em etapas após acertar o mesmo alvo o número configurado
+de vezes. Não depende do VoiceCast.
+
+### Pelo F8
+
+1. Abra **F8 > Combate > Configurar Macros**.
+2. Selecione sua macro anterior de `Divine Smite` ou crie uma com
+   **+ ADICIONAR MACRO** e escolha uma magia equipada.
+3. Dentro da macro selecionada, clique **+ MAGIA NESTA MACRO**.
+   Escolha quantas magias extras desejar (até seis no total). A ordem de
+   cadastro determina a ordem de solicitação ao servidor.
+4. Configure golpes (2–6), janela do combo (2–10s) e ative a macro.
+5. Em interfaces maiores, **SEQUÊNCIA / INTERVALO** permite reorganizar ou
+   remover as magias extras. A primeira magia identifica a macro e
+   só pode ser substituída pelo comando `macro spell <id>` ou removendo
+   a macro inteira.
+
+### Exemplo
+
+```text
+Nexus > Macro: Julgamento Divino
+Gatilho: 3 golpes no mesmo alvo em 5 segundos
+1. irons_spellbooks:divine_smite
+2. irons_spellbooks:heal
+3. modid:outra_magia_equipada
+```
+
+Quando o cliente observa os três golpes, solicita o primeiro feitiço usando
+a QuickCastPacket legítima. Aguarda o intervalo **configurado** (padrão 6s) e o fim de
+qualquer conjuração em andamento antes de solicitar o próximo.
+Todas as etapas ainda exigem a magia equipada, mana, cooldown e autorização
+do servidor. A sequência é cancelada se o alvo morrer, sair do alcance,
+o jogador trocar de mundo/abrir menus, ou uma conjuração falhar no pré-teste.
+O limite máximo de execução é **210 segundos**. O cliente pode solicitar
+feitiços, mas não pode afirmar que o servidor efetivamente executou
+cada um até ser testado no Somake.
+
+### Comandos
+
+```text
+/nexusclient macro menu
+/nexusclient macro add irons_spellbooks:divine_smite
+/nexusclient macro select irons_spellbooks:divine_smite
+/nexusclient macro append irons_spellbooks:heal
+/nexusclient macro sequence
+/nexusclient macro hits 3
+/nexusclient macro window 5
+/nexusclient macro on
+/nexusclient macro remove-spell irons_spellbooks:heal
+/nexusclient macro move-up modid:outra_magia
+/nexusclient macro move-down modid:outra_magia
+/nexusclient macro disable
+/nexusclient macro off
+```
+
+`macro on` e `macro disable` afetam apenas a macro selecionada;
+`macro off` desativa todas. O sistema também permite múltiplos macros
+independentes (cada um com sua própria sequência). Somente uma sequência
+pode executar por vez.
+
+Config antiga em `config/nexus-combat-macros.json` é migrada de schema 1
+ou 2 para schema 3. Faz backup `nexus-combat-macros-v1-backup.json`
+ou `nexus-combat-macros-v2-backup.json`, conforme origem. O gatilho
+Divine Smite existente é preservado como a primeira etapa do seu macro.
+
+
+
+## Nexus Aterna 3.0.0-alpha.6 | Remoção dos buffs de itens
+
+O gerenciador de **itens de buff**, suas ações automáticas/manuais,
+os comandos `/nexusclient buffs ...`, o botão de buffs no F8 e a tentativa de
+trocar slots do inventário foram **removidos do mod**, conforme solicitado.
+
+**Continuam funcionando independentemente:** o sistema `Blessing` e
+`+ Magias` para renovação automática de **magias equipadas** com efeitos
+temporários. Também foram preservados VoiceCast, macros de combate,
+Auto Heal, Waystones e HUD.
+
+- O F8 > Combate agora oferece **Configurar Macros** e
+  **+ Magias | Manutenção Automática**; não há mais "Gerenciar Buffs".
+- O arquivo antigo `config/nexus-buffs.json` **não é apagado** pela
+  atualização, mas também não é lido ou executado.
+- Não é mais necessário instalar ou configurar Hotbar Swapper para
+  qualquer função do Nexus.
+- Nenhum comando de voz foi adicionado para itens.
+- Versão `3.0.0-alpha.6` continua uma prévia e requer testes no Somake.
+
+
+## Nexus Aterna 3.0.0-alpha.4 | + ADICIONAR MAGIA (manutenção de efeitos)
+
+O **Blessing** agora faz parte de um gerenciador de até **8 magias de manutenção**.
+Abra **F8 > Combate > Magias | Manutenção Automática** ou execute
+`/nexusclient blessing menu`. Clique **+ ADICIONAR MAGIA** para ver as
+magias realmente equipadas no Iron's Spells.
+
+Cada magia possui seu próprio estado ON/OFF, lista de efeitos positivos
+aprendidos, antecedência de renovação (3 a 60 segundos) e intervalo de
+pelo menos 60 segundos entre tentativas. O limite de espaçamento entre
+**magias diferentes** é 4 segundos, para evitar ações simultâneas.
+
+### Configuração de cada magia
+
+1. Clique **+ ADICIONAR MAGIA**, escolha um feitiço equipado. Ele começa
+   desligado e sem efeitos associados.
+2. Selecione a magia na lista, pressione **APRENDER EFEITO (30s)**, feche
+   o menu e conjure manualmente **essa mesma magia em você**.
+3. O Nexus observa efeitos benéficos novos ou renovados. Evite outras
+   poções e magias durante o aprendizado.
+4. Se o efeito detectado estiver correto, volte ao menu e clique
+   **DESLIGADA (LIGAR)**. Configure a antecedência se desejar.
+5. Repita para outras magias. Cada uma se renova quando o próprio efeito
+   está perto do fim ou desaparece. Magias sem efeito observável não podem
+   ser ativadas automaticamente.
+
+### Comandos
+
+```text
+/nexusclient blessing menu
+/nexusclient blessing spells
+/nexusclient blessing add modid:magia
+/nexusclient blessing list
+/nexusclient blessing select modid:magia
+/nexusclient blessing learn
+/nexusclient blessing seconds 12
+/nexusclient blessing on
+/nexusclient blessing disable
+/nexusclient blessing remove modid:magia
+/nexusclient blessing off
+/nexusclient blessing status
+```
+
+`on`, `disable`, `learn` e `seconds` atuam **somente na magia selecionada**.
+`off` desliga **todas** e também é acionado por `/nexusclient permissions off`.
+O comando antigo `blessing spell modid:magia` continua disponível e agora
+adiciona/seleciona a magia em vez de apagar o registro anterior.
+
+### Compatibilidade e segurança
+
+O arquivo `config/nexus-blessing.json` é atualizado do formato único
+da alpha.3 (schema 1) para o formato múltiplo (schema 2). Antes da
+primeira migração, o original é copiado para
+`config/nexus-blessing-v1-backup.json`. O Blessing já cadastrado,
+seus efeitos e a autorização anterior são preservados.
+
+O Nexus só usa `QuickCastPacket` da seleção de magias equipada.
+Mana, cooldown e permissões são validados pelo Iron's Spells/servidor.
+Não usa comandos de administrador, não cria buffs no cliente e não exige
+servidor modificado. A eficácia depende de a magia realmente conceder
+um efeito benéfico com duração visível para o cliente. Builds e servidores
+reais precisam ser testados em jogo.
+
+
+## Nexus Aterna 3.0.0-alpha.3 | Blessing automático
+
+O Nexus agora monitora **efeitos positivos reais do jogador**, aprendidos a partir
+de uma conjuração manual de Blessing. Quando algum efeito estiver terminando,
+pode solicitar automaticamente a magia equipada usando a QuickCastPacket
+normal do Iron's Spells, com autorização prévia do jogador.
+
+**Não presumir a magia:** o Iron's Spells contém `blessing_of_life`, que é
+uma cura direcionada e não necessariamente o Blessing de buff do Somake.
+O ID real da magia deve ser identificado pela lista equipada.
+
+### Configurar pela primeira vez
+
+1. Equipe Blessing no jogo. Execute `/nexusclient blessing spells` para
+   procurar uma magia equipada cujo ID contenha `bless`.
+2. Se a magia não terminar exatamente em `:blessing`, cadastre o ID completo
+   com `/nexusclient blessing spell modid:identificador`.
+3. Digite `/nexusclient blessing learn` e lance a magia manualmente em si
+   durante os próximos 30 segundos. Não use poções ou outras magias durante
+   essa janela. A detecção grava apenas efeitos positivos novos ou renovados.
+4. Verifique `/nexusclient blessing status`. Aprender não ativa a automação.
+5. Ative conscientemente com `/nexusclient blessing on`.
+
+Alternativa: `/nexusclient blessing effects` lista os efeitos positivos ativos.
+Se a aprendizagem não identificar uma renovação, é possível vincular um
+efeito positivo real que já esteja ativo usando
+`/nexusclient blessing effect modid:efeito`. Isso substitui a lista aprendida.
+
+### Como funciona
+
+- Antecedência padrão de 12 segundos, ajustável de 3 a 60 segundos com
+  `/nexusclient blessing seconds 15`.
+- Também tenta renovar quando um efeito aprendido já não está presente.
+- O Blessing deve permanecer equipado. O usuário precisa estar vivo,
+  no mesmo mundo/servidor em que aprendeu, sem GUI e sem outra conjuração.
+- Valida mana e cooldown no cliente e usa apenas o pacote oficial do
+  Iron's Spells. O servidor continua sendo a autoridade final.
+- Mantém pelo menos 60 segundos entre solicitações automáticas,
+  inclusive depois de uma tentativa recusada.
+- Desativado por padrão. `/nexusclient blessing off` e
+  `/nexusclient permissions off` desativam essa automação.
+- Configurações locais em `config/nexus-blessing.json`.
+- Interface F8 > Combate > BLESSING | RENOVAÇÃO AUTOMÁTICA (GUI alta).
+
+### Comandos
+
+```text
+/nexusclient blessing spells
+/nexusclient blessing spell modid:blessing
+/nexusclient blessing learn
+/nexusclient blessing effects
+/nexusclient blessing status
+/nexusclient blessing seconds 12
+/nexusclient blessing on
+/nexusclient blessing off
+```
+
+**Limite conhecido:** um buff de duração interna não sincronizado como
+`MobEffect` pode não ser detectado. Isso exigiria uma integração específica
+com a implementação real da magia no modpack Somake. É necessário
+testar o reaproveitamento automático no próprio servidor.
+
+
+## Nexus Aterna 3.0.0-alpha.2 | VoiceCast direto e bilíngue (PT+EN)
+
+### Falar o nome da magia, sem "execute" e sem traduções manuais
+
+As magias **equipadas** no Iron's Spells entram automaticamente na gramática
+por seus identificadores. Por exemplo,
+`irons_spellbooks:divine_smite` vira `Divine Smite`,
+`irons_spellbooks:fire_bolt` vira `Fire Bolt` e magias adicionadas
+por outros mods também são incluídas quando detectadas na roda de magias.
+
+```text
+Nexus, Divine Smite
+Nexus, Sunbeam
+Nexus, Fire Bolt
+Nexus, Healing Circle
+Nexus, cancelar
+```
+
+O formato antigo `Nexus, execute Divine Smite` continua funcionando.
+Não é necessário cadastrar uma tradução de cada feitiço. O nome vem do
+identificador da magia equipada, e não de um dicionário manual. Se o nome
+mostrado na tela for muito diferente do identificador, o Nexus poderá
+precisar de um alias específico numa atualização posterior. Magias não
+equipadas ou nomes ambíguos nunca são conjurados automaticamente.
+
+### Modo AUTO: reconhecimento offline em português e inglês
+
+- Acesse **F8 > COMBATE > MODO** para alternar `AUTO`, `EN` e `PT`.
+- Em `AUTO`, se os modelos Vosk PT e EN estiverem instalados, os dois
+  analisam o **mesmo microfone local**. Um seletor compara os comandos
+  reconhecidos e rejeita resultados contraditórios. Só um comando pode
+  disparar por frase.
+- Se apenas um modelo estiver instalado, o modo AUTO usa esse modelo
+  até que o outro seja instalado. **Para melhorar nomes ingleses,
+  instale o modelo EN.** Os downloads são opt-in, pela interface ou
+  pelos comandos abaixo. Mais de um modelo usa mais RAM/CPU.
+- Uma configuração antiga com idioma `pt` permanece `pt` até você
+  escolher `auto`. Nenhum microfone é ativado automaticamente ao
+  abrir o Minecraft.
+
+```text
+/nexusclient voicecast model auto
+/nexusclient voicecast model install en
+/nexusclient voicecast model install pt
+/nexusclient voicecast on
+/nexusclient voicecast spells
+/nexusclient voicecast check Nexus Divine Smite
+/nexusclient voicecast diagnose
+```
+
+Depois de instalar os modelos, altere o modo para AUTO antes de ativar a
+voz. O comando `check` testa o índice sem conjurar. Na sessão, use F6
+para desligar ou reativar o microfone.
+
+A gravação fica somente em memória durante a detecção e não é
+transmitida ao Render ou à IA remota. O Nexus envia apenas a solicitação
+normal de `QuickCastPacket` ao servidor quando a frase corresponde a
+um feitiço equipado, com cooldown mínimo e permissão de voz já ativa.
+Mana, cooldowns e permissão final continuam sendo validados pelo
+Iron's Spells/servidor.
+
+> O teste automatizado prova o mapeamento e a arbitragem de comandos.
+> A acurácia real com sotaque, ruído e áudio do jogo precisa ser testada
+> dentro do Somake, especialmente usando o modelo Vosk pequeno.
+
+
+## Nexus Aterna 3.0 (branch de desenvolvimento): Arcane Travel com Waystones
+
+O **Arcane Travel** integra o Nexus ao Waystones 1.21.1 NeoForge, de forma
+opcional e exclusivamente client-side. As demais funções da 2.9.4 permanecem
+inalteradas. O Nexus lê a lista de Waystones **ativadas e sincronizadas com o
+cliente**, e também os destinos apresentados no menu oficial de seleção.
+A lista não inclui waystones secretas do servidor.
+
+### No jogo
+
+- Abra `F8 > MEMÓRIAS > ARCANE TRAVEL | WAYSTONES` para ver os destinos.
+- Clique num destino para solicitar e depois em **CONFIRMAR**.
+- O Nexus tentará abrir a tela oficial de seleção quando o botão de inventário
+  estiver habilitado no modo **ANY**. Caso contrário, abra uma Waystone ou
+  use um item normal do Waystones para abrir a seleção em até 90 segundos.
+- O destino deve estar **presente no menu enviado pelo servidor**. O Nexus só
+  envia o pacote `SelectWaystoneMessage` existente do Waystones. O servidor
+  é responsável por validar custos, cooldowns e permissão do teleporte.
+- A viagem é solicitada apenas **uma vez**. "Solicitado" não significa que
+  o servidor concluiu o teleporte.
+
+### Comandos de chat do cliente
+
+```text
+/nexusclient travel menu
+/nexusclient travel list
+/nexusclient travel favorites
+/nexusclient travel favorite casa "Casa do Port"
+/nexusclient travel favorite oficina "Oficina Arcana"
+/nexusclient travel remove casa
+/nexusclient travel go casa
+/nexusclient travel confirm
+/nexusclient travel cancel
+/nexusclient travel status
+```
+
+O favorito associa um apelido a um UUID de Waystone disponível no cliente.
+Eles ficam em `config/nexus-waystones.json`, separados por hash do endereço do
+servidor ou nome do mundo single-player. Não é feito upload para Render.
+Favoritos sem Waystone disponível não permitem teleporte.
+
+Com **F6** e modelo Vosk PT instalado, experimente:
+```text
+Nexus, me leve para casa
+Nexus, confirmar viagem
+Nexus, cancelar viagem
+```
+A voz exige frases correspondentes aos destinos conhecidos ou favoritos.
+O reconhecimento é local; a confirmação deve acontecer em até 45 segundos
+do pedido. O microfone não é ativado automaticamente e o VoiceCast não pode
+interagir com a lista de seleção enquanto menus estiverem abertos, por isso
+a confirmação deve ser feita **antes** de abrir o menu oficial.
+
+### Segurança e limitações
+
+- Acesso ao Waystones é opcional e via reflexão (sem adicionar mod obrigatório).
+- Sem Waystones: nenhum crash e nenhuma tentativa de teleporte.
+- Os menus do Waystones só abrem automaticamente se a opção de inventário
+  estiver em **ANY**, porque outros modos podem realizar viagens diretas sem
+  exibir a lista de destinos. Nunca presumimos essa permissão.
+- `/nexusclient permissions off` cancela pedidos pendentes.
+- Alterar de mundo/servidor, expirar o prazo ou abrir seleção sem o destino
+  disponível cancela a ação.
+- A API é de Waystones 1.21.1 e poderá variar entre builds. **Ainda precisa
+  ser validada no Somake** com um destino real. A aprovação do CI confirma
+  compilação e regras unitárias, não aprovação do servidor.
+
 ## Nexus Client 2.9.4: VoiceCast corrigido e gerenciador de buffs
 
 ### Correção de conjuração por voz
@@ -48,54 +563,6 @@ Mesmo com a correção da API, a exatidão do Vosk e a aceitação do
 QuickCast no seu servidor precisam ser verificadas dentro do jogo.
 O status "conjuração solicitada" não garante que o servidor autorizou
 o feitiço; mana e cooldown continuam sendo validados pelo Iron's Spells.
-
-### Buffs: cadastrar pelo item segurado
-
-Os itens do print foram fornecidos apenas como **referência visual**.
-Não é seguro identificar IDs de itens de mods por pixels, por isso
-o Nexus oferece cadastro no próprio inventário.
-
-Abra **F8 > Combate > GERENCIAR BUFFS DA HOTBAR** ou use:
-```text
-/nexusclient buffs menu
-/nexusclient buffs add manual
-/nexusclient buffs add combat
-/nexusclient buffs list
-/nexusclient buffs use 1
-/nexusclient buffs on
-/nexusclient buffs off
-```
-
-Segure cada consumível na hotbar antes de registrar. O Nexus salva
-o ID real e os componentes, incluindo as características específicas
-de poções com cores/efeitos diferentes, em
-`config/nexus-buffs.json`.
-
-O modo **MANUAL** permite solicitar o uso de um item autorizado.
-No modo **COMBATE**, o Nexus só tenta usar um item autorizado depois
-de um ataque, e somente quando a automação estiver explicitamente
-ligada. Ele verifica efeitos positivos de poções, cooldown do item,
-janela de combate e se você já está usando outra coisa. Há um intervalo
-mínimo de dois minutos entre usos automáticos do mesmo item e, no
-máximo, dois buffs automáticos por período de combate.
-
-Por padrão, o Nexus **não gasta a última unidade** de um consumível
-automaticamente. Existe uma permissão explícita por item caso o
-Port queira autorizar isso. Itens não cadastrados jamais entram no
-gerenciador. O cliente procura os itens apenas nas nove posições da
-hotbar e usa o mecanismo normal de clique direito, sujeito ao servidor.
-Tenta restaurar o slot anterior após a utilização.
-
-**Limites:** acessórios passivos e itens que precisam ser equipados
-em slots de outros mods não podem ser ativados pelo gerenciador
-genérico de clique direito. Buffs de mods com ativações especiais
-podem exigir integração própria. As configurações de buffs automáticos
-começam desligadas e não são ativadas por "Ativar tudo".
-`/nexusclient permissions off` também os desativa.
-
-**Teste necessário:** a compilação Java e os testes de lógica não
-substituem um teste no seu modpack. Comece com um frasco sem efeitos
-nocivos, primeiro no modo manual, antes de autorizar o uso automático.
 
 ## Nexus Client 2.9.3: macros arcanas e Julgamento Divino
 

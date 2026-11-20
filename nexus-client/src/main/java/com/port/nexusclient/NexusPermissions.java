@@ -47,6 +47,8 @@ final class NexusPermissions {
     }
 
     static void off() {
+        // Stop pending trips even if voice/memory flags were previously authorized.
+        NexusArcaneTravel.cancel();
         // Stop capture and outgoing messages before changing secondary settings.
         ClientConfig.allowChat = false;
         ClientConfig.allowTelemetry = false;
@@ -60,10 +62,13 @@ final class NexusPermissions {
         NexusArcaneSensor.scanNearby(false);
         NexusArcaneSensor.enabled(false);
 
-        NexusBuffManager.setEnabled(false);
         NexusCombatMacro.setEnabled(false);
         NexusAutoHeal.setEnabled(false);
+        NexusBlessing.setEnabled(false);
         NexusVoiceCasting.setEnabled(false);
+        NexusAwakening.protection(false);
+        NexusAwakening.warnings(false);
+        NexusAwakening.journal(false); // Preserve any previously saved entries.
         NexusHearing.listen(false); // Legacy setting remains safely disabled.
         NexusSpeaker.enable(false);
 
@@ -90,8 +95,9 @@ final class NexusPermissions {
         NexusClientMod.notifyPlayer(NexusSocial.status());
         NexusClientMod.notifyPlayer(NexusSpeaker.status());
         NexusClientMod.notifyPlayer("Voz offline: "+NexusVoiceCasting.status());
-        NexusClientMod.notifyPlayer("Buffs: "+NexusBuffManager.status());
         NexusClientMod.notifyPlayer(NexusCombatMacro.status());
+        NexusClientMod.notifyPlayer(NexusAwakening.status());
+        NexusClientMod.notifyPlayer(NexusBlessing.summary());
         NexusClientMod.notifyPlayer("Cura automática: "+(NexusAutoHeal.enabled()?"ON":"OFF")+
             " | "+NexusAutoHeal.threshold()+"% | "+NexusAutoHeal.lastOutcome());
     }
