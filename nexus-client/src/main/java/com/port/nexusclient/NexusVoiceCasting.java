@@ -146,6 +146,9 @@ final class NexusVoiceCasting {
         String macro=NexusMacroPhrasePolicy.interpret(phrase,macroVoicePhrases);
         if(macro!=null)return "Frase reconhecida para macro "+macro+
             " (simulação: nenhuma magia executada).";
+        String awakening=NexusAwakeningPolicy.voiceCommand(phrase);
+        if(awakening!=null)return "Nexus 4.0: comando contextual "+awakening+
+            " reconhecido (sem executar).";
         return "Frase não reconhecida. Diga Nexus seguido da frase cadastrada.";
     }
 
@@ -287,6 +290,7 @@ final class NexusVoiceCasting {
                     terms.remove("[unk]");
                     terms.addAll(travelVoicePhrases);
                     terms.addAll(macroVoicePhrases.keySet());
+                    terms.addAll(NexusAwakeningPolicy.voiceVocabulary());
                     terms.add("[unk]");
                     for(String phrase:new java.util.LinkedHashSet<>(terms))phrases.add(phrase);
                     for(var entry:models.entrySet()){
@@ -408,6 +412,7 @@ final class NexusVoiceCasting {
                 NexusTravelPolicy.VoiceIntent travel=NexusTravelPolicy.interpretVoice(
                     phrase,travelVoicePhrases);
                 String macro=NexusMacroPhrasePolicy.interpret(phrase,macroVoicePhrases);
+                String awakening=NexusAwakeningPolicy.voiceCommand(phrase);
                 if(spell!=null){
                     String action=spell.cancel()?"cancel":
                         "spell:"+spell.spellId()+":"+spell.slot();
@@ -420,6 +425,9 @@ final class NexusVoiceCasting {
                 }else if(macro!=null){
                     eligible.add(new NexusVoiceCandidatePolicy.Candidate(
                         audio.language(),phrase,"macro:"+macro,confidence));
+                }else if(awakening!=null){
+                    eligible.add(new NexusVoiceCandidatePolicy.Candidate(
+                        audio.language(),phrase,"awakening:"+awakening,confidence));
                 }
             }
             var selected=NexusVoiceCandidatePolicy.choose(eligible,MIN_CONFIDENCE);
@@ -436,8 +444,21 @@ final class NexusVoiceCasting {
             NexusTravelPolicy.VoiceIntent travel=NexusTravelPolicy.interpretVoice(
                 phrase,travelVoicePhrases);
             String macro=NexusMacroPhrasePolicy.interpret(phrase,macroVoicePhrases);
+            String awakening=NexusAwakeningPolicy.voiceCommand(phrase);
             acceptedPhrases++;
-            if(spell==null&&travel==null&&macro!=null){
+            if(spell==null&&travel==null&&macro==null&&awakening!=null){
+                lastDecision=selected.reason()+" Consultando sensores locais...";
+                Minecraft.getInstance().execute(()->{
+                    if(!enabled()||!captureAllowed||Minecraft.getInstance().screen!=null)return;
+                    long now=System.currentTimeMillis();
+                    if(now-lastDispatch<COMMAND_DELAY_MS)return;
+                    lastDispatch=now;lastAt=now;lastCommand=phrase;
+                    if("report".equals(awakening))NexusAwakening.report(true);
+                    else if("memories".equals(awakening))NexusAwakening.recall("",true);
+                    lastOutcome="Nexus 4.0: consulta contextual "+awakening+" concluída.";
+                    lastDecision=lastOutcome;
+                });
+            }else if(spell==null&&travel==null&&macro!=null){
                 lastDecision=selected.reason()+" Verificando macro personalizada...";
                 Minecraft.getInstance().execute(()->{
                     if(!enabled()||!captureAllowed||Minecraft.getInstance().screen!=null)return;
