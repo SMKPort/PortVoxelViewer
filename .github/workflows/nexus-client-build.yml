@@ -139,6 +139,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusMicrophoneChoices.java \
             nexus-client/verification/NexusMicrophoneChoicesTest.java
           java -ea -cp /tmp/nexus-microphone-tests com.port.nexusclient.NexusMicrophoneChoicesTest
+      - name: Test Nexus 4.0 grounded situational reasoning and opt-in safety
+        run: |
+          mkdir -p /tmp/nexus-awakening-tests
+          javac -encoding UTF-8 -d /tmp/nexus-awakening-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusAwakeningPolicy.java \
+            nexus-client/verification/NexusAwakeningPolicyTest.java
+          java -ea -cp /tmp/nexus-awakening-tests com.port.nexusclient.NexusAwakeningPolicyTest
       - name: Test custom macro voice phrases and local announcements
         run: |
           mkdir -p /tmp/nexus-macro-voice-tests
