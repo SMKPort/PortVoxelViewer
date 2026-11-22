@@ -204,7 +204,8 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         if(!question)return err(res,422,"Depois de chamar Nexus, faça uma pergunta.");
         // Wait for explicit client consent before exposing relevant owner memories.
         // Affinities arrive from the user's own browser only when sharing is enabled.
-        const ownerMemories=await lookupOwnerMemories(question);
+        const ownerMemories=data.memoryLookup===true?
+          await lookupOwnerMemories(question):[];
         const affinities=checkedAffinities(data.affinities);
         const generated=await askAI({
           question,history:data.history,online:true,player:session?.player||"",events,mind,
