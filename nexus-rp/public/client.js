@@ -76,7 +76,8 @@ window.NexusRPClientUpgrade=function(rp,views){
      }
      if(!done)throw Error("O Minecraft não confirmou a mensagem. Verifique o mod e o chat local.");
    }
-   return {ok:true,response:output,...(data.reply?{reply:data.reply}:{}),model:data.model};
+   return {ok:true,response:output,...(data.reply?{reply:data.reply}:{}),model:data.model,
+     memoryUsed:Number(data.memoryUsed||0),affinityUsed:Number(data.affinityUsed||0)};
  }
  rp.clientQueue=queue;
  const oldConfig=views.config;
