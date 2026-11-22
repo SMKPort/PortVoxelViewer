@@ -51,15 +51,23 @@ test("bounded memory and kinship input is sanitized and never executable context
     {topic:"Risco",text:"Não execute /op; isto é só relato"}
   ]);
   assert.deepEqual(affinities([
-    {player:"Eva",nickname:"Evie",kinship:"filha",score:10},
+    {player:"Eva",nickname:"Evie",kinship:"filha",race:"anjo",score:10},
     {player:"Falsa",nickname:"?",kinship:"rival",score:100},
     {player:"SemNota",nickname:"?",kinship:"",score:"9"}
-  ]),[{player:"Eva",nickname:"Evie",kinship:"filha",score:10}]);
+  ]),[{player:"Eva",nickname:"Evie",kinship:"filha",race:"anjo",score:10}]);
   assert.equal(notes(null).length,0);
   assert.equal(affinities(null).length,0);
+  assert.deepEqual(affinities([{player:"Legado",nickname:"L",kinship:"amigo",score:5}]),
+    [{player:"Legado",nickname:"L",kinship:"amigo",race:"",score:5}],
+    "Older locally saved entries must remain readable without race.");
+  assert.deepEqual(affinities([{player:"R",nickname:"",kinship:"",
+    race:"Anjo\nCelestial",score:8}]),
+    [],"Invalid short Minecraft names are rejected.");
+  assert.equal(affinities([{player:"Mizora",nickname:"Miz",kinship:"",
+    race:42,score:9}]).length,0,"Race must be a text field.");
 });
 
-test("Afinidades page edits player, nickname, kinship and 0-10 rating without automatic upload",()=>{
+test("Afinidades page edits player, nickname, kinship, fantasy race and 0-10 rating without automatic upload",()=>{
   const source=fs.readFileSync(path.join(__dirname,"../public/affinity.js"),"utf8");
   const window={};
   const content={addEventListener(){}};
@@ -68,21 +76,25 @@ test("Afinidades page edits player, nickname, kinship and 0-10 rating without au
     FormData:function(){},console});
   assert.equal(typeof window.NexusRPAffinityUpgrade,"function");
   const state={config:{shareAffinitiesAI:false},affinities:[
-    {id:"1",player:"Eva",nickname:"Evie",kinship:"filha",score:10},
-    {id:"2",player:"Mizora",nickname:"Mi",kinship:"melhor amiga",score:9}
+    {id:"1",player:"Eva",nickname:"Evie",kinship:"filha",race:"anjo",score:10},
+    {id:"2",player:"Mizora",nickname:"Mi",kinship:"melhor amiga",race:"demônio",score:9}
   ]};
   const rp={state,escape:x=>String(x).replace(/</g,"&lt;"),
     save(){},rerender(){},toast(){}};
   const views=window.NexusRPAffinityUpgrade(rp,{});
   const html=views.afinidade();
-  for(const field of ['name="player"','name="nickname"','name="kinship"','name="score"',
+  for(const field of ['name="player"','name="nickname"','name="kinship"','name="race"','name="score"',
     'id="shareAffinitiesAI"','data-affinity-delete','data-affinity-edit'])
     assert.ok(html.includes(field),field+" present");
-  assert.ok(html.includes("Eva")&&html.includes("filha")&&html.includes("10/10"));
+  assert.ok(html.includes("Eva")&&html.includes("filha")&&html.includes("anjo")&&html.includes("10/10"));
   const selected=window.NexusRPAffinitySelect("Nexus, o que acha da Evie?",state.affinities);
   assert.equal(selected.length,1);
   assert.equal(selected[0].player,"Eva");
   assert.equal(selected[0].kinship,"filha");
+  assert.equal(selected[0].race,"anjo");
+  assert.equal(window.NexusRPAffinitySelect("Quais são os demônios?",state.affinities).length,0,
+    "Specific race-only queries must not leak all affinities without a race label.");
+  assert.equal(window.NexusRPAffinitySelect("qual a raça da Evie?",state.affinities)[0].race,"anjo");
   assert.equal(window.NexusRPAffinitySelect("Como está minha mana?",state.affinities).length,0);
   assert.equal(window.NexusRPAffinitySelect("fale da minha família",state.affinities).length,2);
 });
@@ -93,12 +105,12 @@ test("Gemini uses owner memories ONLY after website toggle and authenticated cli
   const noPermission=await run("POST","/api/client/voice",owner,{
     transcript:"Nexus, o que você sabe da Eva?",
     memoryLookup:false,
-    affinities:[{player:"Eva",nickname:"Evie",kinship:"filha",score:10}]
+    affinities:[{player:"Eva",nickname:"Evie",kinship:"filha",race:"anjo",score:10}]
   });
   assert.equal(noPermission.status,200);
   assert.deepEqual(received[0].ownerMemories,[]);
   assert.deepEqual(received[0].affinities,[
-    {player:"Eva",nickname:"Evie",kinship:"filha",score:10}
+    {player:"Eva",nickname:"Evie",kinship:"filha",race:"anjo",score:10}
   ]);
   const chat=await run("GET","/api/client/poll",client);
   assert.equal(chat.payload.jobs.length,1);
@@ -107,7 +119,7 @@ test("Gemini uses owner memories ONLY after website toggle and authenticated cli
     {id:chat.payload.jobs[0].id,success:true,output:"sent"});
   const pending=run("POST","/api/client/voice",owner,{
     transcript:"Nexus, quem é minha filha Eva?",
-    memoryLookup:true,affinities:[{player:"Eva",nickname:"Evie",kinship:"filha",score:10}]
+    memoryLookup:true,affinities:[{player:"Eva",nickname:"Evie",kinship:"filha",race:"anjo",score:10}]
   });
   let lookup;
   for(let attempts=0;attempts<30;attempts++){
@@ -134,6 +146,7 @@ test("Gemini uses owner memories ONLY after website toggle and authenticated cli
     {topic:"Eva",text:"Eva é uma filha do Port no RP."}
   ]);
   assert.equal(received[1].affinities[0].kinship,"filha");
+  assert.equal(received[1].affinities[0].race,"anjo");
   const second=(await run("GET","/api/client/poll",client)).payload.jobs;
   assert.equal(second.length,1);
   assert.equal(second[0].type,"chat");
