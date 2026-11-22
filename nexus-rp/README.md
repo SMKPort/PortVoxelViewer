@@ -1,5 +1,26 @@
 # Nexus Aterna RP
 
+## Afinidades e Gemini com memória (Nexus 4.0.0-alpha.3)
+
+A nova aba Afinidades aparece em Outras ferramentas e permite cadastrar,
+editar e excluir fichas com quatro campos: jogador, apelido, parentesco/vínculo
+e afinidade inteira de 0 a 10. Nenhum parentesco é inferido automaticamente.
+As fichas são salvas no navegador e incluídas no backup JSON. Por padrão,
+não são compartilhadas. Para uso pela IA, marque a opção da própria aba.
+O navegador seleciona até seis pessoas relevantes pelo nome, apelido ou
+consulta geral sobre família/afinidades. A Render não guarda essas fichas.
+
+Em Voz do Nexus há a opção Consultar memórias do Minecraft no Gemini.
+O jogo também precisa autorizar, com /nexusclient memory ai on.
+Cada pergunta permitida aciona uma busca local de até seis memórias
+relacionadas, com janela de resposta limitada. A consulta não altera notas.
+Para revogar, desmarque a opção ou execute /nexusclient memory ai off.
+
+Memórias e afinidades são incluídas no prompt apenas como dados narrativos
+do proprietário, nunca como comandos ou fatos observados diretamente.
+Se não houver registros pertinentes, o Gemini deve reconhecer que não sabe.
+
+
 ## Correção do comunicador, Gemini e cores independentes (novembro de 2026)
 
 O Nexus Client usa o **canal escolhido em Configurações** tanto para o
