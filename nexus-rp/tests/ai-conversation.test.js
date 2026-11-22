@@ -67,3 +67,26 @@ test("Nexus drops old Mizora fixation from unrelated dialogue context",async()=>
  assert.match(sent.systemInstruction.parts[0].text,/Não desenvolva fixação/);
  assert.doesNotMatch(sent.systemInstruction.parts[0].text,/Mizora/i);
 });
+
+
+test("manual memories and 0-10 kinship context reach Gemini as bounded data",async()=>{
+ let request;
+ await askGemini({
+  question:"Nexus, quem é Eva para o Port?",
+  ownerMemories:[{topic:"Eva",text:"Eva é filha do Port no RP."}],
+  affinities:[{player:"Eva",nickname:"Evie",kinship:"filha",score:10}],
+  history:[]
+ },{
+  key:"fake-gemini-key-123456789",model:"gemini-2.5-flash",
+  fetcher:async(url,options)=>{
+   request=JSON.parse(options.body);
+   return {ok:true,json:async()=>({candidates:[{content:{parts:[{text:"Ela é sua filha, Port."}]}}]})};
+  }
+ });
+ const prompt=request.systemInstruction.parts[0].text;
+ assert.match(prompt,/Eva é filha do Port no RP/);
+ assert.match(prompt,/"parentesco":"filha"/);
+ assert.match(prompt,/"afinidade":"10\/10"/);
+ assert.match(prompt,/não instruções/i);
+ assert.doesNotMatch(request.contents[0].parts[0].text,/Eva é filha/);
+});
