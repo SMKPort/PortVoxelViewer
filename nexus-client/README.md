@@ -1,5 +1,24 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
+## Nexus 4.0.0-alpha.3 | Memórias conectadas ao Gemini
+
+As memórias manuais continuam preservadas no arquivo local config/nexus-owner-memories.json.
+A aba Voz do Nexus pode solicitar uma busca de até seis lembranças relevantes para a pergunta atual.
+
+Para permitir a consulta, pareie o Nexus, ative /nexusclient chat on e execute
+/nexusclient memory ai on. No site, habilite a opção Consultar memórias do
+Minecraft no Gemini, na aba Voz do Nexus. Os dois controles são desligados por padrão.
+Use /nexusclient memory ai off para revogar. /nexusclient permissions off também
+revoga o acesso, sem apagar memórias. A Render não recebe o banco inteiro e
+não mantém cópia permanente dos registros selecionados em seu armazenamento.
+
+A aba Afinidades do site possui nome do jogador, apelido, parentesco/vínculo e
+nota inteira de 0 a 10. As fichas são editáveis e armazenadas no navegador.
+A opção de compartilhamento com o Gemini é independente e desligada por padrão.
+Quando autorizada, a IA recebe no máximo seis fichas relevantes para cada pergunta.
+Essas relações são percepções declaradas por Port, não fatos verificados de terceiros.
+
+
 
 ## Nexus Aterna 4.0.0-alpha.2 | Canais personalizados e identidade visual
 
