@@ -24,17 +24,21 @@ public final class TimeFrameReplayScreen extends Screen {
     private double yaw = Math.toRadians(32), pitch = Math.toRadians(22), distance = 15.0;
     private double panX, panY;
     private static final float[] SPEEDS = {0.25f, 0.5f, 1f, 2f, 4f};
+    private String notice = "";
 
     public TimeFrameReplayScreen(TimeFrame mod) {
+        this(mod, null);
+    }
+    public TimeFrameReplayScreen(TimeFrame mod, ReplayBuffer.Replay saved) {
         super(Component.literal("TimeFrame | Replay 3D"));
         this.mod = mod;
-        this.frames = mod.replay().snapshot();
-        this.markers = mod.replay().eventSnapshot();
+        this.frames = saved == null || saved.frames == null ? mod.replay().snapshot() : saved.frames;
+        this.markers = saved == null || saved.markers == null ? mod.replay().eventSnapshot() : saved.markers;
         index = Math.max(0, frames.size() - 1);
     }
 
     @Override protected void init() {
-        int buttonWidth = Math.max(42, Math.min(90, (width - 30) / 6));
+        int buttonWidth = Math.max(35, Math.min(82, (width - 38) / 7));
         int gap = 3;
         int x = 12;
         int y = height - 27;
@@ -52,8 +56,22 @@ public final class TimeFrameReplayScreen extends Screen {
             speed = SPEEDS[(found + 1) % SPEEDS.length];
             b.setMessage(Component.literal(speed + "x"));
         }).bounds(x, y, buttonWidth, 20).build()); x += buttonWidth + gap;
-        addRenderableWidget(Button.builder(Component.literal("Salvar"), b -> mod.replay().saveReplay("manual"))
-            .bounds(x, y, buttonWidth, 20).build()); x += buttonWidth + gap;
+        addRenderableWidget(Button.builder(Component.literal("Salvar"), b -> {
+            mod.replay().saveReplay("manual");
+            notice = "Replay atual salvo";
+        }).bounds(x, y, buttonWidth, 20).build()); x += buttonWidth + gap;
+        addRenderableWidget(Button.builder(Component.literal("Ultimo"), b -> {
+            try {
+                ReplayBuffer.Replay saved = mod.replay().loadLatestReplay();
+                if (saved == null || saved.frames == null || saved.frames.isEmpty()) {
+                    notice = "Nenhum replay salvo";
+                    return;
+                }
+                Minecraft.getInstance().setScreen(new TimeFrameReplayScreen(mod, saved));
+            } catch (Exception ex) {
+                notice = "Falha ao abrir replay: " + ex.getMessage();
+            }
+        }).bounds(x, y, buttonWidth, 20).build()); x += buttonWidth + gap;
         addRenderableWidget(Button.builder(Component.literal("Fechar"), b -> onClose())
             .bounds(x, y, buttonWidth, 20).build());
     }
@@ -162,6 +180,7 @@ public final class TimeFrameReplayScreen extends Screen {
         }
         g.drawString(font, "Replay reconstruido por posicoes locais, sem blocos ou animacoes completas.",
             12, height - 56, 0x9AACBB);
+        if (!notice.isBlank()) g.drawString(font, notice, 12, height - 70, 0xFFCB88);
         super.render(g, mx, my, partial);
     }
     @Override public boolean mouseClicked(double mx, double my, int button) {

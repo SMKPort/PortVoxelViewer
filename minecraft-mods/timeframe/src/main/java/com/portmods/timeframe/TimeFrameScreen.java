@@ -97,9 +97,11 @@ public final class TimeFrameScreen extends Screen {
             b.setMessage(Component.literal("FPS: " + settings.fps));
             settings.save();
         });
-        button(2, y, "Morte: " + on(settings.autoDeathClip), b -> {
-            settings.autoDeathClip = !settings.autoDeathClip;
-            b.setMessage(Component.literal("Morte: " + on(settings.autoDeathClip)));
+        button(2, y, "Auto clipes: " + on(settings.autoDeathClip && settings.autoCombatClip), b -> {
+            boolean active = !(settings.autoDeathClip && settings.autoCombatClip);
+            settings.autoDeathClip = active;
+            settings.autoCombatClip = active;
+            b.setMessage(Component.literal("Auto clipes: " + on(active)));
             settings.save();
         });
         y += 25;

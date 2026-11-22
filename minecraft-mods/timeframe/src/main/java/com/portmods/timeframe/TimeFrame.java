@@ -62,6 +62,7 @@ public final class TimeFrame {
         while (SAVE_CLIP.consumeClick()) recorder.saveClip("manual");
         while (REPLAY.consumeClick()) mc.setScreen(new TimeFrameReplayScreen(this));
         if (replay.takeDeathFlag() && config.autoDeathClip && recorder.recording()) recorder.saveClip("morte");
+        if (replay.takeCombatFlag() && config.autoCombatClip && recorder.recording()) recorder.saveClip("combate");
     }
 
     @SubscribeEvent

@@ -19,6 +19,7 @@ public final class TimeFrameConfig {
     public boolean separateTracks = false;
     public boolean microphoneNoiseFilter = false;
     public boolean autoDeathClip = true;
+    public boolean autoCombatClip = true;
     public boolean showHud = true;
     public int bufferSeconds = 300;
     public int fps = 30;

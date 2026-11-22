@@ -9,7 +9,7 @@ Mod independente do Nexus Aterna, DeepScan 3D, Phantom Studio e Voxel Physics.
 - Gravacao de um ou dois fluxos de audio (faixas separadas, quando as duas fontes estao ativas).
 - Opcoes de volume, filtro de ruido do microfone, teste gravado de 3s, e extracao MP4.
 - F8 abre painel; F10 abre replay 3D de trajetorias observadas. Movimento e dano local gravados em historico de 5 minutos.
-- Salvar snapshots JSON compactados (.json.gz), marcador manual e salvamento automatico ao detectar morte.
+- Salvar snapshots JSON compactados (.json.gz), marcador manual, salvamento automatico apos combates e morte e abrir ultimo replay salvo.
 - Player temporal 3D esquematico, com orbita da camera, scrub e controle de velocidade de visualizacao.
 
 ## Instalacao
@@ -29,7 +29,7 @@ Mod independente do Nexus Aterna, DeepScan 3D, Phantom Studio e Voxel Physics.
 - Os replays 3D nao interrompem, atrasam nem revertem o servidor. Nao revelam jogadores ocultos ou areas nao recebidas.
 - O buffer e os clipes gravam imagem e audio localmente. O mod NAO envia nenhum conteudo para a internet.
 - Teste de microfone cria WAV de 3 segundos; pode ser ouvido pela funcao de reproduzir gravacao do sistema (via Desktop).
-- A gravacao automatica de mortes so salva um trecho SE o gravador de video estiver ativo e houver segmentos completos.
+- Os clipes automaticos de mortes e combates so salvam trechos SE o gravador de video estiver ativo e houver segmentos completos. Combates sao detectados por dano recebido ou tentativa de ataque em entidade sob a mira; o clipe e salvo apos 15s sem novas interacoes.
 - A gravacao por segmentos implica precisao de recorte de cerca de 10 segundos. A copia ocorre apenas dos segmentos finalizados.
 - Reducao de ruido e filtro de passa-altas sao filtros FFmpeg. Nao sao cancelamento de ruido por IA.
 
