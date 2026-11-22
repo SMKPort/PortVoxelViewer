@@ -14,7 +14,7 @@ function boot(mode,remembered=false){
    createElement:()=>({dataset:{}})
  };
  const context=vm.createContext({window,document,setInterval:()=>0});
- for(const file of ["views.js","upgrade.js","evolution.js","client.js"]){
+ for(const file of ["views.js","upgrade.js","evolution.js","client.js","affinity.js"]){
    vm.runInContext(pageScript(file),context,{filename:file});
  }
  const state={
@@ -37,6 +37,7 @@ function boot(mode,remembered=false){
  views=window.NexusRPUpgrade(rp,views);
  views=window.NexusRPEvolution(rp,views);
  views=window.NexusRPClientUpgrade(rp,views);
+ views=window.NexusRPAffinityUpgrade(rp,views);
  return views;
 }
 test("Nexus Client uses no RCON fields and exposes code pairing",()=>{
@@ -94,7 +95,7 @@ test("compact navigation keeps core pages visible and advanced pages accessible"
  assert.ok(mainNav,"Navigation needs a collapsible advanced group");
  for(const page of ["painel","voz","chat","cliente","config"])
    assert.ok(mainNav[1].includes('data-page="'+page+'"'),"Core navigation missing "+page);
- for(const page of ["armadura","rituais","alertas","mente"])
+ for(const page of ["armadura","rituais","alertas","mente","afinidade"])
    assert.ok(index.includes('data-page="'+page+'"'),"Advanced tool lost "+page);
  assert.ok(!index.includes('data-page="audicao"'),"Retired paid hearing must not be navigable");
  assert.ok(!index.includes('src="/hearing.js'),"Retired paid hearing script must not load");
@@ -130,4 +131,19 @@ test("Protocolo TS, Sequenciador e Emotes desaparecem de todas as páginas",()=>
  assert.ok(views.emergencia(),"O protocolo de emergência deve continuar funcionando");
  assert.ok(views.rituais(),"Rituais devem continuar funcionando");
  assert.ok(views.eventos(),"O painel de eventos deve continuar funcionando");
+});
+
+test("Afinidades navigation opens a real page with fields, without losing old records",()=>{
+ const index=pageScript("index.html"),app=pageScript("app.js");
+ assert.ok(index.includes('data-page="afinidade"'),"Affinity button is visible");
+ assert.ok(index.includes('src="/affinity.js?v='),"Affinity module is loaded");
+ assert.ok(app.includes('afinidade:"AFINIDADES"'),"Router recognizes affinity route");
+ assert.ok(app.includes("NexusRPAffinityUpgrade(rp,views)"),"Page module is registered");
+ const views=boot("client");
+ assert.equal(typeof views.afinidade,"function","No blank fallback page");
+ const html=views.afinidade();
+ for(const field of ['name="player"','name="nickname"','name="kinship"',
+   'name="race"','name="score"'])
+   assert.ok(html.includes(field),"Missing affinity field "+field);
+ assert.ok(html.includes("FICHAS REGISTRADAS"));
 });
