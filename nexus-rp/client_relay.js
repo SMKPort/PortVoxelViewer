@@ -11,7 +11,6 @@ const JOB_MAX_AGE=120000;
 function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=aiStatus,synthesize=synthesizeSpeech,privateReply=askPrivate}){
   let pair=null,session=null,eventId=0,mind=null,monitor=null,alertsState=null,hearingState=null;
   let ttsBusy=false,lastTtsAt=0,privateBusy=false,lastPrivateAt=0;
-  let voiceAiBusy=false,lastVoiceAiAt=0;
   const jobs=new Map(),events=[],memoryWaiters=new Map();
   const err=(res,code,message)=>{send(res,code,{ok:false,error:message});return true;};
   const hash=s=>crypto.createHash("sha256").update(String(s||"")).digest("hex");
@@ -131,7 +130,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
     cleanup();
     if(["/api/client/pair/new","/api/client/pair/exchange","/api/client/chat","/api/client/voice","/api/client/action","/api/client/monitor/settings","/api/client/alerts/settings","/api/client/hearing/settings","/api/client/hearing/fact","/api/client/mind/settings","/api/client/arcane/settings"].includes(route)&&!limit(req))return err(res,429,"Limite de requisições. Reduza a frequência.");
     const userPaths=new Set(["/api/client/pair/new","/api/client/status","/api/client/events","/api/client/chat","/api/client/voice","/api/client/ai/status","/api/client/action","/api/client/job","/api/client/monitor/settings","/api/client/alerts","/api/client/alerts/settings","/api/client/hearing","/api/client/hearing/settings","/api/client/hearing/fact","/api/client/mind/settings","/api/client/arcane","/api/client/arcane/settings"]);
-    const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/mind","/api/client/ack","/api/client/monitor/state","/api/client/alerts/state","/api/client/hearing/transcribe","/api/client/hearing/state","/api/client/hearing/reply","/api/client/tts","/api/client/arcane/state","/api/client/private/reply","/api/client/voicecast/query"]);
+    const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/mind","/api/client/ack","/api/client/monitor/state","/api/client/alerts/state","/api/client/hearing/transcribe","/api/client/hearing/state","/api/client/hearing/reply","/api/client/tts","/api/client/arcane/state","/api/client/private/reply"]);
     if(!userPaths.has(route)&&!clientPaths.has(route))return err(res,404,"Rota desconhecida.");
     if(userPaths.has(route)&&!guardUser(req,res))return true;
     if(route==="/api/client/pair/new"&&req.method==="POST"){
@@ -148,7 +147,6 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         session={tokenHash:hash(token),player:/^[A-Za-z0-9_]{3,16}$/.test(player)?player:"",lastSeen:Date.now()};
         resolveMemoryWaiters();
         jobs.clear();events.splice(0,events.length);eventId=0;mind=null;monitor=null;alertsState=null;hearingState=null;ttsBusy=false;lastTtsAt=0;privateBusy=false;lastPrivateAt=0;
-        voiceAiBusy=false;lastVoiceAiAt=0;
         send(res,200,{ok:true,token,player:session.player,ttl:"until-service-restart-or-repair"});return true;
       }catch(e){return err(res,400,String(e.message));}
     }
@@ -411,38 +409,6 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
           social,syncedAt:new Date().toISOString()};
         send(res,200,{ok:true});return true;
       }catch(e){return err(res,422,String(e.message));}
-    }
-    if(route==="/api/client/voicecast/query"&&req.method==="POST"){
-      // Fully client-token authenticated. Gemini receives text only, never audio.
-      // The AI cannot issue Minecraft actions; the response is returned to
-      // the requesting client for LOCAL display and owner-authorized TTS.
-      if(voiceAiBusy||Date.now()-lastVoiceAiAt<6500)
-        return err(res,429,"VoiceCast IA ocupado. Aguarde antes de perguntar novamente.");
-      voiceAiBusy=true;
-      lastVoiceAiAt=Date.now();
-      try{
-        const data=await body(req,8500);
-        if(data.consent!==true)return err(res,403,
-          "VoiceCast Gemini precisa ser ativado explicitamente no mod.");
-        if(typeof data.question!=="string"||data.question.trim().length<3||
-           data.question.length>400)
-          return err(res,422,"Pergunta do VoiceCast inválida.");
-        const question=data.question.replace(/[\u0000-\u001f\u007f]/g," ").trim();
-        if(question.startsWith("/"))return err(res,422,"Comandos não são enviados à IA.");
-        const ownerMemories=checkedNotes(data.ownerMemories);
-        const response=await askAI({
-          question,history:[],online:true,player:session?.player||"",
-          events,mind,ownerMemories
-        });
-        const reply=String(response?.text||"").trim();
-        if(!reply)return err(res,502,"Gemini não retornou resposta.");
-        send(res,200,{ok:true,reply:reply.slice(0,380),
-          model:String(response.model||"Gemini"),memoryUsed:ownerMemories.length});
-        return true;
-      }catch(e){
-        return err(res,Number(e.publicStatus)||502,
-          String(e.message||"Gemini indisponível.").slice(0,180));
-      }finally{voiceAiBusy=false;}
     }
     if(route==="/api/client/private/reply"&&req.method==="POST"){
       if(privateBusy||Date.now()-lastPrivateAt<4000)
