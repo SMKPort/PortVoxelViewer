@@ -14,6 +14,7 @@ public final class NexusPermissionsSmokeTest {
         ClientConfig.allowTelemetry=false;
         ClientConfig.allowMind=false;
         ClientConfig.allowAutonomy=false;
+        ClientConfig.allowGeminiMemory=false;
         NexusHearing.consent=true;
         NexusHearing.plasmoReady=true;
         NexusHearing.listening=false;
@@ -56,6 +57,8 @@ public final class NexusPermissionsSmokeTest {
         check(!NexusSpeaker.active,"Global activation must not enable potentially paid TTS.");
         check(!NexusVoiceCasting.on,
             "Enable everything must never silently activate the real microphone.");
+        check(!ClientConfig.allowGeminiMemory,
+            "Global all may not silently transmit saved memories to Gemini.");
         check(!NexusAutoHeal.enabled,
             "Global enable must not spend Heal mana without separate authorization.");
         check(!NexusCombatMacro.active,"Global enable must not activate offensive macros.");
@@ -72,6 +75,7 @@ public final class NexusPermissionsSmokeTest {
         NexusBlessing.enabled=true;
         NexusCombatMacro.active=true;
         NexusArcaneTravel.pending=true;
+        ClientConfig.allowGeminiMemory=true;
         NexusAwakening.protect=true;
         NexusAwakening.warn=true;
         NexusAwakening.recording=true;
@@ -85,6 +89,8 @@ public final class NexusPermissionsSmokeTest {
         check(!NexusAutoHeal.enabled,"Global off must stop automatic healing.");
         check(!NexusBlessing.enabled,"Global off must stop automatic Blessing renewals.");
         check(!NexusVoiceCasting.on,"Disable everything closes the local microphone.");
+        check(!ClientConfig.allowGeminiMemory,
+            "Global off must revoke AI memory sharing without deleting notes.");
         check(!ClientConfig.allowChat && !ClientConfig.allowTelemetry
             && !ClientConfig.allowMind && !ClientConfig.allowAutonomy,
             "Core permissions must all be off.");
@@ -121,7 +127,7 @@ public final class NexusPermissionsSmokeTest {
 
 /* Minimal fakes for controller-only tests. Do not compile these with the mod. */
 final class ClientConfig {
-    static boolean allowChat, allowTelemetry, allowMind, allowAutonomy;
+    static boolean allowChat, allowTelemetry, allowMind, allowAutonomy, allowGeminiMemory;
     static void save() {}
 }
 final class ClientLink {
