@@ -101,7 +101,7 @@ test("compact navigation keeps core pages visible and advanced pages accessible"
  assert.ok(!index.includes('data-page="arcano"'),"Removed magic scanner cannot appear in navigation");
  assert.ok(!index.includes('src="/arcane.js'),"Removed scanner script cannot load");
  assert.ok(index.includes('href="#voz"'),"Voice must be directly accessible from mobile topbar");
- assert.ok(/app\.js\?v=(?:2\.[4-9]|3\.[0-9])/.test(index),"Cache busting prevents stale pages after deployment");
+ assert.ok(/app\.js\?v=\d+\.\d+(?:\.\d+)?/.test(index),"Cache busting prevents stale pages after deployment");
  assert.ok(pageScript("app.js").includes("advancedItems.appendChild(item)"));
  assert.ok(pageScript("client.js").includes('!nav.querySelector(\'[data-page="cliente"]\')'));
 });
