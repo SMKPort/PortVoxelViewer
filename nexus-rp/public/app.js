@@ -9,11 +9,11 @@ const PRESETS=[
 {id:"renovar",name:"Renovação do Núcleo",school:"Híbrida",cost:32,description:"O núcleo é recalibrado e a energia se redistribui entre as placas."},
 {id:"custom",name:"Personalizado",school:"Personalizado",cost:20,description:"O Port executa uma sequência de símbolos e componentes escolhidos."}
 ];
-const PAGES={painel:"NÚCLEO",chat:"COMUNICADOR",armadura:"ARMADURA ARCANA",rituais:"RITUAIS",ao_vivo:"RP AO VIVO",eventos:"EVENTOS DO JOGO",emergencia:"EMERGÊNCIA",cliente:"NEXUS CLIENT",voz:"VOZ DO NEXUS",alertas:"ALERTAS DO NEXUS",mente:"NEXUS MIND 2.0",config:"CONFIGURAÇÕES"};
+const PAGES={painel:"NÚCLEO",chat:"COMUNICADOR",armadura:"ARMADURA ARCANA",rituais:"RITUAIS",ao_vivo:"RP AO VIVO",eventos:"EVENTOS DO JOGO",emergencia:"EMERGÊNCIA",cliente:"NEXUS CLIENT",voz:"VOZ DO NEXUS",alertas:"ALERTAS DO NEXUS",mente:"NEXUS MIND 2.0",afinidade:"AFINIDADES",config:"CONFIGURAÇÕES"};
 const DEFAULT=()=>({
 integrity:100,energy:85,armor:"integrada",form:"Celestial",selectedRitual:"bencao",
 logs:[{id:"origin",at:new Date().toISOString(),kind:"SISTEMA",text:"Nexus Aterna RP inicializado. Aguardando instruções do Port."}],
-chat:[],rituals:[],
+chat:[],rituals:[],affinities:[],
 config:{connectionMode:"client",chatChannel:"local",chatCustomCommand:"rp",chatFormatting:"&6&l",chatBodyFormatting:"&f",chatUsePrefix:true,host:"",port:25575,player:"Port",prefix:"[Nexus Aterna]",target:"global",recipient:"",color:"white",autoAnnounce:true,functions:{integrar:"",desintegrar:"",remodelar:"",ritual:""}}
 });
 const state=DEFAULT();
@@ -22,7 +22,7 @@ const s=JSON.parse(localStorage.getItem(KEY)||"null");
 if(s&&typeof s==="object"){
 Object.assign(state,s);
 state.config={...DEFAULT().config,...(s.config||{}),functions:{...DEFAULT().config.functions,...(s.config?.functions||{})}};
-for(const k of ["logs","chat","rituals"])if(!Array.isArray(state[k]))state[k]=[];
+for(const k of ["logs","chat","rituals","affinities"])if(!Array.isArray(state[k]))state[k]=[];
 }
 }catch(e){}
 // Nexus-originated chat messages always carry an explicit sender label, even for existing stored profiles.
@@ -66,6 +66,7 @@ if(window.NexusRPClientUpgrade)views=window.NexusRPClientUpgrade(rp,views);
 if(window.NexusRPVoiceUpgrade)views=window.NexusRPVoiceUpgrade(rp,views);
 if(window.NexusRPAlertsUpgrade)views=window.NexusRPAlertsUpgrade(rp,views);
 if(window.NexusRPMind2Upgrade)views=window.NexusRPMind2Upgrade(rp,views);
+if(window.NexusRPAffinityUpgrade)views=window.NexusRPAffinityUpgrade(rp,views);
 
 // Preserve advanced pages, but group their menu entries instead of showing a
 // dozen primary buttons. All module scripts run before this app initializer.
