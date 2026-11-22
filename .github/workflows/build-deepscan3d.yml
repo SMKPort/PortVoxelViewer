@@ -1,0 +1,30 @@
+name: Build DeepScan 3D (NeoForge 1.21.1)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'minecraft-mods/deepscan3d/**'
+      - '.github/workflows/build-deepscan3d.yml'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Build DeepScan 3D
+        working-directory: minecraft-mods/deepscan3d
+        run: gradle build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deepscan3d-neoforge-1.21.1
+          path: minecraft-mods/deepscan3d/build/libs/*.jar
+          if-no-files-found: error
