@@ -14,7 +14,7 @@ const DEFAULT=()=>({
 integrity:100,energy:85,armor:"integrada",form:"Celestial",selectedRitual:"bencao",
 logs:[{id:"origin",at:new Date().toISOString(),kind:"SISTEMA",text:"Nexus Aterna RP inicializado. Aguardando instruções do Port."}],
 chat:[],rituals:[],
-config:{connectionMode:"client",chatChannel:"local",chatCustomCommand:"rp",chatFormatting:"&6&l",chatUsePrefix:true,host:"",port:25575,player:"Port",prefix:"[Nexus Aterna]",target:"global",recipient:"",color:"white",autoAnnounce:true,functions:{integrar:"",desintegrar:"",remodelar:"",ritual:""}}
+config:{connectionMode:"client",chatChannel:"local",chatCustomCommand:"rp",chatFormatting:"&6&l",chatBodyFormatting:"&f",chatUsePrefix:true,host:"",port:25575,player:"Port",prefix:"[Nexus Aterna]",target:"global",recipient:"",color:"white",autoAnnounce:true,functions:{integrar:"",desintegrar:"",remodelar:"",ritual:""}}
 });
 const state=DEFAULT();
 try{
@@ -94,9 +94,14 @@ const d=new FormData(form),c=state.config;
 c.connectionMode=["agent","client"].includes(d.get("connectionMode"))?String(d.get("connectionMode")):"public";
 if(d.has("chatChannel")){
  c.chatChannel=["global","local","custom"].includes(d.get("chatChannel"))?String(d.get("chatChannel")):"local";
- c.chatCustomCommand=String(d.get("chatCustomCommand")||"").trim().replace(/^\//,"").toLowerCase().slice(0,24);
+ c.chatCustomCommand=String(d.get("chatCustomCommand")||"").trim().replace(/^\//,"").toLowerCase().slice(0,64);
  c.chatFormatting=String(d.get("chatFormatting")??"&6&l").trim().toLowerCase();
- if(!/^(?:&[0-9a-fk-or]){0,8}$/.test(c.chatFormatting))throw Error("Código de formatação inválido. Use, por exemplo, &6&l.");
+ c.chatBodyFormatting=String(d.get("chatBodyFormatting")??"&f").trim().toLowerCase();
+ if(!/^(?:&[0-9a-fk-or]){0,8}$/.test(c.chatFormatting)||
+    !/^(?:&[0-9a-fk-or]){0,8}$/.test(c.chatBodyFormatting))
+   throw Error("Código de cor inválido. Use &6&l no prefixo e &f na mensagem.");
+ if(c.chatChannel==="custom"&&!/^[a-z0-9_.:-]+(?: [a-z0-9_.:-]+){0,2}$/.test(c.chatCustomCommand))
+   throw Error("Comando personalizado inválido. Exemplos: /rp, /f chat e /somake:rp.");
  c.chatUsePrefix=d.has("chatUsePrefix");
 }
 c.host=String(d.get("host")||"").trim().slice(0,253);
@@ -152,9 +157,11 @@ if(state.config.connectionMode==="client"){
    const cleaned=base.replace(/^(?:\[nexus\s+aterna\]\s*)+/i,"");
    const message=(label+" "+cleaned).trim();
    if(!message||message.length>230)throw Error("A mensagem deve ter entre 1 e 230 caracteres. Reduza o texto ou remova o prefixo.");
-   const format=channel==="local"?(state.config.chatFormatting??"&6&l"):"";
-   if(!/^(?:&[0-9a-fk-or]){0,8}$/.test(format))throw Error("Código de formatação inválido.");
-   return run("/chat",{message,channel,command:state.config.chatCustomCommand||"",format});
+   const format=state.config.chatFormatting??"&6&l";
+   const bodyFormat=state.config.chatBodyFormatting??"&f";
+   if(![format,bodyFormat].every(v=>/^(?:&[0-9a-fk-or]){0,8}$/.test(v)))
+     throw Error("Código de formatação inválido. Verifique as cores do prefixo e da mensagem.");
+   return run("/chat",{message,channel,command:state.config.chatCustomCommand||"",format,bodyFormat});
  }
  if(route==="action")return run("/action",payload);
  throw Error("O Nexus Client não pode executar funções administrativas do servidor.");

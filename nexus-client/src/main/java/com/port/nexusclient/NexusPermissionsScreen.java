@@ -85,6 +85,12 @@ final class NexusPermissionsScreen extends Screen {
                 button->minecraft.setScreen(new NexusMemoryScreen(this)))
                 .bounds(x+6,buttonY,w-12,20).build());
         }
+        if(tab==Tab.MEMORIAS&&height>=310){
+            int buttonY=height>=340?268:244;
+            addRenderableWidget(Button.builder(Component.literal("§6ARCANE TRAVEL | WAYSTONES"),
+                button->minecraft.setScreen(new NexusTravelScreen(this)))
+                .bounds(x+6,buttonY,w-12,20).build());
+        }
         if(tab==Tab.COMBATE){
             int y=145;
             if(height>=230){
@@ -98,23 +104,40 @@ final class NexusPermissionsScreen extends Screen {
                     b->minecraft.setScreen(new NexusHudEditorScreen(this)))
                     .bounds(x+6,194,w-12,20).build());
             if(height>=340){
-                addRenderableWidget(Button.builder(Component.literal("MODELO VOSK "+
+                int third=(w-26)/3;
+                addRenderableWidget(Button.builder(Component.literal("§6MODO "+
                     NexusVoiceCasting.language().toUpperCase()),b->{
-                    if(NexusVoiceModels.install(NexusVoiceCasting.language()))
-                        message="Download iniciado. Consulte /nexusclient voicecast status.";
+                    String current=NexusVoiceCasting.language();
+                    String next="auto".equals(current)?"en":
+                        "en".equals(current)?"pt":"auto";
+                    NexusVoiceCasting.setLanguage(next);
+                    open(Tab.COMBATE,"Modo "+next.toUpperCase()
+                        +" escolhido. F6 para reativar a voz.");
+                }).bounds(x+6,220,third,20).build());
+                addRenderableWidget(Button.builder(Component.literal("INSTALAR VOSK"),b->{
+                    String next=NexusVoiceModels.nextMissing(NexusVoiceCasting.language());
+                    if(next.isBlank())message="Modelos Vosk PT e EN já instalados.";
+                    else if(NexusVoiceModels.install(next))
+                        message="Baixando Vosk "+next.toUpperCase()
+                            +". Clique novamente após instalar para obter o outro.";
                     else message=NexusVoiceModels.status();
-                }).bounds(x+6,220,half,20).build());
-                addRenderableWidget(Button.builder(Component.literal("§6ESCOLHER MICROFONE"),
+                }).bounds(x+11+third,220,third,20).build());
+                addRenderableWidget(Button.builder(Component.literal("MICROFONE"),
                     b->minecraft.setScreen(new NexusMicrophoneScreen(this)))
-                    .bounds(x+12+half,220,half,20).build());
+                    .bounds(x+16+2*third,220,third,20).build());
             }
             if(height>=320){
                 addRenderableWidget(Button.builder(Component.literal("§6CONFIGURAR MACROS"),
                     button->minecraft.setScreen(new NexusMacroScreen(this)))
                     .bounds(x+6,250,half,20).build());
-                addRenderableWidget(Button.builder(Component.literal("§6GERENCIAR BUFFS"),
-                    button->minecraft.setScreen(new NexusBuffScreen(this)))
+                addRenderableWidget(Button.builder(Component.literal("§6+ MAGIAS | MANUTENÇÃO AUTOMÁTICA"),
+                    button->minecraft.setScreen(new NexusBlessingScreen(this)))
                     .bounds(x+12+half,250,half,20).build());
+            }
+            if(height>=345){
+                addRenderableWidget(Button.builder(Component.literal("§6NEXUS 4.0 | O DESPERTAR"),
+                    button->minecraft.setScreen(new NexusAwakeningScreen(this)))
+                    .bounds(x+6,280,w-12,20).build());
             }
         }
         int footerY=height-34,btnW=(w-22)/3;

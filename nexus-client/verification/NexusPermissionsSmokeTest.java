@@ -30,9 +30,14 @@ public final class NexusPermissionsSmokeTest {
         NexusSocial.share=false;
         NexusSpeaker.active=false;
         NexusAutoHeal.enabled=false;
+        NexusBlessing.enabled=false;
         NexusCombatMacro.active=false;
-        NexusBuffManager.active=false;
         NexusVoiceCasting.on=false;
+        NexusArcaneTravel.pending=false;
+        NexusAwakening.protect=false;
+        NexusAwakening.warn=false;
+        NexusAwakening.recording=false;
+        NexusAwakening.savedEvents=4;
         NexusArcaneSensor.on=false;
         NexusHudSettings.combat=false;NexusHudSettings.magic=false;
     }
@@ -54,7 +59,8 @@ public final class NexusPermissionsSmokeTest {
         check(!NexusAutoHeal.enabled,
             "Global enable must not spend Heal mana without separate authorization.");
         check(!NexusCombatMacro.active,"Global enable must not activate offensive macros.");
-        check(!NexusBuffManager.active,"Global enable must not consume buffs.");
+        check(!NexusAwakening.protect&&!NexusAwakening.warn&&!NexusAwakening.recording,
+            "Enable all cannot silently opt in to new protection, warnings or recording.");
         check(NexusArcaneSensor.on&&NexusHudSettings.combat&&NexusHudSettings.magic,
             "HUD and client-side magic readings are included in global enable.");
         check(!NexusHearing.listening && !NexusHearing.memory &&
@@ -63,12 +69,21 @@ public final class NexusPermissionsSmokeTest {
         NexusPermissions.status();
         NexusVoiceCasting.on=true;
         NexusAutoHeal.enabled=true;
+        NexusBlessing.enabled=true;
         NexusCombatMacro.active=true;
-        NexusBuffManager.active=true;
+        NexusArcaneTravel.pending=true;
+        NexusAwakening.protect=true;
+        NexusAwakening.warn=true;
+        NexusAwakening.recording=true;
         NexusPermissions.off();
-        check(!NexusBuffManager.active,"Global off revokes automatic buff permission.");
+        check(!NexusArcaneTravel.pending, "Global off cancels pending Waystones requests.");
         check(!NexusCombatMacro.active,"Global off stops offensive macros.");
+        check(!NexusAwakening.protect&&!NexusAwakening.warn&&!NexusAwakening.recording,
+            "Global off revokes all Nexus 4.0 active protocols.");
+        check(NexusAwakening.savedEvents==4,
+            "Global off must preserve previously saved context journal entries.");
         check(!NexusAutoHeal.enabled,"Global off must stop automatic healing.");
+        check(!NexusBlessing.enabled,"Global off must stop automatic Blessing renewals.");
         check(!NexusVoiceCasting.on,"Disable everything closes the local microphone.");
         check(!ClientConfig.allowChat && !ClientConfig.allowTelemetry
             && !ClientConfig.allowMind && !ClientConfig.allowAutonomy,
@@ -200,8 +215,25 @@ final class NexusCombatMacro {
     static String status(){return active?"macro on":"macro off";}
 }
 
-final class NexusBuffManager {
-    static boolean active;
-    static void setEnabled(boolean on){active=on;}
-    static String status(){return active?"buffs on":"buffs off";}
+/** Stub for global-permissions tests only. */
+final class NexusArcaneTravel {
+    static boolean pending;
+    static String cancel(){pending=false;return "cancelled";}
+}
+
+/** Stand-in only for isolated permission tests, not the Minecraft mod. */
+final class NexusBlessing {
+    static boolean enabled;
+    static void setEnabled(boolean on){enabled=on;}
+    static String summary(){return enabled?"Blessing ON":"Blessing OFF";}
+}
+
+/** Isolated stand-in for the 4.0 owner-authorized contextual features. */
+final class NexusAwakening {
+    static boolean protect,warn,recording;
+    static int savedEvents;
+    static String protection(boolean value){protect=value;return "protection";}
+    static String warnings(boolean value){warn=value;return "warnings";}
+    static String journal(boolean value){recording=value;return "journal";}
+    static String status(){return "awakening";}
 }

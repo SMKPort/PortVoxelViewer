@@ -51,11 +51,15 @@ final class NexusVoiceGrammar {
             if(spell==null||spell.slot<0||spell.slot>255)continue;
             for(String name:names(spell.id)){
                 for(String wake:List.of("nexus","nexo","nexos")){
-                    for(String instruction:List.of("execute ","execute o ","execute a ",
+                    // The shortest invocation is simply "Nexus, Divine Smite".
+                    // Old verbs are still accepted for backwards compatibility.
+                    for(String instruction:List.of("","execute ","execute o ","execute a ",
                         "executa ","executa o ","cast ","lancar ","lance ")){
                         String phrase=normalize(wake+" "+instruction+name);
                         Spell previous=out.putIfAbsent(phrase,spell);
-                        if(previous!=null&&!previous.id.equals(spell.id))
+                        // Same-name spells in distinct slots are also ambiguous.
+                        if(previous!=null&&
+                            (!previous.id.equals(spell.id)||previous.slot!=spell.slot))
                             ambiguous.add(phrase);
                     }
                 }
