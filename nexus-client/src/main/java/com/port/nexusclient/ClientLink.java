@@ -321,7 +321,7 @@ final class ClientLink {
             safe=safe.substring(0,cut>=130?cut:205).trim()+"…";
         }
         try {
-            chat("[Nexus Aterna] "+safe,"local","l","&6&l",false);
+            chat("[Nexus Aterna] "+safe,"local","l","&6&l","&f",false);
             NexusAlertHistory.record(kind,safe);
             NexusSpeaker.onSpeech(safe,NexusMind.stageIndex());
             if(!ClientConfig.token.isEmpty())sendAlertState();
