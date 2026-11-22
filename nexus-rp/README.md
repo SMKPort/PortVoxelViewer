@@ -1,5 +1,33 @@
 # Nexus Aterna RP
 
+## Correção do comunicador, Gemini e cores independentes (novembro de 2026)
+
+O Nexus Client usa o **canal escolhido em Configurações** tanto para o
+**Comunicador** quanto para as mensagens da aba **Voz do Nexus (Gemini)**.
+O modo personalizado aceita comandos simples de chat fornecidos por
+administradores, como `/rp`, `/f chat` e `/somake:rp`, sem a antiga lista fixa.
+Comandos de administração, seletores, novas linhas e operadores de shell
+continuam bloqueados. O usuário precisa ter permissão de usar o comando.
+
+**Cor e estilo do prefixo** e **Cor do texto da mensagem** são campos
+separados, com prévia visual. O padrão é:
+
+```text
+&6&l[Nexus Aterna] &r&fDesintegrando armadura
+```
+
+O `&r` remove o negrito antes do corpo do texto, e o segundo código
+define uma nova cor. É possível usar `&7` (cinza) ou `&b` (azul-claro).
+**A aparência final depende do sistema de chat do servidor**:
+se a formatação aparecer literalmente, o canal não suporta esses códigos,
+ou é necessário ajustar a configuração junto ao administrador.
+
+Atualize **site e JAR Nexus 4.0.0-alpha.2**, salve as opções e teste com
+uma mensagem curta. O site só confirma que o pedido de envio foi entregue
+ao mod. O servidor pode recusar a publicação por permissões, cooldown,
+tamanho ou regras do canal, que o Nexus não pode contornar.
+
+
 ## Atualização visual 4.0 | Arcane Command Center
 
 A central web do Nexus Aterna foi redesenhada para acompanhar a evolução
