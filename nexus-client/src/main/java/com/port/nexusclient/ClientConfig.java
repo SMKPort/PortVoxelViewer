@@ -17,6 +17,7 @@ final class ClientConfig {
     static boolean allowMind = false;
     static boolean allowAutonomy = false;
     static boolean allowGeminiMemory = false; // Manual, explicit opt-in only
+    static boolean allowVoiceAi = false; // Per-session explicit opt-in
 
     static void load() {
         if (!Files.isRegularFile(PATH)) return;
@@ -32,6 +33,7 @@ final class ClientConfig {
             allowMind = Boolean.parseBoolean(values.getProperty("allowMind", "false"));
             allowAutonomy = Boolean.parseBoolean(values.getProperty("allowAutonomy", "false"));
             allowGeminiMemory = Boolean.parseBoolean(values.getProperty("allowGeminiMemory", "false"));
+            allowVoiceAi = false; // Never silently enable online speech at game launch.
         } catch (IOException exception) {
             System.err.println("Nexus Client: não foi possível ler o arquivo de configuração.");
         }
@@ -46,6 +48,7 @@ final class ClientConfig {
         values.setProperty("allowMind", Boolean.toString(allowMind));
         values.setProperty("allowAutonomy", Boolean.toString(allowAutonomy));
         values.setProperty("allowGeminiMemory", Boolean.toString(allowGeminiMemory));
+        values.setProperty("allowVoiceAi", Boolean.toString(allowVoiceAi));
         try {
             Files.createDirectories(PATH.getParent());
             try (OutputStream out = Files.newOutputStream(PATH)) {
