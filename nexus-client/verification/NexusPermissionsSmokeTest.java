@@ -33,6 +33,8 @@ public final class NexusPermissionsSmokeTest {
         NexusCombatMacro.active=false;
         NexusBuffManager.active=false;
         NexusVoiceCasting.on=false;
+        NexusVision.active=false;
+        NexusHologram.active=false;
         NexusArcaneSensor.on=false;
         NexusHudSettings.combat=false;NexusHudSettings.magic=false;
     }
@@ -51,6 +53,7 @@ public final class NexusPermissionsSmokeTest {
         check(!NexusSpeaker.active,"Global activation must not enable potentially paid TTS.");
         check(!NexusVoiceCasting.on,
             "Enable everything must never silently activate the real microphone.");
+        check(!NexusVision.active,"Global on must never authorize screenshot access.");
         check(!NexusAutoHeal.enabled,
             "Global enable must not spend Heal mana without separate authorization.");
         check(!NexusCombatMacro.active,"Global enable must not activate offensive macros.");
@@ -62,6 +65,8 @@ public final class NexusPermissionsSmokeTest {
             "Global enable must never activate retired audio capture.");
         NexusPermissions.status();
         NexusVoiceCasting.on=true;
+        NexusVision.active=true;
+        NexusHologram.active=true;
         NexusAutoHeal.enabled=true;
         NexusCombatMacro.active=true;
         NexusBuffManager.active=true;
@@ -70,6 +75,8 @@ public final class NexusPermissionsSmokeTest {
         check(!NexusCombatMacro.active,"Global off stops offensive macros.");
         check(!NexusAutoHeal.enabled,"Global off must stop automatic healing.");
         check(!NexusVoiceCasting.on,"Disable everything closes the local microphone.");
+        check(!NexusVision.active && !NexusHologram.active,
+            "Global off revokes screenshot consent and local holograms.");
         check(!ClientConfig.allowChat && !ClientConfig.allowTelemetry
             && !ClientConfig.allowMind && !ClientConfig.allowAutonomy,
             "Core permissions must all be off.");
@@ -204,4 +211,15 @@ final class NexusBuffManager {
     static boolean active;
     static void setEnabled(boolean on){active=on;}
     static String status(){return active?"buffs on":"buffs off";}
+}
+
+final class NexusVision {
+    static boolean active;
+    static void setEnabled(boolean on){active=on;}
+    static String status(){return active?"vision on":"vision off";}
+}
+final class NexusHologram {
+    static boolean active;
+    static void setEnabled(boolean on){active=on;}
+    static String status(){return active?"hologram on":"hologram off";}
 }
