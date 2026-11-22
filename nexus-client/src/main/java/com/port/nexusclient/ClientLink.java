@@ -78,6 +78,7 @@ final class ClientLink {
                 ClientConfig.token=res.get("token").getAsString();
                 ClientConfig.allowChat=false;ClientConfig.allowTelemetry=false;
                 ClientConfig.allowGeminiMemory=false;
+                ClientConfig.allowVoiceAi=false;NexusVoiceAi.reset();
                 ClientConfig.save();reset();
                 NexusClientMod.notifyPlayer("Vinculado! Ative /nexusclient chat on e /nexusclient telemetry on se desejar.");
             } else {
@@ -92,7 +93,7 @@ final class ClientLink {
         Minecraft mc=Minecraft.getInstance();
         if(mc.player==null || mc.getConnection()==null){
             previousHealth=Float.NaN;previousPlayer="";previousEffects="";
-            NexusMind.resetSession();COMBAT_ALERTS.reset();NexusHearing.resetSession();return;
+            NexusMind.resetSession();COMBAT_ALERTS.reset();NexusHearing.resetSession();NexusVoiceAi.reset();return;
         }
         ++ticks;
         if(ticks%5==0)NexusArcaneSensor.sample(mc.player);
@@ -232,6 +233,26 @@ final class ClientLink {
             }))
             .exceptionally(error->{
                 mc.execute(()->NexusPrivateMind.failed("Nexus privado: serviço de IA indisponível."));
+                return null;
+            });
+    }
+
+    static void askVoicecastGemini(String question,JsonArray ownerMemories){
+        if(!NexusVoiceAi.active())return;
+        JsonObject request=new JsonObject();
+        request.addProperty("consent",true);
+        request.addProperty("question",question);
+        request.add("ownerMemories",ownerMemories);
+        Minecraft mc=Minecraft.getInstance();
+        post("/api/client/voicecast/query",request,true,Duration.ofSeconds(38))
+            .thenAccept(result->mc.execute(()->{
+                if(result!=null&&result.has("ok")&&result.get("ok").getAsBoolean()&&
+                   result.has("reply"))
+                    NexusVoiceAi.answered(result.get("reply").getAsString());
+                else NexusVoiceAi.failed(errorText(result));
+            }))
+            .exceptionally(error->{
+                mc.execute(()->NexusVoiceAi.failed("Não consegui alcançar o Gemini."));
                 return null;
             });
     }
