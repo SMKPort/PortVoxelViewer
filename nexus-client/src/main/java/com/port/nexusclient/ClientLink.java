@@ -236,6 +236,26 @@ final class ClientLink {
             });
     }
 
+    static void askArcaneVision(String question,String jpegBase64){
+        if(!NexusArcaneVision.enabled()||ClientConfig.token.isBlank())return;
+        JsonObject request=new JsonObject();
+        request.addProperty("consent",true);
+        request.addProperty("question",question);
+        request.addProperty("image",jpegBase64);
+        Minecraft mc=Minecraft.getInstance();
+        post("/api/client/vision/analyze",request,true,Duration.ofSeconds(36))
+            .thenAccept(response->mc.execute(()->{
+                if(response!=null&&response.has("ok")&&response.get("ok").getAsBoolean()&&
+                    response.has("reply"))
+                    NexusArcaneVision.answered(response.get("reply").getAsString());
+                else NexusArcaneVision.failed(errorText(response));
+            }))
+            .exceptionally(error->{
+                mc.execute(()->NexusArcaneVision.failed("Serviço gratuito indisponível."));
+                return null;
+            });
+    }
+
     static void sendHearingState(){
         if(ClientConfig.token.isEmpty())return;
         post("/api/client/hearing/state",NexusHearing.snapshot(),true).exceptionally(err -> null);
