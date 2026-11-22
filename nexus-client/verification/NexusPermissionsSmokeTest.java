@@ -119,6 +119,8 @@ public final class NexusPermissionsSmokeTest {
         NexusHearing.plasmoReady=false;
         NexusPermissions.all();
         check(!NexusHearing.listening, "Cannot capture without Plasmo Voice.");
+        check(!NexusArcaneVision.enabled && !NexusArcaneHolograms.enabled,
+            "Global off must close free vision and local holograms.");
         NexusPermissions.off();
 
         System.out.println("NexusPermissions smoke tests OK");
@@ -205,6 +207,15 @@ final class NexusVoiceCasting {
     static boolean on;
     static void setEnabled(boolean enabled){on=enabled;}
     static String status(){return "offline"; }
+}
+
+final class NexusArcaneVision {
+    static boolean enabled;
+    static void setEnabled(boolean value){enabled=value;}
+}
+final class NexusArcaneHolograms {
+    static boolean enabled;
+    static void setEnabled(boolean value){enabled=value;}
 }
 
 final class NexusAutoHeal {
