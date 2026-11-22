@@ -16,6 +16,7 @@ final class ClientConfig {
     static boolean allowTelemetry = false;
     static boolean allowMind = false;
     static boolean allowAutonomy = false;
+    static boolean allowGeminiMemory = false; // Manual, explicit opt-in only
 
     static void load() {
         if (!Files.isRegularFile(PATH)) return;
@@ -30,6 +31,7 @@ final class ClientConfig {
             allowTelemetry = Boolean.parseBoolean(values.getProperty("allowTelemetry", "false"));
             allowMind = Boolean.parseBoolean(values.getProperty("allowMind", "false"));
             allowAutonomy = Boolean.parseBoolean(values.getProperty("allowAutonomy", "false"));
+            allowGeminiMemory = Boolean.parseBoolean(values.getProperty("allowGeminiMemory", "false"));
         } catch (IOException exception) {
             System.err.println("Nexus Client: não foi possível ler o arquivo de configuração.");
         }
@@ -43,6 +45,7 @@ final class ClientConfig {
         values.setProperty("allowTelemetry", Boolean.toString(allowTelemetry));
         values.setProperty("allowMind", Boolean.toString(allowMind));
         values.setProperty("allowAutonomy", Boolean.toString(allowAutonomy));
+        values.setProperty("allowGeminiMemory", Boolean.toString(allowGeminiMemory));
         try {
             Files.createDirectories(PATH.getParent());
             try (OutputStream out = Files.newOutputStream(PATH)) {
