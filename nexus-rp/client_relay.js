@@ -79,13 +79,13 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
     }
     return chunks;
   }
-  function safeBodyLimit(destination){
+  function safeBodyLimit(destination,cap=230){
     // Include fixed command prefix and all client-generated color codes
     // to avoid exceeding Minecraft's 256-character command/chat transport cap.
     const commandCost=destination.command?destination.command.length+1:0;
     const messageOverhead="[Nexus Aterna] ".length+destination.format.length+
       (destination.bodyFormat?"&r".length+destination.bodyFormat.length:0);
-    return Math.min(194,256-commandCost-messageOverhead);
+    return Math.min(cap,256-commandCost-messageOverhead);
   }
   async function handle(req,res,route,url){
     if(!route.startsWith("/api/client/"))return false;
@@ -185,7 +185,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         });
         const reply=String(generated?.text||"").trim();
         if(!reply)return err(res,502,"A IA não retornou uma resposta.");
-        const parts=splitChatReply(reply,safeBodyLimit(destination));
+        const parts=splitChatReply(reply,safeBodyLimit(destination,194));
         const now=Date.now(),jobIds=[];
         for(let i=0;i<parts.length;i++){
           const message="[Nexus Aterna] "+parts[i];
