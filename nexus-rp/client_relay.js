@@ -427,7 +427,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         if(typeof data.question!=="string"||data.question.trim().length<3||
            data.question.length>400)
           return err(res,422,"Pergunta do VoiceCast inválida.");
-        const question=data.question.replace(/[\\u0000-\\u001f\\u007f]/g," ").trim();
+        const question=data.question.replace(/[\u0000-\u001f\u007f]/g," ").trim();
         if(question.startsWith("/"))return err(res,422,"Comandos não são enviados à IA.");
         const ownerMemories=checkedNotes(data.ownerMemories);
         const response=await askAI({
