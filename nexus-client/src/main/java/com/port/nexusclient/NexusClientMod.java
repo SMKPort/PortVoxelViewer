@@ -259,6 +259,29 @@ public class NexusClientMod {
                 NexusAwakening.report(false);return 1;
             }))
             .then(Commands.literal("memory")
+                .then(Commands.literal("ai")
+                    .then(Commands.literal("status").executes(ctx->{
+                        notifyPlayer("Compartilhar memórias relevantes com Gemini: "+
+                            (ClientConfig.allowGeminiMemory?"AUTORIZADO":"DESLIGADO"));
+                        return 1;
+                    }))
+                    .then(Commands.literal("on").executes(ctx->{
+                        if(ClientConfig.token.isBlank()||!ClientConfig.allowChat){
+                            notifyPlayer("Pareie o Nexus e use /nexusclient chat on antes de autorizar Gemini.");
+                            return 0;
+                        }
+                        ClientConfig.allowGeminiMemory=true;
+                        ClientConfig.save();
+                        notifyPlayer("Gemini poderá consultar até 6 memórias manuais relevantes por pergunta. "+
+                            "Use /nexusclient memory ai off para revogar.");
+                        return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx->{
+                        ClientConfig.allowGeminiMemory=false;
+                        ClientConfig.save();
+                        notifyPlayer("Acesso do Gemini às memórias manuais revogado. Registros preservados.");
+                        return 1;
+                    })))
                 .then(Commands.literal("open").executes(ctx->{
                     Minecraft mc=Minecraft.getInstance();
                     if(mc.player!=null)mc.setScreen(new NexusMemoryScreen(null));
