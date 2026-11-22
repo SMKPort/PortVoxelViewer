@@ -1,5 +1,30 @@
 # Nexus Aterna RP
 
+
+## Visão Arcana 4.0.0-alpha.4 (plano gratuito)
+
+O cliente pode enviar uma captura JPEG reduzida da tela **somente após F9
+ou comando manual**, com /nexusclient vision on habilitado. O endpoint
+autenticado /api/client/vision/analyze devolve uma descrição do conteúdo
+visível, sem criar comandos Minecraft, alterar mundos ou armazenar imagens.
+Até 5 consultas por dia, espaçadas por 60 segundos, por sessão.
+
+Este endpoint só usa gemini-2.5-flash-lite (compreensão de imagem,
+não geração de imagem), um modelo com modalidade gratuita condicionada à
+cota do Google. Por segurança financeira, aceita **somente** a variável
+NEXUS_VISION_FREE_API_KEY de um projeto Google AI Studio que
+não tenha faturamento habilitado. A chave antiga da conversa Gemini
+(NEXUS_GEMINI_API_KEY) nunca é usada como fallback. Sem chave ou com a
+cota esgotada, retorna erro e interrompe o fluxo, sem rota paga.
+Ao ativar o faturamento no projeto Google, o proprietário pode incorrer
+em cobranças que esta aplicação não consegue inspecionar ou impedir.
+Por isso, **não associe cobrança à chave dedicada**.
+
+Os hologramas 3D (orb, runes, schematic) são compostos por partículas
+locais geradas no mundo, não usam a Render ou o Gemini e não custam nada.
+O VoiceCast existente permanece independente e intocado.
+
+
 ## Afinidades e Gemini com memória (Nexus 4.0.0-alpha.3)
 
 A nova aba Afinidades aparece em Outras ferramentas e permite cadastrar,
