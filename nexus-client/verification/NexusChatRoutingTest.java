@@ -41,7 +41,7 @@ public final class NexusChatRoutingTest {
             "Legacy local chat must preserve its formatting.");
         for(String unsafe:new String[]{"/op","minecraft:op","/execute run",
             "/ban player","/f chat;kill","/f @a","/f\nchat",
-            "/f chat && op","/f chat \${message}","/lp user"}){
+            "/f chat && op","/f chat ${message}","/lp user"}){
             rejects(()->NexusChatRouting.custom(unsafe),
                 "Administrative or malformed custom command accepted: "+unsafe);
         }
@@ -51,8 +51,8 @@ public final class NexusChatRoutingTest {
             "custom","/rp","&6","&f|op"),"Unsafe body style must be blocked.");
         rejects(()->NexusChatRouting.prepare("[Nexus Aterna] Texto",
             "outro","/rp","",""),"Unknown channel must be blocked.");
-        rejects(()->NexusChatRouting.prepare("[Nexus Aterna] "+"x".repeat(225),
-            "custom","/f chat","&6&l","&f"),
+        rejects(()->NexusChatRouting.prepare("[Nexus Aterna] "+"x".repeat(185),
+            "custom","x".repeat(64),"&6&l","&f"),
             "Minecraft 256-character packet budget must be respected.");
         System.out.println("NexusChatRoutingTest OK");
     }
