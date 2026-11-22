@@ -67,17 +67,25 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
       };
     });
   }
-  function splitChatReply(text){
+  function splitChatReply(text,maxChars=194){
     let remaining=String(text).replace(/[\u0000-\u001f\u007f]/g," ").replace(/\s+/g," ").trim();
     const chunks=[];
     while(remaining&&chunks.length<2){
-      if(remaining.length<=194){chunks.push(remaining);break;}
-      let cut=remaining.lastIndexOf(" ",194);
-      if(cut<105)cut=194;
+      if(remaining.length<=maxChars){chunks.push(remaining);break;}
+      let cut=remaining.lastIndexOf(" ",maxChars);
+      if(cut<Math.floor(maxChars*0.55))cut=maxChars;
       chunks.push(remaining.slice(0,cut).trim());
       remaining=remaining.slice(cut).trim();
     }
     return chunks;
+  }
+  function safeBodyLimit(destination,cap=230){
+    // Include fixed command prefix and all client-generated color codes
+    // to avoid exceeding Minecraft's 256-character command/chat transport cap.
+    const commandCost=destination.command?destination.command.length+1:0;
+    const messageOverhead="[Nexus Aterna] ".length+destination.format.length+
+      (destination.bodyFormat?"&r".length+destination.bodyFormat.length:0);
+    return Math.min(cap,256-commandCost-messageOverhead);
   }
   async function handle(req,res,route,url){
     if(!route.startsWith("/api/client/"))return false;
@@ -153,6 +161,10 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         if(!content||message.length>230)return err(res,422,"Mensagem excede o limite de 230 caracteres após incluir [Nexus Aterna].");
         // Only static owner-supplied chat prefixes. No message-supplied slash commands.
         const destination=chatRoute(data);
+        const allowedBody=safeBodyLimit(destination);
+        if(content.length>allowedBody)return err(res,422,
+          "Mensagem muito longa para este comando personalizado. Encurte o texto (máximo "+
+          allowedBody+" caracteres).");
         send(res,200,enqueue("chat",{message,...destination}));return true;
       }catch(e){return err(res,422,String(e.message));}
     }
@@ -173,7 +185,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         });
         const reply=String(generated?.text||"").trim();
         if(!reply)return err(res,502,"A IA não retornou uma resposta.");
-        const parts=splitChatReply(reply);
+        const parts=splitChatReply(reply,safeBodyLimit(destination,194));
         const now=Date.now(),jobIds=[];
         for(let i=0;i<parts.length;i++){
           const message="[Nexus Aterna] "+parts[i];
