@@ -6,12 +6,13 @@ window.NexusRPVoiceUpgrade=function(rp,views){
   const WAKE=/^(?:(?:ei|ol[aá])\s+)?(?:nexus|n[eé]xo|nexos)(?:\s+a[eé]?terna)?(?=$|[\s,.!?:;])/i;
   const HISTORY_KEY="nexus-rp-voice-history-v3";
   const OPTIONS_KEY="nexus-rp-voice-preferences-v3";
-  let settings={continuous:true,remember:false},history=[];
+  let settings={continuous:true,remember:false,useMemories:false},history=[];
   try{
     const saved=JSON.parse(localStorage.getItem(OPTIONS_KEY)||"null");
     if(saved&&typeof saved==="object"){
       settings.continuous=saved.continuous!==false;
       settings.remember=saved.remember===true;
+       settings.useMemories=saved.useMemories===true;
     }
     if(settings.remember){
       const stored=JSON.parse(localStorage.getItem(HISTORY_KEY)||"[]");
@@ -20,6 +21,7 @@ window.NexusRPVoiceUpgrade=function(rp,views){
   }catch(error){history=[];}
   let active=false,recognition=null,busy=false,waitingUntil=0,conversationUntil=0;
   let lastTranscript="",lastReply="",lastError="",lastInterim="",restartTimer=0;
+  let lastMemoryContext="";
   let lastHandled="",lastHandledAt=0,aiInfo=null,pending=[];
   const button=(id,label,style)=>'<button type="button" class="btn '+style+'" data-voice="'+id+'">'+label+'</button>';
   function store(){
@@ -50,7 +52,9 @@ window.NexusRPVoiceUpgrade=function(rp,views){
         '<div class="buttons">'+button("start","🎙 ATIVAR MICROFONE","gold")+button("stop","■ DESLIGAR","ghost")+'</div>'+
         '<div class="divider"></div>'+
         '<label class="field inline"><input type="checkbox" data-voice-option="continuous" '+(settings.continuous?"checked":"")+'><span>Conversa contínua (não repetir “Nexus” por até 2 minutos entre falas)</span></label>'+
-        '<label class="field inline"><input type="checkbox" data-voice-option="remember" '+(settings.remember?"checked":"")+'><span>Lembrar conversa neste navegador após fechar a página</span></label>'+
+        '<label class="field inline"><input type="checkbox" data-voice-option="remember" '+(settings.remember?"checked":"")+'><span>Lembrar conversa neste navegador após fechar a página</span></label>'+ 
+        '<label class="field inline"><input type="checkbox" data-voice-option="useMemories" '+(settings.useMemories?"checked":"")+'><span>Consultar memórias do Minecraft no Gemini (precisa de /nexusclient memory ai on)</span></label>'+ 
+        '<p class="hint">Envia apenas até seis lembranças relevantes por pergunta. Não armazena o arquivo completo de memórias na Render.</p>'+
         '<div class="voice-ai-state" id="voiceAIStatus"><strong>'+status+'</strong><small>'+(aiInfo?.model?E(aiInfo.model):"Gemini via Render")+'</small></div>'+
         '<div class="buttons">'+button("check","VERIFICAR IA","ghost")+button("clear","LIMPAR CONVERSA","ghost")+'</div>'+
         (!capable?'<div class="notice">Reconhecimento de voz não disponível neste navegador. Use Chrome ou Edge com microfone habilitado, ou o campo de texto ao lado.</div>':'')+
@@ -58,7 +62,8 @@ window.NexusRPVoiceUpgrade=function(rp,views){
       '<section class="card voice-card"><div class="card-header"><h2>DIÁLOGO</h2></div>'+
         '<div class="voice-transcript"><small>VOCÊ</small><p id="voiceTranscript">'+E(lastInterim||lastTranscript||"Aguardando sua voz...")+'</p></div>'+
         '<div class="voice-transcript"><small>NEXUS ATERNA</small><p id="voiceReply">'+E(lastReply||"Aguardando pergunta...")+'</p></div>'+
-        '<p class="hint voice-error" id="voiceError">'+E(lastError)+'</p>'+
+        '<p class="hint voice-error" id="voiceError">'+E(lastError)+'</p>'+ 
+        '<p class="hint" id="voiceMemoryInfo">'+E(lastMemoryContext)+'</p>'+
         '<form id="voiceTestForm"><label class="field"><span class="field-label">CONVERSAR POR TEXTO (SEM MICROFONE)</span>'+
         '<textarea name="transcript" maxlength="500" rows="2" placeholder="Pode falar de qualquer assunto ou continuar a conversa..." required></textarea></label>'+
         '<div class="buttons"><button class="btn alt" type="submit">ENVIAR PARA O NEXUS</button></div></form>'+
@@ -91,6 +96,8 @@ window.NexusRPVoiceUpgrade=function(rp,views){
     if(said)said.textContent=lastInterim||lastTranscript||"Aguardando sua voz...";
     const reply=document.querySelector("#voiceReply");
     if(reply)reply.textContent=lastReply||"Aguardando pergunta...";
+    const context=document.querySelector("#voiceMemoryInfo");
+    if(context)context.textContent=lastMemoryContext;
     const error=document.querySelector("#voiceError");
     if(error)error.textContent=lastError;
     const ai=document.querySelector("#voiceAIStatus");
@@ -129,14 +136,20 @@ window.NexusRPVoiceUpgrade=function(rp,views){
     const config=rp.state.config;
     const channel=["local","global","custom"].includes(config.chatChannel)?
       config.chatChannel:"local";
+    const affinities=rp.state.config.shareAffinitiesAI===true&&
+      typeof window.NexusRPAffinitySelect==="function"?
+      window.NexusRPAffinitySelect(turn.question,rp.state.affinities||[],6):[];
     const result=await rp.clientQueue("/voice",{
       transcript:turn.raw,followUp:turn.followUp,
-      history:history.slice(-16),
+      history:history.slice(-16),memoryLookup:settings.useMemories===true,
+      affinities,
       channel,command:config.chatCustomCommand||"",
       format:config.chatFormatting??"&6&l",
       bodyFormat:config.chatBodyFormatting??"&f"
     });
     lastReply=result.reply||"Resposta encaminhada ao Minecraft.";
+    lastMemoryContext="Memórias consultadas: "+Number(result.memoryUsed||0)+
+      " | Afinidades consultadas: "+Number(result.affinityUsed||0)+".";
     history.push({role:"user",text:turn.question.slice(0,500)},{role:"model",text:lastReply.slice(0,450)});
     history=history.slice(-24);
     store();
@@ -236,7 +249,7 @@ window.NexusRPVoiceUpgrade=function(rp,views){
   });
   document.querySelector("#content")?.addEventListener("change",event=>{
     const key=event.target?.dataset?.voiceOption;
-    if(!["continuous","remember"].includes(key))return;
+    if(!["continuous","remember","useMemories"].includes(key))return;
     settings[key]=event.target.checked===true;
     if(!settings.continuous)conversationUntil=0;
     store();update();
