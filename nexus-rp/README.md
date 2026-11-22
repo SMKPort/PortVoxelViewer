@@ -3,8 +3,10 @@
 ## Afinidades e Gemini com memória (Nexus 4.0.0-alpha.3)
 
 A nova aba Afinidades aparece em Outras ferramentas e permite cadastrar,
-editar e excluir fichas com quatro campos: jogador, apelido, parentesco/vínculo
-e afinidade inteira de 0 a 10. Nenhum parentesco é inferido automaticamente.
+editar e excluir fichas com cinco campos: jogador, apelido, parentesco/vínculo,
+raça/espécie fictícia do RP e afinidade inteira de 0 a 10. Nem o parentesco
+nem a raça são inferidos automaticamente. A raça é opcional para preservar
+cadastros anteriores (ex.: anjo, demônio, humano ou híbrido).
 As fichas são salvas no navegador e incluídas no backup JSON. Por padrão,
 não são compartilhadas. Para uso pela IA, marque a opção da própria aba.
 O navegador seleciona até seis pessoas relevantes pelo nome, apelido ou
