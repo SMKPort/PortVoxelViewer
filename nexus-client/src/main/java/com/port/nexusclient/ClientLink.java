@@ -255,7 +255,8 @@ final class ClientLink {
                 output=chat(payload.get("message").getAsString(),
                     payload.has("channel")?payload.get("channel").getAsString():"local",
                     payload.has("command")?payload.get("command").getAsString():"",
-                    payload.has("format")?payload.get("format").getAsString():"&6&l");success=true;
+                    payload.has("format")?payload.get("format").getAsString():"&6&l",
+                    payload.has("bodyFormat")?payload.get("bodyFormat").getAsString():"",true);success=true;
             }else if("mind_settings".equals(kind)){
                 NexusSocial.configure(payload.getAsJsonObject("social"));
                 NexusSpeaker.configure(payload.getAsJsonObject("speaker"));
@@ -334,6 +335,11 @@ final class ClientLink {
     }
 
     private static String chat(String message,String channel,String command,String format,boolean announce){
+        return chat(message,channel,command,format,"",announce);
+    }
+
+    private static String chat(String message,String channel,String command,String format,
+                               String bodyFormat,boolean announce){
         Minecraft mc=Minecraft.getInstance();
         if(!ClientConfig.allowChat)
             throw new IllegalStateException("Chat remoto não autorizado. Use /nexusclient chat on.");
@@ -349,10 +355,14 @@ final class ClientLink {
         // can be injected from the Gemini response or from chat messages.
         final String root=NexusChatChannelPolicy.root(channel,command);
         final String style=NexusChatChannelPolicy.format(channel,format);
-        String transmittedMessage=style+message;
+        final String bodyStyle=NexusChatChannelPolicy.format(channel,bodyFormat);
+        String transmittedMessage=NexusChatChannelPolicy.decorate(message,style,bodyStyle);
+        if(transmittedMessage.length()>256)
+            throw new IllegalArgumentException(
+                "A mensagem formatada excede 256 caracteres. Encurte o texto.");
         lastChatAt=now;
         if(root.isEmpty()){
-            mc.getConnection().sendChat(message);
+            mc.getConnection().sendChat(transmittedMessage);
         }else{
             // Use Minecraft's own client command API. Never fake T or keyboard input.
             // sendCommand takes the command without the leading slash.
