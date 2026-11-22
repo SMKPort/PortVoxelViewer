@@ -32,6 +32,12 @@ window.NexusRPVoiceUpgrade=function(rp,views){
   function view(){
     const capable=!!Recognition;
     const status=aiInfo===null?"VERIFICAÇÃO PENDENTE":aiInfo.configured?"IA DISPONÍVEL":"CONFIGURE CHAVE DE IA";
+    const config=rp.state.config;
+    const channel=config.chatChannel==="custom"?
+      "/"+String(config.chatCustomCommand||"rp").replace(/^\//,""):
+      config.chatChannel==="global"?"chat global":"/l";
+    const prefixStyle=config.chatFormatting??"&6&l";
+    const bodyStyle=config.chatBodyFormatting??"&f";
     const recent=history.slice(-10).map(h=>'<div class="voice-history-line '+(h.role==="model"?"nexus":"port")+'"><strong>'+ (h.role==="model"?"NEXUS":"PORT")+'</strong><span>'+E(h.text)+'</span></div>').join("");
     return '<div class="eyebrow">NEXUS ATERNA / CONVERSAÇÃO LIVRE</div>'+
       '<h1 class="heading">Fale com o Nexus</h1>'+
@@ -57,7 +63,9 @@ window.NexusRPVoiceUpgrade=function(rp,views){
         '<textarea name="transcript" maxlength="500" rows="2" placeholder="Pode falar de qualquer assunto ou continuar a conversa..." required></textarea></label>'+
         '<div class="buttons"><button class="btn alt" type="submit">ENVIAR PARA O NEXUS</button></div></form>'+
         '<div class="divider"></div><div class="voice-history" id="voiceHistory">'+(recent||'<p class="hint">Sua conversa aparecerá aqui.</p>')+'</div>'+
-        '<p class="hint">As respostas usam /l &amp;6&amp;l[Nexus Aterna], pelo seu jogador. Requer o mod pareado e /nexusclient chat on. A IA não executa comandos do Minecraft por voz.</p></section></div>';
+        '<p class="hint">Destino das respostas Gemini: <strong>'+E(channel)+
+        '</strong>. Prefixo '+E(prefixStyle)+'[Nexus Aterna] e mensagem &amp;r'+E(bodyStyle)+
+        '. Configurável em Configurações. Requer mod pareado e /nexusclient chat on. A IA não executa comandos do Minecraft por voz.</p></section></div>';
   }
   function detail(){
     if(busy)return "Aguardando a resposta da IA...";
@@ -118,9 +126,15 @@ window.NexusRPVoiceUpgrade=function(rp,views){
   async function sendTurn(turn){
     if(rp.state.config.connectionMode!=="client")throw Error("Ative o modo NEXUS CLIENT nas Configurações.");
     if(!rp.clientQueue)throw Error("Módulo Nexus Client indisponível.");
+    const config=rp.state.config;
+    const channel=["local","global","custom"].includes(config.chatChannel)?
+      config.chatChannel:"local";
     const result=await rp.clientQueue("/voice",{
       transcript:turn.raw,followUp:turn.followUp,
-      history:history.slice(-16)
+      history:history.slice(-16),
+      channel,command:config.chatCustomCommand||"",
+      format:config.chatFormatting??"&6&l",
+      bodyFormat:config.chatBodyFormatting??"&f"
     });
     lastReply=result.reply||"Resposta encaminhada ao Minecraft.";
     history.push({role:"user",text:turn.question.slice(0,500)},{role:"model",text:lastReply.slice(0,450)});
