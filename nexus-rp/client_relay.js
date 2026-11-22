@@ -7,10 +7,12 @@ const {synthesizeSpeech}=require("./speech_synthesis.js");
 const {askPrivate}=require("./private_conversation.js");
 const {route:chatRoute}=require("./chat_channel.js");
 const {notes:checkedNotes,affinities:checkedAffinities}=require("./memory_context.js");
+const {analyzeVision,validate:validateVision}=require("./vision_analysis.js");
 const JOB_MAX_AGE=120000;
-function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=aiStatus,synthesize=synthesizeSpeech,privateReply=askPrivate}){
+function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=aiStatus,synthesize=synthesizeSpeech,privateReply=askPrivate,visionReply=analyzeVision}){
   let pair=null,session=null,eventId=0,mind=null,monitor=null,alertsState=null,hearingState=null;
   let ttsBusy=false,lastTtsAt=0,privateBusy=false,lastPrivateAt=0;
+  let visionBusy=false,lastVisionAt=0,visionDay=0,visionCount=0;
   const jobs=new Map(),events=[],memoryWaiters=new Map();
   const err=(res,code,message)=>{send(res,code,{ok:false,error:message});return true;};
   const hash=s=>crypto.createHash("sha256").update(String(s||"")).digest("hex");
@@ -130,7 +132,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
     cleanup();
     if(["/api/client/pair/new","/api/client/pair/exchange","/api/client/chat","/api/client/voice","/api/client/action","/api/client/monitor/settings","/api/client/alerts/settings","/api/client/hearing/settings","/api/client/hearing/fact","/api/client/mind/settings","/api/client/arcane/settings"].includes(route)&&!limit(req))return err(res,429,"Limite de requisições. Reduza a frequência.");
     const userPaths=new Set(["/api/client/pair/new","/api/client/status","/api/client/events","/api/client/chat","/api/client/voice","/api/client/ai/status","/api/client/action","/api/client/job","/api/client/monitor/settings","/api/client/alerts","/api/client/alerts/settings","/api/client/hearing","/api/client/hearing/settings","/api/client/hearing/fact","/api/client/mind/settings","/api/client/arcane","/api/client/arcane/settings"]);
-    const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/mind","/api/client/ack","/api/client/monitor/state","/api/client/alerts/state","/api/client/hearing/transcribe","/api/client/hearing/state","/api/client/hearing/reply","/api/client/tts","/api/client/arcane/state","/api/client/private/reply"]);
+    const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/mind","/api/client/ack","/api/client/monitor/state","/api/client/alerts/state","/api/client/hearing/transcribe","/api/client/hearing/state","/api/client/hearing/reply","/api/client/tts","/api/client/arcane/state","/api/client/private/reply","/api/client/vision/analyze"]);
     if(!userPaths.has(route)&&!clientPaths.has(route))return err(res,404,"Rota desconhecida.");
     if(userPaths.has(route)&&!guardUser(req,res))return true;
     if(route==="/api/client/pair/new"&&req.method==="POST"){
@@ -147,6 +149,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         session={tokenHash:hash(token),player:/^[A-Za-z0-9_]{3,16}$/.test(player)?player:"",lastSeen:Date.now()};
         resolveMemoryWaiters();
         jobs.clear();events.splice(0,events.length);eventId=0;mind=null;monitor=null;alertsState=null;hearingState=null;ttsBusy=false;lastTtsAt=0;privateBusy=false;lastPrivateAt=0;
+        visionBusy=false;lastVisionAt=0;visionDay=0;visionCount=0;
         send(res,200,{ok:true,token,player:session.player,ttl:"until-service-restart-or-repair"});return true;
       }catch(e){return err(res,400,String(e.message));}
     }
@@ -409,6 +412,28 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
           social,syncedAt:new Date().toISOString()};
         send(res,200,{ok:true});return true;
       }catch(e){return err(res,422,String(e.message));}
+    }
+    if(route==="/api/client/vision/analyze"&&req.method==="POST"){
+      // Client-token authentication. Never save the screenshot in Render.
+      const currentDay=Math.floor(Date.now()/86400000);
+      if(visionDay!==currentDay){visionDay=currentDay;visionCount=0;}
+      if(visionBusy)return err(res,429,"Visão Arcana já processando outra imagem.");
+      if(visionCount>=5||Date.now()-lastVisionAt<60000)
+        return err(res,429,"Limite gratuito: 5 imagens por dia e intervalo de 60 segundos.");
+      visionBusy=true;
+      try{
+        const data=await body(req,550000);
+        if(data.consent!==true)return err(res,403,"Captura de imagem exige autorização explícita do cliente.");
+        const checked=validateVision(data.question,data.image);
+        lastVisionAt=Date.now();visionCount++;
+        const result=await visionReply(checked);
+        send(res,200,{ok:true,reply:String(result.text||"").slice(0,700),
+          model:String(result.model||"Gemini")});
+        return true;
+      }catch(e){
+        return err(res,Number(e.publicStatus)||502,
+          String(e.message||"Falha na análise da imagem.").slice(0,230));
+      }finally{visionBusy=false;}
     }
     if(route==="/api/client/private/reply"&&req.method==="POST"){
       if(privateBusy||Date.now()-lastPrivateAt<4000)
