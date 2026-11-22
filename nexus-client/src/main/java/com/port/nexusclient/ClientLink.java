@@ -55,6 +55,7 @@ final class ClientLink {
             +" | Consciência: "+(ClientConfig.allowMind?"ATIVA":"DESATIVADA")
             +" | Autonomia RP: "+(ClientConfig.allowAutonomy?"AUTORIZADA":"BLOQUEADA")
             +" | Privado: "+(NexusPrivateMind.enabled()?"ATIVO":"OFF")
+            +" | Memórias para Gemini: "+(ClientConfig.allowGeminiMemory?"AUTORIZADAS":"PRIVADAS")
             +" | Serviço: "+ClientConfig.url+" | "+NexusVitals.status()+" | Audição: REMOVIDA";
     }
 
@@ -76,6 +77,7 @@ final class ClientLink {
             if(res!=null && res.has("token") && res.get("ok").getAsBoolean()){
                 ClientConfig.token=res.get("token").getAsString();
                 ClientConfig.allowChat=false;ClientConfig.allowTelemetry=false;
+                ClientConfig.allowGeminiMemory=false;
                 ClientConfig.save();reset();
                 NexusClientMod.notifyPlayer("Vinculado! Ative /nexusclient chat on e /nexusclient telemetry on se desejar.");
             } else {
@@ -250,6 +252,7 @@ final class ClientLink {
         String id=job.get("id").getAsString(),kind=job.get("type").getAsString();
         JsonObject payload=job.getAsJsonObject("payload");
         String output="";String error="";boolean success=false;
+        JsonArray memoryContext=null;
         try{
             if("chat".equals(kind)){
                 output=chat(payload.get("message").getAsString(),
@@ -257,6 +260,22 @@ final class ClientLink {
                     payload.has("command")?payload.get("command").getAsString():"",
                     payload.has("format")?payload.get("format").getAsString():"&6&l",
                     payload.has("bodyFormat")?payload.get("bodyFormat").getAsString():"",true);success=true;
+            }else if("memory_lookup".equals(kind)){
+                // The owner must explicitly permit this in their own client.
+                // No file or complete memory database is transmitted.
+                memoryContext=new JsonArray();
+                if(ClientConfig.allowGeminiMemory&&ClientConfig.allowChat){
+                    String question=payload.has("question")?
+                        payload.get("question").getAsString():"";
+                    for(NexusOwnerMemories.Memory note:NexusOwnerMemories.relevant(question,6)){
+                        JsonObject item=new JsonObject();
+                        item.addProperty("topic",note.topic);
+                        item.addProperty("text",note.text);
+                        memoryContext.add(item);
+                    }
+                    output="Consulta de memórias autorizada: "+memoryContext.size()+" lembranças relevantes.";
+                }else output="Memórias privadas: Gemini sem autorização de consulta.";
+                success=true;
             }else if("mind_settings".equals(kind)){
                 NexusSocial.configure(payload.getAsJsonObject("social"));
                 NexusSpeaker.configure(payload.getAsJsonObject("speaker"));
@@ -303,6 +322,7 @@ final class ClientLink {
         JsonObject ack=new JsonObject();
         ack.addProperty("id",id);ack.addProperty("success",success);
         ack.addProperty("output",output);ack.addProperty("error",error);
+        if(memoryContext!=null)ack.add("memories",memoryContext);
         post("/api/client/ack",ack,true).exceptionally(err -> null);
     }
 
