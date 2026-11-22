@@ -1,5 +1,46 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
+
+## Nexus 4.0.0-alpha.4 | Visão Arcana + Hologramas 3D (sem assinatura)
+
+**Hologramas**: dentro do mundo, use **F10** ou
+/nexusclient hologram on para projetar partículas 3D no cliente.
+Estilos: /nexusclient hologram mode orb,
+/nexusclient hologram mode runes e
+/nexusclient hologram mode schematic.
+/nexusclient hologram off desliga. A projeção não cria blocos,
+entidades ou dados no servidor. É inteiramente local, sem assinatura,
+sem API e sem alteração no servidor Somake.
+
+**Visão Arcana por IA**: primeiro faça o pareamento do Nexus Client.
+Execute /nexusclient vision on e pressione **F9** dentro do jogo
+para analisar uma captura da tela. O comando
+/nexusclient vision analyze O que há nesta estrutura? aceita
+uma pergunta específica. A imagem é reduzida a, no máximo, 768 × 432,
+comprimida em JPEG e enviada **somente por sua ação explícita** via
+HTTPS à Render e ao modelo Gemini 2.5 Flash-Lite. O resultado aparece
+apenas no chat local do jogador, sem publicar no chat do servidor.
+
+Para cumprir a exigência de não ter cobrança automática, o endpoint de
+Visão **não reutiliza** a chave Gemini das conversas do site.
+Configure no serviço Render uma variável privada
+NEXUS_VISION_FREE_API_KEY contendo uma chave de um projeto
+Google AI Studio **sem faturamento ativado**.
+Sem essa chave, a captura não é enviada ao Gemini e a rota informa
+que falta configuração. A versão exige a modalidade gratuita, sem
+fallback para outro modelo. O limite próprio é 5 capturas por dia e
+60 segundos de intervalo entre consultas. Limites do Google podem ser
+menores ou mudar sem aviso. Se a cota se esgotar, não é usado um
+modelo pago. Verifique que o projeto da chave não tem cobrança habilitada.
+
+Nenhuma análise acontece automaticamente, e a Visão começa desligada
+a cada inicialização do jogo. /nexusclient vision off ou
+/nexusclient permissions off interrompem novas consultas.
+
+As teclas F9/F10 podem ser remapeadas em Controles se conflitarem com
+outros mods. O VoiceCast de magias continua separado e inalterado.
+
+
 ## Nexus 4.0.0-alpha.3 | Memórias conectadas ao Gemini
 
 As memórias manuais continuam preservadas no arquivo local config/nexus-owner-memories.json.
