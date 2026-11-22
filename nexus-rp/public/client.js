@@ -4,6 +4,18 @@ window.NexusRPClientUpgrade=function(rp,views){
  const S=rp.state,E=rp.escape,apiRoot="/api/client";
  const button=(action,label,cls="alt")=>'<button type="button" class="btn '+cls+'" data-nexus-client="'+action+'">'+label+'</button>';
  let lastStatus=null,lastPair=null,diagnostics=null;
+ const palette={0:"#000000",1:"#0000aa",2:"#00aa00",3:"#00aaaa",4:"#aa0000",
+   5:"#aa00aa",6:"#ffaa00",7:"#aaaaaa",8:"#555555",9:"#5555ff",a:"#55ff55",
+   b:"#55ffff",c:"#ff5555",d:"#ff55ff",e:"#ffff55",f:"#ffffff"};
+ const styleFor=codes=>{
+   let color="#ffffff",bold=false;
+   for(const match of String(codes||"").toLowerCase().matchAll(/&([0-9a-frl])/g)){
+     if(match[1]==="r"){color="#ffffff";bold=false;}
+     else if(match[1]==="l")bold=true;
+     else if(palette[match[1]]){color=palette[match[1]];bold=false;}
+   }
+   return "color:"+color+";font-weight:"+(bold?"700":"400");
+ };
  async function runDiagnostics(){
    const origin=location.origin;
    const inspect=async(path,key)=>{
@@ -84,14 +96,18 @@ window.NexusRPClientUpgrade=function(rp,views){
      const channelForm='<div class="divider"></div><div class="eyebrow">COMUNICADOR DO JOGADOR</div>'+
        '<div class="field"><label for="chatChannel">CANAL DAS MENSAGENS</label><select name="chatChannel" id="chatChannel">'+options+'</select>'+
        '<small>Local envia /l seguido da sua mensagem. O mod usa a conexão normal do Minecraft, sem simular teclado.</small></div>'+
-       '<div class="field"><label for="chatFormatting">CÓDIGOS DE FORMATAÇÃO DO CHAT LOCAL</label>'+ 
+       '<div class="field"><label for="chatFormatting">COR E ESTILO DO PREFIXO [Nexus Aterna]</label>'+
        '<input name="chatFormatting" id="chatFormatting" maxlength="16" value="'+E(c.chatFormatting??"&6&l")+
-       '" placeholder="&6&l"><small><code>&6</code> = dourado. <code>&l</code> = negrito. O padrão envia /l &6&l seguido diretamente do texto. Deixe vazio para desativar.</small></div>'+ 
-       '<div class="field"><label for="chatCustomCommand">COMANDO PERSONALIZADO (SOMENTE CANAIS DE CHAT)</label>'+
-       '<input name="chatCustomCommand" id="chatCustomCommand" maxlength="24" value="'+E(c.chatCustomCommand||"")+
-       '" placeholder="/rp"><small>Exemplos: /rp, /me, /ooc. Comandos administrativos são bloqueados.</small></div>'+
-       '<div class="notice"><strong>EMISSOR: [Nexus Aterna]</strong>. Identificação permanente de todas as mensagens enviadas pelo painel (inclusive em configurações antigas).</div>'+
-       '<div class="notice">Exemplo do comando: <strong>/l &6&l[Nexus Aterna] Desintegrando armadura</strong>. O identificador do Nexus é aplicado mesmo se o perfil antigo tiver desativado o prefixo.</div>';
+       '" placeholder="&6&l"><small><code>&6&l</code> = dourado e negrito. Vale para o canal selecionado.</small></div>'+
+       '<div class="field"><label for="chatBodyFormatting">COR DO TEXTO DA MENSAGEM</label>'+
+       '<input name="chatBodyFormatting" id="chatBodyFormatting" maxlength="16" value="'+E(c.chatBodyFormatting??"&f")+
+       '" placeholder="&f"><small><code>&f</code> branco, <code>&7</code> cinza, <code>&b</code> azul-claro, <code>&a</code> verde. O Nexus insere <code>&r</code> para remover o negrito anterior.</small></div>'+
+       '<div class="notice" id="nexusStylePreview" style="background:#17131e"><strong id="nexusPrefixStylePreview" style="'+styleFor(c.chatFormatting??"&6&l")+'">[Nexus Aterna]</strong> <span id="nexusBodyStylePreview" style="'+styleFor("&r"+(c.chatBodyFormatting??"&f"))+'">Desintegrando armadura.</span></div>'+
+       '<div class="field"><label for="chatCustomCommand">COMANDO PERSONALIZADO (CANAL DE CHAT)</label>'+
+       '<input name="chatCustomCommand" id="chatCustomCommand" maxlength="64" value="'+E(c.chatCustomCommand||"")+
+       '" placeholder="/rp"><small>Exemplos: /rp, /f chat, /somake:rp. Somente comandos de comunicação autorizados pelo servidor.</small></div>'+
+       '<div class="notice">TRANSMISSÃO: <strong>[Nexus Aterna]</strong> sempre identifica o emissor, inclusive nas respostas Gemini. As cores dependem das permissões e do plugin de chat do servidor. Se os códigos aparecerem literalmente, desative a formatação neste painel.</div>'+
+       '<div class="notice">Exemplo: <code>&amp;6&amp;l[Nexus Aterna] &amp;r&amp;fDesintegrando armadura</code>. Configure a cor da mensagem independentemente.</div>';
      html=html.replace('<form id="configForm">','<form id="configForm">'+channelForm);
    }
    const keyReady=!!rp.getAccess?.();
@@ -107,11 +123,14 @@ window.NexusRPClientUpgrade=function(rp,views){
    if(S.config.connectionMode!=="client")return html;
    const c=S.config,channel=["global","local","custom"].includes(c.chatChannel)?c.chatChannel:"local";
    const label=channel==="global"?"GLOBAL":channel==="local"?"/l":"/"+String(c.chatCustomCommand||"rp").replace(/^\//,"");
-   const displayPrefix=channel==="local"?" "+String(c.chatFormatting??"&6&l"):"";
-   const previous='<div class="chat-preview"><strong>'+E(c.prefix)+'</strong>';
-   const preview='<div class="chat-preview"><strong>'+E(label+displayPrefix+(channel==="local"?"":" ")+(c.prefix||"[Nexus Aterna]"))+'</strong>';
+   const previous='<div class="chat-preview"><strong>'+E(c.prefix)+'</strong> <span id="chatPreview">';
+   const preview='<div class="chat-preview"><strong style="'+styleFor(c.chatFormatting??"&6&l")+
+     '">[Nexus Aterna]</strong> <span id="chatPreview" style="'+styleFor("&r"+(c.chatBodyFormatting??"&f"))+'">';
    html=html.replace(previous,preview);
-   const info='<div class="notice">CANAL CONFIGURADO: <strong>'+E(label)+'</strong> · EMISSOR: <strong>[Nexus Aterna]</strong>. O servidor ainda identifica sua conta como origem técnica do envio.</div>';
+   const info='<div class="notice">CANAL CONFIGURADO: <strong>'+E(label)+
+     '</strong> · PREFIXO: <code>'+E(c.chatFormatting??"&6&l")+
+     '</code> · MENSAGEM: <code>&amp;r'+E(c.chatBodyFormatting??"&f")+
+     '</code>. O servidor identifica sua conta como origem técnica do envio.</div>';
    return info+html;
  };
  const oldLive=views.ao_vivo;
@@ -162,6 +181,15 @@ window.NexusRPClientUpgrade=function(rp,views){
    return html;
  };
  const root=document.querySelector("#content");
+ root.addEventListener("input",event=>{
+   if(!["chatFormatting","chatBodyFormatting"].includes(event.target?.id))return;
+   const prefix=document.querySelector("#nexusPrefixStylePreview");
+   const body=document.querySelector("#nexusBodyStylePreview");
+   if(prefix)prefix.setAttribute("style",styleFor(
+     document.querySelector("#chatFormatting")?.value||""));
+   if(body)body.setAttribute("style",styleFor("&r"+
+     (document.querySelector("#chatBodyFormatting")?.value||"")));
+ });
  root.addEventListener("click",async e=>{
    const b=e.target.closest("[data-nexus-client]");if(!b)return;
    e.preventDefault();e.stopImmediatePropagation();
