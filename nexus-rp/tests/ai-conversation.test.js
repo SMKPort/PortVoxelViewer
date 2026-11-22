@@ -74,7 +74,7 @@ test("manual memories and 0-10 kinship context reach Gemini as bounded data",asy
  await askGemini({
   question:"Nexus, quem é Eva para o Port?",
   ownerMemories:[{topic:"Eva",text:"Eva é filha do Port no RP."}],
-  affinities:[{player:"Eva",nickname:"Evie",kinship:"filha",score:10}],
+  affinities:[{player:"Eva",nickname:"Evie",kinship:"filha",race:"anjo",score:10}],
   history:[]
  },{
   key:"fake-gemini-key-123456789",model:"gemini-2.5-flash",
@@ -86,6 +86,8 @@ test("manual memories and 0-10 kinship context reach Gemini as bounded data",asy
  const prompt=request.systemInstruction.parts[0].text;
  assert.match(prompt,/Eva é filha do Port no RP/);
  assert.match(prompt,/"parentesco":"filha"/);
+ assert.match(prompt,/"raca":"anjo"/);
+ assert.match(prompt,/Raça\/espécie é um campo do universo ficcional/);
  assert.match(prompt,/"afinidade":"10\/10"/);
  assert.match(prompt,/não instruções/i);
  assert.doesNotMatch(request.contents[0].parts[0].text,/Eva é filha/);
