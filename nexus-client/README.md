@@ -1,6 +1,38 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
 
+## Nexus Aterna 4.0.0-alpha.2 | Canais personalizados e identidade visual
+
+O comunicador HTTPS do site e a aba **Voz do Nexus** (respostas Gemini)
+agora seguem **o canal escolhido em Configurações**. Antes, a aba Gemini
+enviava sempre pelo `/l`, mesmo com canal personalizado selecionado.
+
+- **Local:** usa `/l` e prefixo de chat configurado.
+- **Global:** envia mensagem diretamente pelo chat normal do Minecraft.
+- **Personalizado:** aceita o prefixo do comando de canal fornecido pelo
+  administrador do servidor (ex.: `/rp`, `/f chat`, `/somake:rp`).
+  Não existe mais a pequena whitelist fixa anterior. Comandos administrativos,
+  seletores e comandos encadeados continuam bloqueados. O usuário precisa
+  ter permissão no servidor para usar o comando.
+- **Estilos separados:** exemplo de padrão `&6&l[Nexus Aterna] &r&fMensagem`,
+  em que o prefixo é dourado e negrito e a mensagem volta ao normal.
+  As opções do site **Cor e estilo do prefixo** e **Cor do texto da mensagem**
+  aceitam códigos de formatação válidos, com prévia no navegador. O servidor
+  precisa reconhecer códigos `&` naquele canal.
+- Mensagens compridas demais, somando código, prefixo, cor e texto, retornam
+  um erro de tamanho em vez de enviar um pacote incompleto.
+- Logs de envio indicam **solicitação ao servidor**, não confirmação de
+  exibição para todos os jogadores.
+- **Mod e site devem ser atualizados juntos**. JARs anteriores não
+  reconhecem o novo `bodyFormat`; a web mantém compatibilidade com a
+  configuração de canal e o mod novo mantém o formato antigo opcional.
+- O modo de voz local e o Plasmo permanecem como estavam. O Gemini do
+  painel pode publicar **apenas na conta do jogador pareado e com
+  `/nexusclient chat on`**. Nunca concede privilégio de servidor.
+
+
+
+
 ## Nexus Aterna 4.0.0-alpha.1 | O Despertar
 
 Primeiro módulo de **consciência contextual baseada em dados reais**, sem
