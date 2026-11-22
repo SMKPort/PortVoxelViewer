@@ -54,6 +54,7 @@ final class NexusPermissions {
         ClientConfig.allowTelemetry = false;
         ClientConfig.allowMind = false;
         ClientConfig.allowAutonomy = false;
+        ClientConfig.allowGeminiMemory = false; // Revoke cloud sharing, do not delete memory file.
         ClientConfig.save();
         ClientLink.resetTelemetryBaseline();
         NexusMind.resetSession();
