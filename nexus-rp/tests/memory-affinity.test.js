@@ -117,7 +117,7 @@ test("Gemini uses owner memories ONLY after website toggle and authenticated cli
     await sleep(20);
   }
   assert.ok(lookup,"Only opted-in Gemini requests should enqueue a memory search");
-  assert.match(lookup.payload.question,/Eva/);
+  assert.match(lookup.payload.question,/eva/i);
   const ack=await run("POST","/api/client/ack",client,{
     id:lookup.id,success:true,
     memories:[
