@@ -357,16 +357,17 @@ final class ClientLink {
         final String style=NexusChatChannelPolicy.format(channel,format);
         final String bodyStyle=NexusChatChannelPolicy.format(channel,bodyFormat);
         String transmittedMessage=NexusChatChannelPolicy.decorate(message,style,bodyStyle);
-        if(transmittedMessage.length()>256)
+        final String packetText=root.isEmpty()?transmittedMessage:root+" "+transmittedMessage;
+        if(packetText.length()>256)
             throw new IllegalArgumentException(
-                "A mensagem formatada excede 256 caracteres. Encurte o texto.");
+                "Mensagem e comando excedem 256 caracteres. Encurte o texto.");
         lastChatAt=now;
         if(root.isEmpty()){
-            mc.getConnection().sendChat(transmittedMessage);
+            mc.getConnection().sendChat(packetText);
         }else{
             // Use Minecraft's own client command API. Never fake T or keyboard input.
             // sendCommand takes the command without the leading slash.
-            mc.getConnection().sendCommand(root+" "+transmittedMessage);
+            mc.getConnection().sendCommand(packetText);
         }
         if(announce)NexusClientMod.notifyPlayer(root.isEmpty()?
             "Mensagem solicitada no chat global (confirme no servidor).":
