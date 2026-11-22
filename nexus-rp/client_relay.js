@@ -5,6 +5,7 @@ const {getQuestion}=require("./voice_reply.js");
 const {askGemini,aiStatus}=require("./ai_conversation.js");
 const {synthesizeSpeech}=require("./speech_synthesis.js");
 const {askPrivate}=require("./private_conversation.js");
+const {route:chatRoute}=require("./chat_channel.js");
 const JOB_MAX_AGE=120000;
 function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=aiStatus,synthesize=synthesizeSpeech,privateReply=askPrivate}){
   let pair=null,session=null,eventId=0,mind=null,monitor=null,alertsState=null,hearingState=null;
@@ -150,16 +151,9 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         const content=raw.replace(/^(?:\[(?:nexus(?:\s+aterna)?)\]\s*)+/i,"").trim();
         const message="[Nexus Aterna] "+content;
         if(!content||message.length>230)return err(res,422,"Mensagem excede o limite de 230 caracteres após incluir [Nexus Aterna].");
-        // Restrict commands to configured chat channels; messages cannot contain slash commands.
-        const channel=["global","local","custom"].includes(data.channel)?data.channel:"local";
-        const custom=String(data.command||"").trim().toLowerCase();
-        const root=channel==="local"?"l":channel==="custom"?(custom.startsWith("/")?custom.slice(1):custom):"";
-        const allowed=new Set(["l","local","g","global","rp","me","ooc","chat","ch","yell","shout","action"]);
-        if(channel==="custom"&&!allowed.has(root))return err(res,422,"Canal personalizado invalido. Escolha um comando de chat permitido.");
-        const format=channel==="local"?(data.format===undefined?"&6&l":String(data.format||"").trim().toLowerCase()):"";
-        if(!/^(?:&[0-9a-fk-or]){0,8}$/.test(format))return err(res,422,"Código de formatação inválido. Use códigos como &6&l.");
-        // Raw formatting is passed only to the chat command; no arbitrary commands.
-        send(res,200,enqueue("chat",{message,channel,command:root,format}));return true;
+        // Only static owner-supplied chat prefixes. No message-supplied slash commands.
+        const destination=chatRoute(data);
+        send(res,200,enqueue("chat",{message,...destination}));return true;
       }catch(e){return err(res,422,String(e.message));}
     }
     if(route==="/api/client/voice"&&req.method==="POST"){
@@ -170,6 +164,8 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         const transcript=data.transcript.replace(/[\u0000-\u001f\u007f]/g," ").replace(/\s+/g," ").trim();
         if(transcript.length<2||transcript.length>500)return err(res,422,"A mensagem deve ter entre 2 e 500 caracteres.");
         const question=data.followUp===true?transcript:getQuestion(transcript);
+        // Validate before calling Gemini so a bad channel cannot waste an AI request.
+        const destination=chatRoute(data);
         if(question===null)return err(res,422,"Chame Nexus primeiro, ou continue a conversa no modo contínuo.");
         if(!question)return err(res,422,"Depois de chamar Nexus, faça uma pergunta.");
         const generated=await askAI({
@@ -181,9 +177,10 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         const now=Date.now(),jobIds=[];
         for(let i=0;i<parts.length;i++){
           const message="[Nexus Aterna] "+parts[i];
-          jobIds.push(enqueue("chat",{message,channel:"local",command:"l",format:"&6&l"},now+i*6500).jobId);
+          jobIds.push(enqueue("chat",{message,...destination},now+i*6500).jobId);
         }
-        send(res,200,{ok:true,queued:true,jobId:jobIds[0],jobIds,reply,model:String(generated.model||"Gemini")});
+        send(res,200,{ok:true,queued:true,jobId:jobIds[0],jobIds,reply,
+          destination,model:String(generated.model||"Gemini")});
         return true;
       }catch(e){
         return err(res,Number(e.publicStatus)||422,
