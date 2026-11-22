@@ -41,11 +41,16 @@ function validateCustomCommand(value){
 function route(data={}){
   const channel=data.channel===undefined?"local":data.channel;
   if(!CHANNELS.has(channel))throw Error("Canal de chat inválido.");
-  const format=channel==="local"?
-    (data.format===undefined?"&6&l":String(data.format||"").trim().toLowerCase()):"";
-  if(!FORMAT.test(format))throw Error("Código de formatação inválido. Exemplo: &6&l.");
+  // Legacy callers with no styling fields retain the previous behavior:
+  // only /l is gold. The modern site explicitly selects styles for all channels.
+  const format=data.format===undefined?
+    (channel==="local"?"&6&l":""):
+    String(data.format||"").trim().toLowerCase();
+  const bodyFormat=data.bodyFormat===undefined?"":String(data.bodyFormat||"").trim().toLowerCase();
+  if(!FORMAT.test(format)||!FORMAT.test(bodyFormat))
+    throw Error("Código de formatação inválido. Use, por exemplo, &6&l no prefixo e &f na mensagem.");
   const command=channel==="local"?"l":
     channel==="custom"?validateCustomCommand(data.command):"";
-  return {channel,command,format};
+  return {channel,command,format,bodyFormat};
 }
 module.exports={route,validateCustomCommand};
