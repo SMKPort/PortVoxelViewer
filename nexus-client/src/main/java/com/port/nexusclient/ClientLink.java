@@ -345,28 +345,11 @@ final class ClientLink {
         long now=System.currentTimeMillis();
         if(now-lastChatAt<4500)
             throw new IllegalStateException("Proteção contra spam. Aguarde alguns segundos.");
-        // Only chat-channel roots are permitted, not arbitrary admin commands.
-        final String root;
-        if("local".equals(channel)){
-            root="l";
-        }else if("custom".equals(channel)){
-            String candidate=command.toLowerCase(java.util.Locale.ROOT).trim();
-            if(candidate.startsWith("/"))candidate=candidate.substring(1);
-            if(!java.util.Set.of("l","local","g","global","rp","me","ooc","chat","ch","yell","shout","action").contains(candidate))
-                throw new IllegalArgumentException("Canal de chat personalizado não autorizado.");
-            root=candidate;
-        }else if("global".equals(channel)){
-            root="";
-        }else{
-            throw new IllegalArgumentException("Canal de chat inválido.");
-        }
-        // Format codes belong only to local chat, directly after "/l ".
-        // They are inserted before the message, not interpreted by this client.
-        if(format==null)format="";
-        format=format.toLowerCase(java.util.Locale.ROOT);
-        if(!format.matches("(?:&[0-9a-fk-or]){0,8}"))
-            throw new IllegalArgumentException("Código de cor inválido.");
-        String transmittedMessage=("local".equals(channel)?format:"")+message;
+        // Static owner-configured chat prefix. No arbitrary command text
+        // can be injected from the Gemini response or from chat messages.
+        final String root=NexusChatChannelPolicy.root(channel,command);
+        final String style=NexusChatChannelPolicy.format(channel,format);
+        String transmittedMessage=style+message;
         lastChatAt=now;
         if(root.isEmpty()){
             mc.getConnection().sendChat(message);
@@ -376,10 +359,11 @@ final class ClientLink {
             mc.getConnection().sendCommand(root+" "+transmittedMessage);
         }
         if(announce)NexusClientMod.notifyPlayer(root.isEmpty()?
-            "Mensagem enviada no chat global.":
-            "Mensagem enviada via /"+root+".");
-        return "Mensagem enviada como "+mc.player.getGameProfile().getName()+
-               (root.isEmpty()?" no chat global.":" pelo canal /"+root+".");
+            "Mensagem solicitada no chat global (confirme no servidor).":
+            "Mensagem solicitada via /"+root+" (confirme no servidor).");
+        return "Solicitação enviada como "+mc.player.getGameProfile().getName()+
+               (root.isEmpty()?" no chat global.":" pelo canal /"+root+".")+
+               " A aceitação depende do servidor.";
     }
 
     private static String action(String kind,String form){
