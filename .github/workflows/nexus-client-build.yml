@@ -139,6 +139,13 @@ jobs:
             nexus-client/src/main/java/com/port/nexusclient/NexusMicrophoneChoices.java \
             nexus-client/verification/NexusMicrophoneChoicesTest.java
           java -ea -cp /tmp/nexus-microphone-tests com.port.nexusclient.NexusMicrophoneChoicesTest
+      - name: Test safe custom chat channels and colored Nexus prefix
+        run: |
+          mkdir -p /tmp/nexus-chat-tests
+          javac -encoding UTF-8 -d /tmp/nexus-chat-tests \
+            nexus-client/src/main/java/com/port/nexusclient/NexusChatChannelPolicy.java \
+            nexus-client/verification/NexusChatChannelPolicyTest.java
+          java -ea -cp /tmp/nexus-chat-tests com.port.nexusclient.NexusChatChannelPolicyTest
       - name: Test Nexus 4.0 grounded situational reasoning and opt-in safety
         run: |
           mkdir -p /tmp/nexus-awakening-tests
