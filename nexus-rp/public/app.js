@@ -291,7 +291,7 @@ state.config.functions=next;save();toast("Funções registradas.");render();
 }
 if(f.id==="chatForm"){
 const msg=String(new FormData(f).get("message")||"").trim();if(!msg)return;if(busy)return;busy=true;
-try{await messageToMinecraft(msg);toast("Mensagem entregue ao chat do Minecraft.");}
+try{await messageToMinecraft(msg);toast("Envio solicitado ao servidor. Confirme se a mensagem apareceu no canal.");}
 catch(err){addChat(msg,"failed");toast(err.message);}
 finally{busy=false;render();}
 }
