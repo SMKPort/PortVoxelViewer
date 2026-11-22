@@ -82,6 +82,12 @@ test("regular messages and Gemini voice use the same owner-selected command and 
     message:"[Nexus Aterna] Desintegrando armadura.",
     channel:"custom",command:"somake:arcana",format:"&6&l",bodyFormat:"&b"
   });
+  const tooLongForCustomCommand=await run("POST","/api/client/chat",user,{
+    message:"x".repeat(200),channel:"custom",command:"/"+("a".repeat(64)),
+    format:"&6&l",bodyFormat:"&f"
+  });
+  assert.equal(tooLongForCustomCommand.status,422,
+    "Custom command, color codes and message must fit Minecraft's packet limit.");
   const rejected=await run("POST","/api/client/voice",user,{
     transcript:"Nexus, teste.",channel:"custom",command:"/op"
   });
