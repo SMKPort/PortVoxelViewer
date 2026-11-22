@@ -53,10 +53,21 @@ final class NexusChatChannelPolicy {
         };
     }
     static String format(String channel,String formatting){
-        String value="local".equals(channel)?
-            (formatting==null?"":formatting.toLowerCase(Locale.ROOT)):"";
+        // Always validate the channel, even when it has no slash prefix.
+        if(!Set.of("local","custom","global").contains(channel))
+            throw new IllegalArgumentException("Canal de chat inválido.");
+        String value=formatting==null?"":formatting.trim().toLowerCase(Locale.ROOT);
         if(!value.matches("(?:&[0-9a-fk-or]){0,8}"))
             throw new IllegalArgumentException("Código de cor inválido.");
         return value;
+    }
+
+    static String decorate(String message,String prefixStyle,String bodyStyle){
+        final String tag="[Nexus Aterna] ";
+        if(bodyStyle.isEmpty())return prefixStyle+message; // legacy client compatibility
+        // &r is essential: a plain &f after &l may not reset bold.
+        if(!message.startsWith(tag))
+            throw new IllegalArgumentException("Identificador do Nexus ausente.");
+        return prefixStyle+"[Nexus Aterna] &r"+bodyStyle+message.substring(tag.length());
     }
 }
