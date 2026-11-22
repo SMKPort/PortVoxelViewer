@@ -54,6 +54,12 @@ test("HTTP real: pareamento, mensagem e ACK não derrubam o servidor",async()=>{
     assert.equal(shellJs.status,200,"New Nexus 4.0 quick navigation must be served");
     assert.match(shellJs.headers.get("content-type")||"",/text\/javascript/);
     assert.match(await shellJs.text(),/v4QuickLaunch/);
+    // Regression: the menu may show an affinity button while the script is
+    // blocked by the strict static allowlist. Check actual HTTP delivery.
+    const affinityScript=await fetch(base+"/affinity.js?v=4.3");
+    assert.equal(affinityScript.status,200,"Afinidades script must load from the live server");
+    assert.match(affinityScript.headers.get("content-type")||"",/javascript/i);
+    assert.match(await affinityScript.text(),/NexusRPAffinityUpgrade/);
     const forbidden=await request(base+"/.env");
     assert.equal(forbidden.status,404,"Static allowlist must remain restrictive");
     const unauthorized=await request(base+"/api/client/pair/new","POST","wrong",{});
