@@ -31,6 +31,8 @@ public class NexusClientMod {
         "key.nexusclient.hud",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_F7,"key.categories.misc");
     private static final KeyMapping VOICE_CAST_KEY=new KeyMapping(
         "key.nexusclient.voicecast",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_F6,"key.categories.misc");
+    private static final KeyMapping VISION_KEY=new KeyMapping(
+        "key.nexusclient.vision",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_F9,"key.categories.misc");
     public NexusClientMod(IEventBus modBus) {
         modBus.addListener(this::onRegisterKeys);
         modBus.addListener(this::onRegisterHud);
@@ -48,6 +50,7 @@ public class NexusClientMod {
         event.register(PERMISSIONS_KEY);
         event.register(HUD_KEY);
         event.register(VOICE_CAST_KEY);
+        event.register(VISION_KEY);
     }
 
     private void onRegisterHud(RegisterGuiLayersEvent event){
@@ -72,6 +75,8 @@ public class NexusClientMod {
         NexusAutoHeal.tick();
         NexusCombatMacro.tick();
         NexusBuffManager.tick();
+        NexusHologram.tick();
+        NexusVision.tick();
         Minecraft mc=Minecraft.getInstance();
         while(PRIVATE_KEY.consumeClick()){
             if(mc.player!=null&&mc.screen==null)
@@ -84,6 +89,10 @@ public class NexusClientMod {
         while(HUD_KEY.consumeClick()){
             if(mc.player!=null&&mc.screen==null)
                 mc.setScreen(new NexusHudEditorScreen(null));
+        }
+        while(VISION_KEY.consumeClick()){
+            if(mc.player!=null&&mc.screen==null)
+                mc.setScreen(new NexusVisionScreen(null));
         }
         while(VOICE_CAST_KEY.consumeClick()){
             if(mc.player!=null&&mc.screen==null){
@@ -99,6 +108,52 @@ public class NexusClientMod {
                 notifyPlayer(ClientLink.status());
                 return 1;
             }))
+            .then(Commands.literal("vision")
+                .then(Commands.literal("menu").executes(ctx->{
+                    Minecraft mc=Minecraft.getInstance();
+                    if(mc.player!=null)mc.setScreen(new NexusVisionScreen(null));
+                    return 1;
+                }))
+                .then(Commands.literal("on").executes(ctx->{
+                    NexusVision.setEnabled(true);
+                    notifyPlayer("Visão Arcana autorizada para capturas MANUAIS apenas.");return 1;
+                }))
+                .then(Commands.literal("off").executes(ctx->{
+                    NexusVision.setEnabled(false);
+                    notifyPlayer("Visão Arcana desativada.");return 1;
+                }))
+                .then(Commands.literal("status").executes(ctx->{
+                    notifyPlayer(NexusVision.status());return 1;
+                }))
+                .then(Commands.literal("capture").executes(ctx->{
+                    NexusVision.request("Descreva os elementos visíveis no mundo do Minecraft.");
+                    return 1;
+                })))
+            .then(Commands.literal("hologram")
+                .then(Commands.literal("menu").executes(ctx->{
+                    Minecraft mc=Minecraft.getInstance();
+                    if(mc.player!=null)mc.setScreen(new NexusVisionScreen(null));
+                    return 1;
+                }))
+                .then(Commands.literal("on").executes(ctx->{
+                    NexusHologram.setEnabled(true);notifyPlayer(NexusHologram.status());return 1;
+                }))
+                .then(Commands.literal("off").executes(ctx->{
+                    NexusHologram.setEnabled(false);notifyPlayer(NexusHologram.status());return 1;
+                }))
+                .then(Commands.literal("status").executes(ctx->{
+                    notifyPlayer(NexusHologram.status());return 1;
+                }))
+                .then(Commands.literal("model")
+                    .then(Commands.literal("orb").executes(ctx->{
+                        NexusHologram.setModel("orb");notifyPlayer(NexusHologram.status());return 1;
+                    }))
+                    .then(Commands.literal("runes").executes(ctx->{
+                        NexusHologram.setModel("runes");notifyPlayer(NexusHologram.status());return 1;
+                    }))
+                    .then(Commands.literal("schematic").executes(ctx->{
+                        NexusHologram.setModel("schematic");notifyPlayer(NexusHologram.status());return 1;
+                    }))))
             .then(Commands.literal("menu").executes(context -> {
                 Minecraft mc=Minecraft.getInstance();
                 if(mc.player!=null)mc.setScreen(new NexusPermissionsScreen());

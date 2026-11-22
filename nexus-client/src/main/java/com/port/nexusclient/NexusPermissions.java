@@ -65,6 +65,8 @@ final class NexusPermissions {
         NexusAutoHeal.setEnabled(false);
         NexusVoiceCasting.setEnabled(false);
         NexusHearing.listen(false); // Legacy setting remains safely disabled.
+        NexusVision.setEnabled(false); // Revoke future screenshots.
+        NexusHologram.setEnabled(false);
         NexusSpeaker.enable(false);
 
         NexusPrivateMind.setProactive(false);
@@ -90,6 +92,8 @@ final class NexusPermissions {
         NexusClientMod.notifyPlayer(NexusSocial.status());
         NexusClientMod.notifyPlayer(NexusSpeaker.status());
         NexusClientMod.notifyPlayer("Voz offline: "+NexusVoiceCasting.status());
+        NexusClientMod.notifyPlayer(NexusVision.status());
+        NexusClientMod.notifyPlayer(NexusHologram.status());
         NexusClientMod.notifyPlayer("Buffs: "+NexusBuffManager.status());
         NexusClientMod.notifyPlayer(NexusCombatMacro.status());
         NexusClientMod.notifyPlayer("Cura automática: "+(NexusAutoHeal.enabled()?"ON":"OFF")+

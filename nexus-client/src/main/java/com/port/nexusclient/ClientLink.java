@@ -234,6 +234,31 @@ final class ClientLink {
             });
     }
 
+    /** Sends a single explicitly authorized JPEG; no background recording. */
+    static void analyzeVision(String question,byte[] jpeg){
+        if(ClientConfig.token.isBlank()){
+            NexusVision.complete("Sessão de pareamento necessária.",false);
+            return;
+        }
+        JsonObject data=new JsonObject();
+        data.addProperty("question",question);
+        data.addProperty("image",java.util.Base64.getEncoder().encodeToString(jpeg));
+        data.addProperty("consent",true);
+        Minecraft mc=Minecraft.getInstance();
+        post("/api/client/vision/analyze",data,true,Duration.ofSeconds(35))
+            .thenAccept(result->mc.execute(()->{
+                if(result!=null&&result.has("ok")&&result.get("ok").getAsBoolean()
+                    &&result.has("reply"))
+                    NexusVision.complete(result.get("reply").getAsString(),true);
+                else NexusVision.complete(errorText(result),false);
+            }))
+            .exceptionally(error->{
+                mc.execute(()->NexusVision.complete(
+                    "Falha na rede. Verifique a Render e o pareamento.",false));
+                return null;
+            });
+    }
+
     static void sendHearingState(){
         if(ClientConfig.token.isEmpty())return;
         post("/api/client/hearing/state",NexusHearing.snapshot(),true).exceptionally(err -> null);
