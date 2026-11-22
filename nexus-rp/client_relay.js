@@ -6,11 +6,12 @@ const {askGemini,aiStatus}=require("./ai_conversation.js");
 const {synthesizeSpeech}=require("./speech_synthesis.js");
 const {askPrivate}=require("./private_conversation.js");
 const {route:chatRoute}=require("./chat_channel.js");
+const {notes:checkedNotes,affinities:checkedAffinities}=require("./memory_context.js");
 const JOB_MAX_AGE=120000;
 function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=aiStatus,synthesize=synthesizeSpeech,privateReply=askPrivate}){
   let pair=null,session=null,eventId=0,mind=null,monitor=null,alertsState=null,hearingState=null;
   let ttsBusy=false,lastTtsAt=0,privateBusy=false,lastPrivateAt=0;
-  const jobs=new Map(),events=[];
+  const jobs=new Map(),events=[],memoryWaiters=new Map();
   const err=(res,code,message)=>{send(res,code,{ok:false,error:message});return true;};
   const hash=s=>crypto.createHash("sha256").update(String(s||"")).digest("hex");
   function tokenOk(req){
@@ -34,6 +35,26 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
     if(pending>=20)throw Error("Fila cheia. Aguarde concluir as ações atuais.");
     const id=crypto.randomUUID(),job={id,type,payload,createdAt:Date.now(),readyAt,claimedAt:0,done:false,success:null,error:"",output:""};
     jobs.set(id,job);return {ok:true,queued:true,jobId:id};
+  }
+  function resolveMemoryWaiters(){
+    for(const done of memoryWaiters.values())done([]);
+    memoryWaiters.clear();
+  }
+  function lookupOwnerMemories(question){
+    // Only one paired Minecraft client can fulfill this authenticated job.
+    // Retrieved text is consumed in this request, never held in server state.
+    const job=enqueue("memory_lookup",{question:String(question).slice(0,500)});
+    return new Promise(resolve=>{
+      const timer=setTimeout(()=>{
+        memoryWaiters.delete(job.jobId);
+        resolve([]);
+      },6500);
+      memoryWaiters.set(job.jobId,value=>{
+        clearTimeout(timer);
+        memoryWaiters.delete(job.jobId);
+        resolve(checkedNotes(value));
+      });
+    });
   }
   function numericValue(value,min,max,fallback){
     if(value===null||value===undefined||value==="")return fallback;
@@ -124,6 +145,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         const token=crypto.randomBytes(32).toString("hex");pair=null;
         const player=String(data.player||"").slice(0,16);
         session={tokenHash:hash(token),player:/^[A-Za-z0-9_]{3,16}$/.test(player)?player:"",lastSeen:Date.now()};
+        resolveMemoryWaiters();
         jobs.clear();events.splice(0,events.length);eventId=0;mind=null;monitor=null;alertsState=null;hearingState=null;ttsBusy=false;lastTtsAt=0;privateBusy=false;lastPrivateAt=0;
         send(res,200,{ok:true,token,player:session.player,ttl:"until-service-restart-or-repair"});return true;
       }catch(e){return err(res,400,String(e.message));}
@@ -180,8 +202,13 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
         const destination=chatRoute(data);
         if(question===null)return err(res,422,"Chame Nexus primeiro, ou continue a conversa no modo contínuo.");
         if(!question)return err(res,422,"Depois de chamar Nexus, faça uma pergunta.");
+        // Wait for explicit client consent before exposing relevant owner memories.
+        // Affinities arrive from the user's own browser only when sharing is enabled.
+        const ownerMemories=await lookupOwnerMemories(question);
+        const affinities=checkedAffinities(data.affinities);
         const generated=await askAI({
-          question,history:data.history,online:true,player:session?.player||"",events,mind
+          question,history:data.history,online:true,player:session?.player||"",events,mind,
+          ownerMemories,affinities
         });
         const reply=String(generated?.text||"").trim();
         if(!reply)return err(res,502,"A IA não retornou uma resposta.");
@@ -192,7 +219,8 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
           jobIds.push(enqueue("chat",{message,...destination},now+i*6500).jobId);
         }
         send(res,200,{ok:true,queued:true,jobId:jobIds[0],jobIds,reply,
-          destination,model:String(generated.model||"Gemini")});
+          destination,memoryUsed:ownerMemories.length,affinityUsed:affinities.length,
+          model:String(generated.model||"Gemini")});
         return true;
       }catch(e){
         return err(res,Number(e.publicStatus)||422,
@@ -293,7 +321,15 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
       try{
         const data=await body(req,1800),job=jobs.get(String(data.id||""));
         if(!job)return err(res,404,"Job desconhecido.");
-        if(!job.done){job.done=true;job.success=data.success===true;job.error=String(data.error||"").slice(0,250);job.output=String(data.output||"").slice(0,250);}
+        if(!job.done){
+          job.done=true;job.success=data.success===true;
+          job.error=String(data.error||"").slice(0,250);
+          job.output=String(data.output||"").slice(0,250);
+          if(job.type==="memory_lookup"){
+            const waiter=memoryWaiters.get(job.id);
+            if(waiter)waiter(job.success?data.memories:[]);
+          }
+        }
         send(res,200,{ok:true});return true;
       }catch(e){return err(res,400,String(e.message));}
     }
