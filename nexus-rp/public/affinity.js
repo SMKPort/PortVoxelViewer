@@ -6,20 +6,21 @@
     if(!Array.isArray(entries))return [];
     const q=fold(question);
     if(!q)return [];
-    const broad=/\b(afinidade|afinidades|relacoes|relacionamentos|parentesco|parentes|familia|familiares|jogadores)\b/.test(q);
+    const broad=/\b(afinidade|afinidades|relacoes|relacionamentos|parentesco|parentes|familia|familiares|jogadores|raca|racas|especie|especies)\b/.test(q);
     const ranked=[];
     for(const e of entries){
       if(!e||typeof e.player!=="string"||typeof e.nickname!=="string"||
          typeof e.kinship!=="string"||!Number.isInteger(e.score)||e.score<0||e.score>10)continue;
-      const player=fold(e.player),nickname=fold(e.nickname),kinship=fold(e.kinship);
+      const player=fold(e.player),nickname=fold(e.nickname),kinship=fold(e.kinship),race=fold(e.race||"");
       const named=[player,nickname].filter(x=>x.length>=2&&(" "+q+" ").includes(" "+x+" "));
       // Only matching people or explicit requests about relationships; never
       // routinely share every stored affinity with Gemini.
       const score=named.length?30+(named[0]===player?4:0):
-        broad?(q.includes(kinship)&&kinship?14:5):0;
+        broad?(q.includes(kinship)&&kinship?14:
+          race&&(" "+q+" ").includes(" "+race+" ")?14:5):0;
       if(score>0)ranked.push({score,record:{
         player:e.player.slice(0,32),nickname:e.nickname.slice(0,48),
-        kinship:e.kinship.slice(0,70),score:e.score}});
+        kinship:e.kinship.slice(0,70),race:String(e.race||"").slice(0,70),score:e.score}});
     }
     ranked.sort((a,b)=>b.score-a.score);
     return ranked.slice(0,Math.min(6,Math.max(0,max))).map(x=>x.record);
@@ -37,6 +38,7 @@
         '<strong style="color:#e9bb68">'+E(a.player)+'</strong> '+
         '<span style="color:#cbc3ce">('+E(a.nickname||"sem apelido")+')</span>'+
         '<div><small>Parentesco: '+E(a.kinship||"nenhum informado")+'</small></div>'+
+        '<div><small>Raça (RP): '+E(a.race||"não informada")+'</small></div>'+
         '<div>❤ Afinidade: <strong>'+E(a.score)+'/10</strong></div>'+
         '<div class="buttons" style="margin-top:10px">'+
         '<button type="button" class="btn ghost" data-affinity-edit="'+E(a.id)+'">EDITAR</button>'+
@@ -56,6 +58,8 @@
         '<input id="affinityNickname" name="nickname" maxlength="48" value="'+E(edit?.nickname||"")+'" placeholder="Ex.: Gabi"></div>'+
         '<div class="field"><label for="affinityKinship">PARENTESCO / VÍNCULO</label>'+
         '<input id="affinityKinship" name="kinship" maxlength="70" value="'+E(edit?.kinship||"")+'" placeholder="Ex.: filho, irmã, mãe adotiva, amigo"></div>'+
+        '<div class="field"><label for="affinityRace">RAÇA / ESPÉCIE (RP)</label>'+
+        '<input id="affinityRace" name="race" maxlength="70" value="'+E(edit?.race||"")+'" placeholder="Ex.: anjo, demônio, humano, híbrido"></div>'+
         '<div class="field"><label for="affinityScore">AFINIDADE (0 A 10)</label>'+
         '<input id="affinityScore" name="score" type="number" min="0" max="10" step="1" required value="'+E(edit?.score??5)+'"></div>'+
         '<div class="buttons"><button class="btn gold" type="submit">'+
@@ -79,6 +83,7 @@
         const player=String(d.get("player")||"").replace(/[\u0000-\u001f<>]/g,"").trim().slice(0,32);
         const nickname=String(d.get("nickname")||"").replace(/[\u0000-\u001f<>]/g,"").trim().slice(0,48);
         const kinship=String(d.get("kinship")||"").replace(/[\u0000-\u001f<>]/g,"").trim().slice(0,70);
+        const race=String(d.get("race")||"").replace(/[\u0000-\u001f<>]/g,"").trim().slice(0,70);
         const score=Number(d.get("score"));
         if(player.length<2||!Number.isInteger(score)||score<0||score>10)
           throw Error("Informe um nome válido e afinidade inteira entre 0 e 10.");
@@ -86,7 +91,7 @@
         if(duplicate)throw Error("Já existe uma ficha com esse nome de jogador. Edite a ficha existente.");
         const previous=rp.state.affinities.find(a=>a.id===editingId);
         const item={id:previous?.id||"aff-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),
-          player,nickname,kinship,score};
+          player,nickname,kinship,race,score};
         if(previous)Object.assign(previous,item);
         else{
           if(rp.state.affinities.length>=150)throw Error("Limite de 150 fichas atingido.");
