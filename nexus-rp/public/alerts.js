@@ -10,7 +10,16 @@ window.NexusRPAlertsUpgrade=function(rp,views){
     ["recovery","Regeneração das placas","Comenta quando a cura restaura a estrutura do Nexus."],
     ["critical","Vida crítica","Avisos da consciência evolutiva quando a vida cai a 30% ou menos."]
   ];
-  const DEFAULT={heavy:true,streak:true,structure:true,risk:true,recovery:true,critical:true,cooldownSeconds:45};
+  const ROUTES=[...TYPES,
+    ["mind","Consciência evolutiva","Observações espontâneas do Nexus."],
+    ["arcane","Percepção arcana","Conjurações e eventos observados pelo sensor mágico."]
+  ];
+  const DESTINATIONS=[
+    ["off","DESLIGADO"],["hud","SOMENTE HUD"],
+    ["chat","SOMENTE CHAT"],["both","HUD E CHAT"]
+  ];
+  const DEFAULT={heavy:true,streak:true,structure:true,risk:true,recovery:true,critical:true,
+    cooldownSeconds:45,routes:Object.fromEntries(ROUTES.map(([key])=>[key,"hud"]))};
   const LABELS=Object.fromEntries(TYPES.map(([kind,label])=>[kind,label]));
   LABELS.mind="Consciência evolutiva";
   let remote=null,error="",busy=false,pending=false,dirty=false,initialized=false;
@@ -47,17 +56,20 @@ window.NexusRPAlertsUpgrade=function(rp,views){
   views.alertas=function(){
     const settingsReady=remote?.online===true&&remote.settings!==null&&remote.settings!==undefined;
     const disabled=(!settingsReady||pending)?" disabled":"";
-    const toggles=TYPES.map(([key,title,subtitle])=>
-      '<label class="nexus-alert-option"><input name="'+key+'" type="checkbox"'+
-      (values[key]?" checked":"")+disabled+'><span><strong>'+E(title)+'</strong><small>'+
-      E(subtitle)+'</small></span></label>').join("");
+    const destinations=ROUTES.map(([key,title,subtitle])=>
+      '<label class="field" style="display:block"><strong>'+E(title)+'</strong>'+
+      '<small style="display:block">'+E(subtitle)+'</small>'+
+      '<select name="route_'+key+'"'+disabled+' aria-label="Destino de '+E(title)+'">'+
+      DESTINATIONS.map(([value,label])=>
+        '<option value="'+value+'"'+((values.routes?.[key]||"hud")===value?" selected":"")+
+        '>'+label+'</option>').join("")+'</select></label>').join("");
     return '<div class="eyebrow">NEXUS / CONSCIÊNCIA EVOLUTIVA / MONITORAMENTO</div>'+
       '<h1 class="heading">Alertas do Nexus</h1>'+
-      '<p class="subheading">Escolha quando o Nexus deve falar por conta própria durante o jogo. O Minecraft continua monitorando mesmo com esta página fechada.</p>'+
+      '<p class="subheading">Escolha exatamente onde cada aviso aparece: somente HUD, somente chat, ambos ou desligado. O mod continua monitorando com o site fechado.</p>'+
       '<div class="grid two"><section class="card"><div class="card-header"><h2>COMPORTAMENTO AUTÔNOMO</h2></div>'+
       '<div class="rp-evo-emergency '+(remote?.online?"online":"")+'"><strong id="rpAlertsStatus">'+E(statusText())+'</strong></div>'+
-      '<p class="hint">Para enviar falas, ative no Minecraft: <code>/nexusclient telemetry on</code>, <code>/nexusclient mind on</code>, <code>/nexusclient chat on</code> e <code>/nexusclient autonomy on</code>.</p>'+
-      '<form id="rpAlertSettings" class="nexus-alert-form">'+toggles+
+      '<p class="hint">Somente os alertas enviados ao chat exigem as permissões de chat e autonomia. Para publicar no servidor, ative: <code>/nexusclient telemetry on</code>, <code>/nexusclient mind on</code>, <code>/nexusclient chat on</code> e <code>/nexusclient autonomy on</code>.</p>'+
+      '<form id="rpAlertSettings" class="nexus-alert-form">'+destinations+
       '<label class="field"><span class="field-label">INTERVALO MÍNIMO ENTRE ALERTAS DE COMBATE (SEGUNDOS)</span>'+
       '<input type="number" name="cooldownSeconds" min="15" max="180" step="5" value="'+E(values.cooldownSeconds)+'"'+disabled+'>'+
       '<small>Entre 15 e 180 segundos. Também respeita o limite de mensagens do chat do Minecraft.</small></label>'+
@@ -68,7 +80,7 @@ window.NexusRPAlertsUpgrade=function(rp,views){
       '<div class="kv"><span>Últimas falas disponíveis</span><span class="value" id="rpAlertsCount">'+(remote?.history?.length||0)+'</span></div>'+
       '<p class="hint" id="rpAlertsSync">'+(remote?.syncedAt?"Última sincronização: "+E(rp.date(remote.syncedAt)):"Aguardando o mod transmitir o histórico...")+'</p>'+
       '<div id="rpAlertsHistory" aria-live="polite">'+historyHTML()+'</div>'+
-      '<p class="hint">Mostramos somente falas espontâneas realmente enviadas. As últimas 80 ficam salvas no cliente e as 30 mais recentes são sincronizadas com o painel. Não registra o conteúdo de conversas privadas.</p></section></div>';
+      '<p class="hint">Mostramos somente falas espontâneas realmente enviadas ao chat. Avisos exclusivos do HUD não são publicados. As últimas 80 ficam salvas no cliente e as 30 mais recentes são sincronizadas com o painel. Não registra o conteúdo de conversas privadas.</p></section></div>';
   };
   async function refresh(){
     if(busy||!active())return;
@@ -103,11 +115,19 @@ window.NexusRPAlertsUpgrade=function(rp,views){
     e.preventDefault();e.stopImmediatePropagation();
     if(pending)return;
     if(!remote?.online||!remote?.settings){
-      rp.toast("Conecte o Nexus Client 1.6.0 e aguarde a sincronização.");return;
+      rp.toast("Conecte o Nexus Client atualizado e aguarde a sincronização.");return;
     }
     const d=new FormData(e.target);
     const proposed=Object.fromEntries(TYPES.map(([key])=>[key,d.has(key)]));
     proposed.cooldownSeconds=Number(d.get("cooldownSeconds"));
+    proposed.routes={};
+    for(const [kind] of ROUTES){
+      const selected=String(d.get("route_"+kind)||"hud");
+      if(!DESTINATIONS.some(([destination])=>destination===selected))
+        return rp.toast("Escolha um destino válido para "+kind+".");
+      proposed.routes[kind]=selected;
+    }
+    for(const [kind] of TYPES)proposed[kind]=proposed.routes[kind]!=="off";
     if(!Number.isInteger(proposed.cooldownSeconds)||proposed.cooldownSeconds<15||proposed.cooldownSeconds>180)
       return rp.toast("Defina um intervalo entre 15 e 180 segundos.");
     pending=true;const button=e.target.querySelector('button[type="submit"]');
@@ -115,7 +135,7 @@ window.NexusRPAlertsUpgrade=function(rp,views){
     try{
       if(!rp.clientQueue)throw Error("O Nexus Client não está disponível neste painel.");
       await rp.clientQueue("/alerts/settings",proposed);
-      values=proposed;dirty=false;
+      values={...DEFAULT,...proposed};dirty=false;
       rp.toast("Preferências confirmadas e gravadas no Minecraft.");
       await refresh();
     }catch(ex){rp.toast("Falha ao atualizar o mod: "+String(ex.message||ex));}

@@ -2,11 +2,11 @@
   "name": "nexus-aterna-minecraft-rp",
   "version": "1.0.0",
   "private": true,
-  "description": "Roleplay Minecraft console Nexus Aterna and HTTPS RCON bridge",
+  "description": "Nexus Aterna RP: site HTTPS e mod client-side Minecraft 1.21.1",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "check": "node --check server.js && node --check public/app.js && node --check public/views.js"
+    "check": "node --check server.js && node --check client_relay.js && node --check chat_channel.js && node --check public/app.js && node --check public/views.js && node --check public/client.js && node --check public/alerts.js && node --check public/evolution.js"
   },
   "engines": {
     "node": ">=20"

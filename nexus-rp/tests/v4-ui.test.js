@@ -35,29 +35,26 @@ test("4.0 keeps core navigation and offers an accessible search dialog",()=>{
   assert.match(html,/id="v4CommandInput"/);
   assert.match(html,/id="v4QuickLaunch"/);
   assert.match(html,/class="v4-mobile-dock"/);
-  for(const page of ["painel","voz","chat","cliente","config","armadura","rituais","alertas","mente"])
+  for(const page of ["painel","voz","chat","cliente","config","alertas","mente","afinidade"])
     assert.ok(html.includes('data-page="'+page+'"'),"Retain navigation "+page);
   assert.ok(!html.includes("name=\"access\" value="),"No HTTPS secrets in markup");
 });
 
-test("Nexus 4.0 overview exposes only local roleplay metrics and in-game shortcuts",()=>{
+test("4.0.6 overview focuses on actual client sensors, not removed RP modules",()=>{
   const html=overview(false);
   assert.ok(html.includes('class="v4-hero"'));
-  assert.ok(html.includes("Inteligência")||html.includes("próximo estágio"));
-  assert.ok(html.includes("TELEMETRIA NARRATIVA"));
-  assert.ok(html.includes("INTEGRIDADE RP"));
-  assert.ok(html.includes("ENERGIA ARCANA RP"));
-  assert.ok(html.includes("Não verificada nesta sessão"));
-  assert.ok(html.includes("Os indicadores de energia e integridade"));
+  assert.ok(html.includes("próximo estágio"));
+  assert.ok(html.includes("AGUARDANDO PAREAMENTO"));
+  assert.ok(!html.includes("ENERGIA ARCANA RP"));
+  assert.ok(!html.includes("INTEGRIDADE RP"));
   for(const cmd of [
-    "/nexusclient situacao","/nexusclient cognition menu",
-    "/nexusclient journal menu","/nexusclient cognition insights status"
+    "/nexusclient situacao","/nexusclient awakening status",
+    "/nexusclient awakening journal recent","/nexusclient macro status",
+    "/nexusclient vision menu","/nexusclient hud edit"
   ])assert.ok(html.includes('data-v4-copy="'+cmd+'"'));
-  assert.ok(!html.includes("Minecraft RCON"),"No stale mode label in Client mode");
-  assert.ok(!html.includes("ENTREGUE AO MINECRAFT"),"No fabricated transmission");
-  const connected=overview(true);
-  assert.ok(connected.includes("ONLINE"));
-  assert.ok(connected.includes("Nexus Client verificado"));
+  for(const removed of ["go-armadura","go-rituais","go-emergencia","go-ao_vivo"])
+    assert.ok(!html.includes(removed));
+  assert.ok(overview(true).includes("CONECTADO"));
 });
 
 test("dynamic narrative log text remains escaped in the new overview",()=>{

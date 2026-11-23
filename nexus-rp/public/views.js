@@ -14,7 +14,7 @@ const field=(id,title,value="",type="text",attr="")=>'<div class="field"><label 
 const form=function(){
 const c=S.config;
 if(c.connectionMode==="client"){
- return '<form id="configForm">'+
+ return '<form id="configForm"><input type="hidden" name="connectionMode" value="client">'+
  '<div class="notice"><strong>MODO NEXUS CLIENT:</strong> não precisa de senha RCON, host, porta nem acesso aos arquivos do servidor Minecraft.</div>'+
  '<div class="form-grid">'+field("player","SEU NOME NO MINECRAFT",c.player,"text","maxlength=\'16\'")+
  field("prefix","EMISSOR DAS MENSAGENS","[Nexus Aterna]","text","readonly aria-readonly=\'true\' maxlength=\'38\'")+'</div>'+
@@ -46,74 +46,75 @@ return '<form id="functionForm">'+[
 return {
 painel(){
 const connected=rp.isConnected();
-const mode=S.config.connectionMode==="client"?"Nexus Client":S.config.connectionMode==="agent"?"Agente HTTPS":"RCON";
-const feature=(symbol,title,desc,command)=>
-  '<article class="v4-feature"><span class="v4-feature-icon" aria-hidden="true">'+symbol+'</span>'+
-  '<h3>'+E(title)+'</h3><p>'+E(desc)+'</p>'+
-  '<button type="button" data-v4-copy="'+E(command)+'" aria-label="Copiar comando '+E(title)+'">COPIAR COMANDO ↗</button></article>';
-return '<section class="v4-hero" aria-labelledby="v4HeroTitle">'+
-  '<div class="v4-hero-content">'+
-  '<div class="v4-edition">NÚCLEO ARCANO / SISTEMA 4.0</div>'+
-  '<h1 id="v4HeroTitle">O próximo estágio<br>do <em>Nexus Aterna.</em></h1>'+
-  '<p>A central de operações de Port Morningstar. Controle o universo narrativo, acesse o Nexus Client e acompanhe os sistemas de combate e memória que você autorizou no jogo.</p>'+
-  '<div class="v4-hero-actions">'+b("go-cliente","⬡ ABRIR NEXUS CLIENT","gold")+b("go-voz","◉ VOZ DO NEXUS","ghost")+'</div>'+
-  '<div class="v4-hero-meta"><span>NEOFORGE 1.21.1</span><span>CONSCIÊNCIA CONTEXTUAL</span><span>AD AETERNUM</span></div>'+
-  '</div><div class="v4-insignia" aria-hidden="true"><span class="v4-ring"></span><span class="v4-ring"></span><span class="v4-ring"></span><span class="v4-glyph">✦</span><span class="v4-orbit-label">ARCANE PROTOCOL 4.0</span></div></section>'+
-  '<div class="v4-section-head"><div><small>01 / TELEMETRIA NARRATIVA</small><h2>Painel de controle</h2><p>Os indicadores de energia e integridade abaixo são valores de roleplay definidos por você.</p></div></div>'+
-  '<div class="grid four v4-metrics">'+
-  '<div class="card metric"><small>INTEGRIDADE RP</small><strong>'+E(S.integrity)+'%</strong><p>Estrutura narrativa do braço</p></div>'+
-  '<div class="card metric"><small>ENERGIA ARCANA RP</small><strong>'+E(S.energy)+'%</strong><p>Reserva fictícia do Nexus</p></div>'+
-  '<div class="card metric"><small>ARMADURA</small><strong>'+(S.armor==="integrada"?"ATIVA":"DISPERSA")+'</strong><p>Estado narrativo das placas</p></div>'+
-  '<div class="card metric"><small>CONEXÃO</small><strong>'+(connected?"ONLINE":"LOCAL")+'</strong><p>'+E(connected?mode+" verificado":"Não verificada nesta sessão")+'</p></div></div>'+
-  '<div class="v4-section-head"><div><small>02 / NEXUS CLIENT 4.0</small><h2>Protocolos inteligentes</h2><p>Copie o comando e execute no Minecraft com o mod atualizado.</p></div>'+
-  '<div class="v4-section-actions">'+b("go-cliente","STATUS E PAREAMENTO","ghost")+'</div></div>'+
+const command=(title,detail,value)=>
+  '<article class="v4-feature"><h3>'+E(title)+'</h3><p>'+E(detail)+'</p>'+
+  '<button type="button" data-v4-copy="'+E(value)+'">COPIAR COMANDO</button></article>';
+return '<section class="v4-hero"><div class="v4-hero-content">'+
+  '<div class="v4-edition">NÚCLEO ARCANO / NEXUS 4.0</div>'+
+  '<h1>O próximo estágio<br>do <em>Nexus Aterna.</em></h1>'+
+  '<p>Central de inteligência, percepção e comunicação do Minecraft.</p>'+
+  '<div class="v4-hero-actions">'+b("go-cliente","⬡ NEXUS CLIENT","gold")+
+  b("go-voz","🎙 VOZ DO NEXUS","ghost")+'</div>'+
+  '<div class="v4-hero-meta"><span>NEOFORGE 1.21.1</span>'+
+  '<span>CONSCIÊNCIA CONTEXTUAL</span><span>AD AETERNUM</span></div></div>'+
+  '<div class="v4-insignia" aria-hidden="true"><span class="v4-ring"></span>'+
+  '<span class="v4-ring"></span><span class="v4-glyph">✦</span></div></section>'+
+  '<div class="v4-section-head"><div><small>01 / SITUAÇÃO</small>'+
+  '<h2>Conexão e permissões</h2></div></div>'+
+  '<div class="grid two">'+card("MINECRAFT",kv("Nexus Client",
+    connected?"CONECTADO":"AGUARDANDO PAREAMENTO")+
+    kv("Mecanismo","Minecraft 1.21.1 · NeoForge")+
+    b("go-cliente","TESTAR CLIENTE","gold"))+
+    card("COMUNICAÇÃO",kv("Identificação","[Nexus Aterna]")+
+    kv("Canal",S.config.chatChannel==="custom"?"/"+E(S.config.chatCustomCommand||"rp"):
+      S.config.chatChannel==="global"?"Global":"Local (/l)")+
+    b("go-config","CONFIGURAR CANAL","gold"))+'</div>'+
+  '<div class="v4-section-head"><div><small>02 / PROTOCOLOS</small>'+
+  '<h2>Funções disponíveis no jogo</h2></div></div>'+
   '<div class="v4-feature-grid">'+
-  feature("◉","Situação atual","Vida e mana observáveis, localização e situação das macros.","/nexusclient situacao")+
-  feature("✚","Protocolo de emergência","Configuração de alertas e suspensão autorizada de macros ofensivas.","/nexusclient cognition menu")+
-  feature("▤","Memória narrativa","Registre e consulte acontecimentos no diário privado do mod.","/nexusclient journal menu")+
-  feature("⌁","Histórico de combate","Consulte falhas e sugestões das macros, quando autorizado.","/nexusclient cognition insights status")+
-  '</div><p class="v4-fineprint">As funções 4.0 acima são executadas no mod do Minecraft. Este site apenas oferece os comandos de acesso. Os indicadores RP não substituem os sensores reais do jogo.</p>'+
-  '<div class="v4-section-head"><div><small>03 / CONTROLE DE ENGENHARIA</small><h2>Centro de operações</h2><p>Monitor narrativo e últimos registros da oficina arcana.</p></div></div>'+
-  '<div class="hero-columns">'+core+card("REGISTROS DA OFICINA",logView())+'</div>'+
-  '<div class="v4-section-head"><div><small>04 / ATALHOS</small><h2>Comandos imediatos</h2></div></div>'+
-  '<div class="buttons">'+b("go-chat","▣ MENSAGEM NO CHAT","gold")+b("go-armadura","⚙ ARMADURA")+b("go-rituais","✧ RITUAIS")+b("go-config","⛭ CONFIGURAR","ghost")+'</div>'+
-  '<div class="v4-section-head"><div><small>05 / INDICADORES MANUAIS</small><h2>Ajuste narrativo</h2></div></div>'+
-  card("INTEGRIDADE E ENERGIA",'<div class="grid two">'+
-  '<div><div class="stat-edit"><span>INTEGRIDADE RP</span><strong id="integrityLabel">'+E(S.integrity)+'%</strong></div><input id="integritySlider" aria-label="Integridade narrativa" type="range" min="0" max="100" value="'+E(S.integrity)+'">'+meter(S.integrity,true)+'</div>'+
-  '<div><div class="stat-edit"><span>ENERGIA ARCANA RP</span><strong id="energyLabel">'+E(S.energy)+'%</strong></div><input id="energySlider" aria-label="Energia arcana narrativa" type="range" min="0" max="100" value="'+E(S.energy)+'">'+meter(S.energy)+'</div></div><p class="hint">Valores fictícios para o roleplay. A vida e a mana reais são consultadas no jogo pela função Situação atual.</p>');
+  command("Situação atual","Vida, mana e protocolos observados.","/nexusclient situacao")+
+  command("Proteção contextual","Estado do protocolo que suspende macros em vida crítica.",
+    "/nexusclient awakening status")+
+  command("Diário narrativo","Consultar eventos pessoais salvos no jogo.",
+    "/nexusclient awakening journal recent")+
+  command("Macros","Verificar sequências e gatilhos ativos.",
+    "/nexusclient macro status")+
+  command("Visão Arcana","Abrir a análise de tela por Gemini.",
+    "/nexusclient vision menu")+
+  command("Editor do HUD","Configurar o tamanho e a posição.",
+    "/nexusclient hud edit")+'</div>'+
+  '<div class="v4-section-head"><div><small>03 / MONITORAMENTO</small>'+
+  '<h2>Eventos e alertas</h2></div></div>'+
+  '<div class="buttons">'+b("go-eventos","EVENTOS DO JOGO","gold")+
+  b("go-alertas","DESTINO DOS ALERTAS","ghost")+
+  b("go-mente","NEXUS MIND","ghost")+
+  b("go-chat","COMUNICADOR","ghost")+'</div>'+
+  card("ÚLTIMAS ATIVIDADES",logView(12));
 }
 ,
-chat(){const messages=S.chat.slice(-30).map(x=>'<div class="chat-entry '+E(x.status)+'"><small>'+E(x.status==="sent"?"ENTREGUE AO MINECRAFT":x.status==="failed"?"FALHOU":"NARRATIVA LOCAL")+' · '+rp.date(x.at)+'</small><p>'+E(x.text)+'</p></div>').join("");
-const t=[["Ativação","Núcleo sincronizado"],["Alerta","Oscilação de integridade detectada"],["Engenharia","Remodelando armadura"],["Ritual","Iniciando canalização ritualística"]];
+chat(){const messages=S.chat.slice(-30).map(x=>'<div class="chat-entry '+E(x.status)+'"><small>'+E(x.status==="sent"?"SOLICITADO AO MINECRAFT":x.status==="failed"?"FALHOU":"NARRATIVA LOCAL")+' · '+rp.date(x.at)+'</small><p>'+E(x.text)+'</p></div>').join("");
+const t=[["Status","Nexus Aterna conectado"],["Alerta","Detectei uma situação de risco"],["Percepção","Análise situacional concluída"],["Combate","Recomendo cautela durante o combate"]];
 return h("MÓDULO 01 / CANAL MINECRAFT","Comunicador","Envie mensagens identificadas como Nexus Aterna pelo canal configurado no Minecraft.")+
 '<div class="grid two">'+card("TRANSMISSOR DE MENSAGENS",'<div class="chat-feed" id="chatFeed">'+(messages||'<div class="empty">Nenhuma mensagem registrada.</div>')+'</div><form id="chatForm"><div class="field"><label for="chatMessage">MENSAGEM DO NEXUS</label><textarea name="message" id="chatMessage" maxlength="280" required placeholder="Ex.: Desintegrando armadura"></textarea></div><div class="chat-preview"><strong>'+E(S.config.prefix)+'</strong> <span id="chatPreview">Sua mensagem aparecerá aqui.</span></div><div class="buttons" style="margin-top:14px"><button type="submit" class="btn gold">↗ ENVIAR AO MINECRAFT</button>'+b("chat-local","REGISTRAR LOCALMENTE","ghost")+'</div></form><p class="hint">O envio requer uma conexão ativa com o Minecraft. Registrar localmente não publica a mensagem no jogo.</p>')+
 card("MENSAGENS RÁPIDAS",'<div class="recent-template">'+t.map((item,i)=>'<button type="button" class="template-btn" data-action="template" data-index="'+i+'"><strong>'+E(item[0])+'</strong>'+E(item[1])+'</button>').join("")+'</div><div class="divider"></div>'+kv("Destino",S.config.connectionMode==="client"?(S.config.chatChannel==="local"?"Local (/l)":S.config.chatChannel==="custom"?"Comando personalizado":"Global"):S.config.target==="global"?"Todos os jogadores":S.config.recipient||"Não definido")+kv("Ponte",rp.isConnected()?"Conexão testada":"Não testada")+b("go-config","CONFIGURAR SERVIDOR","ghost"))+'</div>';}
 ,
-armadura(){return h("MÓDULO 02 / PRÓTESE ARCANA","Armadura do Nexus","Integre, desintegre e remodele as placas do braço. O efeito visual acontece neste painel, e funções opcionais podem atuar no jogo.")+
-'<div class="grid two">'+card("MANIFESTAÇÃO DA ARMADURA",armorView()+'<p class="hint">Representação visual narrativa. Animações reais no Minecraft exigem datapack ou mod compatível.</p>')+
-card("ORDENS DE RECONFIGURAÇÃO",kv("Estado",S.armor==="integrada"?"INTEGRADA":"DISPERSA")+kv("Forma atual",S.form)+
-'<div class="divider"></div><div class="buttons">'+b("armor-integrar","✦ INTEGRAR","gold")+b("armor-desintegrar","◈ DESINTEGRAR")+'</div>'+
-'<div class="field" style="margin-top:18px"><label for="armorForm">FORMA A ASSUMIR</label><select id="armorForm">'+["Celestial","Combate","Ritual","Repouso"].map(x=>'<option '+(S.form===x?"selected":"")+'>'+x+'</option>').join("")+'</select></div>'+
-'<div class="buttons">'+b("armor-remodelar","⚙ REMODELAR","gold")+b("armor-reparar","✧ REPARAR","ghost")+'</div>'+
-'<div class="notice">Integrar consome 12 de energia. Remodelar consome 9. Reparar consome 14 e recupera 18 de integridade. Desintegrar devolve 5 pontos de energia.</div>'+
-kv("Efeito no Minecraft",rp.isConnected()?"Via função configurada":"Somente nesta interface")+b("go-config","CONFIGURAR COMANDOS DO MINECRAFT","ghost"))+'</div>';}
-,
-rituais(){const preset=P.find(x=>x.id===S.selectedRitual)||P[0],last=S.rituals[0];
-return h("MÓDULO 03 / MAGIA ARCANA","Rituais e Bênçãos","Execute rituais do universo do Port, use energia narrativa e transmita os efeitos para o chat do Minecraft.")+
-'<div class="grid two">'+card("CÍRCULOS RITUALÍSTICOS",'<div class="ritual-preset">'+P.map(p=>'<button data-action="ritual-preset" data-id="'+E(p.id)+'" class="'+(p.id===preset.id?"active":"")+'">'+E(p.name)+'<small>'+E(p.school)+' · '+p.cost+' energia</small></button>').join("")+'</div><div class="divider"></div>'+kv("Selecionado",preset.name)+kv("Energia atual",S.energy+" / 100")+meter(S.energy)+'<div class="notice">Os rituais são fictícios, para uso no roleplay. Nenhuma ação sobrenatural real é executada.</div>')+
-card("CONJURAÇÃO",'<form id="ritualForm"><div class="field"><label for="ritualName">NOME DO RITUAL</label><input id="ritualName" name="name" maxlength="100" required value="'+E(preset.name)+'"></div><div class="field"><label for="ritualDescription">DESCRIÇÃO</label><textarea name="description" id="ritualDescription" maxlength="600" required>'+E(preset.description)+'</textarea></div><div class="field"><label for="ritualCost">CUSTO DE ENERGIA (0–100)</label><input type="number" name="cost" id="ritualCost" min="0" max="100" value="'+preset.cost+'" required></div><button type="submit" class="btn gold">✧ EXECUTAR RITUAL</button></form>'+(last?'<div class="divider"></div><div class="ritual-result"><strong>'+E(last.name)+'</strong><p>'+E(last.description)+'</p><p>Estabilidade narrativa '+last.score+'% · Energia consumida '+last.cost+'</p><small class="hint">'+rp.date(last.at)+'</small></div>':'<div class="empty" style="margin-top:16px">Nenhum ritual realizado ainda.</div>'))+'</div>';}
-,
 config(){const client=S.config.connectionMode==="client";
-return h("MÓDULO 04 / CONEXÕES","Configurar Minecraft",client?"Conecte o mod Nexus Client sem RCON usando apenas o código de acesso do painel.":"Defina as configurações de conexão do Minecraft e seus recursos opcionais.")+
-'<div class="grid two">'+
-card(client?"NEXUS CLIENT · PAREAMENTO":"PONTE MINECRAFT JAVA RCON",form()+
- '<p class="input-note">'+(client?"O código de acesso HTTPS fica somente na memória desta aba. Para gerar outro código após recarregar a página, informe-o novamente.":"Host, porta e preferências são salvos neste navegador. Senha RCON e código de acesso ficam somente na memória da aba.")+'</p>'+
- '<div class="divider"></div>'+kv("Ponte HTTPS",rp.isHealthy()?"ONLINE":"VERIFICANDO")+
- kv(client?"Nexus Client":"Servidor RCON",rp.isConnected()?"CONECTADO":"AGUARDANDO CONEXÃO"))+
- (client?card("COMO CONECTAR",'<p class="hint">1. Salve o código HTTPS acima. 2. Entre na aba Nexus Client e toque em GERAR CÓDIGO DE PAREAMENTO. 3. No Minecraft, execute <code>/nexusclient pair CODIGO</code>. 4. Ative <code>/nexusclient chat on</code> e <code>/nexusclient telemetry on</code>.</p><div class="notice">O mod funciona na sua conta, sem permissões de administrador do servidor. O botão Testar Nexus Client só confirma a conexão depois do pareamento.</div>'):
- card("FUNÇÕES DO SERVIDOR",'<p class="hint">Opcional: configure funções de um datapack ou mod. Exemplo: <code>nexus:armadura/integrar</code>. O servidor executará a função correspondente somente se ela existir.</p>'+settingsFunctions()+
- '<div class="notice warn"><strong>Segurança:</strong> RCON não cifra o tráfego TCP por conta própria. Evite expor a porta diretamente à internet. Proteja-a com firewall e, idealmente, um túnel privado. A ponte HTTPS usa código de acesso. Servidores Minecraft Java compatíveis precisam de <code>enable-rcon=true</code>.</div>'))+'</div>'+
-'<h2 class="section-title">Registros locais</h2>'+card("DIÁRIO E BACKUP",'<div class="buttons">'+b("export","↓ EXPORTAR JSON","gold")+b("clear","REINICIAR REGISTROS","ghost")+'</div><div class="divider"></div>'+logView(12));}
+return h("CONEXÃO / NEXUS","Configurações de comunicação",
+  "Defina o canal do chat e o pareamento do mod sem precisar acessar o servidor.")+
+  '<div class="grid two">'+
+    card("NEXUS CLIENT E CANAL PERSONALIZADO",form()+
+      '<p class="hint">O comando personalizado não precisa pertencer à lista de atalhos. '+
+      'Ele deve existir no servidor e ser um comando de mensagens, com até cinco argumentos fixos.</p>')+
+    card("INSTRUÇÕES",'<p class="hint">1. Salve o acesso HTTPS. 2. Gere um código na aba Nexus Client.'+
+      ' 3. No jogo execute /nexusclient pair CODIGO e /nexusclient chat on.'+
+      ' 4. Configure individualmente o destino dos avisos na aba Alertas.</p>'+
+      b("go-cliente","VERIFICAR PAREAMENTO","gold")+
+      b("go-alertas","CONFIGURAR AVISOS","ghost"))+'</div>'+
+  '<h2 class="section-title">Armazenamento local</h2>'+
+  card("BACKUP E REGISTROS",'<div class="buttons">'+
+    b("export","EXPORTAR JSON","gold")+
+    b("clear","REINICIAR REGISTROS","ghost")+'</div>'+logView(12));
+}
 };
 };
 })();

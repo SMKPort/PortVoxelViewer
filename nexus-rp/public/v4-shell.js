@@ -13,17 +13,14 @@
     {name:"Voz do Nexus",detail:"Comandos e respostas por voz",route:"voz",tags:"microfone tts"},
     {name:"Comunicador",detail:"Mensagens e chat do jogo",route:"chat",tags:"mensagens"},
     {name:"Nexus Client",detail:"Pareamento e status do mod",route:"cliente",tags:"minecraft neoforge"},
+    {name:"Visão Arcana",detail:"Análise visual manual pelo F9",copy:"/nexusclient vision menu",tags:"captura imagem gemini"},
     {name:"Nexus Mind",detail:"Memórias e painel de IA",route:"mente",tags:"inteligencia"},
     {name:"Alertas do Nexus",detail:"Configurar notificações",route:"alertas",tags:"avisos"},
-    {name:"Armadura arcana",detail:"Placas e remodelagem",route:"armadura",tags:"nexus braco"},
-    {name:"Rituais",detail:"Laboratório narrativo",route:"rituais",tags:"magia"},
-    {name:"RP ao vivo",detail:"Controles rápidos de interpretação",route:"ao_vivo",tags:"live"},
     {name:"Eventos do jogo",detail:"Registros observáveis do cliente",route:"eventos",tags:"historico"},
-    {name:"Emergência RP",detail:"Painel narrativo de emergência",route:"emergencia",tags:"protocolo"},
     {name:"Configurações",detail:"Conexão e permissões",route:"config",tags:"seguranca"},
-    {name:"Nexus 4.0 no jogo",detail:"Copiar comando para abrir a central do mod",copy:"/nexusclient cognition menu",tags:"4.0 contexto"},
+    {name:"Nexus 4.0 no jogo",detail:"Copiar comando para abrir a central do mod",copy:"/nexusclient awakening status",tags:"4.0 contexto"},
     {name:"Situação atual no jogo",detail:"Copiar comando de diagnóstico do mod",copy:"/nexusclient situacao",tags:"vida mana contextual"},
-    {name:"Histórico de macros",detail:"Copiar comando para análise no mod",copy:"/nexusclient cognition insights status",tags:"aprendizado combate"}
+    {name:"Histórico de macros",detail:"Copiar comando para análise no mod",copy:"/nexusclient macro status",tags:"aprendizado combate"}
   ];
 
   let matches=entries.slice(),selected=0,lastFocus=null,toastTimer=null;

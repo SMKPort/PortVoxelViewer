@@ -5,145 +5,96 @@ const fs=require("node:fs");
 const vm=require("node:vm");
 const path=require("node:path");
 const root=path.join(__dirname,"../public");
-const pageScript=file=>fs.readFileSync(path.join(root,file),"utf8");
-function boot(mode,remembered=false){
- const window={};
+const source=name=>fs.readFileSync(path.join(root,name),"utf8");
+function boot(mode="client",remembered=false){
+ const location={hash:"#painel"};
+ const window={location,addEventListener(){}};
+ const nav={querySelector:()=>({before(){}})};
  const document={
-   querySelector:selector=>selector==="#nav"?{querySelector:()=>({before(){}})}:
+   visibilityState:"visible",
+   querySelector:selector=>selector==="#nav"?nav:
      selector==="#content"?{addEventListener(){}}:null,
-   createElement:()=>({dataset:{}})
+   createElement:()=>({dataset:{}}),addEventListener(){}
  };
- const context=vm.createContext({window,document,setInterval:()=>0});
- for(const file of ["views.js","upgrade.js","evolution.js","client.js","affinity.js"]){
-   vm.runInContext(pageScript(file),context,{filename:file});
+ const context=vm.createContext({window,document,location,setInterval(){},setTimeout(){}});
+ for(const file of ["views.js","evolution.js","client.js","affinity.js"]){
+   vm.runInContext(source(file),context,{filename:file});
  }
- const state={
-   integrity:100,energy:85,armor:"integrada",form:"Celestial",selectedRitual:"bencao",
-   logs:[{kind:"TESTE",text:"ok",at:new Date().toISOString()}],chat:[],rituals:[],
-   config:{connectionMode:mode,chatChannel:"local",chatCustomCommand:"rp",
-     chatFormatting:"&6&l",chatUsePrefix:true,prefix:"[Nexus Aterna]",
-     host:"",port:25575,player:"Port",target:"global",autoAnnounce:true,functions:{},color:"white"}
- };
- const escape=value=>String(value??"").replace(/[&<>"']/g,char=>({
+ const state={integrity:100,energy:85,armor:"integrada",form:"Celestial",
+   logs:[{kind:"TESTE",text:"ok",at:"2026-11-23"}],
+   chat:[],rituals:[],affinities:[],config:{
+     connectionMode:mode,chatChannel:"custom",chatCustomCommand:"/f chat privado",
+     chatFormatting:"&6&l",chatBodyFormatting:"&f",chatUsePrefix:true,
+     prefix:"[Nexus Aterna]",host:"",port:25575,player:"Port",
+     target:"global",autoAnnounce:true,functions:{},color:"white"
+   }};
+ const escape=value=>String(value??"").replace(/[&<>"']/g,ch=>({
    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
- }[char]));
- const rp={
-   state,escape,date:v=>String(v),presets:[{id:"bencao",name:"Bênção",cost:16,description:"Teste"}],
+ }[ch]));
+ const rp={state,escape,date:String,presets:[],
    isConnected:()=>false,isHealthy:()=>true,save(){},log(){},toast(){},
-   navigate(){},rerender(){},sendToChat(){},armorAction(){},performRitual(){},
-   getAccess:()=>remembered?"SENSITIVE_TEST_SECRET_NOT_FOR_HTML":"",isAccessRemembered:()=>remembered,requestEvents:async()=>({events:[],lastId:0})
- };
+   navigate(){},rerender(){},sendToChat(){},
+   getAccess:()=>remembered?"SENSITIVE_TEST_SECRET_NOT_FOR_HTML":"",
+   isAccessRemembered:()=>remembered,requestEvents:async()=>({events:[],lastId:0})};
  let views=window.NexusRPViews(rp);
- views=window.NexusRPUpgrade(rp,views);
  views=window.NexusRPEvolution(rp,views);
  views=window.NexusRPClientUpgrade(rp,views);
  views=window.NexusRPAffinityUpgrade(rp,views);
- return views;
+ return {views,rp};
 }
-test("Nexus Client uses no RCON fields and exposes code pairing",()=>{
- const views=boot("client"),html=views.config(),pair=views.cliente();
- assert.equal((html.match(/value="client"/g)||[]).length,1);
- assert.ok(html.includes('value="client" selected'));
+test("Client-only config retains mode, custom channel, independent styling and security",()=>{
+ const {views}=boot(),html=views.config();
+ assert.match(html,/name="connectionMode" value="client"/);
+ assert.match(html,/name="chatCustomCommand"/);
+ assert.match(html,/name="chatBodyFormatting"/);
+ assert.match(html,/f chat privado/);
+ assert.ok(html.includes('name="access"'));
  assert.ok(!html.includes('name="password"'));
  assert.ok(!html.includes('name="port"'));
- assert.ok(html.includes('name="access"'));
- assert.ok(html.includes("SALVAR CÓDIGO E CONFIGURAÇÕES"));
- assert.ok(html.includes("TESTAR NEXUS CLIENT"));
- assert.ok(html.includes("Nenhuma senha RCON é necessária"));
- assert.ok(pair.includes('data-nexus-client="settings"'));
- assert.ok(pair.includes("GERAR CÓDIGO DE PAREAMENTO"));
- assert.ok(pair.includes("TESTAR API E MOSTRAR DETALHES"));
- assert.ok(pair.includes("CONSOLE 4.0"));
- assert.ok(pair.includes("DIAGNÓSTICO DA API"));
- assert.ok(pair.includes("NEXUS 4.0 · PROTOCOLOS NO JOGO"));
- assert.ok(pair.includes('data-v4-copy="/nexusclient situacao"'));
- assert.ok(pair.includes('data-v4-copy="/nexusclient cognition menu"'));
- assert.ok(pair.includes('data-v4-copy="/nexusclient journal menu"'));
- assert.ok(pair.includes('data-v4-copy="/nexusclient cognition insights status"'));
+ assert.ok(!html.includes("SENSITIVE_TEST_SECRET_NOT_FOR_HTML"));
+ const client=views.cliente();
+ assert.ok(client.includes("GERAR CÓDIGO DE PAREAMENTO"));
+ assert.ok(client.includes("DIAGNÓSTICO DA API"));
+ for(const command of [
+   "/nexusclient situacao","/nexusclient awakening status",
+   "/nexusclient awakening journal recent","/nexusclient macro status"
+ ])assert.ok(client.includes('data-v4-copy="'+command+'"'));
 });
-test("RCON fields remain available only in RCON mode",()=>{
- const html=boot("public").config();
- assert.ok(html.includes('name="password"'));
- assert.ok(html.includes('name="port"'));
- assert.equal((html.match(/value="client"/g)||[]).length,1);
+test("Custom chat settings sync to mod and voice follows browser configuration",()=>{
+ const c=source("client.js"),v=source("voice.js"),app=source("app.js");
+ assert.match(c,/rp\.syncChatRouting=async/);
+ assert.ok(c.includes('queue("/chat/settings"'));
+ assert.match(app,/rp\.syncChatRouting\(\)/);
+ assert.match(v,/channel,command:config\.chatCustomCommand/);
+ assert.match(v,/bodyFormat:config\.chatBodyFormatting/);
+ assert.match(app,/selectedMode==null\?c\.connectionMode/);
+ assert.ok(!app.includes('c.connectionMode=["agent","client"].includes(d.get("connectionMode"))'));
 });
-test("app defaults new users to client-only mode and enters client when selected",()=>{
- const s=pageScript("app.js");
- assert.ok(s.includes('config:{connectionMode:"client"'));
- assert.ok(s.includes('if(next==="cliente"){state.config.connectionMode="client"'));
- assert.ok(s.includes('if(state.config.connectionMode==="public"&&!state.config.host)'));
-});
-
-test("remembered key is recognized without injecting it into HTML",()=>{
- const empty=boot("client").config();
- const remembered=boot("client",true).config();
- assert.ok(empty.includes('name="rememberAccess"'));
- assert.ok(!empty.includes('name="rememberAccess" checked'));
- assert.ok(remembered.includes('name="rememberAccess" checked'));
- assert.ok(remembered.includes("Chave lembrada neste navegador"));
- assert.ok(remembered.includes("ESQUECER CHAVE SALVA"));
- assert.ok(!remembered.includes("SENSITIVE_TEST_SECRET_NOT_FOR_HTML"));
- const js=pageScript("app.js");
- assert.ok(js.includes("ACCESS_REMEMBER_KEY"));
- assert.ok(js.includes("localStorage.setItem(ACCESS_REMEMBER_KEY,secrets.access)"));
- assert.ok(js.includes("localStorage.removeItem(ACCESS_REMEMBER_KEY)"));
-});
-
-test("compact navigation keeps core pages visible and advanced pages accessible",()=>{
- const index=pageScript("index.html");
- const mainNav=index.match(/<nav id="nav">([\s\S]*?)<details id="advancedNav"/);
- assert.ok(mainNav,"Navigation needs a collapsible advanced group");
- for(const page of ["painel","voz","chat","cliente","config"])
-   assert.ok(mainNav[1].includes('data-page="'+page+'"'),"Core navigation missing "+page);
- for(const page of ["armadura","rituais","alertas","mente","afinidade"])
-   assert.ok(index.includes('data-page="'+page+'"'),"Advanced tool lost "+page);
- assert.ok(!index.includes('data-page="audicao"'),"Retired paid hearing must not be navigable");
- assert.ok(!index.includes('src="/hearing.js'),"Retired paid hearing script must not load");
- assert.ok(!index.includes('data-page="arcano"'),"Removed magic scanner cannot appear in navigation");
- assert.ok(!index.includes('src="/arcane.js'),"Removed scanner script cannot load");
- assert.ok(index.includes('href="#voz"'),"Voice must be directly accessible from mobile topbar");
- assert.ok(/app\.js\?v=\d+\.\d+(?:\.\d+)?/.test(index),"Cache busting prevents stale pages after deployment");
- assert.ok(pageScript("app.js").includes("advancedItems.appendChild(item)"));
- assert.ok(pageScript("client.js").includes('!nav.querySelector(\'[data-page="cliente"]\')'));
-});
-
-
-test("Protocolo TS, Sequenciador e Emotes desaparecem de todas as páginas",()=>{
- const index=pageScript("index.html");
- const app=pageScript("app.js");
- const upgrade=pageScript("upgrade.js");
- const evolution=pageScript("evolution.js");
- const client=pageScript("client.js");
- const views=boot("client");
- for(const retired of ["ts","sequencias","emotes"]){
-   assert.equal(Object.hasOwn(views,retired),false,"A página "+retired+" não pode existir");
-   assert.ok(!app.includes(retired+':"'),"A rota "+retired+" não pode existir");
-   assert.ok(!index.includes('data-page="'+retired+'"'),"Menu antigo "+retired);
+test("Retired website pages and legacy links cannot be opened",()=>{
+ const {views}=boot();
+ const html=source("index.html"),app=source("app.js"),palette=source("v4-shell.js");
+ for(const page of ["armadura","rituais","ao_vivo","emergencia"]){
+   assert.ok(!html.includes('data-page="'+page+'"'));
+   assert.ok(!app.includes(page+':"'));
+   assert.equal(Object.hasOwn(views,page),false);
+   assert.ok(!palette.includes('route:"'+page+'"'));
  }
- const screens=[views.painel(),views.config(),views.ao_vivo(),views.armadura(),views.cliente()];
- for(const html of screens){
-   assert.doesNotMatch(html,/Protocolo TS|SEQUENCIADOR|EDITAR EMOTES|ABRIR SEQUENCIADOR|Emotes reais/i);
-   assert.doesNotMatch(html,/data-(?:evo|rp)="(?:open-sequences|open-emotes|ts-open)"/);
- }
- assert.doesNotMatch(upgrade,/ts-open|ts-choice|ts-reveal|ts-reset|\btsEvents\b/);
- assert.doesNotMatch(evolution,/rpEmotesForm|rpNewSequence|rpNewStep|triggerEmote|seq-run/);
- assert.doesNotMatch(client,/Emotes reais/);
- assert.ok(views.emergencia(),"O protocolo de emergência deve continuar funcionando");
- assert.ok(views.rituais(),"Rituais devem continuar funcionando");
- assert.ok(views.eventos(),"O painel de eventos deve continuar funcionando");
+ assert.ok(!html.includes('src="/upgrade.js'));
+ for(const page of ["painel","voz","chat","cliente","config","alertas","mente","afinidade"])
+   assert.ok(html.includes('data-page="'+page+'"'));
+ assert.ok(views.eventos().includes("Eventos do Jogo"));
 });
-
-test("Afinidades navigation opens a real page with fields, without losing old records",()=>{
- const index=pageScript("index.html"),app=pageScript("app.js");
- assert.ok(index.includes('data-page="afinidade"'),"Affinity button is visible");
- assert.ok(index.includes('src="/affinity.js?v='),"Affinity module is loaded");
- assert.ok(app.includes('afinidade:"AFINIDADES"'),"Router recognizes affinity route");
- assert.ok(app.includes("NexusRPAffinityUpgrade(rp,views)"),"Page module is registered");
- const views=boot("client");
- assert.equal(typeof views.afinidade,"function","No blank fallback page");
+test("Affinity browser remains available and keeps all desired fields",()=>{
+ const {views}=boot();
  const html=views.afinidade();
- for(const field of ['name="player"','name="nickname"','name="kinship"',
-   'name="race"','name="score"'])
-   assert.ok(html.includes(field),"Missing affinity field "+field);
- assert.ok(html.includes("FICHAS REGISTRADAS"));
+ for(const name of ["player","nickname","kinship","race","score"])
+   assert.ok(html.includes('name="'+name+'"'));
+ assert.ok(source("index.html").includes('src="/affinity.js?v='));
+});
+test("Remembered HTTPS key does not appear in HTML",()=>{
+ const plain=boot().views.config();
+ const saved=boot("client",true).views.config();
+ assert.ok(!plain.includes("SENSITIVE_TEST_SECRET_NOT_FOR_HTML"));
+ assert.ok(!saved.includes("SENSITIVE_TEST_SECRET_NOT_FOR_HTML"));
+ assert.ok(saved.includes("ESQUECER CHAVE SALVA"));
 });

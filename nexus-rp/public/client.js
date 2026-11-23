@@ -134,13 +134,6 @@ window.NexusRPClientUpgrade=function(rp,views){
      '</code>. O servidor identifica sua conta como origem técnica do envio.</div>';
    return info+html;
  };
- const oldLive=views.ao_vivo;
- if(oldLive)views.ao_vivo=function(){
-   const html=oldLive();
-   if(S.config.connectionMode!=="client")return html;
-   const label=S.config.chatChannel==="global"?"GLOBAL":S.config.chatChannel==="custom"?"/"+String(S.config.chatCustomCommand||"rp"):"/l "+String(S.config.chatFormatting??"&6&l");
-   return '<div class="notice">Chat do Nexus Client: <strong>'+E(label)+'</strong> · identidade <strong>[Nexus Aterna]</strong> aplicada automaticamente. Envie apenas o texto.</div>'+html;
- };
  views.cliente=function(){
    const on=lastStatus?.online,player=lastStatus?.player||"Não identificado";
    return '<div class="eyebrow">NEOFORGE 1.21.1 · CLIENT SIDE · CONSOLE 4.0</div><h1 class="heading">Nexus Aterna Client</h1>'+

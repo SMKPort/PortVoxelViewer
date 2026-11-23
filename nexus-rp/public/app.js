@@ -9,7 +9,7 @@ const PRESETS=[
 {id:"renovar",name:"Renovação do Núcleo",school:"Híbrida",cost:32,description:"O núcleo é recalibrado e a energia se redistribui entre as placas."},
 {id:"custom",name:"Personalizado",school:"Personalizado",cost:20,description:"O Port executa uma sequência de símbolos e componentes escolhidos."}
 ];
-const PAGES={painel:"NÚCLEO",chat:"COMUNICADOR",armadura:"ARMADURA ARCANA",rituais:"RITUAIS",ao_vivo:"RP AO VIVO",eventos:"EVENTOS DO JOGO",emergencia:"EMERGÊNCIA",cliente:"NEXUS CLIENT",voz:"VOZ DO NEXUS",alertas:"ALERTAS DO NEXUS",mente:"NEXUS MIND 2.0",afinidade:"AFINIDADES",config:"CONFIGURAÇÕES"};
+const PAGES={painel:"NÚCLEO",chat:"COMUNICADOR",eventos:"EVENTOS DO JOGO",cliente:"NEXUS CLIENT",voz:"VOZ DO NEXUS",alertas:"ALERTAS DO NEXUS",mente:"NEXUS MIND 2.0",afinidade:"AFINIDADES",config:"CONFIGURAÇÕES"};
 const DEFAULT=()=>({
 integrity:100,energy:85,armor:"integrada",form:"Celestial",selectedRitual:"bencao",
 logs:[{id:"origin",at:new Date().toISOString(),kind:"SISTEMA",text:"Nexus Aterna RP inicializado. Aguardando instruções do Port."}],
@@ -92,7 +92,9 @@ function navigate(next){if(!PAGES[next])return;page=next;if(next==="cliente"){st
 function readConfig(){
 const form=$("#configForm");if(!form)return;
 const d=new FormData(form),c=state.config;
-c.connectionMode=["agent","client"].includes(d.get("connectionMode"))?String(d.get("connectionMode")):"public";
+const selectedMode=d.get("connectionMode");
+c.connectionMode=selectedMode==null?c.connectionMode:
+  (["agent","client"].includes(selectedMode)?String(selectedMode):"public");
 if(d.has("chatChannel")){
  c.chatChannel=["global","local","custom"].includes(d.get("chatChannel"))?String(d.get("chatChannel")):"local";
  c.chatCustomCommand=String(d.get("chatCustomCommand")||"").trim().replace(/^\//,"").toLowerCase().slice(0,64);
@@ -188,7 +190,11 @@ finally{clearTimeout(timer);}
 }
 async function testConnection(){
 if(busy)return;try{readConfig();}catch(e){return toast(e.message);}busy=true;toast(state.config.connectionMode==="client"?"Verificando se o mod está pareado...":"Verificando acesso ao servidor...");
-try{const out=await api("test");connected=true;log("Conexão Minecraft confirmada: "+String(out.response||"").slice(0,150),"MINECRAFT");toast("Minecraft conectado com sucesso!");}
+try{const out=await api("test");connected=true;
+if(state.config.connectionMode==="client"&&rp.syncChatRouting){
+  try{await rp.syncChatRouting();}catch(e){toast("Falha ao sincronizar o canal: "+e.message);}
+}
+log("Conexão Minecraft confirmada: "+String(out.response||"").slice(0,150),"MINECRAFT");toast("Minecraft conectado com sucesso!");}
 catch(e){connected=false;log("Falha de conexão: "+e.message,"CONEXÃO");toast(e.message);}
 finally{busy=false;render();}
 }
@@ -279,6 +285,14 @@ $("#content").addEventListener("submit",async e=>{
 e.preventDefault();const f=e.target;try{
 if(f.id==="configForm"){
   readConfig();connected=false;
+  if(state.config.connectionMode==="client"&&secrets.access&&rp.syncChatRouting){
+    try{
+      await rp.syncChatRouting();
+      toast("Canal personalizado e avisos automáticos sincronizados com o mod.");
+    }catch(error){
+      toast("Preferências salvas no navegador. O mod ainda não confirmou o canal: "+error.message);
+    }
+  }
   toast(state.config.connectionMode==="client"
     ?(rememberedAccess?"Chave HTTPS salva neste dispositivo. Abra Nexus Client para parear.":"Chave HTTPS disponível nesta aba. Abra Nexus Client para parear.")
     :"Configurações salvas. Execute o teste de conexão.");
@@ -295,7 +309,7 @@ try{await messageToMinecraft(msg);toast("Envio solicitado ao servidor. Confirme 
 catch(err){addChat(msg,"failed");toast(err.message);}
 finally{busy=false;render();}
 }
-if(f.id==="ritualForm")await performRitual(f);
+
 }catch(err){toast(err.message||String(err));}
 });
 $("#content").addEventListener("click",async e=>{
@@ -317,8 +331,8 @@ if(action==="chat-local"){
 const txt=$("#chatMessage")?.value?.trim();if(!txt)return toast("Digite uma mensagem.");
 addChat(txt,"local");log("Anotação local: "+txt,"COMUNICADOR");render();return toast("Mensagem registrada apenas no painel.");
 }
-if(action.startsWith("armor-")){if(busy)return;busy=true;try{await armorAction(action.slice(6));}catch(e){toast(e.message);}finally{busy=false;}return;}
-if(action==="ritual-preset"){state.selectedRitual=el.dataset.id;save();render();return;}
+
+
 if(action==="export"){
 const blob=new Blob([JSON.stringify({format:"nexus-rp-v1",exportedAt:new Date().toISOString(),data:state},null,2)],{type:"application/json"});
 const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="nexus-aterna-rp-registros.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1200);return toast("Backup JSON exportado.");

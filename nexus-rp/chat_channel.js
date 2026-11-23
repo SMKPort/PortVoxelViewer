@@ -22,12 +22,12 @@ const BLOCKED_ROOTS=new Set([
 ]);
 const CHANNELS=new Set(["local","global","custom"]);
 const FORMAT=/^(?:&[0-9a-fk-or]){0,8}$/;
-const PREFIX=/^[a-z0-9_.:-]+(?: [a-z0-9_.:-]+){0,2}$/;
+const PREFIX=/^[a-z0-9_.:-]+(?: [a-z0-9_.:-]+){0,5}$/;
 
 function validateCustomCommand(value){
   if(typeof value!=="string")throw Error("Informe o comando personalizado.");
   // One optional leading slash; no placeholders, quotes, selectors, pipes or
-  // separators. Extra fixed subcommands are allowed for server custom routes.
+  // separators. Up to five fixed chat subcommands are allowed for server custom routes.
   let candidate=value.trim().toLowerCase();
   if(candidate.startsWith("/"))candidate=candidate.slice(1);
   if(!candidate||candidate.length>64||!PREFIX.test(candidate))

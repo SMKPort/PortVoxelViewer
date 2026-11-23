@@ -65,6 +65,8 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
   }
   const ALERT_KINDS=new Set(["heavy","streak","structure","risk","recovery","critical","mind"]);
   const ALERT_FLAGS=["heavy","streak","structure","risk","recovery","critical"];
+  const ALERT_ROUTES=["heavy","streak","structure","risk","recovery","critical","mind","arcane"];
+  const ALERT_DESTINATIONS=new Set(["off","hud","chat","both"]);
   function alertSettings(data){
     const settings={};
     for(const kind of ALERT_FLAGS){
@@ -74,6 +76,18 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
     if(!Number.isInteger(data.cooldownSeconds)||data.cooldownSeconds<15||data.cooldownSeconds>180)
       throw Error("O intervalo entre avisos deve estar entre 15 e 180 segundos.");
     settings.cooldownSeconds=data.cooldownSeconds;
+    if(data.routes!==undefined){
+      if(!data.routes||typeof data.routes!=="object"||Array.isArray(data.routes))
+        throw Error("Configuração de destinos inválida.");
+      const routes={};
+      for(const kind of ALERT_ROUTES){
+        const destination=data.routes[kind];
+        if(typeof destination!=="string"||!ALERT_DESTINATIONS.has(destination))
+          throw Error("Destino inválido para "+kind+".");
+        routes[kind]=destination;
+      }
+      settings.routes=routes;
+    }
     return settings;
   }
   function alertHistory(data){
@@ -130,7 +144,7 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
       return true;
     }
     cleanup();
-    if(["/api/client/pair/new","/api/client/pair/exchange","/api/client/chat","/api/client/voice","/api/client/action","/api/client/monitor/settings","/api/client/alerts/settings","/api/client/hearing/settings","/api/client/hearing/fact","/api/client/mind/settings","/api/client/arcane/settings"].includes(route)&&!limit(req))return err(res,429,"Limite de requisições. Reduza a frequência.");
+    if(["/api/client/pair/new","/api/client/pair/exchange","/api/client/chat","/api/client/chat/settings","/api/client/voice","/api/client/action","/api/client/monitor/settings","/api/client/alerts/settings","/api/client/hearing/settings","/api/client/hearing/fact","/api/client/mind/settings","/api/client/arcane/settings"].includes(route)&&!limit(req))return err(res,429,"Limite de requisições. Reduza a frequência.");
     const userPaths=new Set(["/api/client/pair/new","/api/client/status","/api/client/events","/api/client/chat","/api/client/voice","/api/client/ai/status","/api/client/action","/api/client/job","/api/client/monitor/settings","/api/client/alerts","/api/client/alerts/settings","/api/client/hearing","/api/client/hearing/settings","/api/client/hearing/fact","/api/client/mind/settings","/api/client/arcane","/api/client/arcane/settings"]);
     const clientPaths=new Set(["/api/client/pair/exchange","/api/client/poll","/api/client/telemetry","/api/client/mind","/api/client/ack","/api/client/monitor/state","/api/client/alerts/state","/api/client/hearing/transcribe","/api/client/hearing/state","/api/client/hearing/reply","/api/client/tts","/api/client/arcane/state","/api/client/private/reply","/api/client/vision/analyze"]);
     if(!userPaths.has(route)&&!clientPaths.has(route))return err(res,404,"Rota desconhecida.");
@@ -175,6 +189,16 @@ function createClientRelay({send,verifyUser,limit,askAI=askGemini,getAIStatus=ai
       const j=jobs.get(String(url.searchParams.get("id")||""));
       if(!j)return err(res,404,"Comando desconhecido.");
       send(res,200,{ok:true,done:j.done,success:j.success,error:j.error,output:j.output,id:j.id});return true;
+    }
+    if(route==="/api/client/chat/settings"&&req.method==="POST"){
+      try{
+        const data=await body(req,2200),destination=chatRoute(data);
+        if(typeof data.announce!=="boolean")
+          return err(res,422,"Escolha se o Nexus pode anunciar no chat.");
+        send(res,200,enqueue("chat_settings",{
+          ...destination,announce:data.announce
+        }));return true;
+      }catch(e){return err(res,422,String(e.message));}
     }
     if(route==="/api/client/chat"&&req.method==="POST"){
       try{
