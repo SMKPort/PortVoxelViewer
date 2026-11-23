@@ -30,7 +30,7 @@ window.NexusRPAlertsUpgrade=function(rp,views){
     if(error)return "ERRO DE SINCRONIZAÇÃO: "+error;
     if(!remote)return "CONECTANDO AO NEXUS CLIENT...";
     if(!remote.online)return "MINECRAFT DESCONECTADO. As opções permanecem salvas no mod.";
-    if(!remote.settings)return "MINECRAFT CONECTADO. Aguardando preferências do Nexus Client 1.6.0...";
+    if(!remote.settings)return "MINECRAFT CONECTADO. Aguardando preferências do Nexus Client atualizado...";
     return "MINECRAFT CONECTADO · preferências e histórico sincronizados";
   }
   function historyHTML(){

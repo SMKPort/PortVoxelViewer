@@ -72,7 +72,7 @@ window.NexusRPMind2Upgrade=function(rp,views){
   function summary(){
     if(error)return "Erro de conexão: "+error;
     if(!state?.online)return "Minecraft não conectado. Abra o jogo e confira o pareamento.";
-    if(!state?.state)return "Aguardando Nexus Client 2.0.0 sincronizar o estado.";
+    if(!state?.state)return "Aguardando Nexus Client 4.0 sincronizar o estado.";
     return "Nexus Mind 2.0 conectado · última sincronização "+rp.date(state.syncedAt);
   }
   views.mente=()=>'<div class="eyebrow">NEXUS ATERNA / AUTONOMIA NARRATIVA</div>'+
