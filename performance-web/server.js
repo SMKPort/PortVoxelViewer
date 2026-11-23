@@ -30,7 +30,22 @@ function validBooster(payload){
                    "originalEntityScale","appliedEntityScale","low1SampledFps"]){
    if(!Number.isFinite(b[key])||Math.abs(b[key])>10000)return null;
  }
+ const extra={};
+ for(const k of ["realLow1Fps","frameP95Ms","frameP99Ms","stutterPercent","measuredAvgFps",
+                  "renderDistance","originalRenderDistance"]){
+   if(b[k]!==undefined){
+     if(!Number.isFinite(b[k])||Math.abs(b[k])>10000)return null;
+     extra[k]=b[k];
+   }
+ }
+ for(const k of ["changedRenderDistance","allowChunkScaling","allowEntityScaling"]){
+   if(b[k]!==undefined){
+     if(typeof b[k]!=="boolean")return null;
+     extra[k]=b[k];
+   }
+ }
  return {
+   ...extra,
    mode:b.mode,phase:b.phase,targetFps:b.targetFps,
    webControlEnabled:b.webControlEnabled,changedOption:b.changedOption,
    baselineAvgFps:b.baselineAvgFps,trialAvgFps:b.trialAvgFps,
@@ -67,7 +82,7 @@ function staticFile(req,res,pathname){
 }
 const server=http.createServer(async(req,res)=>{
  let route;try{route=new URL(req.url,"http://localhost").pathname}catch(e){return respondError(res,400,"URL inválida");}
- if(route==="/api/health"&&req.method==="GET")return json(res,200,{ok:true,status:"online",app:"Port Performance Monitor",version:"2.0.0",streaming:"opt-in",storage:"memory"});
+ if(route==="/api/health"&&req.method==="GET")return json(res,200,{ok:true,status:"online",app:"Port Performance Monitor",version:"3.0.0",streaming:"opt-in",storage:"memory"});
  if(route==="/api/metrics"&&req.method==="POST"){
    const key=auth(req,res);if(!key)return;
    try{

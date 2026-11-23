@@ -31,11 +31,13 @@
      metricText("fps",v.fps);
      metricText("ping",v.ping>=0?v.ping:null);
      metricText("memory",v.memoryUsedMb);
-     metricText("frametime",v.fps>0?1000/v.fps:null,1);
+     const frameP95=v.booster?.frameP95Ms>0?v.booster.frameP95Ms:null;
+     metricText("frametime",frameP95??(v.fps>0?1000/v.fps:null),1);
      fillMeter("fpsBar",v.fps/144);
      fillMeter("pingBar",v.ping<0?0:1-v.ping/300);
      fillMeter("memoryBar",v.memoryUsedMb/Math.max(1,v.memoryMaxMb));
-     fillMeter("frameBar",v.fps<=0?0:1-Math.min(1,(1000/v.fps)/40));
+     fillMeter("frameBar",frameP95!==null?1-Math.min(1,frameP95/40):
+       v.fps<=0?0:1-Math.min(1,(1000/v.fps)/40));
      $("fpsNote").textContent=v.fps>=120?"Excelente fluidez":v.fps>=60?"Boa fluidez":v.fps>=30?"Desempenho moderado":"FPS baixo";
      $("pingNote").textContent=v.ping<0?"Indisponível neste mundo":v.ping<80?"Conexão estável":v.ping<180?"Latência moderada":"Latência elevada";
      $("memoryNote").textContent=v.memoryUsedMb+" / "+v.memoryMaxMb+" MB máximos da JVM";
@@ -61,17 +63,20 @@
    boosterCanControl=!!token&&online&&booster?.webControlEnabled===true;
    for(const button of document.querySelectorAll("[data-boost]"))button.disabled=!boosterCanControl;
    $("boostMode").textContent="MODO: "+(booster?.mode||"--").toUpperCase();
-   $("boostPhase").textContent=phases[booster?.phase]||"Aguardando mod v2.0";
+   $("boostPhase").textContent=phases[booster?.phase]||"Aguardando mod";
    $("baselineFps").textContent=booster?.baselineAvgFps>0?booster.baselineAvgFps.toFixed(1):"--";
    $("trialFps").textContent=booster?.trialAvgFps>0?booster.trialAvgFps.toFixed(1):"--";
    $("boosterDiff").textContent=booster?.trialAvgFps>0?(booster.differencePct>0?"+":"")+booster.differencePct.toFixed(1)+"%":"--";
-   $("lowOne").textContent=booster?.low1SampledFps>0?booster.low1SampledFps.toFixed(1):"--";
+   const realLow=booster?.realLow1Fps??booster?.low1SampledFps;
+   $("lowOne").textContent=realLow>0?Number(realLow).toFixed(1):"--";
    $("boostTarget").textContent=(booster?.targetFps??"--")+" FPS";
-   $("boostScaling").textContent=booster?.changedOption?
-     Math.round(booster.appliedEntityScale*100)+"% (entidades)":"Nenhum";
+   $("boostScaling").textContent=booster?.changedRenderDistance?
+     booster.renderDistance+" chunks (original "+booster.originalRenderDistance+")":
+     booster?.changedOption&&booster.appliedEntityScale>0?
+       Math.round(booster.appliedEntityScale*100)+"% (entidades)":"Nenhum";
    $("boostAccess").textContent=!booster?"Mod antigo / indisponível":
       !booster.webControlEnabled?"Bloqueado pelo jogo":"Autorizado nesta sessão";
-   $("boostAction").textContent=booster?.lastAction||"Instale o mod Port Performance + Booster v2.0 para habilitar esta seção.";
+   $("boostAction").textContent=booster?.lastAction||"Instale o Port Performance + Booster v3.0 para habilitar esta seção.";
    const target=$("boostTargetInput");
    if(booster&&document.activeElement!==target&&
       [...target.options].some(x=>Number(x.value)===booster.targetFps))

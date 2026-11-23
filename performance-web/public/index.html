@@ -33,7 +33,7 @@
     <article class="metric"><div class="metric-top"><span>01 / FRAMES</span><span class="metric-icon">◈</span></div><div class="value"><strong id="fps">--</strong><small>FPS</small></div><div class="meter"><span id="fpsBar"></span></div><p id="fpsNote">Aguardando o Minecraft</p></article>
     <article class="metric"><div class="metric-top"><span>02 / REDE</span><span class="metric-icon">⌁</span></div><div class="value"><strong id="ping">--</strong><small>MS</small></div><div class="meter"><span id="pingBar"></span></div><p id="pingNote">Latência com o servidor</p></article>
     <article class="metric"><div class="metric-top"><span>03 / MEMÓRIA JAVA</span><span class="metric-icon">▥</span></div><div class="value"><strong id="memory">--</strong><small>MB</small></div><div class="meter"><span id="memoryBar"></span></div><p id="memoryNote">Heap utilizada pela JVM</p></article>
-    <article class="metric"><div class="metric-top"><span>04 / FRAME ESTIMADO</span><span class="metric-icon">⌇</span></div><div class="value"><strong id="frametime">--</strong><small>MS</small></div><div class="meter"><span id="frameBar"></span></div><p>1000 ÷ FPS (não é medida de frametime)</p></article>
+    <article class="metric"><div class="metric-top"><span>04 / FRAME P95</span><span class="metric-icon">⌇</span></div><div class="value"><strong id="frametime">--</strong><small>MS</small></div><div class="meter"><span id="frameBar"></span></div><p>Frametime p95 real no mod 3.0 (estimado em versões anteriores)</p></article>
   </div>
   <div class="charts">
     <article class="panel graphpanel"><div class="heading"><div><small>HISTÓRICO</small><h2>Variação de FPS</h2></div><span class="plot-range">ÚLTIMAS 60 AMOSTRAS</span></div><div class="canvaswrap"><canvas id="fpsChart" aria-label="Gráfico de FPS"></canvas></div><div class="chartfoot"><span id="avgFps">Média: --</span><span id="minFps">Mínimo: --</span><span id="maxFps">Máximo: --</span></div></article>
@@ -42,12 +42,12 @@
 </section>
 <section class="booster panel" aria-label="Integração com Port Client Booster">
  <div class="heading"><div><small>PORT PERFORMANCE + BOOSTER</small><h2>Laboratório de otimização</h2></div><span class="number" id="boostMode">MODO: --</span></div>
- <p class="booster-intro">Teste um ajuste reversível na distância de visualização das entidades. O sistema mede FPS antes e depois, preserva partículas e distância de chunks. Alterações automáticas ficam desligadas por padrão.</p>
+ <p class="booster-intro">Booster adaptativo contínuo: mede frametimes reais e reduz gradualmente a distância de chunks em quedas persistentes, testando e revertendo mudanças sem melhora. Entidades opcionais, partículas de magia preservadas. O booster começa desligado.</p>
  <div class="boost-stats">
   <article><small>BASELINE</small><strong id="baselineFps">--</strong><span>FPS médio antes</span></article>
   <article><small>TESTE</small><strong id="trialFps">--</strong><span>FPS médio durante</span></article>
   <article><small>RESULTADO</small><strong id="boosterDiff">--</strong><span>Variação observada</span></article>
-  <article><small>1% LOW (EST.)</small><strong id="lowOne">--</strong><span>Por amostras FPS de 1 s</span></article>
+  <article><small>1% LOW (FRAMES)</small><strong id="lowOne">--</strong><span>Medido pelos 1% frames mais lentos</span></article>
  </div>
  <div class="booster-layout">
   <div class="booster-data">
@@ -62,27 +62,31 @@
    <select id="boostTargetInput"><option value="30">30 FPS</option><option value="45">45 FPS</option><option value="60" selected>60 FPS</option><option value="75">75 FPS</option><option value="90">90 FPS</option><option value="120">120 FPS</option><option value="144">144 FPS</option><option value="165">165 FPS</option><option value="240">240 FPS</option></select>
    <div class="boost-buttons">
     <button type="button" data-boost="observe" disabled>OBSERVAR</button>
-    <button type="button" data-boost="auto" class="primary" disabled>TESTE AUTOMÁTICO</button>
+    <button type="button" data-boost="auto" class="primary" disabled>ATIVAR BOOSTER</button>
     <button type="button" data-boost="off" disabled>DESATIVAR</button>
     <button type="button" data-boost="reset" disabled>RESTAURAR / ZERAR</button>
    </div>
    <p id="boostNotice" aria-live="polite" class="footnote">Para permitir comandos pelo navegador: <code>/portperf stream on</code> e <code>/portperf webcontrol on</code>.</p>
   </div>
  </div>
- <div class="heading booster-history-title"><div><small>HISTÓRICO LOCAL DA SESSÃO</small><h2>Etapas do experimento</h2></div></div>
+ <div class="heading booster-history-title"><div><small>HISTÓRICO LOCAL DA SESSÃO</small><h2>Histórico dos ajustes</h2></div></div>
  <div id="boostEvents" class="booster-history"><p>Sem eventos de otimização registrados.</p></div>
- <p class="footnote">A comparação é exploratória. Mudanças de cena, chunks e carga de mods podem afetar o resultado. O 1% low é apenas uma estimativa calculada a partir de leituras de FPS por segundo, não um percentil preciso de frametimes.</p>
+ <p class="footnote">FPS médio, p95 e 1% low usam tempos reais entre frames. Alterações são experimentais, sem garantia de ganho. O booster não altera servidor, shaders, partículas ou configurações de outros mods.</p>
 </section>
 <section class="info panel"><div class="heading"><div><small>COMANDOS</small><h2>Controle pelo Minecraft</h2></div><span class="number">02 / MOD</span></div>
 <div class="commands"><div><code>/portperf key</code><span>Exibe a chave privada para ligar mod e site</span></div><div><code>/portperf stream on</code><span>Autoriza a transmissão HTTPS dos indicadores</span></div><div><code>/portperf stream off</code><span>Para a transmissão imediatamente</span></div><div><code>/portperf hud on</code><span>Ativa o HUD de desempenho no jogo</span></div><div><code>/portperf hud off</code><span>Desativa o HUD</span></div><div><code>/portperf status</code><span>Mostra o estado do mod e o endereço HTTPS</span></div><div><code>/portperf resetkey</code><span>Revoga a chave e cria outra</span></div>
 <div><code>/portperf boost observe</code><span>Monitorar FPS sem alterar opções do jogo</span></div>
-<div><code>/portperf boost auto</code><span>Iniciar experimento de otimização reversível (30 s + 30 s)</span></div>
+<div><code>/portperf boost auto</code><span>Ativar ajuste contínuo e reversível de chunks com avaliação por frametimes</span></div>
+<div><code>/portperf boost chunks on/off</code><span>Ativar ou desativar ajuste automático de chunks</span></div>
+<div><code>/portperf boost entities on/off</code><span>Permitir ajuste opcional de entidades (afeta modelos distantes)</span></div>
+<div><code>/portperf hud edit</code><span>Mover e redimensionar o HUD diretamente no jogo</span></div>
+<div><code>/portperf hud scale 125</code><span>Alterar tamanho do HUD em porcentagem (55 a 225%)</span></div>
 <div><code>/portperf boost off</code><span>Cancelar e restaurar ajustes originais</span></div>
 <div><code>/portperf boost target 60</code><span>Definir meta desejada de FPS</span></div>
 <div><code>/portperf webcontrol on</code><span>Autorizar comandos do painel nesta sessão</span></div></div>
-<p class="footnote">Os dados são armazenados temporariamente na memória do servidor do site. Uma reinicialização da hospedagem apaga o histórico. Não há coleta de TPS real, CPU ou GPU nesta versão. O teste de otimização é opt-in e pode afetar a distância visível de entidades. O ping exibido é o reportado pelo cliente Minecraft e pode ficar indisponível em singleplayer.</p>
+<p class="footnote">Os dados são armazenados temporariamente na memória do servidor do site. Não há medição de TPS real, CPU ou GPU. A distância de chunks pode diminuir temporariamente quando o booster é ativado. Efeitos de magia e armaduras não são alterados por padrão. O ping é informado pelo Minecraft.</p>
 </section>
 </main>
-<footer><span>PORT PERFORMANCE + BOOSTER // V2.0</span><span>CLIENT-SIDE MONITORING · PRIVATE BY TOKEN</span></footer>
+<footer><span>PORT PERFORMANCE + BOOSTER // V3.0</span><span>CLIENT-SIDE MONITORING · PRIVATE BY TOKEN</span></footer>
 </div>
 </body></html>

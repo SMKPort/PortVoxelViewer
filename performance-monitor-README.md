@@ -1,91 +1,72 @@
-# Port Performance + Booster 2.0 🎮⚡
+# Port Performance + Booster 3.0 🎮⚡
 
-Projeto totalmente separado do Nexus Aterna: um mod integrado client-side NeoForge 1.21.1, com medição e otimização experimental reversível, além de um site próprio. O código antigo do PortClientBooster não estava acessível no GitHub conectado; por isso o motor booster foi implementado diretamente no Monitor, sem alterar o repositório original.
+Mod **100% client-side** para Minecraft **1.21.1 / NeoForge 21.1.235 ou superior**, integrado ao site de telemetria opcional.
 
-**Site:** https://port-performance-monitor.onrender.com
+Código: https://github.com/SMKPort/PortVoxelViewer/tree/port-performance-monitor/performance-mod
 
-**Código:** https://github.com/SMKPort/PortVoxelViewer/tree/port-performance-monitor/performance-mod
+Site: https://port-performance-monitor.onrender.com
+
+## Novidades da 3.0
+
+- Booster **contínuo e reversível**, com janelas de 5 segundos, detecção de quedas persistentes e cooldown para não ficar oscilando.
+- Ajuste gradual da distância de renderização de chunks, limitado a até 4 chunks abaixo da configuração inicial e respeitando um mínimo configurável (6 por padrão).
+- Mede diferença de FPS e p95 após cada ajuste; desfaz automaticamente a última alteração quando não observa melhoria suficiente.
+- Restaura opções ao desligar, sair do mundo ou reiniciar após interrupção, sem sobrescrever escolhas manuais detectadas.
+- Distância de entidades é **opcional e desligada por padrão**, preservando armaduras customizadas de outros jogadores.
+- Não altera partículas, magias, shaders, renderizadores de terceiros ou configurações do servidor.
+- Medição de tempos reais entre frames para **1% low e frametime p95/p99**, em vez de estimar por FPS amostrado uma vez por segundo.
+- HUD **arrastável e redimensionável**, com tamanho entre 55% e 225%, botões +/-, roda do mouse, canto de redimensionamento, persistência de posição/escala e adaptação à resolução.
 
 ## Instalação
 
-1. Baixe o JAR `portperf-2.1.0.jar` no artefato da compilação do GitHub Actions: https://github.com/SMKPort/PortVoxelViewer/actions/runs/43111169682
-2. Coloque na pasta `mods` de Minecraft Java **1.21.1 com NeoForge 21.1.x**.
-3. Inicie o jogo. O HUD exibirá FPS, ping e memória Java.
-4. Digite `/portperf key`. Uma chave privada será mostrada somente no seu Minecraft.
-5. Cole a chave no site. É possível selecionar a opção de lembrá-la no navegador.
-6. Digite `/portperf stream on` no Minecraft para autorizar a transmissão HTTPS.
-7. Para interromper, use `/portperf stream off`. Por segurança, o streaming não é reativado automaticamente após reiniciar o jogo.
+Abra [GitHub Actions](https://github.com/SMKPort/PortVoxelViewer/actions/workflows/port-performance-build.yml), selecione um build bem-sucedido da branch `port-performance-monitor` e baixe o artefato `Port-Performance-Monitor-1.21.1-NeoForge`. Coloque o JAR `portperf-3.0.0.jar` na pasta mods. Remova o JAR 2.1.0 e evite executar ao mesmo tempo outro PortClientBooster que ajuste as mesmas opções.
 
-## Comandos do mod
+O JAR deve ser **compilado e testado no Somake** antes de considerar os ganhos confirmados.
 
-- `/portperf key`: mostra a chave de pareamento
-- `/portperf stream on`: ativa a transmissão ao site
-- `/portperf stream off`: interrompe a transmissão
-- `/portperf hud on` e `/portperf hud off`: mostram ou ocultam o HUD
-- `/portperf status`: FPS, ping, memória e estado HTTPS
-- `/portperf resetkey`: gera outra chave e desliga o streaming
+## Comandos de desempenho
 
-## Integração Port Client Booster 2.0
+```
+/portperf boost observe
+/portperf boost auto
+/portperf boost off
+/portperf boost reset
+/portperf boost status
+/portperf boost target 60
+/portperf boost chunks on
+/portperf boost chunks off
+/portperf boost entities on
+/portperf boost entities off
+```
 
-O Motor Booster agora está **dentro do JAR Port Performance + Booster**. Não é necessário instalar um segundo mod para usar estas funções. Se a versão antiga do PortClientBooster estiver instalada, desative suas otimizações adaptativas ou remova o JAR antigo para evitar ajustes concorrentes.
+O booster começa desligado. `auto` ativa a otimização contínua. Chunks ficam habilitados no perfil seguro, e entidades somente após optar explicitamente. O ajuste de chunks depende do FPS e pode reduzir a distância visível do cenário; quando a taxa estabiliza, o mod tenta recuperar qualidade aos poucos.
 
-- `/portperf boost observe`: apenas coleta e observa o FPS, sem modificar configurações.
-- `/portperf boost auto`: inicia um experimento opcional. Mede **30 amostras de referência**, testa uma diminuição pequena e **reversível** na distância de visualização de entidades e coleta mais **30 amostras**. Mantém o ajuste apenas se medir pelo menos +4 FPS e +6% na média do teste; em caso contrário, restaura a configuração original.
-- `/portperf boost off`: desativa o motor e restaura a opção original se foi ele que a modificou.
-- `/portperf boost reset`: desfaz alterações e zera o histórico de experimentação local.
-- `/portperf boost target 60`: define a meta de FPS (30 a 240).
-- `/portperf boost status`: mostra o modo atual, a fase e o último resultado.
-- `/portperf webcontrol on`: autoriza temporariamente que o site controle o booster. Também precisa de `/portperf stream on`. O site **não pode ativar essa autorização por conta própria**.
-- `/portperf webcontrol off`: bloqueia alterações vindas do site.
+## HUD editável
 
-**Segurança e reversão:** por padrão o motor não altera configurações. Ao iniciar o Minecraft, o booster volta desligado e a transmissão HTTPS e o controle remoto precisam de nova autorização. Se o jogo sair da sessão e detectar um ajuste anterior, procura restaurar a opção original. Há um registro persistente temporário para recuperação após uma interrupção inesperada. Se o usuário modificar manualmente a mesma opção, o motor não sobrescreve essa escolha durante a reversão.
+```
+/portperf hud edit
+/portperf hud scale 125
+/portperf hud reset
+/portperf hud on
+/portperf hud off
+```
 
-O experimento **não altera distância de renderização de chunks, partículas, gráficos, VSync, memória, arquivos de configuração de outros mods nem configurações do servidor**. Ajusta apenas a distância de visualização de entidades, após autorização explícita. Isso pode reduzir a visibilidade de mobs e jogadores distantes. O ganho de FPS não é garantido e depende do que está visível no mundo.
+No editor, **arraste o quadro** para mover, **arraste o canto inferior direito** para dimensionar ou use `+`, `-` e a roda do mouse. Setas movimentam 1 pixel e Shift + setas movimentam 10. ESC salva. Posição e escala são salvas em `config/port-performance-monitor.properties`.
 
-A comparação **não é um benchmark controlado**: mudanças de cenário, quantidade de entidades e atividade do servidor podem influenciar os resultados. Para comparar corretamente, faça as medições em condições semelhantes. O `1% low estimado` utiliza FPS coletados uma vez por segundo, e **não substitui uma medição de frametimes reais**.
+## Site (opcional)
 
-## Editor do HUD (v2.1.0)
+```
+/portperf key
+/portperf stream on
+/portperf webcontrol on
+/portperf stream off
+/portperf resetkey
+/portperf status
+```
 
-O painel de FPS, ping, memória e Booster agora é **reposicionável por arrastar e soltar**, diretamente dentro do Minecraft. Nenhum mod adicional é necessário.
+O site recebe FPS, ping, memória e estado do booster, incluindo p95 e 1% low medidos. O envio HTTPS e o controle remoto permanecem **desligados após cada inicialização** e exigem autorização local. Guarde a chave em segredo.
 
-1. Entre em um mundo e digite `/portperf hud edit` (ou somente `/portperf hud`).
-2. Clique e segure o quadro do HUD com o mouse; arraste até a posição desejada.
-3. Solte o mouse para salvar. Clique em **Concluir** ou pressione **ESC** para fechar.
+## Limitações e teste recomendado
 
-O editor também aceita as teclas direcionais (um passo por tecla), **Shift + setas** para deslocamentos maiores e os botões **Centralizar** e **Resetar**. O comando `/portperf hud reset` também restaura o canto superior esquerdo, sem precisar abrir o editor.
+Isto não é um profiler completo de CPU ou GPU e não altera o TPS do servidor. Mudanças de cenário podem distorcer a comparação antes/depois. Em locais onde a queda é causada por CPU de simulação, renderizadores de outros mods, rede ou servidor, a redução de chunks pode não resolver o problema e será revertida quando não houver melhora consistente. Compare FPS médio, 1% low e p95 em spawn povoado, combates com muitas magias e bases Create/Mekanism. Confira se o braço/armaduras do Armourer's Workshop e os efeitos do Iron's Spells continuam normais.
 
-A posição é armazenada em `config/port-performance-monitor.properties` pelos campos `hudX` e `hudY`. Ela fica entre 0 e 1 em coordenadas normalizadas, acompanha mudanças na escala de GUI e na resolução, e é limitada para manter o painel visível.
-
-O mod mantém os comandos `/portperf hud on` e `/portperf hud off`. A mudança de posição funciona mesmo quando o HUD está oculto, usando a prévia na tela de edição.
-
-## Métricas
-
-O mod lê FPS do Minecraft, latência (ping da lista de jogadores), e heap usada, alocada e máxima da JVM. O site mostra dados atuais e histórico com gráficos, além da fase e do resultado da otimização.
-
-O tempo de frame mostrado é **1000/FPS**, apenas estimativa matemática. Não corresponde a uma medição real de frametime. A versão integrada mede uma estimativa de 1% low com amostras de FPS a cada segundo, mas não mede CPU, GPU, TPS real do servidor ou o verdadeiro 1% low por frametimes.
-
-## Segurança e privacidade
-
-A chave hexadecimal de 32 caracteres é aleatória e gerada no computador do jogador. **Quem obtiver a chave pode solicitar alterações do booster quando você tiver habilitado o controle remoto no jogo.** O site não requer a chave da Render, login do Nexus ou RCON. O servidor web usa apenas um hash SHA-256 para associar os dados recebidos a quem conhece a chave. **Quem obtiver a chave pode acessar as suas métricas**, então não compartilhe essa informação. Para revogar o acesso, use `/portperf resetkey`.
-
-No Minecraft, o mod a salva em `config/port-performance-monitor.properties`. A chave aparece apenas em mensagens locais do cliente. O website pode lembrá-la no navegador mediante autorização. No servidor Render, o histórico fica em RAM, sem banco de dados, com limite de 720 amostras e expiração após seis horas. Reinícios limpam os históricos.
-
-O streaming e o controle remoto começam desligados e sempre voltam a ficar desligados quando o jogo reinicia. Não envia conversa, posição do personagem, arquivos ou credenciais do Nexus. Não precisa de instalação no servidor Minecraft nem privilégios administrativos.
-
-## Estrutura
-
-- `performance-mod/`: código do mod NeoForge e build Gradle
-- `performance-web/`: site responsivo, API Node.js e testes
-- `.github/workflows/port-performance-build.yml`: build automatizado do JAR e testes de integração
-
-## Compilar
-
-Use Java 21 e Gradle 9.2.1. O comando é:
-
-`gradle -p performance-mod build --no-daemon`
-
-O JAR fica em `performance-mod/build/libs/portperf-2.1.0.jar`.
-
-O site é executado com `node performance-web/server.js`. Foi criado um serviço próprio na Render, com branch `port-performance-monitor` e domínio https://port-performance-monitor.onrender.com. Nenhum serviço do Nexus foi modificado.
-
-A integração precisa de teste final dentro do modpack real para validar compatibilidade com os demais mods.
+Build: Java 21, `gradle -p performance-mod build --no-daemon`. Testes web: `node --test performance-web/tests/*.test.js`.
