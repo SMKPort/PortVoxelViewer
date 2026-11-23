@@ -5,7 +5,7 @@ import net.minecraft.client.gui.GuiGraphics;
 
 /** Position and scale share normalized coordinates, compatible with different GUI resolutions. */
 final class PerformanceHud {
-    static final int WIDTH=225,HEIGHT=102;
+    static final int WIDTH=245,HEIGHT=119;
     private static final int MARGIN_X=7,MARGIN_Y=8;
     private PerformanceHud(){}
 
@@ -63,7 +63,7 @@ final class PerformanceHud {
         g.pose().scale(scale,scale,1);
         g.fill(0,0,WIDTH,HEIGHT,0xD20F0C14);
         g.fill(0,0,WIDTH,2,0xFFE0B568);
-        g.drawString(mc.font,"PORT  /  PERFORMANCE 3.0",9,8,0xFFEAC082,true);
+        g.drawString(mc.font,"PORT  /  PERFORMANCE 4.0",9,8,0xFFEAC082,true);
         g.drawString(mc.font,"FPS: "+PerformanceStats.fps(),9,26,0xFFFAF7F1,true);
         g.drawString(mc.font,"PING: "+(PerformanceStats.ping()<0?"N/D":PerformanceStats.ping()+" ms"),103,26,0xFFFAF7F1,true);
         g.drawString(mc.font,"RAM: "+PerformanceStats.used()+" / "+PerformanceStats.max()+" MB",9,41,0xFFC6B5C1,true);
@@ -73,8 +73,15 @@ final class PerformanceHud {
         String m=BoosterEngine.status().split(" \\| ",2)[0].replace("Modo ","");
         g.drawString(mc.font,"BOOST: "+m.toUpperCase(java.util.Locale.ROOT)+
             "  |  CHUNKS: "+BoosterEngine.currentChunks(),9,70,0xFFE5B571,true);
+        double clientCpu=HardwareMonitor.clientCpuPercent();
+        double processCpu=HardwareMonitor.processCpuPercent();
+        g.drawString(mc.font,"CPU CLIENTE: "+(clientCpu<0?"N/D":Math.round(clientCpu)+"%")+
+            " | CPU JVM: "+(processCpu<0?"N/D":Math.round(processCpu)+"%"),9,84,0xFFB0C8F2,true);
+        g.drawString(mc.font,"PERFIL: "+PerformanceConfig.boosterProfile.toUpperCase(java.util.Locale.ROOT)+
+            " | RAM LIVRE: "+(HardwareMonitor.freeSystemMb()<0?"N/D":HardwareMonitor.freeSystemMb()+" MB"),
+            9,97,0xFFDFCEBD,true);
         g.drawString(mc.font,PerformanceConfig.streamEnabled?"WEB: TRANSMITINDO":"WEB: OFF",
-            9,84,PerformanceConfig.streamEnabled?0xFF8BDDAF:0xFFBCA3A8,true);
+            9,109,PerformanceConfig.streamEnabled?0xFF8BDDAF:0xFFBCA3A8,true);
         g.pose().popPose();
 
         if(editMode){

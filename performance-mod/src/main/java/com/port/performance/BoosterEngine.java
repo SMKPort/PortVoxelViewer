@@ -20,6 +20,7 @@ final class BoosterEngine {
     private static int originalChunks = -1, appliedChunks = -1, trialPreviousChunks = -1;
     private static double originalEntities = -1, appliedEntities = -1, trialPreviousEntities = -1;
     private static String trialType = "";
+    private static int trialWarmupWindows;
     private static double baselineAvg, trialAvg, baselineP95, differencePct;
     private static boolean checkedCrashRestore = false;
     private BoosterEngine() {}
@@ -33,6 +34,7 @@ final class BoosterEngine {
     static void tick() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.options == null) return;
+        HardwareMonitor.sample();
         recoverPreviousSession(mc);
         if (mc.player == null || mc.level == null) {
             if (!"off".equals(mode)) disable();
@@ -62,6 +64,12 @@ final class BoosterEngine {
         }
         checkManualChanges(mc);
         if (!trialType.isEmpty()) {
+            if (trialWarmupWindows > 0) {
+                trialWarmupWindows--;
+                phase = "trial";
+                lastAction = "Estabilizando a cena após o ajuste; amostra inicial descartada.";
+                return;
+            }
             finishTrial(mc, sample, now);
             return;
         }
@@ -94,6 +102,13 @@ final class BoosterEngine {
     }
 
     private static boolean reduceOneStep(Minecraft mc, FrameTimeMonitor.Snapshot before, long now) {
+        // A saturated main client thread may benefit from less biome color blending.
+        // This is only a heuristic, not a claim of GPU/CPU bottleneck diagnosis.
+        if (HardwareMonitor.clientCpuPercent() > 75 &&
+            IntegratedGraphicsTuner.tryBlend(mc)) {
+            beginTrial("blend", before, now, "Blend de biomas reduzido em 1 nível.");
+            return true;
+        }
         if (PerformanceConfig.boosterAdjustChunks) {
             int current = mc.options.renderDistance().get();
             int base = originalChunks > 0 ? originalChunks : current;
@@ -108,6 +123,15 @@ final class BoosterEngine {
                 beginTrial("chunks", before, now, "Ajuste de chunks: " + current + " para " + appliedChunks + ".");
                 return true;
             }
+        }
+        if (IntegratedGraphicsTuner.tryBlend(mc)) {
+            beginTrial("blend", before, now, "Blend de biomas reduzido em 1 nível.");
+            return true;
+        }
+        // Clouds are opt-in: disabling them changes the RP sky.
+        if (IntegratedGraphicsTuner.tryClouds(mc)) {
+            beginTrial("clouds", before, now, "Qualidade das nuvens reduzida de forma opcional.");
+            return true;
         }
         // Optional only: distant custom armour and player models remain visible by default.
         if (PerformanceConfig.boosterAdjustEntities) {
@@ -131,6 +155,7 @@ final class BoosterEngine {
 
     private static void beginTrial(String type, FrameTimeMonitor.Snapshot before, long now, String action) {
         trialType = type;
+        trialWarmupWindows = 1;
         baselineAvg = before.averageFps();
         baselineP95 = before.p95Ms();
         trialAvg = 0;
@@ -180,10 +205,13 @@ final class BoosterEngine {
                 PerformanceConfig.clearPendingRestore();
             } else PerformanceConfig.notePendingRestore(originalEntities, appliedEntities);
             mc.options.save();
+        } else if ("blend".equals(trialType) || "clouds".equals(trialType)) {
+            IntegratedGraphicsTuner.undoLast(mc, trialType);
         }
     }
 
     private static void restoreOneStep(Minecraft mc) {
+        if (IntegratedGraphicsTuner.restoreOne(mc)) return;
         if (appliedEntities > 0 && originalEntities > 0) {
             if (Math.abs(mc.options.entityDistanceScaling().get() - appliedEntities) < 0.001) {
                 double value = Math.min(originalEntities, appliedEntities + 0.05);
@@ -211,6 +239,10 @@ final class BoosterEngine {
     }
 
     private static void checkManualChanges(Minecraft mc) {
+        IntegratedGraphicsTuner.checkManual(mc);
+        if ("blend".equals(trialType) && IntegratedGraphicsTuner.blend() < 0) trialType = "";
+        if ("clouds".equals(trialType) &&
+            "none".equals(IntegratedGraphicsTuner.cloudChange())) trialType = "";
         if (appliedChunks > 0 && mc.options.renderDistance().get() != appliedChunks) {
             originalChunks = -1;
             appliedChunks = -1;
@@ -227,12 +259,13 @@ final class BoosterEngine {
     }
 
     private static boolean hasChanges() {
-        return appliedChunks > 0 || appliedEntities > 0;
+        return appliedChunks > 0 || appliedEntities > 0 || IntegratedGraphicsTuner.hasChanges();
     }
 
     private static void recoverPreviousSession(Minecraft mc) {
         if (checkedCrashRestore) return;
         checkedCrashRestore = true;
+        IntegratedGraphicsTuner.recover(mc);
         boolean changed = false;
         if (PerformanceConfig.pendingRestoreOriginal > 0) {
             if (Math.abs(mc.options.entityDistanceScaling().get() -
@@ -295,6 +328,23 @@ final class BoosterEngine {
         if ("adaptive".equals(mode)) adaptive();
     }
 
+    static void profile(String name) {
+        PerformanceConfig.selectProfile(name);
+        if ("adaptive".equals(mode)) adaptive();
+        lastAction = "Perfil " + PerformanceConfig.boosterProfile +
+            " selecionado. Nuvens e entidades preservadas por padrão.";
+    }
+    static void allowBiomeBlend(boolean allow) {
+        PerformanceConfig.boosterAdjustBiomeBlend = allow;
+        PerformanceConfig.save();
+        if ("adaptive".equals(mode)) adaptive();
+    }
+    static void allowClouds(boolean allow) {
+        PerformanceConfig.boosterAdjustClouds = allow;
+        PerformanceConfig.save();
+        if ("adaptive".equals(mode)) adaptive();
+    }
+
     static void webAction(String action, Integer target) {
         if (!PerformanceConfig.webControlEnabled) return;
         if (target != null) setTarget(target);
@@ -324,23 +374,26 @@ final class BoosterEngine {
             }
             if (changed) mc.options.save();
         }
+        IntegratedGraphicsTuner.restore(mc);
         PerformanceConfig.clearPendingRestore();
         PerformanceConfig.clearPendingRenderRestore();
         originalChunks = appliedChunks = trialPreviousChunks = -1;
         originalEntities = appliedEntities = trialPreviousEntities = -1;
         trialType = "";
+        trialWarmupWindows = 0;
         lastAction = note;
     }
 
     private static void resetCounters() {
-        slowWindows = fastWindows = windows = 0;
+        slowWindows = fastWindows = windows = trialWarmupWindows = 0;
         baselineAvg = trialAvg = baselineP95 = differencePct = 0;
         windowStartNs = lastChangeNs = rejectedUntilNs = 0;
         MONITOR.reset();
     }
 
     static String status() {
-        return "Modo " + mode + " | Fase " + phase + " | Meta " +
+        return "Modo " + mode + " | Fase " + phase + " | Perfil " +
+            PerformanceConfig.boosterProfile + " | Meta " +
             PerformanceConfig.boosterTargetFps + " FPS | " + lastAction;
     }
     static double low1() { return last.low1Fps(); }
@@ -375,6 +428,17 @@ final class BoosterEngine {
         b.addProperty("originalRenderDistance", originalChunks);
         b.addProperty("allowChunkScaling", PerformanceConfig.boosterAdjustChunks);
         b.addProperty("allowEntityScaling", PerformanceConfig.boosterAdjustEntities);
+        b.addProperty("profile", PerformanceConfig.boosterProfile);
+        b.addProperty("clientThreadCpuPct", round(HardwareMonitor.clientCpuPercent()));
+        b.addProperty("processCpuPct", round(HardwareMonitor.processCpuPercent()));
+        b.addProperty("logicalProcessors", HardwareMonitor.logicalProcessors());
+        b.addProperty("freeSystemMemoryMb", HardwareMonitor.freeSystemMb());
+        b.addProperty("totalSystemMemoryMb", HardwareMonitor.totalSystemMb());
+        b.addProperty("hardwareHint", HardwareMonitor.hint());
+        b.addProperty("allowBiomeBlend", PerformanceConfig.boosterAdjustBiomeBlend);
+        b.addProperty("allowClouds", PerformanceConfig.boosterAdjustClouds);
+        b.addProperty("appliedBiomeBlend", IntegratedGraphicsTuner.blend());
+        b.addProperty("appliedClouds", IntegratedGraphicsTuner.cloudChange());
         b.addProperty("lastAction", lastAction);
         json.add("booster", b);
     }

@@ -55,11 +55,25 @@ public final class PortPerformanceMod {
                     " | Transmissão: "+(PerformanceConfig.streamEnabled?"ON":"OFF"));
                 local("FPS: "+PerformanceStats.fps()+" | Ping: "+PerformanceStats.ping()+
                     " ms | Heap usada: "+PerformanceStats.used()+" MB");
+                local("CPU JVM: "+Math.round(HardwareMonitor.processCpuPercent())+
+                    "% (de "+HardwareMonitor.logicalProcessors()+" processadores lógicos), thread cliente: "+
+                    Math.round(HardwareMonitor.clientCpuPercent())+"%. RAM livre: "+
+                    HardwareMonitor.freeSystemMb()+" MB.");
                 local("Site: "+PerformanceConfig.url+" | "+PerformanceStats.lastResult());
                 local("BOOSTER: "+BoosterEngine.status());
                 local("Controle web: "+(PerformanceConfig.webControlEnabled?"autorizado":"bloqueado"));
                 local("HUD posição: "+Math.round(PerformanceConfig.hudX*100)+"% / "+
                     Math.round(PerformanceConfig.hudY*100)+"%, escala "+Math.round(PerformanceConfig.hudScale*100)+"%. Use /portperf hud edit.");
+                return 1;
+            }))
+            .then(Commands.literal("hardware").executes(ctx->{
+                local("PORT PERFORMANCE 4.0 | Perfil "+PerformanceConfig.boosterProfile+
+                    " | "+HardwareMonitor.logicalProcessors()+" processadores lógicos.");
+                local("CPU do processo: "+Math.round(HardwareMonitor.processCpuPercent())+
+                    "% do total | Thread cliente: "+Math.round(HardwareMonitor.clientCpuPercent())+"% de um lógico.");
+                local("RAM física disponível: "+HardwareMonitor.freeSystemMb()+" / "+
+                    HardwareMonitor.totalSystemMb()+" MB | Indicador: "+HardwareMonitor.hint());
+                local("Sem controle de afinidade P/E, temperatura ou medição de GPU no Java.");
                 return 1;
             }))
             .then(Commands.literal("stream")
@@ -100,7 +114,7 @@ public final class PortPerformanceMod {
                     BoosterEngine.observe();local(BoosterEngine.status());return 1;
                 }))
                 .then(Commands.literal("auto").executes(ctx->{
-                    BoosterEngine.adaptive();local("Teste de otimização iniciado. Ajuste experimental e reversível.");
+                    BoosterEngine.adaptive();local("Booster contínuo ativado, perfil " + PerformanceConfig.boosterProfile + " e mudanças reversíveis.");
                     return 1;
                 }))
                 .then(Commands.literal("off").executes(ctx->{
@@ -109,6 +123,36 @@ public final class PortPerformanceMod {
                 .then(Commands.literal("reset").executes(ctx->{
                     BoosterEngine.reset();local(BoosterEngine.status());return 1;
                 }))
+                .then(Commands.literal("profile")
+                    .then(Commands.literal("igpu").executes(ctx->{
+                        BoosterEngine.profile("igpu");
+                        local("Perfil gráfico integrado aplicado. Chunks e blend adaptativos.");
+                        return 1;
+                    }))
+                    .then(Commands.literal("balanced").executes(ctx->{
+                        BoosterEngine.profile("balanced");
+                        local("Perfil conservador aplicado. Apenas chunks adaptativos.");
+                        return 1;
+                    })))
+                .then(Commands.literal("blend")
+                    .then(Commands.literal("on").executes(ctx->{
+                        BoosterEngine.allowBiomeBlend(true);local("Blend de biomas adaptativo permitido.");
+                        return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx->{
+                        BoosterEngine.allowBiomeBlend(false);local("Blend de biomas preservado.");
+                        return 1;
+                    })))
+                .then(Commands.literal("clouds")
+                    .then(Commands.literal("on").executes(ctx->{
+                        BoosterEngine.allowClouds(true);
+                        local("Nuvens adaptativas permitidas: aparência do céu pode mudar.");
+                        return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx->{
+                        BoosterEngine.allowClouds(false);local("Qualidade das nuvens preservada.");
+                        return 1;
+                    })))
                 .then(Commands.literal("chunks")
                     .then(Commands.literal("on").executes(ctx->{
                         BoosterEngine.allowChunks(true);local("Ajuste automático de chunks ativado.");return 1;
