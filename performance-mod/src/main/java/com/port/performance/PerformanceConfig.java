@@ -17,6 +17,10 @@ final class PerformanceConfig {
     static boolean hudEnabled=true;
     static float hudX=0f,hudY=0f,hudScale=1f;
     static boolean boosterAdjustChunks=true,boosterAdjustEntities=false;
+    static boolean boosterAdjustBiomeBlend=true,boosterAdjustClouds=false;
+    static String boosterProfile="igpu";
+    static int pendingBlendOriginal=-1,pendingBlendApplied=-1;
+    static String pendingCloudOriginal="",pendingCloudApplied="";
     static int boosterMinRenderDistance=6;
     static int pendingRenderOriginal=-1,pendingRenderApplied=-1;
     static boolean streamEnabled=false;
@@ -40,6 +44,16 @@ final class PerformanceConfig {
         hudScale=parseScale(values.getProperty("hudScale","1.0"));
         boosterAdjustChunks=Boolean.parseBoolean(values.getProperty("boosterAdjustChunks","true"));
         boosterAdjustEntities=Boolean.parseBoolean(values.getProperty("boosterAdjustEntities","false"));
+        boosterAdjustBiomeBlend=Boolean.parseBoolean(values.getProperty("boosterAdjustBiomeBlend","true"));
+        boosterAdjustClouds=Boolean.parseBoolean(values.getProperty("boosterAdjustClouds","false"));
+        boosterProfile="balanced".equals(values.getProperty("boosterProfile","igpu"))?"balanced":"igpu";
+        try {
+            pendingBlendOriginal=Integer.parseInt(values.getProperty("pendingBlendOriginal","-1"));
+            pendingBlendApplied=Integer.parseInt(values.getProperty("pendingBlendApplied","-1"));
+            if(pendingBlendOriginal<0||pendingBlendApplied<0){pendingBlendOriginal=-1;pendingBlendApplied=-1;}
+        }catch(NumberFormatException ex){pendingBlendOriginal=-1;pendingBlendApplied=-1;}
+        pendingCloudOriginal=values.getProperty("pendingCloudOriginal","");
+        pendingCloudApplied=values.getProperty("pendingCloudApplied","");
         try { boosterMinRenderDistance=Math.max(4,Math.min(24,Integer.parseInt(values.getProperty("boosterMinRenderDistance","6")))); }
         catch(NumberFormatException ex){boosterMinRenderDistance=6;}
         try{
@@ -88,6 +102,35 @@ final class PerformanceConfig {
         save();
     }
 
+    static void notePendingBlendRestore(int original,int applied){
+        pendingBlendOriginal=original;
+        pendingBlendApplied=applied;
+        save();
+    }
+    static void clearPendingBlendRestore(){
+        if(pendingBlendOriginal<0&&pendingBlendApplied<0)return;
+        pendingBlendOriginal=pendingBlendApplied=-1;
+        save();
+    }
+    static void notePendingCloudRestore(String original,String applied){
+        pendingCloudOriginal=original;
+        pendingCloudApplied=applied;
+        save();
+    }
+    static void clearPendingCloudRestore(){
+        if(pendingCloudOriginal.isBlank()&&pendingCloudApplied.isBlank())return;
+        pendingCloudOriginal=pendingCloudApplied="";
+        save();
+    }
+    static void selectProfile(String profile){
+        boosterProfile="balanced".equals(profile)?"balanced":"igpu";
+        boosterAdjustBiomeBlend="igpu".equals(boosterProfile);
+        boosterAdjustClouds=false; // preserve sky by default in every profile
+        boosterAdjustEntities=false; // preserve Armourer's Workshop
+        boosterAdjustChunks=true;
+        save();
+    }
+
     static void regenerateKey(){
         byte[] bytes=new byte[16];
         new SecureRandom().nextBytes(bytes);
@@ -114,6 +157,17 @@ final class PerformanceConfig {
         values.setProperty("hudScale",Float.toString(hudScale));
         values.setProperty("boosterAdjustChunks",Boolean.toString(boosterAdjustChunks));
         values.setProperty("boosterAdjustEntities",Boolean.toString(boosterAdjustEntities));
+        values.setProperty("boosterAdjustBiomeBlend",Boolean.toString(boosterAdjustBiomeBlend));
+        values.setProperty("boosterAdjustClouds",Boolean.toString(boosterAdjustClouds));
+        values.setProperty("boosterProfile",boosterProfile);
+        if(pendingBlendOriginal>=0&&pendingBlendApplied>=0){
+            values.setProperty("pendingBlendOriginal",Integer.toString(pendingBlendOriginal));
+            values.setProperty("pendingBlendApplied",Integer.toString(pendingBlendApplied));
+        }
+        if(!pendingCloudOriginal.isBlank()&&!pendingCloudApplied.isBlank()){
+            values.setProperty("pendingCloudOriginal",pendingCloudOriginal);
+            values.setProperty("pendingCloudApplied",pendingCloudApplied);
+        }
         values.setProperty("boosterMinRenderDistance",Integer.toString(boosterMinRenderDistance));
         if(pendingRenderOriginal>0&&pendingRenderApplied>0){
             values.setProperty("pendingRenderOriginal",Integer.toString(pendingRenderOriginal));
