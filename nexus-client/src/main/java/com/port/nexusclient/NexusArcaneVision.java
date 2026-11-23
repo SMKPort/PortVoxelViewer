@@ -41,7 +41,20 @@ final class NexusArcaneVision {
     static NexusVisionModes.Focus focus(){return focus;}
     static boolean centerCrop(){return centerCrop;}
     static String lastResult(){return lastResult;}
-    static List<Result> history(){return List.copyOf(HISTORY);}
+    static List<Result> history(){
+        if(!NexusVisionHistoryStore.enabled())return List.copyOf(HISTORY);
+        List<Result> records=new ArrayList<>();
+        for(NexusVisionHistoryStore.Entry e:NexusVisionHistoryStore.entries())
+            records.add(new Result(e.focus,e.text,e.ok,e.at));
+        return List.copyOf(records);
+    }
+    static boolean persistHistory(){return NexusVisionHistoryStore.enabled();}
+    static void persistHistory(boolean enabled){NexusVisionHistoryStore.setEnabled(enabled);}
+    static void clearHistory(){
+        HISTORY.clear();
+        NexusVisionHistoryStore.clear();
+        lastResult="Histórico limpo.";
+    }
     static void setFocus(NexusVisionModes.Focus selected){
         focus=selected==null?NexusVisionModes.Focus.GERAL:selected;
     }
@@ -167,8 +180,10 @@ final class NexusArcaneVision {
     private static void store(String value,boolean ok){
         lastResult=value==null?"Resposta vazia.":value.replaceAll("[\\p{Cntrl}]"," ").trim();
         if(lastResult.length()>800)lastResult=lastResult.substring(0,800);
-        HISTORY.addFirst(new Result(pendingFocus.label,lastResult,ok,System.currentTimeMillis()));
+        long at=System.currentTimeMillis();
+        HISTORY.addFirst(new Result(pendingFocus.label,lastResult,ok,at));
         while(HISTORY.size()>6)HISTORY.removeLast();
+        NexusVisionHistoryStore.add(pendingFocus.label,lastResult,ok,at);
     }
     static void answered(long requestId,String text){
         if(!enabled||!waiting||requestId!=activeRequest)return;

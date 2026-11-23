@@ -68,6 +68,7 @@ final class NexusPermissions {
         NexusBlessing.setEnabled(false);
         NexusVoiceCasting.setEnabled(false);
         NexusArcaneVision.setEnabled(false);
+        // Reports remain private on disk when the owner opted in; no cloud uploads.
         NexusAwakening.protection(false);
         NexusAwakening.warnings(false);
         NexusAwakening.journal(false); // Preserve any previously saved entries.

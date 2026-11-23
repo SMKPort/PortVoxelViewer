@@ -65,6 +65,14 @@ final class NexusVisionPanel extends Screen {
         addRenderableWidget(Button.builder(Component.literal("PRÓXIMO ▶"),b->{
             selected=Math.max(0,selected-1);
         }).bounds(x+16+half,y+198,half,20).build());
+        addRenderableWidget(Button.builder(Component.literal(
+            "Guardar relatórios: "+(NexusArcaneVision.persistHistory()?"ON":"OFF")),b->{
+            NexusArcaneVision.persistHistory(!NexusArcaneVision.persistHistory());
+            rebuild();
+        }).bounds(x+10,y+277,half,20).build());
+        addRenderableWidget(Button.builder(Component.literal("LIMPAR HISTÓRICO"),b->{
+            NexusArcaneVision.clearHistory();selected=0;rebuild();
+        }).bounds(x+16+half,y+277,half,20).build());
         addRenderableWidget(Button.builder(Component.literal("VOLTAR"),b->onClose())
             .bounds(x+10,y+306,w-20,20).build());
     }
@@ -88,7 +96,7 @@ final class NexusVisionPanel extends Screen {
         g.drawString(font,shorten(note,w-20),x+10,y+183,SOFT,false);
         List<NexusArcaneVision.Result> history=NexusArcaneVision.history();
         if(history.isEmpty()){
-            g.drawString(font,"HISTÓRICO DE ANÁLISES (até 6, somente nesta sessão)",
+            g.drawString(font,"HISTÓRICO DE ANÁLISES (até 6, persistência opcional)",
                 x+10,y+222,GOLD,false);
             g.drawString(font,"Ainda não existem respostas do Gemini.",x+10,y+240,SOFT,false);
         }else{

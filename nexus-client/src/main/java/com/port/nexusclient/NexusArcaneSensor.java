@@ -383,9 +383,10 @@ final class NexusArcaneSensor {
             NexusSocial.onArcaneEvent(type,message,now);
         state.updatedAt=now;
         persist();
-        if(false&&state.reactions&&now-lastReaction>REACTION_COOLDOWN_MS){
+        if(state.reactions&&NexusAlertSettings.allows("arcane")&&
+            now-lastReaction>REACTION_COOLDOWN_MS){
             String rp=NexusArcaneRules.reply(type,spellId,percent);
-            if(!rp.isEmpty()&&ClientLink.speak(rp,"mind"))lastReaction=now;
+            if(!rp.isEmpty()&&ClientLink.announceAlert(rp,"arcane"))lastReaction=now;
         }
     }
 }

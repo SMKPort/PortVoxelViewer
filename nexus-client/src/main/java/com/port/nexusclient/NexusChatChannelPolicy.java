@@ -31,10 +31,10 @@ final class NexusChatChannelPolicy {
             "Informe o comando de chat personalizado.");
         String value=raw.trim().toLowerCase(Locale.ROOT);
         if(value.startsWith("/"))value=value.substring(1);
-        // Allows a single command and up to 2 fixed subcommands, no chat text,
+        // Allows a single command and up to 5 fixed subcommands, no chat text,
         // JSON, selectors, semicolons, newlines or placeholders.
         if(value.isEmpty()||value.length()>64||
-           !value.matches("[a-z0-9_.:-]+(?: [a-z0-9_.:-]+){0,2}"))
+           !value.matches("[a-z0-9_.:-]+(?: [a-z0-9_.:-]+){0,5}"))
             throw new IllegalArgumentException(
                 "Comando personalizado inválido. Ex.: /rp ou /f chat.");
         String root=value.split(" ",2)[0];

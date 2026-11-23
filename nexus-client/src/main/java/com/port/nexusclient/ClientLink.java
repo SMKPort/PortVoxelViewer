@@ -175,10 +175,8 @@ final class ClientLink {
             type,amount,hp,player.getMaxHealth(),before,after,
             NexusMind.stageIndex(),NexusVitals.isEnabled(),now,
             NexusAlertSettings::allows);
-        if(alert!=null&&NexusCombatHud.show(alert.kind,alert.message)){
+        if(alert!=null&&announceAlert(alert.message,alert.kind)){
             COMBAT_ALERTS.delivered(alert,now,NexusAlertSettings.cooldownMillis());
-            NexusAlertHistory.record(alert.kind,alert.message);
-            if(!ClientConfig.token.isEmpty())sendAlertState();
         }
     }
 
@@ -280,6 +278,10 @@ final class ClientLink {
                     payload.has("command")?payload.get("command").getAsString():"",
                     payload.has("format")?payload.get("format").getAsString():"&6&l",
                     payload.has("bodyFormat")?payload.get("bodyFormat").getAsString():"",true);success=true;
+            }else if("chat_settings".equals(kind)){
+                NexusAutoChatRouting.configure(payload);
+                output="Canal de mensagens automáticas salvo. "+NexusAutoChatRouting.status();
+                success=true;
             }else if("memory_lookup".equals(kind)){
                 // The owner must explicitly permit this in their own client.
                 // No file or complete memory database is transmitted.
@@ -346,28 +348,45 @@ final class ClientLink {
         post("/api/client/ack",ack,true).exceptionally(err -> null);
     }
 
+    static boolean announceAlert(String text,String kind){
+        if(!NexusAlertSettings.allows(kind)||text==null||text.isBlank())return false;
+        boolean delivered=false;
+        if(NexusAlertSettings.displayHud(kind))
+            delivered=NexusCombatHud.show(kind,text);
+        if(NexusAlertSettings.displayChat(kind))
+            delivered=speak(text,kind)||delivered;
+        return delivered;
+    }
     static boolean speak(String text){return speak(text,"mind");}
     static boolean speak(String text,String kind) {
+        if(!NexusAlertSettings.displayChat(kind))return false;
         if(NexusPrivateMind.routePrivate(kind,text))return true;
-        if(!ClientConfig.allowMind || !ClientConfig.allowAutonomy || !ClientConfig.allowChat ||
-            !NexusAlertSettings.allows(kind))return false;
-        String safe=text.replaceAll("[\\p{Cntrl}]", " ").trim();
-        if(safe.isEmpty())return false;
-        // chat() has a hard limit of 230 characters INCLUDING the Nexus tag.
-        // Gemini can return up to 380. Truncate only the spoken copy instead of
-        // silently losing the entire answer to IllegalArgumentException.
-        if(safe.length()>205){
-            int cut=safe.lastIndexOf(' ',205);
-            safe=safe.substring(0,cut>=130?cut:205).trim()+"…";
-        }
-        try {
-            chat("[Nexus Aterna] "+safe,"local","l","&6&l","&f",false);
+        if(!ClientConfig.allowMind||!ClientConfig.allowAutonomy||
+            !ClientConfig.allowChat)return false;
+        NexusAutoChatRouting.Route destination=NexusAutoChatRouting.route();
+        if(!destination.announce())return false;
+        String safe=text==null?"":text.replaceAll("[\\p{Cntrl}]"," ").trim();
+        if(safe.isBlank())return false;
+        try{
+            String root=NexusChatChannelPolicy.root(destination.channel(),destination.command());
+            String style=NexusChatChannelPolicy.format(destination.channel(),destination.format());
+            String body=NexusChatChannelPolicy.format(destination.channel(),destination.bodyFormat());
+            int overhead=(root.isEmpty()?0:root.length()+1)+
+                "[Nexus Aterna] ".length()+style.length()+
+                (body.isEmpty()?0:2+body.length());
+            int budget=Math.min(205,256-overhead);
+            if(budget<24)return false;
+            if(safe.length()>budget){
+                int cut=safe.lastIndexOf(' ',budget-1);
+                safe=safe.substring(0,cut>Math.max(10,budget/2)?cut:budget-1).trim()+"…";
+            }
+            chat("[Nexus Aterna] "+safe,destination.channel(),
+                destination.command(),style,body,false);
             NexusAlertHistory.record(kind,safe);
             NexusSpeaker.onSpeech(safe,NexusMind.stageIndex());
             if(!ClientConfig.token.isEmpty())sendAlertState();
             return true;
-        }
-        catch(IllegalArgumentException | IllegalStateException ignored) { return false; }
+        }catch(IllegalArgumentException|IllegalStateException error){return false;}
     }
 
     private static String chat(String message,String channel,String command,String format){
