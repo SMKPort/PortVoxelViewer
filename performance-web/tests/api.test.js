@@ -21,7 +21,7 @@ test("site and health respond",async()=>{
  assert.equal(page.status,200);
  assert.match(await page.text(),/Port Performance Monitor/i);
  const health=await ask("/api/health");
- assert.equal(health.code,200);assert.equal(health.json.version,"2.0.0");
+ assert.equal(health.code,200);assert.equal(health.json.version,"3.0.0");
 });
 test("unknown device has no shared data",async()=>{
  assert.equal((await ask("/api/snapshot")).code,401);
@@ -48,4 +48,27 @@ test("sender metrics require token and enforce types",async()=>{
 test("bad routes do not expose files",async()=>{
  const x=await ask("/../../server.js");assert.equal(x.code,404);
  const r=await fetch(origin+"/app.js");assert.equal(r.status,200);assert.match(r.headers.get("content-security-policy")||"",/default-src/);
+});
+
+test("v3 real frame timing and adaptive chunk telemetry are accepted",async()=>{
+ const key="abcdefabcdefabcdefabcdefabcdefab";
+ const booster={
+   mode:"adaptive",phase:"trial",targetFps:60,webControlEnabled:false,
+   baselineAvgFps:38.2,trialAvgFps:42.9,differencePct:12.3,secondsInPhase:5,
+   originalEntityScale:1,appliedEntityScale:-1,changedOption:true,
+   low1SampledFps:22.5,realLow1Fps:22.5,frameP95Ms:38.4,frameP99Ms:62.0,
+   stutterPercent:2.5,measuredAvgFps:42.9,
+   renderDistance:10,originalRenderDistance:12,changedRenderDistance:true,
+   allowChunkScaling:true,allowEntityScaling:false,lastAction:"Ajuste reversível de chunks."
+ };
+ assert.equal((await ask("/api/metrics","POST",key,{...payload,booster})).code,200);
+ const snap=await ask("/api/snapshot","GET",key);
+ assert.equal(snap.json.latest.booster.realLow1Fps,22.5);
+ assert.equal(snap.json.latest.booster.frameP95Ms,38.4);
+ assert.equal(snap.json.latest.booster.renderDistance,10);
+ assert.equal(snap.json.latest.booster.changedRenderDistance,true);
+ const invalidKey="abababababababababababababababab";
+ assert.equal((await ask("/api/metrics","POST",invalidKey,{
+   ...payload,booster:{...booster,frameP95Ms:"unexpected"}
+ })).code,422);
 });
