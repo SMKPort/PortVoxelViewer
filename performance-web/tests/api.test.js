@@ -21,7 +21,7 @@ test("site and health respond",async()=>{
  assert.equal(page.status,200);
  assert.match(await page.text(),/Port Performance Monitor/i);
  const health=await ask("/api/health");
- assert.equal(health.code,200);assert.equal(health.json.version,"3.0.0");
+ assert.equal(health.code,200);assert.equal(health.json.version,"4.0.0");
 });
 test("unknown device has no shared data",async()=>{
  assert.equal((await ask("/api/snapshot")).code,401);
@@ -70,5 +70,32 @@ test("v3 real frame timing and adaptive chunk telemetry are accepted",async()=>{
  const invalidKey="abababababababababababababababab";
  assert.equal((await ask("/api/metrics","POST",invalidKey,{
    ...payload,booster:{...booster,frameP95Ms:"unexpected"}
+ })).code,422);
+});
+
+test("v4 iGPU profile and CPU diagnostics retain validated type and token isolation",async()=>{
+ const key="fedcbafedcbafedcbafedcbafedcbafe";
+ const baseBooster={
+   mode:"adaptive",phase:"trial",targetFps:60,webControlEnabled:false,
+   baselineAvgFps:42,trialAvgFps:48,differencePct:14,secondsInPhase:10,
+   originalEntityScale:1,appliedEntityScale:-1,changedOption:true,
+   low1SampledFps:25,realLow1Fps:25,frameP95Ms:33,frameP99Ms:58,
+   stutterPercent:3,measuredAvgFps:48,renderDistance:10,
+   originalRenderDistance:12,changedRenderDistance:true,allowChunkScaling:true,
+   allowEntityScaling:false,profile:"igpu",logicalProcessors:12,
+   clientThreadCpuPct:75.2,processCpuPct:18.3,freeSystemMemoryMb:3200,
+   totalSystemMemoryMb:16384,hardwareHint:"sem gargalo confirmado",
+   appliedBiomeBlend:2,appliedClouds:"none",allowBiomeBlend:true,allowClouds:false,
+   lastAction:"Ajuste de chunks, teste."
+ };
+ assert.equal((await ask("/api/metrics","POST",key,{...payload,booster:baseBooster})).code,200);
+ const snapshot=await ask("/api/snapshot","GET",key);
+ assert.equal(snapshot.json.latest.booster.clientThreadCpuPct,75.2);
+ assert.equal(snapshot.json.latest.booster.profile,"igpu");
+ assert.equal(snapshot.json.latest.booster.appliedBiomeBlend,2);
+ assert.equal((await ask("/api/snapshot","GET",OTHER)).json.latest,null);
+ const badKey="edededededededededededededededed";
+ assert.equal((await ask("/api/metrics","POST",badKey,{
+   ...payload,booster:{...baseBooster,logicalProcessors:"12"}
  })).code,422);
 });

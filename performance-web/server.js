@@ -38,7 +38,31 @@ function validBooster(payload){
      extra[k]=b[k];
    }
  }
- for(const k of ["changedRenderDistance","allowChunkScaling","allowEntityScaling"]){
+ for(const k of ["clientThreadCpuPct","processCpuPct","freeSystemMemoryMb",
+                  "totalSystemMemoryMb","appliedBiomeBlend"]){
+   if(b[k]!==undefined){
+     if(!Number.isFinite(b[k])||Math.abs(b[k])>100000000)return null;
+     extra[k]=b[k];
+   }
+ }
+ if(b.logicalProcessors!==undefined){
+   if(!Number.isInteger(b.logicalProcessors)||b.logicalProcessors<1||b.logicalProcessors>1024)return null;
+   extra.logicalProcessors=b.logicalProcessors;
+ }
+ if(b.profile!==undefined){
+   if(!["balanced","igpu"].includes(b.profile))return null;
+   extra.profile=b.profile;
+ }
+ if(b.hardwareHint!==undefined){
+   if(typeof b.hardwareHint!=="string"||b.hardwareHint.length>100)return null;
+   extra.hardwareHint=b.hardwareHint;
+ }
+ if(b.appliedClouds!==undefined){
+   if(!["none","OFF","FAST","FANCY"].includes(b.appliedClouds))return null;
+   extra.appliedClouds=b.appliedClouds;
+ }
+ for(const k of ["changedRenderDistance","allowChunkScaling","allowEntityScaling",
+                 "allowBiomeBlend","allowClouds"]){
    if(b[k]!==undefined){
      if(typeof b[k]!=="boolean")return null;
      extra[k]=b[k];
@@ -82,7 +106,7 @@ function staticFile(req,res,pathname){
 }
 const server=http.createServer(async(req,res)=>{
  let route;try{route=new URL(req.url,"http://localhost").pathname}catch(e){return respondError(res,400,"URL inválida");}
- if(route==="/api/health"&&req.method==="GET")return json(res,200,{ok:true,status:"online",app:"Port Performance Monitor",version:"3.0.0",streaming:"opt-in",storage:"memory"});
+ if(route==="/api/health"&&req.method==="GET")return json(res,200,{ok:true,status:"online",app:"Port Performance Monitor",version:"4.0.0",streaming:"opt-in",storage:"memory"});
  if(route==="/api/metrics"&&req.method==="POST"){
    const key=auth(req,res);if(!key)return;
    try{

@@ -72,8 +72,18 @@
    $("boostTarget").textContent=(booster?.targetFps??"--")+" FPS";
    $("boostScaling").textContent=booster?.changedRenderDistance?
      booster.renderDistance+" chunks (original "+booster.originalRenderDistance+")":
+     booster?.appliedBiomeBlend>=0?"Blend bioma: "+booster.appliedBiomeBlend:
+     booster?.appliedClouds&&booster.appliedClouds!=="none"?"Nuvens: "+booster.appliedClouds:
      booster?.changedOption&&booster.appliedEntityScale>0?
        Math.round(booster.appliedEntityScale*100)+"% (entidades)":"Nenhum";
+   $("boostProfile").textContent=booster?.profile?.toUpperCase()||"--";
+   $("clientCpu").textContent=booster?.clientThreadCpuPct>=0?
+      Math.round(booster.clientThreadCpuPct)+"% de 1 lógico":"N/D";
+   $("processCpu").textContent=booster?.processCpuPct>=0?
+      Math.round(booster.processCpuPct)+"% ("+(booster.logicalProcessors||"--")+" lógicos)":"N/D";
+   $("physicalRam").textContent=booster?.freeSystemMemoryMb>=0?
+      Math.round(booster.freeSystemMemoryMb)+" MB":"N/D";
+   $("hardwareHint").textContent=booster?.hardwareHint||"Aguardando medições";
    $("boostAccess").textContent=!booster?"Mod antigo / indisponível":
       !booster.webControlEnabled?"Bloqueado pelo jogo":"Autorizado nesta sessão";
    $("boostAction").textContent=booster?.lastAction||"Instale o Port Performance + Booster v3.0 para habilitar esta seção.";

@@ -1,4 +1,4 @@
-# Port Performance + Booster 3.0 🎮⚡
+# Port Performance + Booster 4.0 🎮⚡
 
 Mod **100% client-side** para Minecraft **1.21.1 / NeoForge 21.1.235 ou superior**, integrado ao site de telemetria opcional.
 
@@ -6,7 +6,33 @@ Código: https://github.com/SMKPort/PortVoxelViewer/tree/port-performance-monito
 
 Site: https://port-performance-monitor.onrender.com
 
-## Novidades da 3.0
+## Novidades da 4.0: perfil Intel integrado
+
+O VAIO com Intel Core i5-1334U utiliza GPU integrada e 12 processadores lógicos (2 P-cores com Hyper-Threading e 8 E-cores). A JVM não permite repartir livremente a thread principal do Minecraft, e a distribuição real de P/E cores permanece sob responsabilidade do Windows.
+
+- Perfil padrão `igpu`: permite ajuste reversível de distância de chunks e mistura de cores de biomas, até dois níveis abaixo da preferência original.
+- Nuvens e alcance de entidades desligados por padrão: quem desejar poderá optar por ajustes automáticos que podem mudar o céu ou ocultar modelos distantes.
+- A primeira janela depois de mudar uma opção é descartada para não confundir travamento transitório de reprocessamento com o resultado estabilizado.
+- Amostragem local da CPU do processo Java em relação aos processadores lógicos disponíveis, uso da thread cliente (percentual aproximado de um processador lógico) e RAM física disponível.
+- Telemetria, HUD e site mostram as novas medidas, sem coletar dados até `/portperf stream on`.
+- Todas as opções são restauradas quando o booster é desativado, a sessão termina ou uma reinicialização encontra uma recuperação pendente.
+- Não controla afinidade de CPU ou P/E cores, não faz overclock, não mede temperatura ou GPU e não promete acelerar gargalos do servidor.
+
+### Controles adicionais
+
+```
+/portperf hardware
+/portperf boost profile igpu
+/portperf boost profile balanced
+/portperf boost blend on
+/portperf boost blend off
+/portperf boost clouds on
+/portperf boost clouds off
+```
+
+O modo `igpu` preserva partículas mágicas, shaders, nuvens e armaduras por padrão. O `balanced` deixa somente a distância de chunks habilitada por padrão. Ambos exigem `/portperf boost auto` para iniciar ajustes.
+
+## Recursos herdados da 3.0
 
 - Booster **contínuo e reversível**, com janelas de 5 segundos, detecção de quedas persistentes e cooldown para não ficar oscilando.
 - Ajuste gradual da distância de renderização de chunks, limitado a até 4 chunks abaixo da configuração inicial e respeitando um mínimo configurável (6 por padrão).
@@ -19,7 +45,7 @@ Site: https://port-performance-monitor.onrender.com
 
 ## Instalação
 
-Abra [GitHub Actions](https://github.com/SMKPort/PortVoxelViewer/actions/workflows/port-performance-build.yml), selecione um build bem-sucedido da branch `port-performance-monitor` e baixe o artefato `Port-Performance-Monitor-1.21.1-NeoForge`. Coloque o JAR `portperf-3.0.0.jar` na pasta mods. Remova o JAR 2.1.0 e evite executar ao mesmo tempo outro PortClientBooster que ajuste as mesmas opções.
+Abra [GitHub Actions](https://github.com/SMKPort/PortVoxelViewer/actions/workflows/port-performance-build.yml), selecione um build bem-sucedido da branch `port-performance-monitor` e baixe o artefato `Port-Performance-Monitor-1.21.1-NeoForge`. Coloque o JAR `portperf-4.0.0.jar` na pasta mods. Remova o JAR 2.1.0 e evite executar ao mesmo tempo outro PortClientBooster que ajuste as mesmas opções.
 
 O JAR deve ser **compilado e testado no Somake** antes de considerar os ganhos confirmados.
 
