@@ -40,8 +40,8 @@ public final class TimeFrameScreen extends Screen {
             if (recorder.recording()) recorder.stop();
             else recorder.start();
         });
-        button(1, y, "Salvar clipe F9", b -> recorder.saveClip("manual"));
-        button(2, y, "Replay 3D F10", b -> Minecraft.getInstance().setScreen(new TimeFrameReplayScreen(mod)));
+        button(1, y, "Clipe: " + TimeFrame.clipKey().getTranslatedKeyMessage().getString(), b -> recorder.saveClip("manual"));
+        button(2, y, "Replay: " + TimeFrame.replayKey().getTranslatedKeyMessage().getString(), b -> Minecraft.getInstance().setScreen(new TimeFrameReplayScreen(mod)));
         y += 25;
         button(0, y, "Detectar audio", b -> recorder.refreshDevices());
         button(1, y, label("Microfone", settings.microphone), b -> {
@@ -115,15 +115,19 @@ public final class TimeFrameScreen extends Screen {
         ffmpeg.setValue(settings.ffmpeg);
         addRenderableWidget(ffmpeg);
         final int saveY = Math.min(height - 28, y + 28);
+        int footerCol = Math.max(75, (width - 32) / 3);
         addRenderableWidget(Button.builder(Component.literal("Salvar configuracoes"), b -> {
             settings.ffmpeg = ffmpeg.getValue().trim();
             settings.save();
             message = "Configuracoes salvas. Reinicie a captura para aplicar.";
-        }).bounds(12, saveY, Math.min(width - 24, 170), 20).build());
+        }).bounds(12, saveY, footerCol - 4, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("Editar atalhos"), b ->
+            Minecraft.getInstance().setScreen(new TimeFrameKeybindScreen(mod))
+        ).bounds(12 + footerCol, saveY, footerCol - 4, 20).build());
         addRenderableWidget(Button.builder(Component.literal("Replay salvo"), b -> {
             mod.replay().saveReplay("manual");
             message = "Replay 3D salvo em timeframe/replays";
-        }).bounds(Math.max(190, width - 152), saveY, 140, 20).build());
+        }).bounds(12 + 2 * footerCol, saveY, footerCol - 4, 20).build());
     }
     private void button(int column, int y, String label, java.util.function.Consumer<Button> cb) {
         addRenderableWidget(Button.builder(Component.literal(label), cb::accept)
@@ -151,8 +155,10 @@ public final class TimeFrameScreen extends Screen {
     @Override public void render(GuiGraphics graphics, int mx, int my, float partial) {
         graphics.fill(0, 0, width, height, 0xF0161724);
         graphics.drawCenteredString(font, "TIMEFRAME | Gravacao local + replay observacional", width / 2, 10, 0xE8B769);
-        graphics.drawString(font, "F8 painel  |  F9 salvar MP4  |  F10 replay", 12, 28, 0xAAC5DF);
-        graphics.drawString(font, "FFmpeg:", 12, 207, 0xFFFFFF);
+        graphics.drawString(font, TimeFrame.menuKey().getTranslatedKeyMessage().getString() + " painel | "
+                + TimeFrame.clipKey().getTranslatedKeyMessage().getString() + " salvar MP4 | "
+                + TimeFrame.replayKey().getTranslatedKeyMessage().getString() + " replay", 12, 28, 0xAAC5DF);
+        graphics.drawString(font, "FFmpeg:", 12, 229, 0xFFFFFF);
         int statusY = Math.min(height - 55, 262);
         String status = recorder.status();
         if (status.length() > 100) status = status.substring(0, 100) + "...";

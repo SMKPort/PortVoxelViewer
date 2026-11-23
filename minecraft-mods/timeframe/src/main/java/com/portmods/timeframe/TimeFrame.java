@@ -19,11 +19,31 @@ import org.lwjgl.glfw.GLFW;
 public final class TimeFrame {
     public static final String ID = "timeframe";
     private static final KeyMapping OPEN = new KeyMapping("key.timeframe.open", InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_F8, "key.categories.timeframe");
+            GLFW.GLFW_KEY_M, "key.categories.timeframe");
     private static final KeyMapping SAVE_CLIP = new KeyMapping("key.timeframe.clip", InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_F9, "key.categories.timeframe");
     private static final KeyMapping REPLAY = new KeyMapping("key.timeframe.replay", InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_F10, "key.categories.timeframe");
+
+    /** Registered key mappings are also editable via Minecraft Options > Controls. */
+    public static KeyMapping menuKey() { return OPEN; }
+    public static KeyMapping clipKey() { return SAVE_CLIP; }
+    public static KeyMapping replayKey() { return REPLAY; }
+
+    public static void rebind(KeyMapping mapping, InputConstants.Key key) {
+        mapping.setKey(key);
+        KeyMapping.resetMapping();
+        Minecraft.getInstance().options.save();
+    }
+
+    public static void restoreDefaultKeys() {
+        OPEN.setKey(OPEN.getDefaultKey());
+        SAVE_CLIP.setKey(SAVE_CLIP.getDefaultKey());
+        REPLAY.setKey(REPLAY.getDefaultKey());
+        KeyMapping.resetMapping();
+        Minecraft.getInstance().options.save();
+    }
+
     private final ReplayBuffer replay = new ReplayBuffer();
     private TimeFrameConfig config;
     private ClipRecorder recorder;
@@ -73,7 +93,10 @@ public final class TimeFrame {
         boolean rec = recorder.recording();
         String text = (rec ? "[REC] " : "[TimeFrame] ")
                 + (rec ? recorder.elapsedSeconds() + "s | " : "")
-                + "replay " + replay.durationSeconds() + "s | F8 painel F9 clipe F10 replay";
+                + "replay " + replay.durationSeconds() + "s | "
+                + OPEN.getTranslatedKeyMessage().getString() + " painel | "
+                + SAVE_CLIP.getTranslatedKeyMessage().getString() + " clipe | "
+                + REPLAY.getTranslatedKeyMessage().getString() + " replay";
         e.getGuiGraphics().drawString(mc.font, text, 7, 7, rec ? 0xFF6677 : 0x8DD7FF, true);
     }
 }

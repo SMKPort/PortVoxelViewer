@@ -1,4 +1,4 @@
-# TimeFrame v0.1.0 | Minecraft 1.21.1 NeoForge | 100% client-side
+# TimeFrame v0.1.1 | Minecraft 1.21.1 NeoForge | 100% client-side
 
 Mod independente do Nexus Aterna, DeepScan 3D, Phantom Studio e Voxel Physics.
 
@@ -8,13 +8,13 @@ Mod independente do Nexus Aterna, DeepScan 3D, Phantom Studio e Voxel Physics.
 - Microfone e dispositivo de captura de audio (incluindo fontes loopback, se disponiveis no sistema) selecionaveis na interface.
 - Gravacao de um ou dois fluxos de audio (faixas separadas, quando as duas fontes estao ativas).
 - Opcoes de volume, filtro de ruido do microfone, teste gravado de 3s, e extracao MP4.
-- F8 abre painel; F10 abre replay 3D de trajetorias observadas. Movimento e dano local gravados em historico de 5 minutos.
+- M abre painel por padrao; F10 abre replay 3D de trajetorias observadas. Movimento e dano local gravados em historico de 5 minutos.
 - Salvar snapshots JSON compactados (.json.gz), marcador manual, salvamento automatico apos combates e morte e abrir ultimo replay salvo.
 - Player temporal 3D esquematico, com orbita da camera, scrub e controle de velocidade de visualizacao.
 
 ## Instalacao
-1. Use Java 21 e NeoForge 1.21.1. Coloque timeframe-0.1.0.jar na pasta mods.
-2. Instale FFmpeg e configure o executavel no painel (F8). Precisa estar no PATH ou fornecer caminho completo.
+1. Use Java 21 e NeoForge 1.21.1. Coloque timeframe-0.1.1.jar na pasta mods.
+2. Instale FFmpeg e configure o executavel no painel (M, por padrao). Precisa estar no PATH ou fornecer caminho completo.
 3. Rode o jogo em janela ou borda sem exclusividade; o FFmpeg grava a AREA DE TRABALHO, nao uma janela exclusiva.
 4. Detecte as fontes de audio e selecione microfone e, se houver, uma fonte de mixagem/loopback.
 5. Ative a gravacao com o botao no painel. A captacao de microfone vem desligada por padrao.
@@ -38,4 +38,8 @@ Na pasta minecraft-mods/timeframe: gradle build (Gradle 8.14.3 e Java 21)
 Workflow: .github/workflows/build-timeframe.yml.
 
 ## Teclas
-F8: configurar / iniciar gravacao. F9: salvar os ultimos minutos. F10: abrir visualizador de replay 3D.
+M: abrir painel (padrao). F9: salvar os ultimos minutos. F10: abrir visualizador de replay 3D.
+Todos os tres atalhos sao editaveis no TimeFrame > Editar atalhos ou em Opcoes > Controles > Atalhos > TimeFrame.
+Clique no atalho para capturar outra tecla, Backspace/Delete para desativar, Esc para cancelar.
+Use Restaurar padroes para recuperar M, F9 e F10. As alteracoes sao persistidas no options.txt do Minecraft.
+Se voce ja instalou versoes anteriores, as teclas antigas podem permanecer salvas; use Restaurar padroes para mudar o menu para M.
