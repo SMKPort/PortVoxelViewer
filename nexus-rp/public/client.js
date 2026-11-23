@@ -80,6 +80,16 @@ window.NexusRPClientUpgrade=function(rp,views){
      memoryUsed:Number(data.memoryUsed||0),affinityUsed:Number(data.affinityUsed||0)};
  }
  rp.clientQueue=queue;
+ rp.syncChatRouting=async()=>{
+   const cfg=S.config;
+   const channel=["local","global","custom"].includes(cfg.chatChannel)?cfg.chatChannel:"local";
+   return queue("/chat/settings",{
+     channel,command:cfg.chatCustomCommand||"",
+     format:cfg.chatFormatting??"&6&l",
+     bodyFormat:cfg.chatBodyFormatting??"&f",
+     announce:cfg.autoAnnounce===true
+   });
+ };
  const oldConfig=views.config;
  views.config=function(){
    let html=oldConfig();
@@ -143,7 +153,7 @@ window.NexusRPClientUpgrade=function(rp,views){
    '<div class="rp-evo-emergency '+(on?"online":"")+'"><strong>'+(on?"MINECRAFT CONECTADO":"AGUARDANDO MINECRAFT")+'</strong><span>Jogador: '+E(player)+'</span></div>'+
    '<p class="hint">1. Instale o mod Nexus Aterna Client na pasta mods do Minecraft 1.21.1 com NeoForge.</p>'+ 
    '<p class="hint"><strong>Canal neural privado 2.2:</strong> no Minecraft, use <code>/nexusclient private on</code> e pressione <strong>N</strong> para conversar sem enviar mensagens pelo /l. Você também pode ativar a independência narrativa e a iniciativa privada opcionalmente. As conversas não são publicadas neste painel.</p>'+ 
-   '<p><a href="https://github.com/SMKPort/PortVoxelViewer/actions/workflows/nexus-client-build.yml?query=branch%3Anexus-aterna-4.0" target="_blank" rel="noopener noreferrer">Ver as compilações do Nexus Client 4.0 no GitHub Actions</a></p>'+
+   '<p><a href="https://github.com/SMKPort/PortVoxelViewer/actions/workflows/nexus-client-build.yml?query=branch%3Anexus-aterna-3.0" target="_blank" rel="noopener noreferrer">Ver as compilações do Nexus Client 4.0 no GitHub Actions</a></p>'+
    '<p class="hint">2. Nas Configurações, informe a chave HTTPS da Render uma vez. Marque <strong>Lembrar neste dispositivo</strong> para não precisar digitá-la novamente. Não precisa de senha RCON.</p>'+
    '<p class="hint">3. No jogo, execute <code>/nexusclient pair SEU_CODIGO</code>. Este comando é executado no cliente, não no servidor.</p>'+
    '<p class="hint">4. Autorize mensagens com <code>/nexusclient chat on</code> e telemetria com <code>/nexusclient telemetry on</code>.</p>'+
@@ -154,7 +164,7 @@ window.NexusRPClientUpgrade=function(rp,views){
    '<div class="kv"><span>Chat</span><span class="value">Sua própria conta</span></div>'+
    '<div class="kv"><span>Vida e dano</span><span class="value">Leitura do cliente</span></div>'+
    '<div class="kv"><span>Efeitos ativos</span><span class="value">Leitura do cliente</span></div>'+
-   '<div class="kv"><span>Armadura / rituais</span><span class="value">Avisos e UI local</span></div>'+
+   '<div class="kv"><span>Visão Arcana</span><span class="value">Análise manual no F9</span></div>'+
 
    '<div class="divider"></div><div class="notice">Mensagens enviadas pelo painel são transmitidas como mensagens normais do personagem e ficam sujeitas às regras, filtros e limites do servidor. Não é possível executar comandos de administrador ou modificar outros jogadores.</div>'+
    '<div class="buttons">'+button("open-events","MONITORAR EVENTOS","alt")+button("open-alerts","ALERTAS DO NEXUS","gold")+button("open-mind","NEXUS MIND 2.0","gold")+button("open-chat","ABRIR COMUNICADOR","alt")+'</div></section></div>'+
@@ -162,9 +172,9 @@ window.NexusRPClientUpgrade=function(rp,views){
    '<p class="hint">A inteligência contextual da 4.0 roda no mod, não no navegador. Instale a versão 4.0 e abra os painéis no jogo. Nenhuma ação de emergência é habilitada por estes botões.</p>'+
    '<div class="v4-client-grid">'+
    '<div class="v4-command-tile"><strong>◉ SITUAÇÃO ATUAL</strong><p>Vida, mana e análise do contexto observado.</p><code>/nexusclient situacao</code><button type="button" data-v4-copy="/nexusclient situacao">COPIAR COMANDO ↗</button></div>'+
-   '<div class="v4-command-tile"><strong>✚ PROTOCOLOS DE EMERGÊNCIA</strong><p>Configuração e autorização de suspensão das macros.</p><code>/nexusclient cognition menu</code><button type="button" data-v4-copy="/nexusclient cognition menu">COPIAR COMANDO ↗</button></div>'+
-   '<div class="v4-command-tile"><strong>▤ MEMÓRIA NARRATIVA</strong><p>Registre e consulte eventos do Port.</p><code>/nexusclient journal menu</code><button type="button" data-v4-copy="/nexusclient journal menu">COPIAR COMANDO ↗</button></div>'+
-   '<div class="v4-command-tile"><strong>⌁ ANÁLISE DE MACROS</strong><p>Consulte bloqueios e sugestões no cliente.</p><code>/nexusclient cognition insights status</code><button type="button" data-v4-copy="/nexusclient cognition insights status">COPIAR COMANDO ↗</button></div>'+
+   '<div class="v4-command-tile"><strong>✚ PROTEÇÃO CONTEXTUAL</strong><p>Configuração e suspensão de macros em vida crítica.</p><code>/nexusclient awakening status</code><button type="button" data-v4-copy="/nexusclient awakening status">COPIAR COMANDO ↗</button></div>'+
+   '<div class="v4-command-tile"><strong>▤ MEMÓRIA NARRATIVA</strong><p>Registre e consulte eventos do Port.</p><code>/nexusclient awakening journal recent</code><button type="button" data-v4-copy="/nexusclient awakening journal recent">COPIAR COMANDO ↗</button></div>'+
+   '<div class="v4-command-tile"><strong>⌁ MACROS DE COMBATE</strong><p>Consulte o estado das macros.</p><code>/nexusclient macro status</code><button type="button" data-v4-copy="/nexusclient macro status">COPIAR COMANDO ↗</button></div>'+
    '</div></section>'+
    '<section class="card" style="margin-top:16px"><div class="card-header"><h2>DIAGNÓSTICO DA API</h2></div>'+
    '<p class="hint">Verifica se seu navegador consegue acessar a Render e se as rotas estão respondendo JSON. Não exibe sua senha nem o código de acesso.</p>'+
