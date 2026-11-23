@@ -9,6 +9,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
+import net.neoforged.neoforge.client.event.RenderFrameEvent;
 import net.neoforged.neoforge.common.NeoForge;
 
 @Mod(value=PortPerformanceMod.MOD_ID,dist=Dist.CLIENT)
@@ -18,11 +19,13 @@ public final class PortPerformanceMod {
     public PortPerformanceMod(){
         PerformanceConfig.load();
         NeoForge.EVENT_BUS.addListener(this::tick);
+        NeoForge.EVENT_BUS.addListener(this::frame);
         NeoForge.EVENT_BUS.addListener(this::renderHud);
         NeoForge.EVENT_BUS.addListener(this::commands);
     }
 
     private void tick(ClientTickEvent.Post event){PerformanceStats.tick();}
+    private void frame(RenderFrameEvent.Post event){BoosterEngine.onFrame();}
 
     private void renderHud(RenderGuiEvent.Post event){
         Minecraft mc=Minecraft.getInstance();
@@ -56,7 +59,7 @@ public final class PortPerformanceMod {
                 local("BOOSTER: "+BoosterEngine.status());
                 local("Controle web: "+(PerformanceConfig.webControlEnabled?"autorizado":"bloqueado"));
                 local("HUD posição: "+Math.round(PerformanceConfig.hudX*100)+"% / "+
-                    Math.round(PerformanceConfig.hudY*100)+"%. Use /portperf hud edit para mover.");
+                    Math.round(PerformanceConfig.hudY*100)+"%, escala "+Math.round(PerformanceConfig.hudScale*100)+"%. Use /portperf hud edit.");
                 return 1;
             }))
             .then(Commands.literal("stream")
@@ -75,8 +78,14 @@ public final class PortPerformanceMod {
                 .executes(ctx->{openHudEditor();return 1;})
                 .then(Commands.literal("edit").executes(ctx->{openHudEditor();return 1;}))
                 .then(Commands.literal("reset").executes(ctx->{
-                    PerformanceHud.reset();local("Posição do HUD restaurada.");return 1;
+                    PerformanceHud.reset();local("Posição e tamanho do HUD restaurados.");return 1;
                 }))
+                .then(Commands.literal("scale")
+                    .then(Commands.argument("percent",IntegerArgumentType.integer(55,225)).executes(ctx->{
+                        PerformanceHud.setScale(IntegerArgumentType.getInteger(ctx,"percent")/100f);
+                        local("Tamanho do HUD: "+Math.round(PerformanceConfig.hudScale*100)+"%.");
+                        return 1;
+                    })))
                 .then(Commands.literal("on").executes(ctx->{
                     PerformanceConfig.hudEnabled=true;PerformanceConfig.save();
                     local("HUD ativado.");return 1;
@@ -100,6 +109,20 @@ public final class PortPerformanceMod {
                 .then(Commands.literal("reset").executes(ctx->{
                     BoosterEngine.reset();local(BoosterEngine.status());return 1;
                 }))
+                .then(Commands.literal("chunks")
+                    .then(Commands.literal("on").executes(ctx->{
+                        BoosterEngine.allowChunks(true);local("Ajuste automático de chunks ativado.");return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx->{
+                        BoosterEngine.allowChunks(false);local("Ajuste automático de chunks desativado.");return 1;
+                    })))
+                .then(Commands.literal("entities")
+                    .then(Commands.literal("on").executes(ctx->{
+                        BoosterEngine.allowEntities(true);local("Ajuste de distância de entidades ativado. Modelos distantes podem sumir.");return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx->{
+                        BoosterEngine.allowEntities(false);local("Distância de entidades preservada.");return 1;
+                    })))
                 .then(Commands.literal("target")
                     .then(Commands.argument("fps",IntegerArgumentType.integer(30,240)).executes(ctx->{
                         BoosterEngine.setTarget(IntegerArgumentType.getInteger(ctx,"fps"));

@@ -3,72 +3,89 @@ package com.port.performance;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
-/**
- * HUD rendering and placement shared by the live overlay and the editor.
- * Positions are normalized to the usable viewport, surviving GUI-scale and
- * resolution changes without allowing the panel to leave the visible area.
- */
+/** Position and scale share normalized coordinates, compatible with different GUI resolutions. */
 final class PerformanceHud {
-    static final int WIDTH=210;
-    static final int HEIGHT=84;
-    private static final int MARGIN_X=7;
-    private static final int MARGIN_Y=8;
-
+    static final int WIDTH=225,HEIGHT=102;
+    private static final int MARGIN_X=7,MARGIN_Y=8;
     private PerformanceHud(){}
 
-    static int left(int width){
-        if(width<=WIDTH+2*MARGIN_X)return Math.max(0,(width-WIDTH)/2);
-        int usable=width-WIDTH-2*MARGIN_X;
-        return MARGIN_X+Math.round(usable*PerformanceConfig.hudX);
+    static float scale(int screenWidth,int screenHeight){
+        float fits=Math.min((screenWidth-2f*MARGIN_X)/WIDTH,
+                            (screenHeight-2f*MARGIN_Y)/HEIGHT);
+        return Math.max(0.35f,Math.min(PerformanceConfig.hudScale,fits));
     }
-
-    static int top(int height){
-        if(height<=HEIGHT+2*MARGIN_Y)return Math.max(0,(height-HEIGHT)/2);
-        int usable=height-HEIGHT-2*MARGIN_Y;
-        return MARGIN_Y+Math.round(usable*PerformanceConfig.hudY);
+    static int panelWidth(int screenWidth,int screenHeight){
+        return Math.round(WIDTH*scale(screenWidth,screenHeight));
     }
-
+    static int panelHeight(int screenWidth,int screenHeight){
+        return Math.round(HEIGHT*scale(screenWidth,screenHeight));
+    }
+    static int left(int screenWidth,int screenHeight){
+        int w=panelWidth(screenWidth,screenHeight);
+        if(screenWidth<=w+2*MARGIN_X)return Math.max(0,(screenWidth-w)/2);
+        return MARGIN_X+Math.round((screenWidth-w-2*MARGIN_X)*PerformanceConfig.hudX);
+    }
+    static int top(int screenWidth,int screenHeight){
+        int h=panelHeight(screenWidth,screenHeight);
+        if(screenHeight<=h+2*MARGIN_Y)return Math.max(0,(screenHeight-h)/2);
+        return MARGIN_Y+Math.round((screenHeight-h-2*MARGIN_Y)*PerformanceConfig.hudY);
+    }
     static void moveTo(double x,double y,int screenWidth,int screenHeight){
-        int rangeX=screenWidth-WIDTH-2*MARGIN_X;
-        int rangeY=screenHeight-HEIGHT-2*MARGIN_Y;
-        PerformanceConfig.hudX=rangeX>0
-            ?clamp((float)((x-MARGIN_X)/rangeX)):0f;
-        PerformanceConfig.hudY=rangeY>0
-            ?clamp((float)((y-MARGIN_Y)/rangeY)):0f;
+        int rangeX=screenWidth-panelWidth(screenWidth,screenHeight)-2*MARGIN_X;
+        int rangeY=screenHeight-panelHeight(screenWidth,screenHeight)-2*MARGIN_Y;
+        PerformanceConfig.hudX=rangeX>0?clamp((float)((x-MARGIN_X)/rangeX),0f,1f):0f;
+        PerformanceConfig.hudY=rangeY>0?clamp((float)((y-MARGIN_Y)/rangeY),0f,1f):0f;
     }
-
+    static void previewScale(float value){
+        PerformanceConfig.hudScale=clamp(value,0.55f,2.25f);
+    }
+    static void setScale(float value){
+        previewScale(value);
+        PerformanceConfig.save();
+    }
     static void reset(){
         PerformanceConfig.hudX=0f;
         PerformanceConfig.hudY=0f;
+        PerformanceConfig.hudScale=1f;
         PerformanceConfig.save();
     }
-
-    private static float clamp(float n){
-        if(!Float.isFinite(n))return 0f;
-        return Math.max(0f,Math.min(1f,n));
+    private static float clamp(float n,float min,float max){
+        return Float.isFinite(n)?Math.max(min,Math.min(max,n)):min;
     }
 
-    static void draw(GuiGraphics graphics,Minecraft mc,boolean editMode){
-        int x=left(graphics.guiWidth()),y=top(graphics.guiHeight());
-        graphics.fill(x,y,x+WIDTH,y+HEIGHT,0xD20F0C14);
-        graphics.fill(x,y,x+WIDTH,y+2,0xFFE0B568);
-        graphics.drawString(mc.font,"PORT  /  PERFORMANCE",x+9,y+8,0xFFEAC082,true);
-        graphics.drawString(mc.font,"FPS: "+PerformanceStats.fps(),x+9,y+24,0xFFFAF7F1,true);
-        graphics.drawString(mc.font,"PING: "+(PerformanceStats.ping()<0?"N/D":PerformanceStats.ping()+" ms"),x+92,y+24,0xFFFAF7F1,true);
-        graphics.drawString(mc.font,"RAM: "+PerformanceStats.used()+" / "+PerformanceStats.max()+" MB",x+9,y+39,0xFFC6B5C1,true);
-        graphics.drawString(mc.font,PerformanceConfig.streamEnabled?"WEB: TRANSMITINDO":"WEB: OFF",x+9,y+53,
-            PerformanceConfig.streamEnabled?0xFF8BDDAF:0xFFBCA3A8,true);
-        String boostMode=BoosterEngine.status().split(" \\| ",2)[0].replace("Modo ","").toUpperCase(java.util.Locale.ROOT);
-        graphics.drawString(mc.font,"BOOSTER: "+boostMode+" / META "+PerformanceConfig.boosterTargetFps,
-            x+9,y+67,0xFFE5B571,true);
+    static void draw(GuiGraphics g,Minecraft mc,boolean editMode){
+        int sw=g.guiWidth(),sh=g.guiHeight();
+        int x=left(sw,sh),y=top(sw,sh);
+        int w=panelWidth(sw,sh),h=panelHeight(sw,sh);
+        float scale=scale(sw,sh);
+        g.pose().pushPose();
+        g.pose().translate(x,y,0);
+        g.pose().scale(scale,scale,1);
+        g.fill(0,0,WIDTH,HEIGHT,0xD20F0C14);
+        g.fill(0,0,WIDTH,2,0xFFE0B568);
+        g.drawString(mc.font,"PORT  /  PERFORMANCE 3.0",9,8,0xFFEAC082,true);
+        g.drawString(mc.font,"FPS: "+PerformanceStats.fps(),9,26,0xFFFAF7F1,true);
+        g.drawString(mc.font,"PING: "+(PerformanceStats.ping()<0?"N/D":PerformanceStats.ping()+" ms"),103,26,0xFFFAF7F1,true);
+        g.drawString(mc.font,"RAM: "+PerformanceStats.used()+" / "+PerformanceStats.max()+" MB",9,41,0xFFC6B5C1,true);
+        g.drawString(mc.font,"1% LOW: "+Math.round(BoosterEngine.low1())+
+            "  |  P95: "+String.format(java.util.Locale.ROOT,"%.1f",BoosterEngine.p95())+" ms",
+            9,55,0xFFACD7D2,true);
+        String m=BoosterEngine.status().split(" \\| ",2)[0].replace("Modo ","");
+        g.drawString(mc.font,"BOOST: "+m.toUpperCase(java.util.Locale.ROOT)+
+            "  |  CHUNKS: "+BoosterEngine.currentChunks(),9,70,0xFFE5B571,true);
+        g.drawString(mc.font,PerformanceConfig.streamEnabled?"WEB: TRANSMITINDO":"WEB: OFF",
+            9,84,PerformanceConfig.streamEnabled?0xFF8BDDAF:0xFFBCA3A8,true);
+        g.pose().popPose();
 
         if(editMode){
-            // Visible draggable outline without obscuring the regular metrics.
             int border=0xFFF0C582;
-            graphics.fill(x-2,y-2,x+WIDTH+2,y-1,border);
-            graphics.fill(x-2,y+HEIGHT+1,x+WIDTH+2,y+HEIGHT+2,border);
-            graphics.fill(x-2,y-1,x-1,y+HEIGHT+1,border);
-            graphics.fill(x+WIDTH+1,y-1,x+WIDTH+2,y+HEIGHT+1,border);
+            g.fill(x-2,y-2,x+w+2,y-1,border);
+            g.fill(x-2,y+h+1,x+w+2,y+h+2,border);
+            g.fill(x-2,y-1,x-1,y+h+1,border);
+            g.fill(x+w+1,y-1,x+w+2,y+h+1,border);
+            // Resize handle in bottom-right corner.
+            g.fill(x+w-13,y+h-13,x+w+2,y+h+2,0xFFE0B568);
+            g.fill(x+w-8,y+h-8,x+w-2,y+h-2,0xFF211922);
         }
     }
 }

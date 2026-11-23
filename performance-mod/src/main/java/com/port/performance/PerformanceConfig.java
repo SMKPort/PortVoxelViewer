@@ -15,7 +15,10 @@ final class PerformanceConfig {
     static String url=DEFAULT_URL;
     static String token="";
     static boolean hudEnabled=true;
-    static float hudX=0f,hudY=0f;
+    static float hudX=0f,hudY=0f,hudScale=1f;
+    static boolean boosterAdjustChunks=true,boosterAdjustEntities=false;
+    static int boosterMinRenderDistance=6;
+    static int pendingRenderOriginal=-1,pendingRenderApplied=-1;
     static boolean streamEnabled=false;
     static boolean webControlEnabled=false;
     static int boosterTargetFps=60;
@@ -34,6 +37,16 @@ final class PerformanceConfig {
         hudEnabled=Boolean.parseBoolean(values.getProperty("hudEnabled","true"));
         hudX=parsePosition(values.getProperty("hudX","0"));
         hudY=parsePosition(values.getProperty("hudY","0"));
+        hudScale=parseScale(values.getProperty("hudScale","1.0"));
+        boosterAdjustChunks=Boolean.parseBoolean(values.getProperty("boosterAdjustChunks","true"));
+        boosterAdjustEntities=Boolean.parseBoolean(values.getProperty("boosterAdjustEntities","false"));
+        try { boosterMinRenderDistance=Math.max(4,Math.min(24,Integer.parseInt(values.getProperty("boosterMinRenderDistance","6")))); }
+        catch(NumberFormatException ex){boosterMinRenderDistance=6;}
+        try{
+            pendingRenderOriginal=Integer.parseInt(values.getProperty("pendingRenderOriginal","-1"));
+            pendingRenderApplied=Integer.parseInt(values.getProperty("pendingRenderApplied","-1"));
+            if(pendingRenderOriginal<=0||pendingRenderApplied<=0){pendingRenderOriginal=-1;pendingRenderApplied=-1;}
+        }catch(NumberFormatException ex){pendingRenderOriginal=-1;pendingRenderApplied=-1;}
         try{
             boosterTargetFps=Math.max(30,Math.min(240,Integer.parseInt(values.getProperty("boosterTargetFps","60"))));
             pendingRestoreOriginal=Double.parseDouble(values.getProperty("pendingRestoreOriginal","-1"));
@@ -55,6 +68,24 @@ final class PerformanceConfig {
             if(Float.isFinite(value))return Math.max(0f,Math.min(1f,value));
         }catch(NumberFormatException ignored){}
         return 0f;
+    }
+
+    private static float parseScale(String raw){
+        try{
+            float f=Float.parseFloat(raw);
+            return Float.isFinite(f)?Math.max(0.55f,Math.min(2.25f,f)):1.0f;
+        }catch(NumberFormatException ex){return 1.0f;}
+    }
+    static void notePendingRenderRestore(int original,int applied){
+        pendingRenderOriginal=original;
+        pendingRenderApplied=applied;
+        save();
+    }
+    static void clearPendingRenderRestore(){
+        if(pendingRenderOriginal<0&&pendingRenderApplied<0)return;
+        pendingRenderOriginal=-1;
+        pendingRenderApplied=-1;
+        save();
     }
 
     static void regenerateKey(){
@@ -80,6 +111,14 @@ final class PerformanceConfig {
         values.setProperty("hudEnabled",Boolean.toString(hudEnabled));
         values.setProperty("hudX",Float.toString(hudX));
         values.setProperty("hudY",Float.toString(hudY));
+        values.setProperty("hudScale",Float.toString(hudScale));
+        values.setProperty("boosterAdjustChunks",Boolean.toString(boosterAdjustChunks));
+        values.setProperty("boosterAdjustEntities",Boolean.toString(boosterAdjustEntities));
+        values.setProperty("boosterMinRenderDistance",Integer.toString(boosterMinRenderDistance));
+        if(pendingRenderOriginal>0&&pendingRenderApplied>0){
+            values.setProperty("pendingRenderOriginal",Integer.toString(pendingRenderOriginal));
+            values.setProperty("pendingRenderApplied",Integer.toString(pendingRenderApplied));
+        }
         values.setProperty("boosterTargetFps",Integer.toString(boosterTargetFps));
         if(pendingRestoreOriginal>0&&pendingRestoreApplied>0){
             values.setProperty("pendingRestoreOriginal",Double.toString(pendingRestoreOriginal));

@@ -6,61 +6,77 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
-/** Drag and keyboard editor of the existing Port Performance HUD. */
+/** Drag panel, drag bottom-right handle, use +/- or wheel to resize the HUD. */
 final class HudPositionScreen extends Screen {
-    private boolean dragging=false;
-    private double dragOffsetX=0,dragOffsetY=0;
-    private String notice="Clique no painel e arraste para qualquer região da tela.";
+    private boolean dragging,resizing;
+    private double dragOffsetX,dragOffsetY,resizeStartX;
+    private float resizeStartScale;
+    private String notice="Arraste o painel para mover. Arraste o canto inferior direito para redimensionar.";
 
-    HudPositionScreen(){
-        super(Component.literal("Port Performance - Posicionar HUD"));
-    }
+    HudPositionScreen(){super(Component.literal("Port Performance - Editor de HUD"));}
 
     @Override
     protected void init(){
         int w=Math.min(105,Math.max(62,(width-36)/3));
-        int total=3*w+12;
-        int start=(width-total)/2;
-        int y=Math.max(17,height-31);
-        addRenderableWidget(Button.builder(Component.literal("Resetar"),button->{
+        int start=(width-(3*w+12))/2;
+        int row=Math.max(55,height-31);
+        addRenderableWidget(Button.builder(Component.literal("Resetar"),b->{
             PerformanceHud.reset();
-            notice="Posição padrão restaurada.";
-        }).bounds(start,y,w,20).build());
-        addRenderableWidget(Button.builder(Component.literal("Centralizar"),button->{
+            notice="Posição e tamanho padrão restaurados.";
+        }).bounds(start,row,w,20).build());
+        addRenderableWidget(Button.builder(Component.literal("Centralizar"),b->{
             PerformanceConfig.hudX=0.5f;
             PerformanceConfig.hudY=0.5f;
             PerformanceConfig.save();
             notice="HUD centralizado.";
-        }).bounds(start+w+6,y,w,20).build());
-        addRenderableWidget(Button.builder(Component.literal("Concluir"),button->onClose())
-            .bounds(start+2*(w+6),y,w,20).build());
+        }).bounds(start+w+6,row,w,20).build());
+        addRenderableWidget(Button.builder(Component.literal("Concluir"),b->onClose())
+            .bounds(start+2*(w+6),row,w,20).build());
+
+        int resizeRow=Math.max(34,row-27);
+        addRenderableWidget(Button.builder(Component.literal("-"),b->{
+            PerformanceHud.setScale(PerformanceConfig.hudScale-0.10f);
+            notice="Tamanho atualizado.";
+        }).bounds(width/2-72,resizeRow,45,20).build());
+        addRenderableWidget(Button.builder(Component.literal("+"),b->{
+            PerformanceHud.setScale(PerformanceConfig.hudScale+0.10f);
+            notice="Tamanho atualizado.";
+        }).bounds(width/2+27,resizeRow,45,20).build());
     }
 
     @Override
-    public void render(GuiGraphics graphics,int mouseX,int mouseY,float partialTick){
-        // See the world behind the editor while preventing other UI clicks.
-        graphics.fill(0,0,width,height,0x9C111019);
-        graphics.fill(0,0,width,3,0xFFE8B976);
-        graphics.drawCenteredString(font,"§6§lPORT PERFORMANCE / EDITOR DE HUD",width/2,7,0xFFF9D8A0);
-        graphics.drawCenteredString(font,"Arraste o quadro dourado ou use as setas do teclado.",width/2,22,0xFFE0CFD7);
-        graphics.drawCenteredString(font,"Shift + setas: mover mais rápido | ESC: salvar e fechar",
-            width/2,35,0xFFC2B5C3);
-
-        PerformanceHud.draw(graphics,minecraft,true);
-        graphics.drawCenteredString(font,notice,width/2,Math.max(55,height-46),0xFFF0CDA0);
-        super.render(graphics,mouseX,mouseY,partialTick);
+    public void render(GuiGraphics g,int mouseX,int mouseY,float partialTick){
+        g.fill(0,0,width,height,0x9C111019);
+        g.fill(0,0,width,3,0xFFE8B976);
+        g.drawCenteredString(font,"§6§lPORT PERFORMANCE / EDITOR DE HUD",width/2,7,0xFFF9D8A0);
+        g.drawCenteredString(font,"Mover: arrastar ou setas | Tamanho: canto dourado, +/- ou roda do mouse",
+            width/2,22,0xFFE0CFD7);
+        g.drawCenteredString(font,"Escala: "+Math.round(PerformanceConfig.hudScale*100)+
+            "% | Shift + setas: 10 px | ESC: salvar",width/2,35,0xFFC2B5C3);
+        PerformanceHud.draw(g,minecraft,true);
+        g.drawCenteredString(font,notice,width/2,Math.max(46,height-89),0xFFF0CDA0);
+        super.render(g,mouseX,mouseY,partialTick);
     }
 
     @Override
     public boolean mouseClicked(double mouseX,double mouseY,int button){
         if(super.mouseClicked(mouseX,mouseY,button))return true;
-        int left=PerformanceHud.left(width),top=PerformanceHud.top(height);
-        if(button==0&&mouseX>=left-3&&mouseX<=left+PerformanceHud.WIDTH+3
-            &&mouseY>=top-3&&mouseY<=top+PerformanceHud.HEIGHT+3){
+        int left=PerformanceHud.left(width,height),top=PerformanceHud.top(width,height);
+        int pw=PerformanceHud.panelWidth(width,height),ph=PerformanceHud.panelHeight(width,height);
+        if(button==0 && mouseX>=left+pw-17 && mouseX<=left+pw+4 &&
+            mouseY>=top+ph-17 && mouseY<=top+ph+4){
+            resizing=true;
+            resizeStartX=mouseX;
+            resizeStartScale=PerformanceConfig.hudScale;
+            notice="Redimensionando HUD. Solte para salvar.";
+            return true;
+        }
+        if(button==0 && mouseX>=left-3 && mouseX<=left+pw+3 &&
+            mouseY>=top-3 && mouseY<=top+ph+3){
             dragging=true;
             dragOffsetX=mouseX-left;
             dragOffsetY=mouseY-top;
-            notice="Movendo HUD. Solte o mouse para salvar.";
+            notice="Movendo HUD. Solte para salvar.";
             return true;
         }
         return false;
@@ -68,7 +84,11 @@ final class HudPositionScreen extends Screen {
 
     @Override
     public boolean mouseDragged(double mouseX,double mouseY,int button,double dragX,double dragY){
-        if(dragging&&button==0){
+        if(resizing && button==0){
+            PerformanceHud.previewScale(resizeStartScale+(float)((mouseX-resizeStartX)/PerformanceHud.WIDTH));
+            return true;
+        }
+        if(dragging && button==0){
             PerformanceHud.moveTo(mouseX-dragOffsetX,mouseY-dragOffsetY,width,height);
             return true;
         }
@@ -77,41 +97,50 @@ final class HudPositionScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX,double mouseY,int button){
-        if(dragging&&button==0){
-            PerformanceHud.moveTo(mouseX-dragOffsetX,mouseY-dragOffsetY,width,height);
-            dragging=false;
+        if((dragging||resizing)&&button==0){
+            if(dragging)PerformanceHud.moveTo(mouseX-dragOffsetX,mouseY-dragOffsetY,width,height);
+            dragging=resizing=false;
             PerformanceConfig.save();
-            notice="Posição salva. Ela será mantida nas próximas sessões.";
+            notice="Posição e tamanho salvos para as próximas sessões.";
             return true;
         }
         return super.mouseReleased(mouseX,mouseY,button);
     }
 
     @Override
+    public boolean mouseScrolled(double mouseX,double mouseY,double scrollX,double scrollY){
+        int x=PerformanceHud.left(width,height),y=PerformanceHud.top(width,height);
+        if(mouseX>=x&&mouseX<=x+PerformanceHud.panelWidth(width,height)&&
+           mouseY>=y&&mouseY<=y+PerformanceHud.panelHeight(width,height)){
+            PerformanceHud.setScale(PerformanceConfig.hudScale+(scrollY>0?0.05f:-0.05f));
+            notice="Tamanho atualizado com a roda do mouse.";
+            return true;
+        }
+        return super.mouseScrolled(mouseX,mouseY,scrollX,scrollY);
+    }
+
+    @Override
     public boolean keyPressed(int keyCode,int scanCode,int modifiers){
-        int delta=((modifiers&GLFW.GLFW_MOD_SHIFT)!=0)?10:1;
-        int dx=0,dy=0;
+        int delta=((modifiers&GLFW.GLFW_MOD_SHIFT)!=0)?10:1,dx=0,dy=0;
         if(keyCode==GLFW.GLFW_KEY_LEFT)dx=-delta;
         if(keyCode==GLFW.GLFW_KEY_RIGHT)dx=delta;
         if(keyCode==GLFW.GLFW_KEY_UP)dy=-delta;
         if(keyCode==GLFW.GLFW_KEY_DOWN)dy=delta;
         if(dx!=0||dy!=0){
-            PerformanceHud.moveTo(PerformanceHud.left(width)+dx,
-                PerformanceHud.top(height)+dy,width,height);
+            PerformanceHud.moveTo(PerformanceHud.left(width,height)+dx,
+                PerformanceHud.top(width,height)+dy,width,height);
             PerformanceConfig.save();
-            notice="Posição ajustada pelas setas e salva.";
+            notice="Posição ajustada e salva.";
             return true;
         }
         return super.keyPressed(keyCode,scanCode,modifiers);
     }
-
     @Override
     public void onClose(){
-        dragging=false;
+        dragging=resizing=false;
         PerformanceConfig.save();
         super.onClose();
     }
-
     @Override
     public boolean isPauseScreen(){return false;}
 }
