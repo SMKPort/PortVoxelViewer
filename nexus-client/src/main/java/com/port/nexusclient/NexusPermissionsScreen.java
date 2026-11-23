@@ -79,6 +79,11 @@ final class NexusPermissionsScreen extends Screen {
                 }).bounds(bx,by,half,20).build());
         }
 
+        if(tab==Tab.GERAL&&height>=300){
+            addRenderableWidget(Button.builder(Component.literal("§6VISÃO ARCANA | ANÁLISE DE IMAGENS"),
+                button->minecraft.setScreen(new NexusVisionPanel(this)))
+                .bounds(x+6,205,w-12,20).build());
+        }
         if(tab==Tab.MEMORIAS&&height>=275){
             int buttonY=height>=340?242:219;
             addRenderableWidget(Button.builder(Component.literal("§6GERENCIAR MEMÓRIAS DO PORT"),

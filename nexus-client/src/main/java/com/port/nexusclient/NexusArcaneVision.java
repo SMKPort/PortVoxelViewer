@@ -5,123 +5,195 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.network.chat.Component;
 
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Iterator;
+import java.util.List;
 
 /**
- * On-demand screenshot analysis. Only a compressed screenshot from the
- * owner's explicit request goes to the HTTPS Gemini free-quota relay.
- * No always-on capture, no uploads of world files or game telemetry.
+ * Owner-approved, single-frame screenshot analysis for Minecraft 1.21.1.
+ * All uploads are manual. No persistent images, automatic polling or x-ray data.
  */
 final class NexusArcaneVision {
-    private static boolean enabled=false,waiting=false;
-    private static long lastAt=0;
-    private static int requests=0;
-    private static long day=0;
+    record Result(String focus,String text,boolean ok,long at){}
+    private static final int DAILY_LIMIT=5,COOLDOWN_MS=60_000;
+    private static final ArrayDeque<Result> HISTORY=new ArrayDeque<>();
+    private static boolean enabled=false,pending=false,waiting=false,centerCrop=false;
+    private static long lastAt=0,day=0,requestSerial=0,activeRequest=0;
+    private static int requests=0,delay=0;
+    private static NexusVisionModes.Focus focus=NexusVisionModes.Focus.GERAL;
+    private static String pendingQuestion="";
+    private static NexusVisionModes.Focus pendingFocus=NexusVisionModes.Focus.GERAL;
+    private static boolean pendingCrop=false;
     private static String lastResult="Nenhuma análise solicitada.";
-    private NexusArcaneVision(){}
 
+    private NexusArcaneVision(){}
     static boolean enabled(){return enabled;}
-    static boolean waiting(){return waiting;}
+    static boolean busy(){return waiting||pending;}
+    static NexusVisionModes.Focus focus(){return focus;}
+    static boolean centerCrop(){return centerCrop;}
+    static String lastResult(){return lastResult;}
+    static List<Result> history(){return List.copyOf(HISTORY);}
+    static void setFocus(NexusVisionModes.Focus selected){
+        focus=selected==null?NexusVisionModes.Focus.GERAL:selected;
+    }
+    static void nextFocus(){focus=NexusVisionModes.next(focus);}
+    static void setCenterCrop(boolean value){centerCrop=value;}
     static void setEnabled(boolean on){
         if(on&&ClientConfig.token.isBlank())
             throw new IllegalStateException("Pareie o Nexus com o site antes de ativar a Visão Arcana.");
         enabled=on;
-        if(!on)waiting=false;
+        if(!on){
+            pending=false;waiting=false;delay=0;
+            activeRequest=++requestSerial; // Ignore late callbacks after revocation.
+        }
+    }
+    private static void refreshQuota(){
+        long today=System.currentTimeMillis()/86_400_000L;
+        if(today!=day){day=today;requests=0;}
+    }
+    static int remaining(){refreshQuota();return Math.max(0,DAILY_LIMIT-requests);}
+    static long cooldownSeconds(){
+        return Math.max(0,(lastAt+COOLDOWN_MS-System.currentTimeMillis()+999L)/1000L);
     }
     static String status(){
         return "Visão Arcana "+(enabled?"ATIVA":"OFF")+
-            " | "+(waiting?"consultando imagem":"pronta")+
-            " | máximo 5 consultas/dia no cliente | "+lastResult;
+            " | "+(pending?"captura pendente":waiting?"analisando":"pronta")+
+            " | foco: "+focus.label+
+            " | imagem: "+(centerCrop?"centro ampliado":"tela completa")+
+            " | consultas restantes nesta sessão: "+remaining()+
+            " | intervalo: "+cooldownSeconds()+"s";
     }
+
+    /** Explicit action, never triggered periodically or by the AI. */
     static void capture(String question){
+        capture(question,focus,centerCrop);
+    }
+    static void capture(String question,NexusVisionModes.Focus selected,boolean crop){
         Minecraft mc=Minecraft.getInstance();
-        if(!enabled){NexusClientMod.notifyPlayer("Visão Arcana desativada: /nexusclient vision on.");return;}
-        if(mc.player==null||mc.getConnection()==null||mc.level==null||mc.screen!=null){
-            NexusClientMod.notifyPlayer("Entre no jogo e feche as telas para usar a Visão Arcana.");
-            return;
+        if(!enabled){NexusClientMod.notifyPlayer("Ative /nexusclient vision on primeiro.");return;}
+        if(mc.player==null||mc.getConnection()==null||mc.level==null){
+            NexusClientMod.notifyPlayer("Entre em um mundo para analisar a imagem.");return;
         }
         if(ClientConfig.token.isBlank()){
-            NexusClientMod.notifyPlayer("Pareie o Nexus para consultar o Gemini.");
+            NexusClientMod.notifyPlayer("Pareie o Nexus com a Render para consultar o Gemini.");return;
+        }
+        if(busy()){NexusClientMod.notifyPlayer("A Visão Arcana já está ocupada.");return;}
+        if(remaining()==0||cooldownSeconds()>0){
+            NexusClientMod.notifyPlayer("Visão Arcana: "+remaining()+
+                " consultas restantes. Próxima captura em "+cooldownSeconds()+"s.");
             return;
         }
-        if(waiting){NexusClientMod.notifyPlayer("Visão Arcana já está analisando uma captura.");return;}
-        long now=System.currentTimeMillis(),currentDay=now/86400000L;
-        if(day!=currentDay){day=currentDay;requests=0;}
-        if(requests>=5||now-lastAt<60000L){
-            NexusClientMod.notifyPlayer("Limite gratuito: no máximo 5 capturas/dia, intervalo de 60s.");
-            return;
+        if(mc.screen!=null){
+            NexusClientMod.notifyPlayer("Feche a interface antes de capturar o mundo.");return;
         }
-        String prompt=(question==null?"":question).trim();
-        if(prompt.length()>180)prompt=prompt.substring(0,180);
-        if(prompt.isEmpty())prompt="Analise o que aparece na minha tela do Minecraft.";
-        try(NativeImage screenshot=Screenshot.takeScreenshot(mc.getMainRenderTarget())){
-            String jpeg=encodeJpeg(screenshot);
-            if(jpeg.length()>540000)throw new IllegalStateException("Captura muito grande.");
-            waiting=true;lastAt=now;requests++;
-            lastResult="Captura enviada com autorização.";
-            NexusArcaneHolograms.pulse();
-            NexusClientMod.notifyPlayer("Visão Arcana: analisando captura pelo Gemini gratuito...");
-            ClientLink.askArcaneVision(prompt,jpeg);
-        }catch(Exception ex){
+        pendingQuestion=NexusVisionModes.prompt(selected,question);
+        pendingFocus=selected==null?NexusVisionModes.Focus.GERAL:selected;
+        pendingCrop=crop;
+        pending=true;
+        delay=4; // Let the game draw a clean frame after the F9 settings screen closes.
+        lastResult="Preparando uma captura autorizada...";
+        NexusClientMod.notifyPlayer("Visão Arcana: preparando 1 captura ("+
+            pendingFocus.label+(crop?", centro ampliado":"")+")...");
+    }
+
+    /** Called on client tick, but captures only when a request was explicitly queued. */
+    static void tick(){
+        if(!pending)return;
+        Minecraft mc=Minecraft.getInstance();
+        if(!enabled||mc.player==null||mc.level==null){pending=false;return;}
+        if(mc.screen!=null)return;
+        if(--delay>0)return;
+        pending=false;
+        try(NativeImage image=Screenshot.takeScreenshot(mc.getMainRenderTarget())){
+            String jpeg=encodeJpeg(image,pendingCrop);
+            if(jpeg.length()>540_000)throw new IllegalStateException("Imagem acima de 540 KB em Base64.");
+            waiting=true;
+            lastAt=System.currentTimeMillis();
+            requests++;
+            activeRequest=++requestSerial;
+            long id=activeRequest;
+            lastResult="Imagem enviada, aguardando a análise...";
+            NexusClientMod.notifyPlayer("Visão Arcana: enviando apenas este JPEG ao Gemini gratuito...");
+            ClientLink.askArcaneVision(pendingQuestion,jpeg,id);
+        }catch(Exception error){
             waiting=false;
-            NexusClientMod.notifyPlayer("Falha ao capturar imagem: "+ex.getMessage());
+            lastResult="Não foi possível capturar a imagem: "+error.getMessage();
+            NexusClientMod.notifyPlayer("Visão Arcana: "+lastResult);
         }
     }
-    private static String encodeJpeg(NativeImage image)throws Exception{
+    private static String encodeJpeg(NativeImage image,boolean crop)throws Exception{
         int originalW=image.getWidth(),originalH=image.getHeight();
-        if(originalW<1||originalH<1)throw new IllegalArgumentException("Framebuffer vazio.");
-        double ratio=Math.min(1.0,Math.min(768.0/originalW,432.0/originalH));
-        int w=Math.max(1,(int)(originalW*ratio)),h=Math.max(1,(int)(originalH*ratio));
+        if(originalW<1||originalH<1)throw new IllegalArgumentException("Imagem vazia.");
+        int cropW=crop?Math.max(1,(int)(originalW*.63)):originalW;
+        int cropH=crop?Math.max(1,(int)(originalH*.63)):originalH;
+        int startX=(originalW-cropW)/2,startY=(originalH-cropH)/2;
+        double ratio=Math.min(1.0,Math.min(768.0/cropW,432.0/cropH));
+        int w=Math.max(1,(int)(cropW*ratio)),h=Math.max(1,(int)(cropH*ratio));
         BufferedImage scaled=new BufferedImage(w,h,BufferedImage.TYPE_INT_RGB);
-        for(int y=0;y<h;y++)for(int x=0;x<w;x++){
-            int srcX=Math.min(originalW-1,(int)((x+0.5)/ratio));
-            int srcY=Math.min(originalH-1,(int)((y+0.5)/ratio));
-            int abgr=image.getPixelRGBA(srcX,srcY);
-            int rgb=((abgr&255)<<16)|(abgr&0xFF00)|((abgr>>>16)&255);
-            scaled.setRGB(x,y,rgb);
+        for(int y=0;y<h;y++){
+            int srcY=startY+Math.min(cropH-1,(int)((y+0.5)/ratio));
+            for(int x=0;x<w;x++){
+                int srcX=startX+Math.min(cropW-1,(int)((x+0.5)/ratio));
+                int abgr=image.getPixelRGBA(srcX,srcY);
+                int rgb=((abgr&255)<<16)|(abgr&0xFF00)|((abgr>>>16)&255);
+                scaled.setRGB(x,y,rgb);
+            }
         }
-        Iterator<ImageWriter> writers=ImageIO.getImageWritersByFormatName("jpeg");
-        if(!writers.hasNext())throw new IllegalStateException("Codificador JPEG não encontrado.");
-        ImageWriter writer=writers.next();
-        try(ByteArrayOutputStream out=new ByteArrayOutputStream();
-            MemoryCacheImageOutputStream stream=new MemoryCacheImageOutputStream(out)){
-            writer.setOutput(stream);
+        Iterator<ImageWriter> iter=ImageIO.getImageWritersByFormatName("jpeg");
+        if(!iter.hasNext())throw new IllegalStateException("Codificador JPEG indisponível.");
+        ImageWriter writer=iter.next();
+        try(ByteArrayOutputStream bytes=new ByteArrayOutputStream();
+            MemoryCacheImageOutputStream output=new MemoryCacheImageOutputStream(bytes)){
+            writer.setOutput(output);
             ImageWriteParam params=writer.getDefaultWriteParam();
             if(params.canWriteCompressed()){
                 params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-                params.setCompressionQuality(.64f);
+                params.setCompressionQuality(.68f);
             }
-            writer.write(null,new javax.imageio.IIOImage(scaled,null,null),params);
-            stream.flush();
-            return Base64.getEncoder().encodeToString(out.toByteArray());
+            writer.write(null,new IIOImage(scaled,null,null),params);
+            output.flush();
+            return Base64.getEncoder().encodeToString(bytes.toByteArray());
         }finally{writer.dispose();}
     }
-    static void answered(String text){
-        waiting=false;
-        if(!enabled())return;
-        lastResult=String.valueOf(text).replaceAll("[\\p{Cntrl}]"," ").trim();
+    private static void store(String value,boolean ok){
+        lastResult=value==null?"Resposta vazia.":value.replaceAll("[\\p{Cntrl}]"," ").trim();
         if(lastResult.length()>800)lastResult=lastResult.substring(0,800);
-        var mc=Minecraft.getInstance();
-        if(mc.player!=null){
-            int max=180;
-            for(int i=0;i<lastResult.length()&&i<720;i+=max){
-                String part=lastResult.substring(i,Math.min(i+max,lastResult.length()));
-                mc.player.displayClientMessage(Component.literal("§6[Nexus Visão] §f"+part),false);
-            }
-        }
-        NexusArcaneHolograms.pulse();
+        HISTORY.addFirst(new Result(pendingFocus.label,lastResult,ok,System.currentTimeMillis()));
+        while(HISTORY.size()>6)HISTORY.removeLast();
     }
-    static void failed(String reason){
+    static void answered(long requestId,String text){
+        if(!enabled||!waiting||requestId!=activeRequest)return;
         waiting=false;
-        if(!enabled())return;
-        lastResult=String.valueOf(reason).replaceAll("[\\p{Cntrl}]"," ").trim();
+        store(text,true);
+        Minecraft mc=Minecraft.getInstance();
+        if(mc.player==null)return;
+        String remaining=lastResult;
+        while(!remaining.isBlank()){
+            int cut=Math.min(170,remaining.length());
+            if(cut<remaining.length()){
+                int space=remaining.lastIndexOf(' ',cut);
+                if(space>80)cut=space;
+            }
+            String part=remaining.substring(0,cut).trim();
+            if(!part.isBlank())mc.player.displayClientMessage(
+                Component.literal("§6[Nexus Visão] §f"+part),false);
+            remaining=remaining.substring(cut).trim();
+        }
+        NexusClientMod.notifyPlayer("Relatório disponível em F9 (histórico local).");
+    }
+    static void failed(long requestId,String reason){
+        if(!enabled||!waiting||requestId!=activeRequest)return;
+        waiting=false;
+        store(reason,false);
         NexusClientMod.notifyPlayer("Visão Arcana: "+lastResult);
     }
 }

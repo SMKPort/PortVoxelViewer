@@ -236,7 +236,7 @@ final class ClientLink {
             });
     }
 
-    static void askArcaneVision(String question,String jpegBase64){
+    static void askArcaneVision(String question,String jpegBase64,long requestId){
         if(!NexusArcaneVision.enabled()||ClientConfig.token.isBlank())return;
         JsonObject request=new JsonObject();
         request.addProperty("consent",true);
@@ -247,11 +247,11 @@ final class ClientLink {
             .thenAccept(response->mc.execute(()->{
                 if(response!=null&&response.has("ok")&&response.get("ok").getAsBoolean()&&
                     response.has("reply"))
-                    NexusArcaneVision.answered(response.get("reply").getAsString());
-                else NexusArcaneVision.failed(errorText(response));
+                    NexusArcaneVision.answered(requestId,response.get("reply").getAsString());
+                else NexusArcaneVision.failed(requestId,errorText(response));
             }))
             .exceptionally(error->{
-                mc.execute(()->NexusArcaneVision.failed("Serviço gratuito indisponível."));
+                mc.execute(()->NexusArcaneVision.failed(requestId,"Serviço gratuito indisponível."));
                 return null;
             });
     }

@@ -68,7 +68,6 @@ final class NexusPermissions {
         NexusBlessing.setEnabled(false);
         NexusVoiceCasting.setEnabled(false);
         NexusArcaneVision.setEnabled(false);
-        NexusArcaneHolograms.setEnabled(false);
         NexusAwakening.protection(false);
         NexusAwakening.warnings(false);
         NexusAwakening.journal(false); // Preserve any previously saved entries.

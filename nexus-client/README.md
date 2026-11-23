@@ -1,45 +1,80 @@
 # Nexus Aterna Client · NeoForge 1.21.1
 
 
-## Nexus 4.0.0-alpha.4 | Visão Arcana + Hologramas 3D (sem assinatura)
+## Nexus 4.0.0-alpha.5 | Visão Arcana 2.0, sem hologramas
 
-**Hologramas**: dentro do mundo, use **F10** ou
-/nexusclient hologram on para projetar partículas 3D no cliente.
-Estilos: /nexusclient hologram mode orb,
-/nexusclient hologram mode runes e
-/nexusclient hologram mode schematic.
-/nexusclient hologram off desliga. A projeção não cria blocos,
-entidades ou dados no servidor. É inteiramente local, sem assinatura,
-sem API e sem alteração no servidor Somake.
+A Visão Arcana foi redesenhada na base **4.0.0-alpha.4**, preservando
+os outros protocolos do Nexus Aterna. **Os hologramas decorativos foram
+removidos**, incluindo o atalho F10, os comandos `/nexusclient hologram`,
+as partículas 3D e a classe correspondente.
 
-**Visão Arcana por IA**: primeiro faça o pareamento do Nexus Client.
-Execute /nexusclient vision on e pressione **F9** dentro do jogo
-para analisar uma captura da tela. O comando
-/nexusclient vision analyze O que há nesta estrutura? aceita
-uma pergunta específica. A imagem é reduzida a, no máximo, 768 × 432,
-comprimida em JPEG e enviada **somente por sua ação explícita** via
-HTTPS à Render e ao modelo Gemini 2.5 Flash-Lite. O resultado aparece
-apenas no chat local do jogador, sem publicar no chat do servidor.
+### Análise visual em F9
 
-Para cumprir a exigência de não ter cobrança automática, o endpoint de
-Visão **não reutiliza** a chave Gemini das conversas do site.
-Configure no serviço Render uma variável privada
-NEXUS_VISION_FREE_API_KEY contendo uma chave de um projeto
-Google AI Studio **sem faturamento ativado**.
-Sem essa chave, a captura não é enviada ao Gemini e a rota informa
-que falta configuração. A versão exige a modalidade gratuita, sem
-fallback para outro modelo. O limite próprio é 5 capturas por dia e
-60 segundos de intervalo entre consultas. Limites do Google podem ser
-menores ou mudar sem aviso. Se a cota se esgotar, não é usado um
-modelo pago. Verifique que o projeto da chave não tem cobrança habilitada.
+**F9** abre uma central de controle dentro do Minecraft. O painel também
+fica em **F8 > GERAL > VISÃO ARCANA** ou no comando
+`/nexusclient vision menu`.
 
-Nenhuma análise acontece automaticamente, e a Visão começa desligada
-a cada inicialização do jogo. /nexusclient vision off ou
-/nexusclient permissions off interrompem novas consultas.
+Ative a Visão Arcana após parear o mod. Escreva uma pergunta personalizada,
+selecione um foco e clique em **ANALISAR MINHA TELA AGORA**. A interface
+fecha, o jogo renderiza mais alguns quadros, então captura apenas um JPEG.
+Nunca há gravação de vídeo ou captura periódica. A imagem não é
+armazenada em disco. As respostas aparecem no chat **local** e também
+num histórico local de seis relatórios, apenas durante a sessão.
 
-As teclas F9/F10 podem ser remapeadas em Controles se conflitarem com
-outros mods. O VoiceCast de magias continua separado e inalterado.
+Focos disponíveis:
+- **Geral:** descreve o que é visível e reconhece incertezas.
+- **Construções:** examina formas arquitetônicas, blocos e possíveis melhorias.
+- **Perigos:** destaca mobs, projéteis ou terreno perigoso apenas quando visíveis.
+- **Itens e HUD:** interpreta itens, textos e indicadores legíveis.
 
+A opção **CENTRO AMPLIADO** recorta a parte central da captura para
+aumentar a legibilidade de detalhes pequenos (perdendo contexto das bordas).
+A opção **TELA TODA** preserva a visão geral. As duas alternativas são
+reduzidas a no máximo 768 x 432 e comprimidas em JPEG.
+
+### Comandos
+
+```text
+/nexusclient vision on
+/nexusclient vision off
+/nexusclient vision menu
+/nexusclient vision status
+/nexusclient vision last
+/nexusclient vision focus general
+/nexusclient vision focus structures
+/nexusclient vision focus danger
+/nexusclient vision focus items
+/nexusclient vision zoom on
+/nexusclient vision zoom off
+/nexusclient vision analyze O que tem na estrutura à frente?
+```
+
+### Segurança, custos e limites
+
+O Gemini analisa somente pixels existentes na captura. Não detecta
+jogadores invisíveis, cavernas ocultas nem entidades fora de campo.
+A análise não ganha acesso a pacotes privados, armazenamento do mundo
+nem informações exclusivas do servidor. As descrições podem conter
+erros e devem ser conferidas no jogo.
+
+Mantenha `NEXUS_VISION_FREE_API_KEY` no serviço Render,
+com uma chave Google AI Studio **de projeto sem faturamento ativo**.
+A Render usa o Gemini 2.5 Flash-Lite sem fallback automático para
+outros modelos. Sem chave válida ou cota, a solicitação falha.
+O aplicativo não consegue verificar faturamento, então cabe ao
+proprietário não habilitar cobrança no projeto da chave.
+
+Limites preservados: no máximo 5 consultas por dia por sessão e
+60 segundos de intervalo, além dos limites do provedor. Nada é
+enviado automaticamente ao Gemini. `/nexusclient permissions off`
+revoga as capturas futuras, inclusive as pendentes.
+
+### Histórico
+
+A versão 4.0.0-alpha.4 anterior continua disponível no histórico
+do GitHub, mas os hologramas não existem mais nesta versão.
+A conjuração de voz e a comunicação com o Minecraft não foram
+alteradas nesta atualização.
 
 ## Nexus 4.0.0-alpha.3 | Memórias conectadas ao Gemini
 

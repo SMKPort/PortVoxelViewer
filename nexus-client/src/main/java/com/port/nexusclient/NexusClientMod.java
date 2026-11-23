@@ -33,8 +33,6 @@ public class NexusClientMod {
         "key.nexusclient.voicecast",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_F6,"key.categories.misc");
     private static final KeyMapping VISION_KEY=new KeyMapping(
         "key.nexusclient.vision",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_F9,"key.categories.misc");
-    private static final KeyMapping HOLOGRAM_KEY=new KeyMapping(
-        "key.nexusclient.hologram",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_F10,"key.categories.misc");
     public NexusClientMod(IEventBus modBus) {
         modBus.addListener(this::onRegisterKeys);
         modBus.addListener(this::onRegisterHud);
@@ -53,7 +51,6 @@ public class NexusClientMod {
         event.register(HUD_KEY);
         event.register(VOICE_CAST_KEY);
         event.register(VISION_KEY);
-        event.register(HOLOGRAM_KEY);
     }
 
     private void onRegisterHud(RegisterGuiLayersEvent event){
@@ -77,7 +74,7 @@ public class NexusClientMod {
         NexusCombatMacro.tick();
         NexusBlessing.tick();
         NexusArcaneTravel.tick();
-        NexusArcaneHolograms.tick();
+        NexusArcaneVision.tick();
         Minecraft mc=Minecraft.getInstance();
         while(PRIVATE_KEY.consumeClick()){
             if(mc.player!=null&&mc.screen==null)
@@ -99,13 +96,7 @@ public class NexusClientMod {
         }
         while(VISION_KEY.consumeClick()){
             if(mc.player!=null&&mc.screen==null)
-                NexusArcaneVision.capture("Descreva o que está visível nesta captura do Minecraft.");
-        }
-        while(HOLOGRAM_KEY.consumeClick()){
-            if(mc.player!=null&&mc.screen==null){
-                NexusArcaneHolograms.setEnabled(!NexusArcaneHolograms.enabled());
-                notifyPlayer(NexusArcaneHolograms.status());
-            }
+                mc.setScreen(new NexusVisionPanel(null));
         }
     }
 
@@ -116,22 +107,54 @@ public class NexusClientMod {
                 return 1;
             }))
             .then(Commands.literal("vision")
+                .then(Commands.literal("menu").executes(ctx->{
+                    Minecraft mc=Minecraft.getInstance();
+                    if(mc.player!=null)mc.setScreen(new NexusVisionPanel(null));
+                    return 1;
+                }))
                 .then(Commands.literal("status").executes(ctx->{
                     notifyPlayer(NexusArcaneVision.status());return 1;
+                }))
+                .then(Commands.literal("last").executes(ctx->{
+                    notifyPlayer("Última Visão Arcana: "+NexusArcaneVision.lastResult());return 1;
                 }))
                 .then(Commands.literal("on").executes(ctx->{
                     try{
                         NexusArcaneVision.setEnabled(true);
-                        notifyPlayer("Visão Arcana habilitada. F9 captura a tela uma única vez. "+
-                            "Somente uma chave Gemini de projeto sem faturamento será aceita no backend.");
+                        notifyPlayer("Visão Arcana autorizada. F9 abre o painel; nada é capturado automaticamente.");
                     }catch(Exception ex){notifyPlayer(ex.getMessage());}
                     return 1;
                 }))
                 .then(Commands.literal("off").executes(ctx->{
                     NexusArcaneVision.setEnabled(false);
-                    notifyPlayer("Visão Arcana desligada. Nenhuma captura automática.");
-                    return 1;
+                    notifyPlayer("Visão Arcana desativada. Capturas pendentes canceladas.");return 1;
                 }))
+                .then(Commands.literal("focus")
+                    .then(Commands.literal("general").executes(ctx->{
+                        NexusArcaneVision.setFocus(NexusVisionModes.Focus.GERAL);
+                        notifyPlayer(NexusArcaneVision.status());return 1;
+                    }))
+                    .then(Commands.literal("structures").executes(ctx->{
+                        NexusArcaneVision.setFocus(NexusVisionModes.Focus.ESTRUTURAS);
+                        notifyPlayer(NexusArcaneVision.status());return 1;
+                    }))
+                    .then(Commands.literal("danger").executes(ctx->{
+                        NexusArcaneVision.setFocus(NexusVisionModes.Focus.PERIGOS);
+                        notifyPlayer(NexusArcaneVision.status());return 1;
+                    }))
+                    .then(Commands.literal("items").executes(ctx->{
+                        NexusArcaneVision.setFocus(NexusVisionModes.Focus.ITENS);
+                        notifyPlayer(NexusArcaneVision.status());return 1;
+                    })))
+                .then(Commands.literal("zoom")
+                    .then(Commands.literal("on").executes(ctx->{
+                        NexusArcaneVision.setCenterCrop(true);
+                        notifyPlayer("Visão Arcana: centro ampliado.");return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx->{
+                        NexusArcaneVision.setCenterCrop(false);
+                        notifyPlayer("Visão Arcana: tela inteira.");return 1;
+                    })))
                 .then(Commands.literal("analyze").executes(ctx->{
                     NexusArcaneVision.capture("");return 1;
                 }).then(Commands.argument("pergunta",StringArgumentType.greedyString())
@@ -139,35 +162,6 @@ public class NexusClientMod {
                         NexusArcaneVision.capture(
                             StringArgumentType.getString(ctx,"pergunta"));return 1;
                     }))))
-            .then(Commands.literal("hologram")
-                .then(Commands.literal("status").executes(ctx->{
-                    notifyPlayer(NexusArcaneHolograms.status());return 1;
-                }))
-                .then(Commands.literal("on").executes(ctx->{
-                    NexusArcaneHolograms.setEnabled(true);
-                    notifyPlayer(NexusArcaneHolograms.status());return 1;
-                }))
-                .then(Commands.literal("off").executes(ctx->{
-                    NexusArcaneHolograms.setEnabled(false);
-                    notifyPlayer(NexusArcaneHolograms.status());return 1;
-                }))
-                .then(Commands.literal("mode")
-                    .then(Commands.literal("orb").executes(ctx->{
-                        NexusArcaneHolograms.setMode("orb");
-                        notifyPlayer(NexusArcaneHolograms.status());return 1;
-                    }))
-                    .then(Commands.literal("runes").executes(ctx->{
-                        NexusArcaneHolograms.setMode("runes");
-                        notifyPlayer(NexusArcaneHolograms.status());return 1;
-                    }))
-                    .then(Commands.literal("schematic").executes(ctx->{
-                        NexusArcaneHolograms.setMode("schematic");
-                        notifyPlayer(NexusArcaneHolograms.status());return 1;
-                    })))
-                .then(Commands.literal("pulse").executes(ctx->{
-                    NexusArcaneHolograms.pulse();
-                    notifyPlayer("Pulso holográfico local ativado.");return 1;
-                })))
             .then(Commands.literal("menu").executes(context -> {
                 Minecraft mc=Minecraft.getInstance();
                 if(mc.player!=null)mc.setScreen(new NexusPermissionsScreen());
